@@ -115,14 +115,15 @@
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-             onInputConfigurationChange:(void (^)(void))onInputConfigurationChange
+                     onInputNotification:
+                         (void (^)(AudioEngineInputNotification))onInputNotification
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
   self.lastAttachedVoiceProcessingEnabled = voiceProcessingEnabled;
-  (void)onInputConfigurationChange;
+  (void)onInputNotification;
 }
 
 - (bool)startIfNecessary
@@ -255,6 +256,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
   self.sessionManager = [[FakeRecorderAudioSessionManager alloc] init];
   self.audioEngine = [[FakeRecorderAudioEngine alloc] init];
+  [self.audioEngine createAudioEngineIfNeeded];
   self.sharedSession = [[FakeRecorderSharedAVAudioSession alloc] init];
   self.sharedSession.IOBufferDuration = 0.01;
   self.sharedSession.sampleRate = 48000;
@@ -430,12 +432,28 @@ static void ClearFakeRecorderSharedAudioSession(void)
        initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
       voiceProcessingEnabled:NO];
 
+  self.audioEngine.startIfNecessaryResult = YES;
+
   [recorder pause];
-  [recorder resume];
+  XCTAssertTrue([recorder resume]);
 
   XCTAssertEqual(self.audioEngine.pauseIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertTrue(recorder.inputArmed);
+  // Re-arming is the owner's decision, taken in the HardwareChanged handler.
+  XCTAssertFalse(recorder.inputArmed);
+}
+
+- (void)testResumeReturnsFalseWhenEngineStartFails
+{
+  self.audioEngine.startIfNecessaryResult = NO;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  XCTAssertFalse([recorder resume]);
+
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath
@@ -462,7 +480,8 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(self.audioEngine.rebuildAfterDeactivationCallCount, 1);
   XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
   XCTAssertEqualObjects([recorder getResolvedInputFormat], recoveredFormat);
-  XCTAssertEqual([recorder getResolvedBufferSize], 16384);
+  // 0.2 s at the recovered 32 kHz rate, rounded up to a power of two.
+  XCTAssertEqual([recorder getResolvedBufferSize], 8192);
 }
 
 @end

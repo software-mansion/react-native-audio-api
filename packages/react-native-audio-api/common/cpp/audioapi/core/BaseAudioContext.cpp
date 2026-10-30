@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/decoding/AudioDecoding.h>
@@ -18,25 +19,14 @@ BaseAudioContext::BaseAudioContext(
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      pendingPromisesOffloader_(
-          std::make_unique<task_offloader::TaskOffloader<
-              ContextPromiseTask,
-              PENDING_PROMISES_OVERFLOW_STRATEGY,
-              PENDING_PROMISES_WAIT_STRATEGY>>(
-              PENDING_PROMISES_CAPACITY,
-              [this](const ContextPromiseTask &task) {
-                if (!task.operation) {
-                  return;
-                }
-                std::scoped_lock lock(driverMutex_);
-                task.operation(*this);
-              })),
+      audioEventProducer_(audioEventHandlerRegistry->createAudioEventProducer()),
+      stateChangeEvent_(audioEventHandlerRegistry),
       audioEventScheduler_(AUDIO_SCHEDULER_CAPACITY),
       gcAudioEventScheduler_(GC_AUDIO_SCHEDULER_CAPACITY),
       disposer_(
           std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
       graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())),
-      deferredEvents_(audioEventHandlerRegistry) {}
+      deferredEvents_(audioEventHandlerRegistry, audioEventProducer_) {}
 
 void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
   destination_ = destination;
@@ -62,6 +52,19 @@ std::size_t BaseAudioContext::getCurrentSampleFrame() const {
 
 double BaseAudioContext::getCurrentTime() const {
   return static_cast<double>(getCurrentSampleFrame()) / getSampleRate();
+}
+
+void BaseAudioContext::assignOnStateChangeCallbackId(uint64_t callbackId) {
+  stateChangeEvent_.assignCallbackId(callbackId);
+}
+
+void BaseAudioContext::dispatchStateChange(ContextState state) {
+  if (lastDispatchedState_.exchange(state, std::memory_order_acq_rel) == state) {
+    return;
+  }
+
+  stateChangeEvent_.dispatch(
+      StringPayload{.name = "state", .reason = js_enum_parser::contextStateToString(state)});
 }
 
 void BaseAudioContext::setState(ContextState state) {
@@ -115,13 +118,28 @@ utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *BaseAudioContext::getDisposer() cons
   return disposer_.get();
 }
 
+std::shared_ptr<ConvolverThreadPool> BaseAudioContext::getConvolverThreadPool() {
+  if (convolverThreadPool_ == nullptr) {
+    convolverThreadPool_ = std::make_shared<ConvolverThreadPool>(
+        CONVOLVER_THREAD_POOL_WORKER_COUNT,
+        CONVOLVER_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
+        CONVOLVER_THREAD_POOL_WORKER_QUEUE_SIZE);
+  }
+  return convolverThreadPool_;
+}
+
 void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
 #ifdef DEBUG
   test::AudioThreadGuard::Scope guard;
 #endif
+  // ongoing modifications of node's properties in graph (f.e. setting param's automation event)
   processAudioEvents();
+  // events mutating graph (f.e. connect/disconnect nodes) are processed in the graph itself
   graph_->processEvents();
+  // sorting, deleting, and deciding which to process
   graph_->process();
+  // nodes left out of this quantum still get to see the clock (unpulled sources finish)
+  graph_->advanceUnpulledNodes(getCurrentSampleFrame());
 
   for (auto &&[node, inputs] : graph_->iter()) {
     node.process(inputs, numFrames);

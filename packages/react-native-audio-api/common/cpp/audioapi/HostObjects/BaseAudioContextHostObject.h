@@ -1,17 +1,20 @@
 #pragma once
 
+#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/types/ContextState.h>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
+#include <concepts>
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 using namespace facebook;
 
-class BaseAudioContext;
 class AudioDestinationNodeHostObject;
 class AudioListenerHostObject;
 
@@ -26,6 +29,9 @@ class BaseAudioContextHostObject : public HostObject {
   ~BaseAudioContextHostObject() override;
 
   JSI_PROPERTY_GETTER_DECL(destination);
+  JSI_PROPERTY_GETTER_DECL(state);
+  JSI_PROPERTY_SETTER_DECL(onstatechange);
+
   JSI_PROPERTY_GETTER_DECL(listener);
   JSI_PROPERTY_GETTER_DECL(sampleRate);
   JSI_PROPERTY_GETTER_DECL(currentTime);
@@ -35,6 +41,7 @@ class BaseAudioContextHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(createConstantSource);
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);
+  JSI_HOST_FUNCTION_DECL(createPanner);
   JSI_HOST_FUNCTION_DECL(createBiquadFilter);
   JSI_HOST_FUNCTION_DECL(createIIRFilter);
   JSI_HOST_FUNCTION_DECL(createBufferSource);
@@ -55,6 +62,23 @@ class BaseAudioContextHostObject : public HostObject {
   }
 
  protected:
+  /// @brief Queues a lifecycle operation (resume / suspend / close / startRendering) on the
+  /// vendor's serial lane and returns its JS promise. A successful settle moves the context to
+  /// @p nextState; @p Resolver fixes what the promise resolves with, `undefined` by default.
+  /// Runs under the context's driver mutex, in the order JS issued the calls, and the captured
+  /// context keeps itself alive until its queued operation has run.
+  template <
+      std::derived_from<ContextPromiseResolver> Resolver = ContextStateResolver,
+      LifecycleOperation<std::shared_ptr<Resolver>> Operation>
+  jsi::Value createLifecyclePromise(ContextState nextState, Operation &&operation) {
+    return promiseVendor_->createAsyncPromise(
+        [context = context_, nextState, operation = std::forward<Operation>(operation)](
+            Promise &&promise) {
+          auto resolver = std::make_shared<Resolver>(std::move(promise), context, nextState);
+          context->runLifecycleOperation(operation, resolver);
+        });
+  }
+
   std::shared_ptr<BaseAudioContext> context_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
   std::shared_ptr<react::CallInvoker> callInvoker_;

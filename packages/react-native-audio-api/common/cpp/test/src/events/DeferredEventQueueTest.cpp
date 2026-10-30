@@ -18,7 +18,7 @@ class DeferredEventQueueTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> registry =
       std::make_shared<MockAudioEventHandlerRegistry>();
-  DeferredEventQueue queue{registry};
+  DeferredEventQueue queue{registry, registry->createAudioEventProducer()};
 };
 
 TEST_F(DeferredEventQueueTest, IgnoresEventsWithoutACallback) {
@@ -29,7 +29,9 @@ TEST_F(DeferredEventQueueTest, IgnoresEventsWithoutACallback) {
 TEST_F(DeferredEventQueueTest, HoldsEventsBackUntilTheirDueTime) {
   EXPECT_TRUE(queue.defer(AudioEvent::ENDED, SOONER_CALLBACK_ID, SOONER_DUE_TIME));
 
-  EXPECT_CALL(*registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_)).Times(0);
+  EXPECT_CALL(
+      *registry, dispatchEventFromAudioThread(testing::_, testing::_, testing::_, testing::_))
+      .Times(0);
   queue.dispatchDue(SOONER_DUE_TIME - 0.001);
   EXPECT_EQ(queue.pendingCount(), 1);
 }
@@ -38,7 +40,8 @@ TEST_F(DeferredEventQueueTest, DispatchesEventsDueExactlyNow) {
   queue.defer(AudioEvent::ENDED, SOONER_CALLBACK_ID, SOONER_DUE_TIME);
 
   EXPECT_CALL(
-      *registry, dispatchEventFromAudioThread(AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
   queue.dispatchDue(SOONER_DUE_TIME);
   EXPECT_EQ(queue.pendingCount(), 0);
@@ -50,11 +53,13 @@ TEST_F(DeferredEventQueueTest, DispatchesInDueTimeOrderNotInsertionOrder) {
 
   testing::Sequence dueTimeOrder;
   EXPECT_CALL(
-      *registry, dispatchEventFromAudioThread(AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
       .InSequence(dueTimeOrder)
       .WillOnce(testing::Return(true));
   EXPECT_CALL(
-      *registry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
       .InSequence(dueTimeOrder)
       .WillOnce(testing::Return(true));
 
@@ -67,13 +72,15 @@ TEST_F(DeferredEventQueueTest, LeavesNotYetDueEventsQueuedAfterASweep) {
   queue.defer(AudioEvent::ENDED, LATER_CALLBACK_ID, LATER_DUE_TIME);
 
   EXPECT_CALL(
-      *registry, dispatchEventFromAudioThread(AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, SOONER_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
   queue.dispatchDue(SOONER_DUE_TIME);
   EXPECT_EQ(queue.pendingCount(), 1);
 
   EXPECT_CALL(
-      *registry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
       .WillOnce(testing::Return(true));
   queue.dispatchDue(LATER_DUE_TIME);
   EXPECT_EQ(queue.pendingCount(), 0);
@@ -89,9 +96,12 @@ TEST_F(DeferredEventQueueTest, DropsEventsOnceFullInsteadOfGrowing) {
 
   // The dropped event never fires; everything accepted before it still does.
   EXPECT_CALL(
-      *registry, dispatchEventFromAudioThread(AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, LATER_CALLBACK_ID, testing::_))
       .Times(0);
-  EXPECT_CALL(*registry, dispatchEventFromAudioThread(AudioEvent::ENDED, testing::_, testing::_))
+  EXPECT_CALL(
+      *registry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, testing::_, testing::_))
       .Times(DeferredEventQueue::MAX_PENDING_EVENTS)
       .WillRepeatedly(testing::Return(true));
   queue.dispatchDue(LATER_DUE_TIME);
@@ -99,7 +109,7 @@ TEST_F(DeferredEventQueueTest, DropsEventsOnceFullInsteadOfGrowing) {
 }
 
 TEST_F(DeferredEventQueueTest, ToleratesAMissingRegistry) {
-  DeferredEventQueue queueWithoutRegistry{nullptr};
+  DeferredEventQueue queueWithoutRegistry{nullptr, nullptr};
   EXPECT_TRUE(queueWithoutRegistry.defer(AudioEvent::ENDED, SOONER_CALLBACK_ID, SOONER_DUE_TIME));
   queueWithoutRegistry.dispatchDue(SOONER_DUE_TIME);
   EXPECT_EQ(queueWithoutRegistry.pendingCount(), 0);

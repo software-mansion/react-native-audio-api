@@ -38,8 +38,8 @@ function Home() {
       <div className={styles.container}>
         <Testimonials />
       </div>
-      <Spacer.Vertical size="12rem" className={styles.hideOnMobile}  />
-      <Spacer.Vertical size="6rem" className={styles.visibleOnMobile}  />
+      <Spacer.Vertical size="6rem" className={styles.hideOnMobile}  />
+      <Spacer.Vertical size="3rem" className={styles.visibleOnMobile}  />
       <div className={styles.container}>
         <HireUsSectionWrapper
           href={

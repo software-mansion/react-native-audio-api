@@ -1,3 +1,4 @@
+import { NotSupportedError } from '../errors';
 import { isFfmpegEnabled } from './flags';
 
 export function isRemoteHttpUrl(path: string): boolean {
@@ -15,16 +16,16 @@ async function detectHttpByteRanges(
 ): Promise<boolean> {
   try {
     const headResponse = await fetch(url, { method: 'HEAD', headers });
-    if (headResponse.ok) {
-      const acceptRanges = headResponse.headers
-        .get('Accept-Ranges')
-        ?.toLowerCase();
-      if (acceptRanges === 'bytes') {
-        return true;
-      }
-
-      return false;
+    const acceptRanges = headResponse.headers
+      .get('Accept-Ranges')
+      ?.toLowerCase();
+    if (acceptRanges === 'bytes') {
+      return true;
     }
+    // HEAD succeeded but didn't confirm ranges (or wasn't ok) — some servers
+    // (e.g. several Icecast/Shoutcast configurations) omit Accept-Ranges from
+    // HEAD while still honoring a Range GET, so don't conclude "unsupported"
+    // without trying that too.
   } catch {
     // HEAD may be blocked or unsupported — fall through to a Range GET probe.
   }
@@ -71,6 +72,11 @@ export async function loadRemoteHttpSource(
   forceDownload = false
 ): Promise<ArrayBuffer | string> {
   if (isHlsPlaylistUrl(url)) {
+    if (!isFfmpegEnabled()) {
+      throw new NotSupportedError(
+        'HLS (.m3u8) playback requires FFmpeg, which is not enabled in this build. See the "Optional prebuilt libraries" docs to enable it.'
+      );
+    }
     return url;
   }
 

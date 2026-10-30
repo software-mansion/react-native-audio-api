@@ -8,6 +8,7 @@ import DrumMachine from './DrumMachine';
 import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
+import PannerNode from './PannerNode';
 import Piano from './Piano';
 import PlaybackSpeed from './PlaybackSpeed';
 import Record from './Record/Record';
@@ -15,9 +16,11 @@ import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
 import ConvolverIR from './ConvolverIR';
 import ChannelMergerSplitter from './ChannelMergerSplitter';
+import EchoCancellation from './EchoCancellation';
 
 type NavigationParamList = {
   Oscillator: undefined;
+  PannerNode: undefined;
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
@@ -36,6 +39,7 @@ type NavigationParamList = {
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
+  EchoCancellation: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -91,6 +95,12 @@ export const Examples: Example[] = [
     screen: Oscillator,
   },
   {
+    key: 'PannerNode',
+    title: 'PannerNode',
+    Icon: icons.Move3d,
+    screen: PannerNode,
+  },
+  {
     key: 'AudioVisualizer',
     title: 'Audio Visualizer',
     Icon: icons.Activity,
@@ -137,5 +147,11 @@ export const Examples: Example[] = [
     title: 'Channel Count',
     Icon: icons.Columns3,
     screen: ChannelCount,
+  },
+  {
+    key: 'EchoCancellation',
+    title: 'EAC',
+    Icon: icons.AudioLines,
+    screen: EchoCancellation,
   },
 ] as const;

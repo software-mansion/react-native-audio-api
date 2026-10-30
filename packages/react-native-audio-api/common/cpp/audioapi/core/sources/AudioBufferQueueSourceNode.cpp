@@ -19,7 +19,9 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const BaseAudioBufferSourceOptions &options)
     : AudioBufferBaseSourceNode(context, options),
-      onBufferEndedEvent_(context->getAudioEventHandlerRegistry()) {
+      onBufferEndedEvent_(
+          context->getAudioEventHandlerRegistry(),
+          context->getAudioEventProducer()) {
   if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
@@ -143,11 +145,11 @@ void AudioBufferQueueSourceNode::assignOnBufferEndedCallbackId(uint64_t callback
   onBufferEndedEvent_.assignCallbackId(callbackId);
 }
 
-void AudioBufferQueueSourceNode::setChannelCount(int channelCount) {
-  if (channelCount_ != channelCount) {
-    channelCount_ = channelCount;
+void AudioBufferQueueSourceNode::resizeOutputBuffer(int outputChannelNumber) {
+  if (outputChannelNumber_ != outputChannelNumber) {
+    setOutputChannelNumber(static_cast<size_t>(outputChannelNumber));
     audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-        RENDER_QUANTUM_SIZE, channelCount_, getContextSampleRate());
+        RENDER_QUANTUM_SIZE, outputChannelNumber, getContextSampleRate());
   }
 }
 
@@ -167,6 +169,11 @@ void AudioBufferQueueSourceNode::sendOnBufferEndedEvent(size_t bufferId, bool is
 
 bool AudioBufferQueueSourceNode::isEmpty() const {
   return buffers_.empty();
+}
+
+bool AudioBufferQueueSourceNode::endsWhenStartedEmpty() const {
+  // An empty queue is a source waiting for its next buffer, not a finished one.
+  return false;
 }
 
 void AudioBufferQueueSourceNode::runBufferProcessor(

@@ -1,112 +1,60 @@
+import { TouchEvent, useCallback, useRef, useState } from 'react';
 
-import { TouchEvent, useCallback, useEffect, useRef, useState } from 'react';
-import testimonials from './testimonials';
+const SWIPE_DISTANCE_RATIO = 0.3;
 
-function parseTranslateX(transform: string): number | null {
-  const match = transform.match(/translateX\((-?\d+.?\d*)px\)/);
-  return match ? parseFloat(match[1]) : null;
-}
-
-function minMax(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(value, max));
-}
-
-export default function useDrag(currentOffset: number, setCurrentOffset: (offset: number) => void, activeIndex: number, onSetActiveSlide: (index: number) => void) {
-  const draggableRef = useRef<HTMLDivElement>(null);
-
+export default function useDrag(
+  slideWidth: number,
+  onSwipe: (step: number) => void
+) {
+  const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const touchStartRef = useRef<number | null>(null);
-  const touchEndRef = useRef<number | null>(null);
-  const [initialOffset, setInitialOffset] = useState(0);
 
-  const onTouchStart = useCallback((e: TouchEvent) => {
-    if (!draggableRef.current) {
-      return;
-    }
+  const endDrag = useCallback(() => {
+    touchStartRef.current = null;
+    setDragOffset(0);
+    setIsDragging(false);
+    document.body.style.overflowX = '';
+  }, []);
 
-    touchStartRef.current = e.targetTouches[0].clientX;
-    touchEndRef.current = null;
+  const onTouchStart = useCallback((event: TouchEvent) => {
+    touchStartRef.current = event.targetTouches[0].clientX;
+    setDragOffset(0);
     setIsDragging(true);
-
-    draggableRef.current.style.transition = 'none';
-    setInitialOffset(parseTranslateX(draggableRef.current.style.transform) || 0);
-
     document.body.style.overflowX = 'hidden';
   }, []);
 
-  const onTouchMove = useCallback((e: TouchEvent) => {
-    if (!isDragging || !touchStartRef.current || !draggableRef.current) {
+  const onTouchMove = useCallback((event: TouchEvent) => {
+    if (touchStartRef.current === null) {
       return;
     }
 
-    const currentX = e.targetTouches[0].clientX;
-    touchEndRef.current = currentX;
-
-    const maxOffset = draggableRef.current.clientWidth - (document.querySelector(`.testimonialContainer-${activeIndex}`)?.clientWidth || 0);
-
-    const offset = minMax(currentX - touchStartRef.current + initialOffset, -maxOffset, 0);
-    const container = draggableRef.current;
-
-    if (container) {
-      setCurrentOffset(-offset);
-    }
-  }, [isDragging, initialOffset, activeIndex, setCurrentOffset]);
-
-  const onTouchEnd = useCallback(() => {
-    if (!isDragging || !touchStartRef.current || !touchEndRef.current) {
-      return;
-    }
-
-    const distance = touchStartRef.current - touchEndRef.current;
-    const minDistance = 0.30 * (document.querySelector(`.testimonialContainer-0`)?.clientWidth || 0);
-    const isLeftSwipe = distance >= minDistance;
-    const isRightSwipe = distance <= -minDistance;
-
-    let newIndex = activeIndex;
-
-    if (isLeftSwipe) {
-      newIndex = Math.min(activeIndex + 1, testimonials.length - 1);
-    } else if (isRightSwipe) {
-      newIndex = Math.max(activeIndex - 1, 0);
-    }
-
-
-    document.body.style.overflowX = '';
-    draggableRef.current!.style.transition = 'transform 300ms ease-out';
-
-    if (newIndex !== activeIndex) {
-      onSetActiveSlide(newIndex);
-    } else {
-      setCurrentOffset(initialOffset);
-    }
-
-    touchStartRef.current = null;
-    touchEndRef.current = null;
-    setInitialOffset(0);
-
-    setIsDragging(false);
-  }, [isDragging, activeIndex, onSetActiveSlide, setCurrentOffset, initialOffset, currentOffset]);
-
-  const onTouchCancel = useCallback(() => {
-    setIsDragging(false);
-    document.body.style.overflowX = '';
-
-    touchStartRef.current = null;
-    touchEndRef.current = null;
-
-    if (draggableRef.current) {
-      draggableRef.current.style.transition = 'transform 300ms ease-out';
-      setCurrentOffset(initialOffset);
-    }
-
-    setInitialOffset(0);
+    setDragOffset(event.targetTouches[0].clientX - touchStartRef.current);
   }, []);
 
+  const onTouchEnd = useCallback(() => {
+    if (touchStartRef.current === null) {
+      return;
+    }
+
+    const isSwipe =
+      slideWidth > 0 && Math.abs(dragOffset) >= SWIPE_DISTANCE_RATIO * slideWidth;
+
+    if (isSwipe) {
+      onSwipe(dragOffset < 0 ? 1 : -1);
+    }
+
+    endDrag();
+  }, [dragOffset, slideWidth, onSwipe, endDrag]);
+
   return {
-    ref: draggableRef,
-    onTouchStart,
-    onTouchMove,
-    onTouchEnd,
-    onTouchCancel,
+    dragOffset,
+    isDragging,
+    dragHandlers: {
+      onTouchStart,
+      onTouchMove,
+      onTouchEnd,
+      onTouchCancel: endDrag,
+    },
   };
 }

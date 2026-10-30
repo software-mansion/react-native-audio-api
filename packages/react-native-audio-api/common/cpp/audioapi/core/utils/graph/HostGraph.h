@@ -35,7 +35,7 @@ class TestGraphUtils;
 /// @note Use through the Graph wrapper for safety.
 class HostGraph {
  public:
-  enum class ResultError : uint8_t {
+  enum class GraphError : uint8_t {
     NODE_NOT_FOUND,
     CYCLE_DETECTED,
     EDGE_NOT_FOUND,
@@ -48,8 +48,6 @@ class HostGraph {
       AUDIO_GRAPH_EVENT_SIZE,
       void(AudioGraph &, Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &)>;
 
-  using Res = Result<AGEvent, ResultError>;
-
   /// Per-node scratch used by graph traversals (e.g. hasPath).
   struct TraversalState {
     size_t term = 0;
@@ -58,38 +56,10 @@ class HostGraph {
     bool visit(size_t currentTerm);
   };
 
-  /// Per-node scratch for channel-layout negotiation (host thread only).
-  ///
-  /// Follows the same generation-stamp pattern as `TraversalState`: each
-  /// `addEdge` / `removeEdge` bumps `HostGraph::channelLayoutTerm_`, and nodes
-  /// visited in that pass stamp `term` with the current value. A node is
-  /// considered resolved for the pass when `term == channelLayoutTerm_`.
-  ///
-  /// During the pass, `upstreamChannelCount` stores how many channels this
-  /// node will present on upstream connections (toward AudioDestinationNode)
-  /// after negotiation — including overrides such as StereoPanner's fixed
-  /// stereo output. Downstream nodes read these pending widths from their
-  /// inputs instead of live output buffers, so multiple connects in one batch
-  /// (before the AGEvent applies buffer swaps on the audio thread) still see
-  /// consistent layouts. Values are never read on the audio thread.
-  struct ChannelLayoutState {
-    size_t term = 0;
-    size_t upstreamChannelCount = 0;
-
-    [[nodiscard]] bool isResolvedFor(size_t currentTerm) const {
-      return term == currentTerm;
-    }
-
-    void setResolved(size_t currentTerm, size_t count) {
-      term = currentTerm;
-      upstreamChannelCount = count;
-    }
-  };
-
   /// A single node in the HostGraph.
-  struct Node {
-    std::vector<Node *> inputs;  // reversed edges
-    std::vector<Node *> outputs; // forward edges
+  struct HostVertex {
+    std::vector<HostVertex *> inputs;  // reversed edges
+    std::vector<HostVertex *> outputs; // forward edges
     /// Nodes whose processable state should follow this node's state.
     /// Used to tie together the state of logically-linked host nodes that do
     /// not share a graph edge (e.g. DelayReader → DelayWriter communicate via
@@ -98,9 +68,16 @@ class HostGraph {
     /// thread in AudioGraph::settleProcessableState() via the mirrored
     /// `link_head` entries; this host-side list only exists so links can be
     /// scrubbed when a linked node is disposed.
-    std::vector<Node *> linkedNodes;
+    std::vector<HostVertex *> linkedNodes;
     TraversalState traversalState;
-    ChannelLayoutState channelLayout;
+    /// Visited stamp for channel-negotiation passes; `HostGraph::channelLayoutTerm_`
+    /// is bumped once per structural change.
+    TraversalState channelLayoutTraversal;
+    /// Width of the last negotiated buffer queued for the audio thread, seeded
+    /// in `addNode` from the buffer built at construction (host thread only).
+    /// Negotiation compares against this, not the live buffer: the live one
+    /// still lacks swaps queued earlier in the same render quantum.
+    size_t pendingChannelCount = 0;
     std::shared_ptr<NodeHandle> handle; // shared handle bridging to AudioGraph
     bool ghost = false; // kept for cycle detection until AudioGraph confirms deletion
 
@@ -109,9 +86,9 @@ class HostGraph {
 #endif
 
     /// Destructor tears down all edges touching this node.
-    ~Node();
-    Node() = default;
-    DELETE_COPY_AND_MOVE(Node);
+    ~HostVertex();
+    HostVertex() = default;
+    DELETE_COPY_AND_MOVE(HostVertex);
   };
 
   // ── Lifecycle ───────────────────────────────────────────────────────────
@@ -129,16 +106,16 @@ class HostGraph {
 
   /// @brief Adds a new node to the graph.
   /// @param handle shared handle that bridges HostGraph ↔ AudioGraph
-  /// @return pair of (raw Node pointer, AGEvent to replay on AudioGraph)
-  std::pair<Node *, AGEvent> addNode(std::shared_ptr<NodeHandle> handle);
+  /// @return pair of (raw HostVertex pointer, AGEvent to replay on AudioGraph)
+  std::pair<HostVertex *, AGEvent> addNode(std::shared_ptr<NodeHandle> handle);
 
   /// @brief Removes a node (marks it as ghost, keeps edges for cycle detection).
   /// @return AGEvent that sets `orphaned = true` on the AudioGraph side.
-  Res removeNode(Node *node);
+  Result<AGEvent, GraphError> removeNode(HostVertex *node);
 
   /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
   /// @return AGEvent that adds the input on the AudioGraph side.
-  Res addEdge(Node *from, Node *to);
+  Result<AGEvent, GraphError> addEdge(HostVertex *from, HostVertex *to);
 
   /// @brief Links the processable-state of `from` to propagate into `to`.
   ///
@@ -151,23 +128,23 @@ class HostGraph {
   ///
   /// @return AGEvent to replay on AudioGraph, or std::nullopt if the pair is
   ///         invalid or already linked.
-  std::optional<AGEvent> linkNodes(Node *from, Node *to);
+  std::optional<AGEvent> linkNodes(HostVertex *from, HostVertex *to);
 
   /// @brief Removes a directed edge from → to.
   /// @return AGEvent that removes the input on the AudioGraph side.
-  Res removeEdge(Node *from, Node *to);
+  Result<AGEvent, GraphError> removeEdge(HostVertex *from, HostVertex *to);
 
   /// @brief Removes all outgoing edges from `from`.
   /// @return single AGEvent that removes all inputs on the AudioGraph side, or NODE_NOT_FOUND.
-  Res removeAllEdges(Node *from);
+  Result<AGEvent, GraphError> removeAllEdges(HostVertex *from);
 
-  /// @brief Recomputes channel-count negotiation starting at `node` (and
+  /// @brief Recomputes channel negotiation starting at `node` (and
   /// cascading downstream toward AudioDestinationNode), without any structural
   /// change. Used when a node's `channelCount` / `channelCountMode` attribute
   /// changes after construction. The returned AGEvent applies the negotiated
   /// buffer swaps on the audio thread and marks the graph dirty.
   /// @return AGEvent to replay on AudioGraph, or NODE_NOT_FOUND.
-  Res renegotiateNodeChannels(Node *node);
+  Result<AGEvent, GraphError> renegotiateNodeChannels(HostVertex *node);
 
   /// @brief Current number of live (non-ghost) edges.
   [[nodiscard]] size_t edgeCount() const;
@@ -179,7 +156,7 @@ class HostGraph {
   [[nodiscard]] size_t nodeCount() const;
 
  private:
-  std::vector<Node *> nodes;
+  std::vector<HostVertex *> nodes;
   /// Guards access to `nodes` and the per-node adjacency mutated by the
   /// public API (inputs/outputs/ghost). Public API methods do not call one
   /// another while holding the lock, so a plain mutex is sufficient.
@@ -190,7 +167,7 @@ class HostGraph {
   size_t channelLayoutTerm_ = 0; // monotonic counter for channel negotiation passes
 
   /// @brief DFS reachability check (traverses ghosts too).
-  bool hasPath(Node *start, Node *end);
+  bool hasPath(HostVertex *start, HostVertex *end);
 
   /// @brief Scans ghost nodes and deletes those whose handle has
   /// `use_count() == 1`, meaning AudioGraph has released its reference.

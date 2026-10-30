@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/core/types/ContextPromiseTask.h>
 #include <audioapi/core/types/ContextState.h>
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/utils/Constants.h>
@@ -8,14 +7,16 @@
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/DeferredEventQueue.hpp>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
-#include <audioapi/utils/TaskOffloader.hpp>
+#include <audioapi/utils/ThreadPool.hpp>
 
 #include <audioapi/utils/Macros.h>
 #include <atomic>
 #include <cassert>
 #include <complex>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -28,6 +29,26 @@ namespace audioapi {
 class IAudioEventHandlerRegistry;
 class PeriodicWave;
 class AudioDestinationNode;
+class BaseAudioContext;
+
+class ContextPromiseResolver;
+class ContextStateResolver;
+class ContextRenderResolver;
+
+/// Settles a state-only lifecycle promise (resume / suspend / close).
+using LifecycleResolver = std::shared_ptr<ContextStateResolver>;
+/// Settles the offline `startRendering` promise with the rendered buffer.
+using RenderResolver = std::shared_ptr<ContextRenderResolver>;
+
+/// A `shared_ptr` to one of the `ContextPromiseResolver` subclasses.
+template <typename T>
+concept ContextPromiseResolverPtr = std::same_as<T, std::shared_ptr<typename T::element_type>> &&
+    std::derived_from<typename T::element_type, ContextPromiseResolver>;
+
+/// A lifecycle body: receives the context and the resolver the core method settles. The
+/// resolver type says what the promise resolves with, so a body cannot be handed the wrong one.
+template <typename F, typename Resolver = LifecycleResolver>
+concept LifecycleOperation = std::invocable<F, BaseAudioContext &, const Resolver &>;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -47,6 +68,23 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
   void setState(ContextState state);
 
+  /// The value behind the JS `state` attribute. Read from the JSI getter on
+  /// the JS thread.
+  [[nodiscard]] ContextState getPublishedState() const {
+    return publishedState_.load(std::memory_order_acquire);
+  }
+
+  /// Publishes an acknowledged transition to the JS-visible state.
+  void setPublishedState(ContextState state) {
+    publishedState_.store(state, std::memory_order_release);
+  }
+
+  /// JS thread. Wires the `statechange` listener registered by the TS context.
+  void assignOnStateChangeCallbackId(uint64_t callbackId);
+
+  /// Fires `statechange` for an acknowledged transition to @p state.
+  void dispatchStateChange(ContextState state);
+
   [[nodiscard]] std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
@@ -56,6 +94,12 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<utils::graph::Graph> getGraph() const;
   std::shared_ptr<IAudioEventHandlerRegistry> getAudioEventHandlerRegistry() const;
   utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE> *getDisposer() const;
+
+  /// @brief Lazily created pool shared by every ConvolverNode of this context. Nodes render
+  /// sequentially on the one render thread, so sharing keeps the pool single-producer.
+  /// @return The pool, or null when the context wants convolver tails computed inline.
+  /// @note JS thread only.
+  virtual std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool();
 
   /// @brief Assigns the audio destination node to the context.
   /// @param destination The audio destination node to be associated with the context.
@@ -79,6 +123,13 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   /// @note Render-serialized only, like the queue itself.
   [[nodiscard]] DeferredEventQueue &getDeferredEvents() {
     return deferredEvents_;
+  }
+
+  /// @brief This context's dispatch lane, for nodes that emit events from the render thread.
+  /// Every node of a context shares it because they all render on that one thread; a node of
+  /// another context must never use it.
+  [[nodiscard]] std::shared_ptr<AudioEventProducer> getAudioEventProducer() const {
+    return audioEventProducer_;
   }
 
   template <typename F>
@@ -114,14 +165,14 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
     return gcAudioEventScheduler_.scheduleEvent(std::forward<F>(event));
   }
 
-  /// @brief Queue a lifecycle control message on the pending-promises worker thread.
-  /// Serialized with other lifecycle ops via `driverMutex_`. Graph host-node cleanup
-  /// (`collectDisposedNodes`) runs on the worker before the operation body.
-  template <typename F>
-  void scheduleContextPromise(F &&operation) {
-    ContextPromiseTask task;
-    task.operation = std::forward<F>(operation);
-    pendingPromisesOffloader_->getSender()->send(std::move(task));
+  /// @brief Runs a lifecycle control operation (resume / suspend / close / offline start)
+  /// under `driverMutex_`, handing it this context and @p resolver. The context HostObject
+  /// queues these on its serial promise lane, so operations on one context run FIFO and never
+  /// on the JS thread.
+  template <ContextPromiseResolverPtr Resolver, LifecycleOperation<Resolver> F>
+  void runLifecycleOperation(F &&operation, const Resolver &resolver) {
+    std::scoped_lock lock(driverMutex_);
+    std::forward<F>(operation)(*this, resolver);
   }
 
   void processGraph(DSPAudioBuffer *buffer, int numFrames);
@@ -131,19 +182,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   const AudioDestinationNode *destination_;
 
   /// Serializes context lifecycle and driver control across the JS thread,
-  /// pending-promises worker, and offline render thread.
+  /// the HostObject's promise lane, and the offline render thread.
   mutable std::mutex driverMutex_;
   std::atomic<ContextState> state_;
-
-  /// @brief Joins the pending-promises worker after draining any queued
-  /// lifecycle tasks. Idempotent.
-  ///
-  /// Derived-class destructors MUST call this as their first teardown step:
-  /// the drained task bodies lock `driverMutex_` and touch the player, graph,
-  /// and disposer, all of which start being destroyed once the destructor bodies return.
-  void joinPendingPromiseWorker() {
-    pendingPromisesOffloader_->shutdown();
-  }
 
   /// Debug-only: `driverMutex_` must already be held by the calling thread.
   void assertDriverMutexHeld() const {
@@ -158,6 +199,14 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  private:
   std::atomic<float> sampleRate_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  /// context's own lane into the registry's dispatch queue, shared with every node it owns.
+  std::shared_ptr<AudioEventProducer> audioEventProducer_;
+
+  EventCaller<AudioEvent::STATE_CHANGE> stateChangeEvent_;
+  /// Ledger backing dispatchStateChange()'s dedupe; contexts start suspended.
+  std::atomic<ContextState> lastDispatchedState_{ContextState::SUSPENDED};
+  /// Backs the JS `state` attribute; written only via setPublishedState().
+  std::atomic<ContextState> publishedState_{ContextState::SUSPENDED};
 
   std::shared_ptr<PeriodicWave> cachedSineWave_ = nullptr;
   std::shared_ptr<PeriodicWave> cachedSquareWave_ = nullptr;
@@ -165,18 +214,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   std::shared_ptr<PeriodicWave> cachedTriangleWave_ = nullptr;
   static constexpr size_t AUDIO_SCHEDULER_CAPACITY = 1024;
   static constexpr size_t GC_AUDIO_SCHEDULER_CAPACITY = 256;
-  static constexpr size_t PENDING_PROMISES_CAPACITY = 64;
-  static constexpr auto PENDING_PROMISES_OVERFLOW_STRATEGY =
-      audioapi::channels::spsc::OverflowStrategy::WAIT_ON_FULL;
-  static constexpr auto PENDING_PROMISES_WAIT_STRATEGY =
-      audioapi::channels::spsc::WaitStrategy::ATOMIC_WAIT;
-
-  std::unique_ptr<task_offloader::TaskOffloader<
-      ContextPromiseTask,
-      PENDING_PROMISES_OVERFLOW_STRATEGY,
-      PENDING_PROMISES_WAIT_STRATEGY>>
-      pendingPromisesOffloader_;
-
   CrossThreadEventScheduler<BaseAudioContext> audioEventScheduler_;
   /// Dedicated single-producer SPSC scheduler for events produced on the
   /// JS runtime's finalizer (GC) thread. Keeps `audioEventScheduler_`
@@ -184,6 +221,8 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   CrossThreadEventScheduler<BaseAudioContext> gcAudioEventScheduler_;
 
   std::unique_ptr<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>> disposer_;
+
+  std::shared_ptr<ConvolverThreadPool> convolverThreadPool_;
   std::shared_ptr<utils::graph::Graph> graph_;
 
   DeferredEventQueue deferredEvents_;

@@ -3,7 +3,6 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/types/ContextState.h>
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 
@@ -30,34 +29,29 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::RUNNING);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<OfflineAudioContext &>(context).resume(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::RUNNING, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).resume(resolver);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
   double when = args[0].getNumber();
-  return promiseVendor_->createPromise([this, when](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::SUSPENDED);
-    context_->scheduleContextPromise([contextPromise, when](BaseAudioContext &context) {
-      dynamic_cast<OfflineAudioContext &>(context).suspend(when, contextPromise);
-    });
-  });
+
+  return createLifecyclePromise(
+      ContextState::SUSPENDED,
+      [when](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).suspend(when, resolver);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto resultPromise = OfflineAudioContextResultPromise::makeOfflineAudioContextResultResolver(
-        std::move(promise), context_);
-    context_->scheduleContextPromise([resultPromise](BaseAudioContext &context) {
-      dynamic_cast<OfflineAudioContext &>(context).startRendering(resultPromise);
-    });
-  });
+  context_->setPublishedState(ContextState::RUNNING);
+
+  return createLifecyclePromise<ContextRenderResolver>(
+      ContextState::CLOSED, [](BaseAudioContext &context, const RenderResolver &resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).startRendering(resolver);
+      });
 }
 
 } // namespace audioapi

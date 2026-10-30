@@ -7,15 +7,21 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/core/inputs/AudioRecorder.h>
 #import <audioapi/core/sources/RecorderAdapterNode.h>
+#import <audioapi/core/utils/AudioFileWriter.h>
 #import <audioapi/core/utils/graph/NodeHandle.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#import <audioapi/encoding/AdtsHeader.h>
+#import <audioapi/encoding/EncoderCapabilities.h>
+#import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <tuple>
+#include <vector>
 
 using namespace audioapi;
 
@@ -123,6 +129,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 @property(nonatomic, assign) NSInteger stopCallCount;
 @property(nonatomic, assign) NSInteger pauseCallCount;
 @property(nonatomic, assign) NSInteger resumeCallCount;
+@property(nonatomic, assign) BOOL resumeResult;
 @property(nonatomic, assign) NSInteger cleanupCallCount;
 @property(nonatomic, assign) NSInteger setInputArmedCallCount;
 @property(nonatomic, assign) BOOL lastInputArmed;
@@ -144,6 +151,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
                                                        channels:2];
     self.mockResolvedBufferSize = 512;
     self.startResult = YES;
+    self.resumeResult = YES;
   }
 
   return self;
@@ -188,8 +196,9 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   self.pauseCallCount += 1;
 }
 
-- (void)resume {
+- (BOOL)resume {
   self.resumeCallCount += 1;
+  return self.resumeResult;
 }
 
 - (void)cleanup {
@@ -217,30 +226,33 @@ public:
     state_.store(state, std::memory_order_release);
   }
 
-  std::string currentFilePath() const { return filePath_; }
+  std::string currentFilePath() const {
+    std::scoped_lock lock(fileWriterMutex_);
+    return fileWriter_ != nullptr ? fileWriter_->getFilePath() : "";
+  }
 
   bool fileOutputEnabledIntent() const {
-    return fileOutputEnabled_.load(std::memory_order_acquire);
+    return wantsFileOutput();
   }
 
   bool fileOutputConfigured() const {
-    return fileOutputConfigured_.load(std::memory_order_acquire);
+    return usesFileOutput();
   }
 
   bool callbackOutputEnabledIntent() const {
-    return callbackOutputEnabled_.load(std::memory_order_acquire);
+    return wantsCallback();
   }
 
   bool callbackOutputConfigured() const {
-    return callbackOutputConfigured_.load(std::memory_order_acquire);
+    return usesCallback();
   }
 
   bool connectionEnabledIntent() const {
-    return isConnected_.load(std::memory_order_acquire);
+    return wantsConnection();
   }
 
   bool connectionConfigured() const {
-    return connectedConfigured_.load(std::memory_order_acquire);
+    return isConnected();
   }
 };
 
@@ -267,7 +279,7 @@ public:
 
   _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
-  self.nativeRecorder.onInputConfigurationChange = self.originalNativeRecorder.onInputConfigurationChange;
+  self.nativeRecorder.onInputNotification = self.originalNativeRecorder.onInputNotification;
 }
 
 - (void)tearDown {
@@ -290,10 +302,23 @@ public:
 
 - (std::shared_ptr<AudioFileProperties>)validFileProperties {
   return std::make_shared<AudioFileProperties>(
-      AudioFileProperties::FileDirectory::Cache, "fabric-example-tests",
-      "ios-recorder-test", 2, 0, AudioFileProperties::Format::WAV, 44100,
-      128000, AudioFileProperties::BitDepth::Bit16, 0, 0,
-      AudioFileProperties::IOSAudioQuality::High);
+      AudioFileProperties::PathConfig{
+          .directory = AudioFileProperties::FileDirectory::Cache,
+          .subDirectory = "fabric-example-tests",
+          .fileName = "ios-recorder-test",
+      },
+      AudioLayout{.sampleRate = 44100, .channelCount = 2},
+      AudioFileProperties::EncodingConfig{
+          .format = AudioFileProperties::FileFormat::WAV,
+          .bitRate = 128000,
+          .bitDepth = AudioFileProperties::BitDepth::Bit16,
+          .flacCompressionLevel = 0,
+          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+      },
+      AudioFileProperties::WriterConfig{
+          .rotateIntervalBytes = 0,
+          .androidFlushIntervalMs = 0,
+      });
 }
 
 - (id)invalidFormat {
@@ -314,9 +339,9 @@ public:
 }
 
 - (void)testStartReturnsErrorWhenRecorderIsNotIdle {
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Paused);
+  _recorder->setRecorderState(RecorderState::Paused);
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqualObjects(NSStringFromStdString(result.unwrap_err()),
@@ -326,7 +351,7 @@ public:
 - (void)testStartReturnsErrorWhenRecordingPermissionIsDenied {
   self.sessionManager.recordingPermissions = @"Denied";
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqualObjects(NSStringFromStdString(result.unwrap_err()),
@@ -340,7 +365,7 @@ public:
                           code:7
                       userInfo:@{NSLocalizedDescriptionKey : @"boom"}];
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
@@ -355,7 +380,7 @@ public:
                               reason:@"attempt-wrong-category-record"
                             userInfo:nil];
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -374,7 +399,7 @@ public:
   self.sessionManager.diagnosticInputChannels = 0;
   self.sessionManager.routeReady = NO;
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -393,7 +418,7 @@ public:
   self.audioEngine.state = AudioEngineStateRunning;
   self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_ok());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -411,7 +436,7 @@ public:
   auto callbackResult = _recorder->setOnAudioReadyCallback(48000, 256, 1, 99);
   XCTAssertTrue(callbackResult.is_ok());
 
-  auto startResult = _recorder->start("");
+  auto startResult = _recorder->start();
 
   XCTAssertTrue(startResult.is_ok());
   XCTAssertTrue(_recorder->usesCallback());
@@ -452,7 +477,7 @@ public:
 - (void)testStartDoesNotAttemptToManageSessionWhenOwnershipIsExternal {
   self.sessionManager.shouldManageSession = NO;
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_ok());
   XCTAssertEqual(self.nativeRecorder.startCallCount, 1);
@@ -465,7 +490,7 @@ public:
   XCTAssertEqual(self.nativeRecorder.pauseCallCount, 0);
   XCTAssertEqual(self.nativeRecorder.resumeCallCount, 0);
 
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
+  _recorder->setRecorderState(RecorderState::Recording);
   self.audioEngine.state = AudioEngineStateRunning;
   _recorder->pause();
 
@@ -478,6 +503,19 @@ public:
   XCTAssertFalse(_recorder->isPaused());
 }
 
+- (void)testResumeDoesNotStoreRecordingWhenNativeResumeFails {
+  _recorder->setRecorderState(RecorderState::Recording);
+  self.audioEngine.state = AudioEngineStateRunning;
+  _recorder->pause();
+  self.nativeRecorder.resumeResult = NO;
+
+  _recorder->resume();
+
+  XCTAssertEqual(self.nativeRecorder.resumeCallCount, 1);
+  XCTAssertTrue(_recorder->isPaused());
+  XCTAssertFalse(_recorder->isRecording());
+}
+
 - (void)testStopReturnsErrorWhileIdle {
   auto result = _recorder->stop();
 
@@ -488,7 +526,7 @@ public:
 
 - (void)testStopSucceedsAfterStartAndResetsState {
   self.audioEngine.state = AudioEngineStateRunning;
-  auto startResult = _recorder->start("");
+  auto startResult = _recorder->start();
   XCTAssertTrue(startResult.is_ok());
 
   auto stopResult = _recorder->stop();
@@ -497,9 +535,9 @@ public:
   XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
   XCTAssertEqual(_recorder->currentFilePath(), "");
-  XCTAssertTrue(std::get<0>(stopResult.unwrap()).empty());
-  XCTAssertEqual(std::get<1>(stopResult.unwrap()), 0);
-  XCTAssertEqual(std::get<2>(stopResult.unwrap()), 0);
+  XCTAssertTrue(stopResult.unwrap().paths.empty());
+  XCTAssertEqual(stopResult.unwrap().size, 0);
+  XCTAssertEqual(stopResult.unwrap().duration, 0);
 }
 
 - (void)testStopClearsConfiguredStateButPreservesConfiguredIntent {
@@ -511,7 +549,7 @@ public:
   XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
   _recorder->connect(adapterFixture.handle);
 
-  auto startResult = _recorder->start("");
+  auto startResult = _recorder->start();
   XCTAssertTrue(startResult.is_ok());
   XCTAssertTrue(_recorder->fileOutputConfigured());
   XCTAssertTrue(_recorder->callbackOutputConfigured());
@@ -536,10 +574,10 @@ public:
   self.nativeRecorder.mockResolvedInputFormat = [self validMultichannelFormat];
 
   XCTAssertTrue(_recorder->setOnAudioReadyCallback(48000, 256, 1, 99).is_ok());
-  XCTAssertTrue(_recorder->start("").is_ok());
+  XCTAssertTrue(_recorder->start().is_ok());
   XCTAssertTrue(_recorder->stop().is_ok());
 
-  auto restartResult = _recorder->start("");
+  auto restartResult = _recorder->start();
 
   XCTAssertTrue(restartResult.is_ok());
   XCTAssertTrue(_recorder->callbackOutputEnabledIntent());
@@ -548,14 +586,16 @@ public:
 
 - (void)testFileOutputSmokeTest {
   self.audioEngine.state = AudioEngineStateRunning;
-  auto enableResult = _recorder->enableFileOutput([self validFileProperties]);
-  XCTAssertTrue(enableResult.is_ok());
 
   NSString *uuid = [[NSUUID UUID] UUIDString];
   std::string fileName =
       [[NSString stringWithFormat:@"ios-recorder-smoke-%@", uuid] UTF8String];
+  auto properties = [self validFileProperties];
+  properties->path.fileName = fileName;
+  auto enableResult = _recorder->enableFileOutput(properties);
+  XCTAssertTrue(enableResult.is_ok());
 
-  auto startResult = _recorder->start(fileName);
+  auto startResult = _recorder->start();
   XCTAssertTrue(startResult.is_ok());
 
   NSString *path = NSStringFromStdString(_recorder->currentFilePath());
@@ -564,12 +604,12 @@ public:
 
   auto stopResult = _recorder->stop();
   XCTAssertTrue(stopResult.is_ok());
-  const auto &outputPaths = std::get<0>(stopResult.unwrap());
+  const auto &outputPaths = stopResult.unwrap().paths;
   XCTAssertEqual(outputPaths.size(), 1U);
   XCTAssertEqualObjects(NSStringFromStdString(outputPaths.front()),
                         [@"file://" stringByAppendingString:path]);
-  XCTAssertGreaterThanOrEqual(std::get<1>(stopResult.unwrap()), 0.0);
-  XCTAssertGreaterThanOrEqual(std::get<2>(stopResult.unwrap()), 0.0);
+  XCTAssertGreaterThanOrEqual(stopResult.unwrap().size, 0.0);
+  XCTAssertGreaterThanOrEqual(stopResult.unwrap().duration, 0.0);
   XCTAssertEqual(_recorder->currentFilePath(), "");
 
   [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
@@ -579,11 +619,11 @@ public:
   auto callbackResult = _recorder->setOnAudioReadyCallback(0, 256, 2, 99);
   XCTAssertTrue(callbackResult.is_ok());
 
-  auto result = _recorder->start("");
+  auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   XCTAssertTrue([NSStringFromStdString(result.unwrap_err())
-      containsString:@"Failed to prepare callback: Invalid callback format"]);
+      containsString:@"Failed to prepare callback: Invalid callback"]);
 }
 
 - (void)testConnectWhileActiveInitializesAdapterAndDisconnectClearsIt {
@@ -593,7 +633,7 @@ public:
   XCTAssertFalse(_recorder->isConnected());
   XCTAssertEqual(adapter->buff_.size(), 0U);
 
-  _recorder->setRecorderState(AudioRecorder::RecorderState::Recording);
+  _recorder->setRecorderState(RecorderState::Recording);
   _recorder->connect(adapterFixture.handle);
 
   XCTAssertTrue(_recorder->isConnected());
@@ -604,6 +644,74 @@ public:
   _recorder->disconnect();
 
   XCTAssertFalse(_recorder->isConnected());
+}
+
+@end
+
+/// The file type AVAudioFile writes follows the path extension, so the ADTS format is
+/// proven at the byte level: every frame must start with a sync word and its length must
+/// land exactly on the next one.
+@interface IOSEncoderAdtsTests : XCTestCase
+@end
+
+@implementation IOSEncoderAdtsTests
+
+- (void)testAacExtensionWritesSelfDelimitingAdtsFrames {
+  NSString *path = [NSTemporaryDirectory()
+      stringByAppendingPathComponent:@"ios-encoder-adts-test.aac"];
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+
+  const AudioLayout layout{.sampleRate = 44100, .channelCount = 1};
+  ios::encoder::IOSEncoder encoder(EncoderSettings{
+      .fileLayout = layout,
+      .encoding =
+          AudioFileProperties::EncodingConfig{
+              .format = AudioFileProperties::FileFormat::ADTS,
+              .bitRate = 64000,
+              .bitDepth = AudioFileProperties::BitDepth::Bit16,
+              .flacCompressionLevel = 0,
+              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+          },
+  });
+  const EncoderOutputSpec spec =
+      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::ADTS);
+  XCTAssertEqual(spec.container, AudioContainer::ADTS);
+
+  auto openResult = encoder.open(
+      StreamFormat{.layout = layout, .maxFramesPerBuffer = 1024}, spec, path.UTF8String);
+  XCTAssertTrue(openResult.is_ok(), @"%s",
+                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+
+  std::vector<float> samples(1024, 0.25f);
+  const float *channels[1] = {samples.data()};
+  for (int block = 0; block < 40; ++block) {
+    XCTAssertTrue(encoder.encode(channels, 1024).is_ok());
+  }
+  XCTAssertTrue(encoder.close().is_ok());
+
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  XCTAssertGreaterThan(data.length, adts::HEADER_SIZE);
+  const auto *bytes = static_cast<const uint8_t *>(data.bytes);
+
+  size_t offset = 0;
+  size_t frames = 0;
+  while (offset + adts::HEADER_SIZE <= data.length) {
+    adts::HeaderBytes header{};
+    std::memcpy(header.data(), bytes + offset, adts::HEADER_SIZE);
+    XCTAssertEqual(header[0], 0xFF, @"frame %zu", frames);
+    XCTAssertEqual(header[1] & 0xF6, 0xF0, @"frame %zu", frames);
+    // 13-bit frame length straddles bytes 3..5; computed here because nothing in the iOS
+    // library references the ADTS helpers, so they are not linked into the test host.
+    const size_t frameLength = ((static_cast<size_t>(header[3]) & 0x3U) << 11) |
+        (static_cast<size_t>(header[4]) << 3) | (static_cast<size_t>(header[5]) >> 5);
+    XCTAssertGreaterThan(frameLength, adts::HEADER_SIZE, @"frame %zu", frames);
+    offset += frameLength;
+    frames += 1;
+  }
+  XCTAssertEqual(offset, data.length);
+  XCTAssertGreaterThan(frames, 0u);
+
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
 @end

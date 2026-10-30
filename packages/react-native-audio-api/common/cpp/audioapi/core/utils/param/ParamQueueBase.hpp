@@ -20,7 +20,7 @@ class ParamQueueBase {
 
   /// @brief Cancel scheduled parameter changes at or after the given time.
   /// @param cancelTime The time at which to cancel scheduled changes.
-  void cancelScheduledValues(double cancelTime) {
+  virtual void cancelScheduledValues(double cancelTime) {
     eventQueue_.erase(eventQueue_.lowerBound(cancelTime), eventQueue_.end());
   }
 

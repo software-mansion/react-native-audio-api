@@ -142,6 +142,27 @@ For full API see [api.md](api.md#benchmarkhpp--timing-utilities-devdebug-only).
 
 ---
 
+### `Path.h` — path strings and file:// URLs
+
+```cpp
+audioapi::path::lowercaseExtension(path)            // "wav" for "/tmp/Take.WAV", "" when none
+audioapi::path::hasExtension(path, {"m4a", "mp4"})  // lowercase, no leading dot
+audioapi::path::hasNonFileProtocol(path)            // http://, content://, ...
+audioapi::path::normalizeFilePath(pathOrFileUrl)    // strips file:// and percent-decodes
+```
+
+Pure string work, never touches the disk (that is `FileSystem.hpp`). The extension comes from the file name only, so a dot in a directory name is not mistaken for one. `decoding::pathHasExtension` is a different, older suffix match used by the decoder.
+
+### `FileSystem.hpp` — path queries without `stat`
+
+```cpp
+audioapi::file_system::fileExists(path)     // false also when the path cannot be inspected
+audioapi::file_system::fileSizeBytes(path)  // 0 when missing or unreadable
+audioapi::file_system::removeFile(path)     // no-op when missing
+```
+
+Both wrap `std::filesystem` with an `error_code`, so they never throw. Use them instead of a local `::stat` helper; `fstat` on an fd you already opened is a different job and stays inline.
+
 ### `UnitConversion.h` — byte unit constants
 
 ```cpp
@@ -149,6 +170,10 @@ audioapi::KB_IN_BYTES   // 1024.0
 audioapi::MB_IN_BYTES   // 1024 * 1024.0
 audioapi::GB_IN_BYTES   // 1024^3.0
 ```
+
+### `AudioLayout.h` — sample rate + channel count
+
+`AudioLayout { float sampleRate; int channelCount; }` with a defaulted `operator==`. It is the file stream in `AudioFileProperties::stream` / `EncoderSettings::stream` and the `layout` of a `StreamFormat` (`encoding/StreamFormat.h`, which adds `maxFramesPerBuffer`). Hold a new pair of these as one `AudioLayout` and compare whole layouts (`inputLayout != outputLayout_`) rather than two fields. Storage typed for a native API stays native: the remux `TrackInfo` structs (`int32_t` from `AMediaFormat_getInt32`, `UInt32` from an ASBD) and the integer rates the Android encoder backends write into WAV headers and `MediaCodec` formats.
 
 ---
 
@@ -221,9 +246,15 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ---
 
+### `AudioBufferPool.hpp` — preallocated planar buffers by pointer
+
+`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, dropping it anywhere returns the buffer, and a null lease is the shutdown message, so the message struct needs a defaulted `operator==`. Not `shared_ptr`: its control block would allocate on the audio thread.
+
+---
+
 ### `VectorMath.h` — SIMD-optimized vector math
 
-SIMD-accelerated array operations (ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops.
+SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onAudioFrames`, `AudioFileWriter`, `AudioRecorderCallback`, `AudioEncoder::encode` all take one pointer per channel); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
 
 ---
 

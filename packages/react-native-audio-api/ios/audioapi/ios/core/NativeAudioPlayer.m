@@ -2,6 +2,11 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+@interface NativeAudioPlayer () {
+  int _preferredIOBufferFrames;
+}
+@end
+
 @implementation NativeAudioPlayer
 
 - (void)detachSourceNodeIfAttached:(AudioEngine *)audioEngine
@@ -22,22 +27,32 @@
 
   self.sourceNodeId = [audioEngine attachSourceNodeWithRenderBlock:self.renderBlock
                                                         sampleRate:self.sampleRate
-                                                      channelCount:self.channelCount];
+                                                      channelCount:self.channelCount
+                                            onOutputRecoveryFailed:self.onStreamFail];
 }
 
 - (bool)startPlaybackGraph:(AudioEngine *)audioEngine
 {
   [audioEngine stopIfNecessary];
   [self attachSourceNodeIfNeeded:audioEngine];
-  return [audioEngine startIfNecessary];
+
+  if (![audioEngine startIfNecessary]) {
+    [self detachSourceNodeIfAttached:audioEngine];
+    [audioEngine stopIfPossible];
+    return false;
+  }
+
+  return true;
 }
 
 - (instancetype)initWithRenderAudio:(RenderAudioBlock)renderAudio
                          sampleRate:(float)sampleRate
                        channelCount:(int)channelCount
+            preferredIOBufferFrames:(int)preferredIOBufferFrames
 {
   if (self = [super init]) {
     self.sampleRate = sampleRate;
+    _preferredIOBufferFrames = preferredIOBufferFrames;
 
     self.channelCount = channelCount;
     self.renderAudio = [renderAudio copy];
@@ -67,9 +82,13 @@
   AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
   assert(audioEngine != nil);
 
+  // AVAudioEngine adopts a new buffer duration only when it starts, so it is requested first.
+  [sessionManager setPreferredIOBufferFrames:_preferredIOBufferFrames];
+
   NSError *error = nil;
   if (![sessionManager ensureActive:false error:&error]) {
     NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
+    [sessionManager resetPreferredIOBufferFrames];
     return false;
   }
 
@@ -81,11 +100,18 @@
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
-  return [self startPlaybackGraph:audioEngine];
+  if (![self startPlaybackGraph:audioEngine]) {
+    [sessionManager resetPreferredIOBufferFrames];
+    return false;
+  }
+
+  return true;
 }
 
 - (void)stop
 {
+  [[AudioSessionManager sharedInstance] resetPreferredIOBufferFrames];
+
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   if (audioEngine != nil) {
     [self detachSourceNodeIfAttached:audioEngine];
@@ -95,21 +121,13 @@
 
 - (bool)resume
 {
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
-  assert(audioEngine != nil);
-
-  NSError *error = nil;
-  if (![sessionManager ensureActive:false error:&error]) {
-    NSLog(@"Error while re-activating audio session for playback: %@", [error debugDescription]);
-    return false;
-  }
-
-  return [self startPlaybackGraph:audioEngine];
+  return [self start];
 }
 
 - (void)suspend
 {
+  [[AudioSessionManager sharedInstance] resetPreferredIOBufferFrames];
+
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
@@ -121,6 +139,7 @@
 {
   self.renderAudio = nil;
   self.renderBlock = nil;
+  self.onStreamFail = nil;
 }
 
 @end

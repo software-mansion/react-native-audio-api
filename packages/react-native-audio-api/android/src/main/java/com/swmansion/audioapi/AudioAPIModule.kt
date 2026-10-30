@@ -10,7 +10,6 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
@@ -31,6 +30,7 @@ class AudioAPIModule(
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
     private const val TAG = "AudioAPIModule"
+    private const val INPUT_DEVICE_ERROR = "E_INPUT_DEVICE"
   }
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
@@ -93,30 +93,39 @@ class AudioAPIModule(
 
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
-    // Cleanup foreground service manager
     ForegroundServiceManager.cleanup()
+    MediaSessionManager.cleanup()
   }
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
-  override fun isFfmpegEnabled(): Boolean = !BuildConfig.RN_AUDIO_API_FFMPEG_DISABLED
+  override fun isFfmpegEnabled(): Boolean = BuildConfig.RN_AUDIO_API_FFMPEG_ENABLED
 
   override fun setAudioSessionActivity(
     enabled: Boolean,
     promise: Promise?,
   ) {
-    promise?.resolve(null)
+    MediaSessionManager.setAudioSessionActivity(enabled) { error ->
+      if (error == null) {
+        promise?.resolve(null)
+      } else {
+        promise?.reject("E_COMMUNICATION_SESSION", error)
+      }
+    }
   }
 
-  override fun setAudioSessionOptions(
-    category: String?,
-    mode: String?,
-    options: ReadableArray?,
-    allowHaptics: Boolean,
-    notifyOthersOnDeactivation: Boolean,
+  /** The iOS options are AVAudioSession settings and have no Android counterpart. */
+  override fun setSystemOptions(
+    ios: ReadableMap?,
+    android: ReadableMap?,
   ) {
-    // noting to do here
+    MediaSessionManager.setSystemOptions(
+      androidMode = android?.optionalString("mode"),
+      androidCommunicationDevice = android?.optionalString("communicationDevice"),
+    )
   }
+
+  private fun ReadableMap.optionalString(key: String): String? = if (hasKey(key)) getString(key) else null
 
   override fun disableSessionManagement() {
     // nothing to do here
@@ -126,17 +135,14 @@ class AudioAPIModule(
     focusType: String?,
     enabled: Boolean,
   ) {
-    if (!enabled) {
-      MediaSessionManager.abandonAudioFocus()
-      return
-    }
-    when (focusType) {
-      "gain" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
-      "gainTransient" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-      "gainTransientMayDuck" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-      "gainTransientExclusive" -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
-      else -> MediaSessionManager.requestAudioFocus(AudioManager.AUDIOFOCUS_GAIN)
-    }
+    val focus =
+      when (focusType) {
+        "gainTransient" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+        "gainTransientMayDuck" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+        "gainTransientExclusive" -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+        else -> AudioManager.AUDIOFOCUS_GAIN
+      }
+    MediaSessionManager.observeAudioInterruptions(focus, enabled)
   }
 
   override fun activelyReclaimSession(enabled: Boolean) {
@@ -172,13 +178,55 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
 
+  @RequiresApi(Build.VERSION_CODES.M)
   override fun setInputDevice(
     deviceId: String?,
     promise: Promise?,
   ) {
-    // TODO: noop for now, but it should be moved to upcoming
-    // audio engine implementation for android (duplex stream)
+    val device = deviceId?.let { MediaSessionManager.inputRouter.findInputDevice(it) }
+
+    if (deviceId != null && device == null) {
+      promise?.reject(INPUT_DEVICE_ERROR, "Input device with id $deviceId not found", null)
+      return
+    }
+
+    if (!MediaSessionManager.inputRouter.setPreferredInputDevice(device)) {
+      promise?.reject(
+        INPUT_DEVICE_ERROR,
+        "The running recording could not continue on the selected input device.",
+        null,
+      )
+      return
+    }
+
     promise?.resolve(null)
+  }
+
+  override fun setCommunicationDevice(
+    device: String?,
+    promise: Promise?,
+  ) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      promise?.reject("E_UNSUPPORTED", "Communication-device routing requires Android 12 (API 31) or later")
+      return
+    }
+    if (device == null) {
+      promise?.reject("E_INVALID_COMMUNICATION_DEVICE", "A communication device is required")
+      return
+    }
+
+    MediaSessionManager.setCommunicationDevice(device) { error ->
+      if (error == null) {
+        promise?.resolve(null)
+      } else {
+        promise?.reject("E_COMMUNICATION_DEVICE", error)
+      }
+    }
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  override fun getCommunicationDevice(promise: Promise?) {
+    MediaSessionManager.getCommunicationDevice { device -> promise?.resolve(device) }
   }
 
   // Notification system methods
@@ -189,9 +237,9 @@ class AudioAPIModule(
     options: ReadableMap?,
     promise: Promise?,
   ) {
+    val result = Arguments.createMap()
     try {
       if (type == null || key == null) {
-        val result = Arguments.createMap()
         result.putBoolean("success", false)
         result.putString("error", "Type and key are required")
         promise?.resolve(result)
@@ -200,11 +248,9 @@ class AudioAPIModule(
 
       MediaSessionManager.showNotification(type, key, options)
 
-      val result = Arguments.createMap()
       result.putBoolean("success", true)
       promise?.resolve(result)
     } catch (e: Exception) {
-      val result = Arguments.createMap()
       result.putBoolean("success", false)
       result.putString("error", e.message ?: "Unknown error")
       promise?.resolve(result)

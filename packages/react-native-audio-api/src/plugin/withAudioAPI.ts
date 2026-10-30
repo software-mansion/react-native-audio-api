@@ -3,10 +3,11 @@ import {
   ConfigPlugin,
   createRunOncePlugin,
   withAndroidManifest,
-  withGradleProperties,
+  withDangerousMod,
   withInfoPlist,
-  withPodfile,
 } from '@expo/config-plugins';
+const fs = require('fs');
+const path = require('path');
 const pkg = require('react-native-audio-api/package.json');
 
 interface Options {
@@ -15,9 +16,15 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
-  disableFFmpeg: boolean;
-  disableStaticExternalLibs: boolean;
+  androidFSStopWithTask: boolean;
+  enableFFmpeg?: boolean;
+  disableStaticExternalLibs?: boolean;
 }
+
+const BUILD_OPTION_KEYS = [
+  'enableFFmpeg',
+  'disableStaticExternalLibs',
+] as const;
 
 const withDefaultOptions = (options: Partial<Options>): Options => {
   return {
@@ -28,8 +35,7 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
     ],
     androidForegroundService: true,
     androidFSTypes: ['mediaPlayback'],
-    disableFFmpeg: false,
-    disableStaticExternalLibs: false,
+    androidFSStopWithTask: true,
     ...options,
   };
 };
@@ -65,7 +71,7 @@ const withAndroidPermissions: ConfigPlugin<Options> = (
 
 const withForegroundService: ConfigPlugin<Options> = (
   config,
-  { androidFSTypes }: Options
+  { androidFSTypes, androidFSStopWithTask }: Options
 ) => {
   return withAndroidManifest(config, (mod) => {
     const manifest = mod.modResults;
@@ -78,7 +84,7 @@ const withForegroundService: ConfigPlugin<Options> = (
       $: {
         'android:name':
           'com.swmansion.audioapi.system.CentralizedForegroundService',
-        'android:stopWithTask': 'true',
+        'android:stopWithTask': String(androidFSStopWithTask),
         'android:foregroundServiceType': SFTypes,
       },
       intentFilter: [],
@@ -102,116 +108,62 @@ const withForegroundService: ConfigPlugin<Options> = (
   });
 };
 
-const withFFmpegConfig: ConfigPlugin<Options> = (config, options) => {
-  const iosConf = withPodfile(config, (mod) => {
-    let contents = mod.modResults.contents;
-    const ffmpegRegex = /^.*ENV\['DISABLE_AUDIOAPI_FFMPEG'\].*$/gm;
-    const podfileString = options.disableFFmpeg
-      ? `ENV['DISABLE_AUDIOAPI_FFMPEG'] = '1'`
-      : '';
-    // No existing setting
-    if (contents.search(ffmpegRegex) === -1) {
-      if (options.disableFFmpeg) {
-        if (contents.endsWith('\n')) {
-          contents = `${contents}${podfileString}`;
-        } else {
-          contents = `${contents}\n${podfileString}`;
-        }
-        mod.modResults.contents = contents;
-      }
-    } else {
-      // Existing setting found, will replace
-      contents = contents.replace(ffmpegRegex, podfileString);
+/**
+ * Writes the given build options into the `react-native-audio-api` section of
+ * the app's package.json, which is where CocoaPods, Swift Package Manager and
+ * Gradle read them from.
+ */
+const writeBuildOptionsToPackageJson = (
+  projectRoot: string,
+  options: Options
+) => {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  const source: string = fs.readFileSync(packageJsonPath, 'utf8');
+  const packageJson = JSON.parse(source);
+
+  const section = { ...(packageJson[pkg.name] ?? {}) };
+  for (const key of BUILD_OPTION_KEYS) {
+    const value = options[key];
+    if (value === undefined) {
+      continue;
     }
-
-    mod.modResults.contents = contents;
-    return mod;
-  });
-
-  const finalConf = withGradleProperties(iosConf, (mod) => {
-    const gradleProperties = mod.modResults;
-
-    const existingIndex = gradleProperties.findIndex(
-      (prop) => prop.type === 'property' && prop.key === 'disableAudioapiFFmpeg'
-    );
-    if (existingIndex !== -1) {
-      gradleProperties.splice(existingIndex, 1);
-    } else if (!options.disableFFmpeg) {
-      // No existing setting and FFmpeg is enabled, do nothing.
-      return mod;
+    if (typeof value !== 'boolean') {
+      throw new Error(
+        `[react-native-audio-api] plugin option "${key}" must be true or false, got ${JSON.stringify(value)}.`
+      );
     }
+    section[key] = value;
+  }
+  packageJson[pkg.name] = section;
 
-    if (options.disableFFmpeg) {
-      gradleProperties.push({
-        type: 'property',
-        key: 'disableAudioapiFFmpeg',
-        value: options.disableFFmpeg ? 'true' : 'false',
-      });
-    }
-
-    return mod;
-  });
-
-  return finalConf;
+  const indent = source.match(/^[ \t]+/m)?.[0] ?? '  ';
+  const trailingNewline = source.endsWith('\n') ? '\n' : '';
+  const updated = JSON.stringify(packageJson, null, indent) + trailingNewline;
+  if (updated !== source) {
+    fs.writeFileSync(packageJsonPath, updated);
+  }
 };
 
-const withStaticExternalLibsConfig: ConfigPlugin<Options> = (
-  config,
-  options
-) => {
-  const iosConf = withPodfile(config, (mod) => {
-    let contents = mod.modResults.contents;
-    const staticLibsRegex =
-      /^.*ENV\['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'\].*$/gm;
-    const podfileString = options.disableStaticExternalLibs
-      ? `ENV['DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS'] = '1'`
-      : '';
-    // No existing setting
-    if (contents.search(staticLibsRegex) === -1) {
-      if (options.disableStaticExternalLibs) {
-        if (contents.endsWith('\n')) {
-          contents = `${contents}${podfileString}`;
-        } else {
-          contents = `${contents}\n${podfileString}`;
-        }
-        mod.modResults.contents = contents;
-      }
-    } else {
-      // Existing setting found, will replace
-      contents = contents.replace(staticLibsRegex, podfileString);
-    }
+// Registered on both platforms so a single-platform prebuild writes the file
+// too; the second run finds the file already up to date.
+const withBuildOptions: ConfigPlugin<Options> = (config, options) => {
+  const isAnyBuildOptionGiven = BUILD_OPTION_KEYS.some(
+    (key) => options[key] !== undefined
+  );
+  if (!isAnyBuildOptionGiven) {
+    return config;
+  }
 
-    mod.modResults.contents = contents;
-    return mod;
-  });
-
-  const finalConf = withGradleProperties(iosConf, (mod) => {
-    const gradleProperties = mod.modResults;
-
-    const existingIndex = gradleProperties.findIndex(
-      (prop) =>
-        prop.type === 'property' &&
-        prop.key === 'disableAudioapiStaticExternalLibs'
-    );
-    if (existingIndex !== -1) {
-      gradleProperties.splice(existingIndex, 1);
-    } else if (!options.disableStaticExternalLibs) {
-      // No existing setting and static external libs are enabled, do nothing.
-      return mod;
-    }
-
-    if (options.disableStaticExternalLibs) {
-      gradleProperties.push({
-        type: 'property',
-        key: 'disableAudioapiStaticExternalLibs',
-        value: options.disableStaticExternalLibs ? 'true' : 'false',
-      });
-    }
-
-    return mod;
-  });
-
-  return finalConf;
+  for (const platform of ['ios', 'android'] as const) {
+    config = withDangerousMod(config, [
+      platform,
+      (mod) => {
+        writeBuildOptionsToPackageJson(mod.modRequest.projectRoot, options);
+        return mod;
+      },
+    ]);
+  }
+  return config;
 };
 
 const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
@@ -231,13 +183,7 @@ const withAudioAPI: ConfigPlugin<Options> = (config, optionsIn) => {
     config = withIosMicrophonePermission(config, options);
   }
 
-  if (options.disableFFmpeg !== undefined) {
-    config = withFFmpegConfig(config, options);
-  }
-
-  if (options.disableStaticExternalLibs !== undefined) {
-    config = withStaticExternalLibsConfig(config, options);
-  }
+  config = withBuildOptions(config, options);
 
   return config;
 };

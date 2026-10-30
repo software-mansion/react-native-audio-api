@@ -9,7 +9,7 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
   private node: globalThis.AudioBufferSourceNode;
   private hasBeenStarted: boolean = false;
   private _loopSkip: boolean = false;
-  private _onLoopEnded: ((event: object) => void) | undefined = undefined;
+  private _onloopended: ((event: object) => void) | undefined = undefined;
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
@@ -140,22 +140,22 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
     this._loopSkip = value;
   }
 
-  public get onEnded(): ((event: Event) => void) | null {
+  public get onended(): ((event: Event) => void) | null {
     return this.node.onended as ((event: Event) => void) | null;
   }
 
-  public set onEnded(callback: ((event: Event) => void) | null) {
+  public set onended(callback: ((event: Event) => void) | null) {
     this.node.onended = callback as
       | ((this: AudioScheduledSourceNode, ev: Event) => unknown)
       | null;
   }
 
-  public get onLoopEnded(): ((event: object) => void) | undefined {
-    return this._onLoopEnded;
+  public get onloopended(): ((event: object) => void) | undefined {
+    return this._onloopended;
   }
 
   // The browser Web Audio API has no per-loop event; callback is stored but never fired.
-  public set onLoopEnded(callback: ((event: object) => void) | null) {
-    this._onLoopEnded = callback ?? undefined;
+  public set onloopended(callback: ((event: object) => void) | null) {
+    this._onloopended = callback ?? undefined;
   }
 }

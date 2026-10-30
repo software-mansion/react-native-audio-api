@@ -4,17 +4,10 @@
 
 #include <algorithm>
 #include <chrono>
+#include <memory>
+#include <utility>
 
 namespace audioapi {
-
-NodeAudioPlayer::NodeAudioPlayer(
-    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-    float sampleRate,
-    int channelCount)
-    : renderAudio_(renderAudio),
-      buffer_(std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate)),
-      sampleRate_(sampleRate),
-      channelCount_(channelCount) {}
 
 NodeAudioPlayer::~NodeAudioPlayer() {
   // Always join here — do not gate on isInitialized_. After cleanup()/stop()
@@ -129,14 +122,29 @@ void NodeAudioPlayer::run() {
       continue;
     }
 
-    buffer_->zero();
-    renderAudio_(buffer_.get(), RENDER_QUANTUM_SIZE);
-    // Peak-normalize the rendered quantum before it would reach the hardware.
-    // This limiting lives in the player (not the destination node) so offline
-    // renders stay spec-accurate.
-    buffer_->normalize();
+    renderBuffer_->zero();
+    renderNormalizedQuantum(RENDER_QUANTUM_SIZE);
     std::this_thread::sleep_for(quantumDuration);
   }
+}
+
+std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    int channelCount,
+    std::atomic<uint32_t> &currentRenders,
+    std::weak_ptr<AudioContext> context,
+    std::mutex *driverMutex,
+    AudioContextLatencyHint latencyHint,
+    AndroidOutputProfile /*outputProfile*/) {
+  return std::make_shared<NodeAudioPlayer>(
+      renderAudio,
+      sampleRate,
+      channelCount,
+      currentRenders,
+      std::move(context),
+      driverMutex,
+      latencyHint);
 }
 
 } // namespace audioapi

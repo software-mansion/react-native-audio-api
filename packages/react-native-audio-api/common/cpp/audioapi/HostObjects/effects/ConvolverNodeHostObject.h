@@ -29,9 +29,10 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
 
  private:
   ConvolverNode *const convolverNode_;
+  std::weak_ptr<BaseAudioContext> context_;
 
   bool normalize_;
   size_t irBytes_ = 0;
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  void setBuffer(const std::shared_ptr<const AudioBuffer> &buffer);
 };
 } // namespace audioapi

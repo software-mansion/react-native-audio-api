@@ -1,3 +1,9 @@
+# Third-party and generated sources clang-format must leave alone.
+# The format scripts in package.json only enumerate files; all exclusions live here.
 **/build*/**
 **/tmp/**
 **/temp/**
+**/audioapi/libs/**
+**/audioapi/external/**
+**/audioapi/dsp/r8brain/**
+**/audioapi/android/libs/**

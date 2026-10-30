@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/HostGraph.h>
 #include <audioapi/dsp/WsolaTimeStretcher.h>
+#include <audioapi/events/AudioEvent.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -37,13 +38,14 @@ class TestableAudioBufferSourceNode : public AudioBufferSourceNode {
 
   using AudioBufferSourceNode::getCurrentPosition;
   using AudioBufferSourceNode::initStretch;
+  using AudioBufferSourceNode::isEmpty;
   using AudioBufferSourceNode::setBuffer;
 };
 
 /// Recovers the concrete audio node owned by a graph node that was just added
 /// via Graph::addNode (the unique_ptr payload lives inside the NodeHandle).
 template <typename NodeT>
-NodeT *nodeOf(utils::graph::HostGraph::Node *hostNode) {
+NodeT *nodeOf(utils::graph::HostGraph::HostVertex *hostNode) {
   return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
 }
 
@@ -53,7 +55,7 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
  protected:
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::shared_ptr<OfflineAudioContext> context;
-  utils::graph::HostGraph::Node *destinationHostNode = nullptr;
+  utils::graph::HostGraph::HostVertex *destinationHostNode = nullptr;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
@@ -93,23 +95,19 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
   }
 
   std::unique_ptr<TestableAudioBufferSourceNode> makeNode(bool pitchCorrection) {
-    BaseAudioBufferSourceOptions baseOptions;
-    baseOptions.pitchCorrection = pitchCorrection;
-    baseOptions.playbackRate = 1.0f;
-    baseOptions.detune = 0.0f;
-    AudioBufferSourceOptions options(baseOptions);
+    auto node = makeNodeWithOptions(pitchCorrection);
 
-    auto node = std::make_unique<TestableAudioBufferSourceNode>(context, options);
+    // Enough source for NUM_QUANTA at 2x.
+    return startWithBuffer(
+        std::move(node), makeSilentBuffer(NUM_QUANTA * QUANTUM * 4), pitchCorrection);
+  }
 
-    // Enough source for NUM_QUANTA at 2x plus WSOLA tail padding (mirrors HostObject setBuffer).
-    const size_t extraTailFrames = static_cast<size_t>(
-        (WsolaTimeStretcher::INPUT_LATENCY_MS + WsolaTimeStretcher::OUTPUT_LATENCY_MS) / 1000.0f *
-        SAMPLE_RATE);
-    const size_t bufferFrames = static_cast<size_t>(NUM_QUANTA * QUANTUM * 4) + extraTailFrames;
-    auto buffer = makeSilentBuffer(bufferFrames);
-    auto outputBuffer =
-        std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
-
+  /// Mirrors the HostObject: a pitch-corrected node gets its stretcher initialised
+  /// before the buffer lands, and the buffer is handed over as-is (never padded).
+  std::unique_ptr<TestableAudioBufferSourceNode> startWithBuffer(
+      std::unique_ptr<TestableAudioBufferSourceNode> node,
+      const std::shared_ptr<AudioBuffer> &buffer,
+      bool pitchCorrection) {
     if (pitchCorrection) {
       auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
           static_cast<size_t>(WsolaTimeStretcher::MAX_PLAYBACK_RATE * QUANTUM),
@@ -118,9 +116,27 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
       node->initStretch(1, static_cast<float>(SAMPLE_RATE), playbackRateBuffer);
     }
 
-    node->setBuffer(buffer, outputBuffer);
+    node->setBuffer(buffer, makeOutputBuffer());
     node->start(0.0);
     return node;
+  }
+
+  std::unique_ptr<TestableAudioBufferSourceNode> makeNodeWithOptions(bool pitchCorrection) {
+    BaseAudioBufferSourceOptions baseOptions;
+    baseOptions.pitchCorrection = pitchCorrection;
+    baseOptions.playbackRate = 1.0f;
+    baseOptions.detune = 0.0f;
+    return std::make_unique<TestableAudioBufferSourceNode>(
+        context, AudioBufferSourceOptions(baseOptions));
+  }
+
+  std::unique_ptr<TestableAudioBufferSourceNode> makeNodeWithoutBuffer() {
+    return std::make_unique<TestableAudioBufferSourceNode>(
+        context, AudioBufferSourceOptions(BaseAudioBufferSourceOptions()));
+  }
+
+  std::shared_ptr<DSPAudioBuffer> makeOutputBuffer() {
+    return std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
   }
 };
 
@@ -163,6 +179,236 @@ TEST_F(AudioBufferSourceNodeTest, WithoutPitchCorrectionPlaybackRateModulationAd
   constexpr double TOLERANCE = 2.0 * QUANTUM / static_cast<double>(SAMPLE_RATE);
 
   EXPECT_NEAR(node->getCurrentPosition(), EXPECTED_POSITION, TOLERANCE);
+}
+
+/// Spec ("Playback of AudioBuffer Contents"): a null buffer forces the stop time to
+/// currentTime, so a started source with no buffer ends in the first rendered quantum,
+/// not when `when` arrives. Without this, processNode() bails on the empty buffer
+/// forever and `ended` never fires.
+TEST_F(AudioBufferSourceNodeTest, StartedWithNullBufferEndsOnFirstRenderInsteadOfAtStartTime) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 51;
+  static constexpr double START_BEYOND_RENDERED_RANGE = 4.0;
+
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  node->start(START_BEYOND_RENDERED_RANGE, /*offset=*/0.0);
+  EXPECT_TRUE(node->isScheduled());
+
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+
+  processGraph(); // `ended` must not fire a second time
+}
+
+/// The setter acquires a buffer assigned after start(), so content that lands before
+/// the first render is played (WPT audiobuffersource-grain "set buffer after start").
+TEST_F(AudioBufferSourceNodeTest, BufferAssignedAfterStartButBeforeFirstRenderIsPlayed) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 52;
+
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .Times(0);
+
+  node->start(/*when=*/0.0, /*offset=*/0.0);
+  node->setBuffer(makeSilentBuffer(NUM_QUANTA * QUANTUM), makeOutputBuffer());
+
+  processGraph();
+  EXPECT_TRUE(node->isPlaying());
+  EXPECT_FALSE(node->isEmpty());
+}
+
+/// Once a null-buffer source has ended, a buffer assigned later must be dropped instead
+/// of resurrecting the node into playing (and ending a second time) at `when`.
+TEST_F(AudioBufferSourceNodeTest, BufferAssignedAfterNullBufferSourceEndedIsIgnored) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 53;
+
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  node->start(/*when=*/0.0, /*offset=*/0.0);
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+
+  node->setBuffer(makeSilentBuffer(NUM_QUANTA * QUANTUM), makeOutputBuffer());
+  EXPECT_TRUE(node->isEmpty());
+
+  for (size_t q = 0; q < NUM_QUANTA; ++q) {
+    processGraph();
+  }
+
+  EXPECT_TRUE(node->isFinished());
+  EXPECT_TRUE(node->isEmpty());
+}
+
+/// Only the host thread publishes the output channel number. Applying an older
+/// buffer on the audio thread must not overwrite the width the host published
+/// for a newer one, or the host would skip the renegotiation for the next change.
+TEST_F(AudioBufferSourceNodeTest, BufferSwapKeepsHostPublishedOutputChannelNumber) {
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->setOutputChannelNumber(1);
+
+  auto olderStereoBuffer =
+      std::make_shared<AudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE));
+  node->setBuffer(
+      olderStereoBuffer,
+      std::make_shared<DSPAudioBuffer>(QUANTUM, 2, static_cast<float>(SAMPLE_RATE)));
+
+  EXPECT_EQ(node->getOutputChannelNumber(), 1u);
+}
+
+/// The stretcher holds ~INPUT_LATENCY + OUTPUT_LATENCY of audio. The buffer used to be
+/// copied with that much silence appended so the node outlived its last sample; now
+/// the node plays the buffer as handed over and feeds the stretcher silence itself
+/// once the source runs dry, ending only after the tail has drained.
+TEST_F(AudioBufferSourceNodeTest, PitchCorrectedSourceDrainsStretcherTailAfterBufferEnds) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 54;
+  // At the modulated 2x rate the whole buffer is consumed in two quanta.
+  static constexpr size_t BUFFER_FRAMES = 2 * QUANTUM * 2;
+  static constexpr size_t QUANTA_TO_CONSUME_BUFFER = 2;
+  const size_t tailFrames = WsolaTimeStretcher::latencyTailFrames(SAMPLE_RATE);
+  const size_t quantaToDrainTail = tailFrames / (2 * QUANTUM) + 1;
+
+  auto *node = addNode(startWithBuffer(
+      makeNodeWithOptions(/*pitchCorrection=*/true),
+      makeSilentBuffer(BUFFER_FRAMES),
+      /*pitchCorrection=*/true));
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  for (size_t q = 0; q < QUANTA_TO_CONSUME_BUFFER; ++q) {
+    renderQuantumWithModulation(*node, MODULATION);
+  }
+  EXPECT_TRUE(node->isPlaying()) << "the source ran dry but the stretcher tail is not drained";
+
+  const double bufferDuration = static_cast<double>(BUFFER_FRAMES) / SAMPLE_RATE;
+  size_t quantaUntilEnded = 0;
+  while (!node->isFinished() && quantaUntilEnded <= quantaToDrainTail) {
+    renderQuantumWithModulation(*node, MODULATION);
+    ++quantaUntilEnded;
+    if (node->isPlaying()) {
+      EXPECT_LE(node->getCurrentPosition(), bufferDuration)
+          << "the reported position must not run past the real buffer into the tail";
+    }
+  }
+
+  EXPECT_TRUE(node->isFinished()) << "the node never ended after the tail drained";
+  EXPECT_GE(quantaUntilEnded, quantaToDrainTail - 1);
+}
+
+/// Without the stretcher in the loop (rate 1 skips it) there is nothing to drain, so a
+/// pitch-corrected node ends as soon as its buffer does.
+TEST_F(AudioBufferSourceNodeTest, PitchCorrectedSourceAtUnityRateEndsWithItsBuffer) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 55;
+  static constexpr size_t BUFFER_FRAMES = 2 * QUANTUM;
+
+  auto *node = addNode(startWithBuffer(
+      makeNodeWithOptions(/*pitchCorrection=*/true),
+      makeSilentBuffer(BUFFER_FRAMES),
+      /*pitchCorrection=*/true));
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  processGraph();
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+}
+
+/// A source that is disconnected before its stop frame is never pulled again, so its
+/// render step (the only place it used to advance to FINISHED) never runs. It must still
+/// end once the clock passes the stop frame, fire `ended` exactly once and then be
+/// compacted out of the graph, otherwise every stop()+disconnect() churn strands a node.
+TEST_F(AudioBufferSourceNodeTest, SourceDisconnectedBeforeStopFrameStillEndsAndIsFreed) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 56;
+
+  auto *graph = context->getGraph().get();
+  auto *hostNode = graph->addNode(makeNode(/*pitchCorrection=*/true));
+  ASSERT_TRUE(graph->addEdge(hostNode, destinationHostNode).is_ok());
+  auto *node = nodeOf<TestableAudioBufferSourceNode>(hostNode);
+  std::weak_ptr<utils::graph::NodeHandle> handleWatch = hostNode->handle;
+
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  processGraph();
+  ASSERT_TRUE(node->isPlaying());
+
+  // Same JS tick as the stop: the node loses its consumer before the stop frame renders.
+  node->stop(context->getCurrentTime());
+  ASSERT_TRUE(graph->removeAllEdges(hostNode).is_ok());
+  ASSERT_TRUE(graph->removeNode(hostNode).is_ok());
+
+  // Quantum starting at the stop frame itself: still owed to the render path's rules,
+  // the stop frame is not strictly in the past yet.
+  processGraph();
+  EXPECT_FALSE(node->isFinished());
+
+  // First quantum that starts after the stop frame: the unpulled node must finish.
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+
+  // Orphaned + finished: compaction releases the graph's handle, the host side frees the
+  // ghost. `node` dangles from here on.
+  processGraph();
+  graph->collectDisposedNodes();
+  EXPECT_TRUE(handleWatch.expired()) << "the stranded node was never freed";
+}
+
+/// Control: a source that stays connected still finishes through its render step, not the
+/// unpulled tick, so a stop frame inside a rendered quantum ends the node within that same
+/// quantum exactly as before (the tick could not have done it: the stop frame is not yet in
+/// the past at the start of the quantum).
+TEST_F(AudioBufferSourceNodeTest, ConnectedSourceStillEndsThroughRenderPath) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 57;
+
+  auto *node = addNode(makeNode(/*pitchCorrection=*/false));
+  node->assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID))
+      .Times(testing::AnyNumber());
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+
+  processGraph();
+  ASSERT_TRUE(node->isPlaying());
+
+  node->stop(context->getCurrentTime() + 0.5 * QUANTUM / SAMPLE_RATE);
+  processGraph();
+  EXPECT_TRUE(node->isFinished());
+  processGraph(); // `ended` must not fire a second time
 }
 
 // NOLINTEND

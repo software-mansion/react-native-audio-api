@@ -1,0 +1,48 @@
+---
+sidebar_position: 2
+---
+
+# useSystemVolume
+
+<br />
+
+A React hook that returns the current system output volume and re-renders the component whenever the user changes it, for example with the hardware volume buttons.
+
+While a component using the hook is mounted, the hook:
+- enables volume observation with [`observeVolumeChanges`](../system/audio-manager.mdx#observevolumechanges),
+- subscribes to the `volumeChange` [system event](../system/audio-manager.mdx#addsystemeventlistener),
+- disables the observation and removes the subscription when the component unmounts.
+
+:::info Platform support
+On iOS, volume changes are reported only while the audio session is active.
+
+Volume observation does not work on the iOS Simulator. Test it on a physical device.
+:::
+
+## Signature
+
+```tsx
+function useSystemVolume(): number;
+```
+
+## Usage
+
+```tsx
+import React from 'react';
+import { Text } from 'react-native';
+import { useSystemVolume } from 'react-native-audio-api';
+
+function VolumeLabel() {
+  const volume = useSystemVolume();
+
+  return <Text>Volume: {Math.round(volume * 100)}%</Text>;
+}
+```
+
+## Return value
+
+#### Returns `number`.
+
+The system output volume in the range `0` to `1`, rounded to two decimal places.
+
+The hook starts at `0` and updates on the first volume change, so the value does not reflect the real volume until the user changes it.

@@ -4,6 +4,8 @@
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
+#include <audioapi/utils/Macros.h>
+#include <audioapi/utils/SerialTaskExecutor.hpp>
 
 #include <memory>
 
@@ -20,6 +22,8 @@ class AudioRecorderHostObject : public HostObject {
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker,
       AudioRecorderOptions options);
+  ~AudioRecorderHostObject() override;
+  DELETE_COPY_AND_MOVE(AudioRecorderHostObject);
 
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);
@@ -47,6 +51,10 @@ class AudioRecorderHostObject : public HostObject {
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
+  /// Lifecycle calls run FIFO here. Declared after audioRecorder_: the lane destructor drains
+  /// queued tasks (including the stop queued by ~AudioRecorderHostObject) before joining.
+  std::shared_ptr<SerialTaskExecutor> lifecycleLane_;
+  /// Promise vendor over lifecycleLane_.
   std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 

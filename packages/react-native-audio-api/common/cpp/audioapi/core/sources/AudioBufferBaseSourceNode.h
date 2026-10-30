@@ -27,7 +27,7 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
-  /// @note Audio Thread only
+  /// @note JS Thread only, and only while the node has no content yet
   void initStretch(
       size_t channelCount,
       float sampleRate,
@@ -51,6 +51,12 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
 
   virtual bool isEmpty() const = 0;
 
+  /// @brief Whether a started source that is rendered while `isEmpty()` ends
+  /// immediately instead of staying scheduled until content arrives.
+  virtual bool endsWhenStartedEmpty() const {
+    return true;
+  }
+
   virtual void runBufferProcessor(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       size_t startOffset,
@@ -64,6 +70,10 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   const bool pitchCorrection_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
+  /// Silence still owed to the stretcher after the source runs dry, so the audio it
+  /// buffers is played out instead of being cut off with the last real sample. This
+  /// replaces padding the buffer itself, which would force a private copy per node.
+  size_t stretchTailFramesLeft_ = 0;
 
   const std::shared_ptr<AudioParam> detuneParam_;
   const std::shared_ptr<AudioParam> playbackRateParam_;

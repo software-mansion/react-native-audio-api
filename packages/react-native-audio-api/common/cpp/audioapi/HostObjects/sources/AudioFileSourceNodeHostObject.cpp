@@ -37,8 +37,8 @@ AudioFileSourceNodeHostObject::AudioFileSourceNodeHostObject(
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, duration),
       JSI_EXPORT_PROPERTY_GETTER(AudioFileSourceNodeHostObject, routedThroughMediaElement));
   addSetters(
-      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onPositionChanged),
-      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onBufferingStateChanged),
+      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onpositionchanged),
+      JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, onbufferingstatechanged),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, volume),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, playbackRate),
       JSI_EXPORT_PROPERTY_SETTER(AudioFileSourceNodeHostObject, preservesPitch),
@@ -143,12 +143,12 @@ JSI_HOST_FUNCTION_IMPL(AudioFileSourceNodeHostObject, seekToTime) {
   return jsi::Value::undefined();
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onPositionChanged) {
+JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onpositionchanged) {
   audioFileSourceNode_->assignOnPositionChangedCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
-JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onBufferingStateChanged) {
+JSI_PROPERTY_SETTER_IMPL(AudioFileSourceNodeHostObject, onbufferingstatechanged) {
   audioFileSourceNode_->assignOnBufferingStateChangeCallbackId(
       std::stoull(value.getString(runtime).utf8(runtime)));
 }

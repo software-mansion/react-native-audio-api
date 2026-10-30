@@ -1,0 +1,137 @@
+---
+sidebar_position: 2
+sidebar_custom_props:
+  tags:
+    - research
+    - wip
+---
+
+import { IOS } from '@site/src/components/Badges';
+
+# Interruptions
+
+## Library behavior
+
+### Resume recording after an interruption <IOS /> {#resumerecordingafteraninterruption}
+
+*Extension of `audiodocs/docs/system/audio-manager.mdx#resumerecordingafteraninterruption`.*
+
+An interruption is the system taking the audio session away due to a phone call, an alarm, or another non-mixable audio session. It deactivates the session and stops the I/O unit. Audio playback and capture therefore stop.
+
+A resume that completes while the app is still **backgrounded** is possible only when all of the conditions below hold.
+
+#### App configuration
+
+Refer to the following:
+* `audiodocs/docs/system/audio-manager.mdx#resumerecordingafteraninterruption` for an example configuration.
+* Apple guidelines.
+  * [Configuring background execution modes](https://developer.apple.com/documentation/xcode/configuring-background-execution-modes).
+    * [Configuring your app for media playback](https://developer.apple.com/documentation/avfoundation/configuring-your-app-for-media-playback).
+
+#### Execution
+
+To complete a background resume, audio I/O must have been started in the foreground, and it must still have been running when the app went to the background. The background audio mode lets that already-running I/O *continue*; it does not allow *starting* audio from the background. iOS treats an `interruption` event of type `ended` as the wake on which a background resume may be attempted. A later background timer is not such a wake. Another app must have released the audio route and the microphone. For recording, the recorder must not have been stopped with `AudioRecorder.stop()`, because stopping ends the track.
+
+#### iOS policy
+
+iOS policy determines the overall outcome of restarts. Activating the session and starting I/O are independent steps. An active session does not grant permission to run I/O. Even when every condition above is met, iOS may still refuse the restart: it applies internal checks on why the app is awake. The library therefore does not promise a background restart after an interruption. Because of this, the library retries with a best-effort strategy when the app returns to the foreground after a failed resume.
+
+## OS behavior and UX
+
+### Possible policies <IOS />
+
+On one hand, iOS is quite restrictive about an app's background activity because of privacy implications. On the other hand, there is still a wide range of policies an app developer might want to adopt. The library currently **doesn't expose a way to configure all of them**. The possible policies include:
+
+* Playback resume.
+    * Follow `shouldResume` OR ignore `shouldResume` and always resume.
+        * [`shouldResume`](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume?language=objc#Discussion)
+            > Apps that don’t require user input to begin audio playback (such as games) can ignore this flag and resume playback when an interruption ends.
+        * **Short-term decision.** The more compatible choice is to *follow* `shouldResume`.
+* Recording resume.
+    * Always resume OR never resume
+        * Apple seems to promote not resuming after an interruption, but it is not a hard requirement:
+            > Closing the Smart Folio automatically mutes the iPad microphone and by default interrupts the audio session associated with it. If a VoIP app restarts the audio session when people reopen their Smart Folio, it risks invading people’s privacy by unmuting the microphone without their knowledge. You can inspect an audio-session interruption to help determine the right way to respond; for developer guidance, see [Handling audio interruptions](https://developer.apple.com/documentation/avfaudio/handling-audio-interruptions?language=objc).
+        * [Handling audio interruptions](https://developer.apple.com/documentation/avfaudio/handling-audio-interruptions?language=objc) on recording:
+            > Recent iPad models provide a feature that mutes the built-in microphone at the hardware level when the user closes the device’s Smart Folio cover. If your app plays and **records audio**, you may want to continue playback even if the system mutes the microphone. You can disable the default interruption behavior by setting the [AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/overridemutedmicrophoneinterruption?language=objc) option when configuring your audio session.
+        * **Short-term decision.** The more compatible and desired option by our users is to *always resume*.
+    * (OR follow `shouldResume`)
+        * `shouldResume` apparently doesn't refer to recording according to a few Apple pages, which only mention playback: [Handle audio session interruptions](https://developer.apple.com/documentation/avfaudio/handling-audio-interruptions#Handle-audio-session-interruptions), [`shouldResume` discussion](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume#Discussion), [Handling interruptions in Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/playing-audio#Handling-interruptions).
+* More policies?
+    * It can be seen that the built-in iOS voice recorder app is able to continue recording even when the phone is *ringing*. Later, it stops recording after *answering a call*.
+        * Our library goes into interrupted state even when merely *ringing*.
+        * Hypothesis: this can probably be configured by looking at the other keys of [AVAudioSessionInterruptionNotification](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionnotification?language=objc).
+            * We ignore [`AVAudioSessionInterruptionReasonKey`](https://developer.apple.com/documentation/avfaudio/avaudiosessioninterruptionreasonkey?language=objc) for example. Is it useful in this case? It is not well documented.
+
+### Exact `shouldResume` semantics <IOS />
+
+It is an option that can be retrieved when handling an interruption of type `ended`. According to [Apple docs](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume):
+> An option that indicates the interruption by another audio session has ended and the app can resume its audio session. [...]
+>
+> It serves as a hint that it’s appropriate for your app to resume audio playback without waiting for user input.
+>
+> Apps that don’t require user input to begin audio playback (such as games) can ignore this flag and resume playback when an interruption ends.
+
+In most cases, `shouldResume` seems to be `YES`. It is not obvious in which cases it is `NO`, which makes testing harder. The official documentation isn't very helpful.
+
+From experiments, one example of the `NO` case was found. See the *"Start record; go background; interrupt with meet.jit.si; disconnect and close the Safari tab; stop record"* test below. It is not obvious *why* this test emits such an outcome. There is one hyphothesis:
+
+* It is probably due to [`routeConfigurationChange`](https://developer.apple.com/documentation/avfaudio/avaudiosession/routechangereason/routeconfigurationchange), which is emitted when the app is interrupted with such a WebRTC call.
+    * From ["Responding to audio route changes"](https://developer.apple.com/documentation/avfaudio/responding-to-audio-route-changes).
+        > However, when users disconnect their headphones, they don’t want to automatically share what they’re listening to with others. Applications **should** respect this implicit **privacy request** and automatically **pause playback when users disconnect their headphones**.
+
+:::note Deprecation note
+The current approach to retrieve the resumption recommendation via [`AVAudioSession.InterruptionOptions`](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions) and [`shouldResume`](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume) seems to be deprecated.
+
+The alternative is to use [`AVAudioSession.ResumptionRecommendation`](https://developer.apple.com/documentation/avfaudio/avaudiosession/resumptionrecommendation) instead. It doesn't seem to be documented nearly at all, though. What's interesting is that even ["Handling audio interruptions"](https://developer.apple.com/documentation/avfaudio/handling-audio-interruptions) still mentions the old `*Options` approach, instead of the `*Recommendation*`.
+:::
+
+### Useful documentation pages, headers, etc.
+
+* `AudioSessionTypes.h`
+    * `/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/CoreAudioTypes.framework/Headers/AudioSessionTypes.h`
+        *   ```c
+            AVAudioSessionErrorCodeCannotInterruptOthers = '!int', // 0x21696E74, 560557684
+            AVAudioSessionErrorCodeCannotStartPlaying = '!pla',    // 0x21706C61, 561015905
+            AVAudioSessionErrorCodeInsufficientPriority = '!pri',  // 0x21707269, 561017449
+            AVAudioSessionErrorCodeUnspecified = 'what',           // 0x77686174, 2003329396
+            ```
+        * [`AVAudioSession.ErrorCode`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode)
+* [Apple Audio Guidelines By App Type](https://developer.apple.com/library/archive/documentation/Audio/Conceptual/AudioSessionProgrammingGuide/AudioGuidelinesByAppType/AudioGuidelinesByAppType.html#//apple_ref/doc/uid/TP40007875-CH11-SW3).
+
+## Testing <IOS />
+
+It is hard to perform automatic end-to-end tests involving an interruption of the app and its audio, because they often require non-trivial interaction with the physical or digital environment, and human input and output. Until an automated solution is found, the following manual tests are recommended.
+
+:::tip
+When performing each test, save the Xcode iOS logs and note the visible behavior. That makes it much easier to draw conclusions after several tests.
+:::
+
+The following tests use the `Record` demo in the FabricExample app:
+
+* Start record; go background; interrupt with Siri; stop record
+* Start record; go background; interrupt with Siri; tell it to open FabricExample; stop record
+* Start record; go background; interrupt with meet.jit.si; disconnect; stop record
+* Start record; go background; interrupt with meet.jit.si; disconnect and close the Safari tab; stop record
+* Start record; interrupt with FaceTime; stop record
+* Start record; go background; interrupt with FaceTime; stop record
+* Record a short track and stop; start a call; play the recorded track; end the call; wait until playback ends; record again
+
+:::note
+Some of the tests above use a browser call such as meet.jit.si on purpose. It has been empirically shown to be useful in debugging because, unlike other interruption methods, it interrupts the audio session with [`shouldResume == NO`](https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume?language=objc).
+:::
+
+## ToDo
+- Test, document and possibly fix the following behaviors:
+  - iOS
+    - [ ] Playback interruptions (also combined with recording).
+      - Right now, the [`#resumerecordingafteraninterruption`](#resumerecordingafteraninterruption) section deliberately doesn't mention playback. That is not the long-term intent. The section should be generalized.
+    - [ ] More audio session options combinations, including:
+      - [ ] `iosCategory: 'playback', iosMode: 'spokenAudio'`.
+      - [ ] [`allowBluetoothHFP`](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/allowbluetoothhfp?language=objc).
+        - Interruptions recovery probably doesn't work with Bluetooth HFP sessions.
+    - [ ] Secondary audio and the library's `activelyReclaimSession` experimental method.
+      - What is the useful case for them? Are they useful?
+  - [ ] Android in the same scenarios.
+    - [ ] Make sure that behavior on both platforms is uniform.
+- `AudioContext`
+  - [ ] The library doesn't implement [`AudioContextState`'s `interrupted`](https://webaudio.github.io/web-audio-api/#dom-audiocontextstate-interrupted). Should it?

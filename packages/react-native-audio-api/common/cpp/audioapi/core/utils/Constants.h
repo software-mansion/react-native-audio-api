@@ -32,6 +32,11 @@ inline constexpr float PI = std::numbers::pi_v<float>;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT = 4;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32;
 inline constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
+// One partitioned-convolution job per IR channel (at most 4) runs in parallel.
+inline constexpr size_t CONVOLVER_THREAD_POOL_WORKER_COUNT = 4;
+// Every convolver queues one tail per quantum; a refused tail is computed on the audio thread.
+inline constexpr size_t CONVOLVER_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 128;
+inline constexpr size_t CONVOLVER_THREAD_POOL_WORKER_QUEUE_SIZE = 128;
 
 // Disposer payload size (= sizeof(std::vector<T>))
 inline constexpr size_t DISPOSER_PAYLOAD_SIZE = 24;
@@ -49,5 +54,5 @@ constexpr std::size_t hardware_destructive_interference_size = 64;
 #endif
 
 // audio param
-inline constexpr size_t AUDIO_PARAM_MAX_QUEUED_EVENTS = 64;
+inline constexpr size_t AUDIO_PARAM_MAX_QUEUED_EVENTS = 256;
 } // namespace audioapi

@@ -22,10 +22,10 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
 
   JSI_PROPERTY_GETTER_DECL(detune);
   JSI_PROPERTY_GETTER_DECL(playbackRate);
-  JSI_PROPERTY_GETTER_DECL(onPositionChangedInterval);
+  JSI_PROPERTY_GETTER_DECL(onpositionchangedInterval);
 
-  JSI_PROPERTY_SETTER_DECL(onPositionChanged);
-  JSI_PROPERTY_SETTER_DECL(onPositionChangedInterval);
+  JSI_PROPERTY_SETTER_DECL(onpositionchanged);
+  JSI_PROPERTY_SETTER_DECL(onpositionchangedInterval);
 
   JSI_HOST_FUNCTION_DECL(getInputLatency);
   JSI_HOST_FUNCTION_DECL(getOutputLatency);
@@ -36,11 +36,13 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   std::shared_ptr<AudioParamHostObject> detuneParam_;
   std::shared_ptr<AudioParamHostObject> playbackRateParam_;
 
-  int onPositionChangedInterval_;
+  int onpositionchangedInterval_;
   double inputLatency_ = 0;
   double outputLatency_ = 0;
   bool pitchCorrection_;
+  bool stretchHasBeenInit_ = false;
 
+  /// Configures the node's stretcher for content of this shape, inline and only once
   void initStretch(int channelCount, float sampleRate);
 };
 

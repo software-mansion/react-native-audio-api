@@ -6,11 +6,73 @@
   transition: all 150ms linear;
 }
 
+.testimonialTrack {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.testimonialSlide {
+  display: flex;
+  flex-shrink: 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.controlsContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.arrowButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--swm-navy-light-60);
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.arrowButton:hover {
+  color: var(--swm-red-light-100);
+  background-color: var(--swm-red-light-20);
+}
+
+.arrowButton:focus-visible {
+  outline: 2px solid var(--swm-red-light-100);
+  outline-offset: 2px;
+}
+
+.previousArrow > svg {
+  transform: rotate(90deg);
+}
+
+.nextArrow > svg {
+  transform: rotate(-90deg);
+}
+
+[data-theme='dark'] .arrowButton {
+  color: var(--swm-navy-light-20);
+}
+
+[data-theme='dark'] .arrowButton:hover {
+  color: var(--swm-off-white);
+  background-color: var(--swm-red-dark-140);
+}
+
 .dotsContainer {
   display: flex;
   flex-direction: row;
   gap: 1rem;
-  width: 100%;
   justify-content: center;
 }
 

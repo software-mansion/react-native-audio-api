@@ -3,6 +3,7 @@
 #include <ReactCommon/CallInvoker.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/AudioEventPayload.h>
+#include <audioapi/events/AudioEventProducer.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/libs/concurrentqueue/concurrentqueue.h>
 #include <audioapi/libs/concurrentqueue/lightweightsemaphore.h>
@@ -27,8 +28,8 @@ using namespace facebook;
 /// Both entry points enqueue a DispatchEvent and signal itemsAvailable_:
 ///
 /// - dispatchEventFromAudioThread() — real-time audio thread (e.g. `processNode()`).
-///   Uses a pre-created moodycamel ProducerToken so try_enqueue() is wait-free and never
-///   allocates. Drops the event if the queue is full.
+///   Enqueues through the caller's own AudioEventProducer so try_enqueue() is wait-free and
+///   never allocates. Drops the event if the queue is full.
 ///
 /// - dispatchEvent() — any other (non-RT) thread (worker, platform/JNI callbacks, recorder
 ///   cleanup, AudioAPIModule, etc.). Uses the implicit (multi-producer) enqueue path.
@@ -57,15 +58,26 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
       uint64_t listenerId,
       AudioEventPayload &&payload) noexcept override;
 
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override;
+
   /// @brief Enqueue an event from the real-time audio thread.
   /// Wait-free and allocation-free on the calling thread; drops when the queue is full.
   bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
       AudioEvent eventName,
       uint64_t listenerId,
       AudioEventPayload &&payload) noexcept override;
 
  private:
+#ifdef RN_AUDIO_API_NODE
+  // The WPT harness runs dozens of test files, each with its own contexts, in
+  // one process. Queue blocks claimed by a producer are never recycled, so at
+  // the app-sized capacity the supply runs out mid-run and every later
+  // audio-thread event is dropped; the extra headroom keeps a run honest.
+  static constexpr size_t kDispatchCapacity = 8192;
+#else
   static constexpr size_t kDispatchCapacity = 256;
+#endif
 
   struct DispatchEvent {
     AudioEvent event{};
@@ -84,12 +96,9 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
   std::unordered_map<AudioEvent, std::unordered_map<uint64_t, std::shared_ptr<jsi::Function>>>
       eventHandlers_;
 
-  // Single producer-to-consumer channel for every thread. Declared before
-  // audioProducerToken_ so the token can bind to it during construction.
+  // Single producer-to-consumer channel for every thread. Audio threads bind their own
+  // AudioEventProducer to it; every other thread uses the implicit-producer path.
   moodycamel::ConcurrentQueue<DispatchEvent> dispatchQueue_;
-  // Dedicated token for the audio thread; lets it enqueue without the implicit-producer
-  // lookup/allocation that the first enqueue from a new thread would otherwise trigger.
-  moodycamel::ProducerToken audioProducerToken_;
   // Counts queued items; workerThread_ waits on it instead of busy-spinning.
   moodycamel::LightweightSemaphore itemsAvailable_;
   std::atomic<bool> isExiting_{false};

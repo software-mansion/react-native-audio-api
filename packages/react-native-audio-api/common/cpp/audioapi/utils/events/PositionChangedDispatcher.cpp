@@ -3,14 +3,16 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
 PositionChangedDispatcher::PositionChangedDispatcher(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    std::shared_ptr<AudioEventProducer> audioEventProducer,
     int intervalInFrames,
     bool shouldFlush)
-    : positionChangedEvent_(audioEventHandlerRegistry),
+    : positionChangedEvent_(audioEventHandlerRegistry, std::move(audioEventProducer)),
       shouldFlush_(shouldFlush),
       intervalInFrames_(intervalInFrames) {}
 

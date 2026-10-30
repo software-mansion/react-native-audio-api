@@ -2,6 +2,7 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
@@ -9,11 +10,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
-#ifdef ANDROID
-#include <audioapi/android/core/AndroidAudioRecorder.h>
-#else
-#include <audioapi/ios/core/IOSAudioRecorder.h>
-#endif
+#include <audioapi/utils/Result.hpp>
 #include <memory>
 #include <string>
 #include <utility>
@@ -25,14 +22,10 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker,
     AudioRecorderOptions options) {
-#ifdef ANDROID
-  audioRecorder_ =
-      std::make_shared<AndroidAudioRecorder>(audioEventHandlerRegistry, std::move(options));
-#else
-  audioRecorder_ = std::make_shared<IOSAudioRecorder>(audioEventHandlerRegistry, options);
-#endif
+  audioRecorder_ = createPlatformAudioRecorder(audioEventHandlerRegistry, options);
 
-  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
+  lifecycleLane_ = std::make_shared<SerialTaskExecutor>();
+  promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker, lifecycleLane_);
 
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, start),
@@ -54,38 +47,18 @@ AudioRecorderHostObject::AudioRecorderHostObject(
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency));
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  auto fileNameOverride = jsiutils::argToString(runtime, args, count, 0, "");
-  auto audioRecorder = audioRecorder_;
-
-  return promiseVendor_->createAsyncPromise(
-      [audioRecorder, fileNameOverride = std::move(fileNameOverride)]() -> PromiseResolver {
-        auto result = audioRecorder->start(fileNameOverride);
-
-        return [result = std::move(result)](
-                   jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-          auto jsResult = jsi::Object(runtime);
-
-          jsResult.setProperty(
-              runtime,
-              "status",
-              jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
-
-          if (!result.is_ok()) {
-            jsResult.setProperty(
-                runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
-          }
-
-          return jsi::Value(std::move(jsResult));
-        };
-      });
+AudioRecorderHostObject::~AudioRecorderHostObject() {
+  // Queued rather than called, so a start() still waiting on the lane cannot outlive this stop.
+  lifecycleLane_->schedule([audioRecorder = audioRecorder_]() {
+    ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
+  });
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto audioRecorder = audioRecorder_;
 
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
-    auto result = audioRecorder->stop();
+    auto result = ActiveRecorderHandle::global().tryStart(audioRecorder);
 
     return [result =
                 std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
@@ -96,16 +69,42 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
           "status",
           jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
+      if (!result.is_ok()) {
+        jsResult.setProperty(
+            runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+      }
+
+      return jsi::Value(std::move(jsResult));
+    };
+  });
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    auto result = ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
+
+    using returnValue = std::variant<jsi::Value, std::string>;
+
+    return [result = std::move(result)](jsi::Runtime &runtime) -> returnValue {
+      auto jsResult = jsi::Object(runtime);
+
+      jsResult.setProperty(
+          runtime,
+          "status",
+          jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+
       if (result.is_ok()) {
-        auto info = result.unwrap();
-        const auto &paths = std::get<0>(info);
-        auto pathsArray = jsi::Array(runtime, paths.size());
-        for (size_t i = 0; i < paths.size(); ++i) {
-          pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, paths[i]));
+        const auto &info = result.unwrap();
+        auto pathsArray = jsi::Array(runtime, info.paths.size());
+        for (size_t i = 0; i < info.paths.size(); ++i) {
+          pathsArray.setValueAtIndex(
+              runtime, i, jsi::String::createFromUtf8(runtime, info.paths[i]));
         }
         jsResult.setProperty(runtime, "paths", pathsArray);
-        jsResult.setProperty(runtime, "size", std::get<1>(info));
-        jsResult.setProperty(runtime, "duration", std::get<2>(info));
+        jsResult.setProperty(runtime, "size", info.size);
+        jsResult.setProperty(runtime, "duration", info.duration);
       } else {
         jsResult.setProperty(
             runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
@@ -117,11 +116,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isRecording) {
-  return jsi::Value(audioRecorder_->isRecording());
+  return {audioRecorder_->isRecording()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isPaused) {
-  return jsi::Value(audioRecorder_->isPaused());
+  return {audioRecorder_->isPaused()};
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
@@ -143,20 +142,44 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   return jsResult;
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
-  audioRecorder_->disableFileOutput();
-  return jsi::Value::undefined();
+namespace {
+
+PromiseResolver resolveWithUndefined() {
+  return [](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
+    return jsi::Value::undefined();
+  };
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, pause) {
-  audioRecorder_->pause();
+} // namespace
 
-  return jsi::Value::undefined();
+/// Closing a file mid-recording joins the writer thread, so it runs on the lane like stop().
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    audioRecorder->disableFileOutput();
+    return resolveWithUndefined();
+  });
+}
+
+/// Through the handle rather than the recorder, so it is excluded against the notification
+/// and audio-session paths that also drive the occupant.
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, pause) {
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    ActiveRecorderHandle::global().pause(audioRecorder);
+    return resolveWithUndefined();
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, resume) {
-  audioRecorder_->resume();
-  return jsi::Value::undefined();
+  auto audioRecorder = audioRecorder_;
+
+  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
+    ActiveRecorderHandle::global().resume(audioRecorder);
+    return resolveWithUndefined();
+  });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, connect) {
@@ -221,11 +244,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
   double duration = audioRecorder_->getCurrentDuration();
-  return jsi::Value(duration);
+  return {duration};
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, inputLatency) {
-  return jsi::Value(audioRecorder_->getInputLatency());
+  return {audioRecorder_->getInputLatency()};
 }
 
 } // namespace audioapi

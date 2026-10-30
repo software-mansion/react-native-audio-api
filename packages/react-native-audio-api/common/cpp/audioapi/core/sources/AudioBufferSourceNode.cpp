@@ -24,8 +24,8 @@ AudioBufferSourceNode::AudioBufferSourceNode(
       loopSkip_(options.loopSkip),
       loopStart_(options.loopStart),
       loopEnd_(options.loopEnd),
-      onLoopEndedEvent_(context->getAudioEventHandlerRegistry()) {
-  auto onLoopEnded = [this]() {
+      onLoopEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {
+  auto onLoopEnded = [this] {
     sendOnLoopEndedEvent();
   };
 
@@ -61,6 +61,10 @@ void AudioBufferSourceNode::setBuffer(
     return;
   }
 
+  if (isFinished()) {
+    return;
+  }
+
   if (buffer_ != nullptr) {
     context->getDisposer()->dispose(std::move(buffer_));
   }
@@ -69,20 +73,8 @@ void AudioBufferSourceNode::setBuffer(
     context->getDisposer()->dispose(std::move(audioBuffer_));
   }
 
-  if (buffer == nullptr) {
-    loopEnd_ = 0;
-    channelCount_ = AudioBufferSourceOptions::kDefaultChannelCount;
-
-    buffer_ = nullptr;
-    processor_->setBuffer(nullptr);
-    audioBuffer_ = audioBuffer;
-    return;
-  }
-
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
-  channelCount_ = static_cast<int>(buffer_->getNumberOfChannels());
-  loopEnd_ = buffer_->getDuration();
   processor_->setBuffer(buffer_);
 }
 
@@ -97,13 +89,16 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
     return;
   }
 
-  offset = std::min(offset, static_cast<double>(buffer_->getSize()) / buffer_->getSampleRate());
+  // Past the (effective) loop end, or past the buffer when not looping, playback starts
+  // at that boundary instead.
+  const auto sampleRate = buffer_->getSampleRate();
+  offset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
 
   if (loop_) {
     offset = std::min(offset, loopEnd_);
   }
 
-  vReadIndex_ = static_cast<double>(buffer_->getSampleRate() * offset);
+  vReadIndex_ = sampleRate * offset;
 }
 
 void AudioBufferSourceNode::disable() {

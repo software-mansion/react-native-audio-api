@@ -1,6 +1,7 @@
 #include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <gtest/gtest.h>
+#include <test/src/utils/TestWavFile.h>
 
 #include <cmath>
 #include <cstdio>
@@ -28,19 +29,7 @@ void removeFile(const std::string &path) {
 }
 
 void writeWavFile(const std::string &path, const std::vector<float> &frames) {
-  ma_encoder encoder;
-  ma_encoder_config config =
-      ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, channelCount, sampleRate);
-  ASSERT_EQ(ma_encoder_init_file(path.c_str(), &config, &encoder), MA_SUCCESS);
-
-  ma_uint64 framesWritten = 0;
-  EXPECT_EQ(
-      ma_encoder_write_pcm_frames(
-          &encoder, frames.data(), static_cast<ma_uint64>(frames.size()), &framesWritten),
-      MA_SUCCESS);
-  EXPECT_EQ(framesWritten, frames.size());
-
-  ma_encoder_uninit(&encoder);
+  test::writeFloatWavFile(path, frames, sampleRate, channelCount);
 }
 
 std::vector<uint8_t> readFileBytes(const std::string &path) {
@@ -133,18 +122,18 @@ TEST(AudioDecodingTest, DecodesMemoryWav) {
   removeFile(input);
 }
 
-TEST(AudioDecodingTest, ReturnsDisabledErrorForUrlProbeWhenFFmpegIsUnavailable) {
+TEST(AudioDecodingTest, RejectsUrlProbeWhenFFmpegIsUnavailable) {
   auto result = audiodecoding::probeDurationWithUrl("https://example.com/audio.mp3", 0, {});
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot probe duration from URL");
+  EXPECT_EQ(result.unwrap_err(), "Failed to open URL with FFmpeg decoder");
 }
 
-TEST(AudioDecodingTest, RejectsUnavailableDurationMetadataFromUrl) {
+TEST(AudioDecodingTest, RejectsEmptyUrlProbe) {
   auto result = audiodecoding::probeDurationWithUrl("", 0, {});
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "FFmpeg is disabled, cannot probe duration from URL");
+  EXPECT_EQ(result.unwrap_err(), "Failed to open URL with FFmpeg decoder: url is empty");
 }
 
 // NOLINTEND

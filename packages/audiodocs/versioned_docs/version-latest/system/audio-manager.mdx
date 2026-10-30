@@ -58,13 +58,15 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 #### Returns `undefined`
 
-### `setAudioSessionActivity` <IOS />
+### `setAudioSessionActivity` <IOS /> {#setaudiosessionactivity}
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
 #### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
+
+Deactivating the session while a recording is in progress or paused stops that recording first, since an inactive session would corrupt its output. The finalized files are then available through [`AudioRecorder.consumeLastRecordingResult()`](/docs/inputs/audio-recorder#consumelastrecordingresult). Prefer calling [`AudioRecorder.stop()`](/docs/inputs/audio-recorder#stop) yourself before deactivating, so the file info arrives through its promise.
 
 ### `disableSessionManagement` <IOS />
 
@@ -116,6 +118,14 @@ interval polling to check if other audio is playing.
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing volume changes |
+
+:::info
+On iOS, volume changes are reported only while the audio session is active.
+
+Volume observation does not work on the iOS Simulator. Test it on a physical device.
+:::
+
+In React components, the [`useSystemVolume`](../react/system-volume.mdx) hook enables the observation and subscribes to the event for you.
 
 #### Returns `undefined`
 

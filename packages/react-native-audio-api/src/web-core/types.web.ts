@@ -12,8 +12,8 @@ export interface AudioBufferSourceNodeBackend {
   start(when?: number, offset?: number, duration?: number): void;
   stop(when?: number): void;
 
-  get onEnded(): ((event: Event) => void) | null;
-  set onEnded(callback: ((event: Event) => void) | null);
+  get onended(): ((event: Event) => void) | null;
+  set onended(callback: ((event: Event) => void) | null);
 
   get buffer(): AudioBuffer | null;
   set buffer(buffer: AudioBuffer | null);
@@ -30,6 +30,6 @@ export interface AudioBufferSourceNodeBackend {
   get loopSkip(): boolean;
   set loopSkip(value: boolean);
 
-  get onLoopEnded(): ((event: object) => void) | undefined;
-  set onLoopEnded(callback: ((event: object) => void) | null);
+  get onloopended(): ((event: object) => void) | undefined;
+  set onloopended(callback: ((event: object) => void) | null);
 }

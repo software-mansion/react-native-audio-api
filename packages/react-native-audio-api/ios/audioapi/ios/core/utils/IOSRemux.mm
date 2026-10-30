@@ -1,0 +1,188 @@
+#import <AVFoundation/AVFoundation.h>
+#import <CoreMedia/CoreMedia.h>
+#import <Foundation/Foundation.h>
+
+#include <audioapi/ios/core/utils/IOSRemux.h>
+
+#include <string>
+
+namespace audioapi::ios::remux {
+namespace {
+
+struct TrackFormat {
+  AudioFormatID formatId{0};
+  double sampleRate{0.0};
+  UInt32 channelCount{0};
+
+  bool operator==(const TrackFormat &) const = default;
+};
+
+[[nodiscard]] NSString *nsStringFromPath(const std::string &path)
+{
+  return [[NSString alloc] initWithBytes:path.data()
+                                  length:path.size()
+                                encoding:NSUTF8StringEncoding];
+}
+
+[[nodiscard]] bool isAacFormatId(AudioFormatID formatId)
+{
+  return formatId == kAudioFormatMPEG4AAC;
+}
+
+[[nodiscard]] Result<TrackFormat, std::string> readTrackFormat(
+    AVAssetTrack *track,
+    const std::string &filePath)
+{
+  NSArray *descriptions = track.formatDescriptions;
+  if (descriptions == nil || descriptions.count == 0) {
+    return Err("Input file '" + filePath + "' is missing audio format descriptions.");
+  }
+
+  const auto *formatDescription = (__bridge CMAudioFormatDescriptionRef)descriptions[0];
+  const AudioStreamBasicDescription *asbd =
+      CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription);
+  if (asbd == nullptr) {
+    return Err("Input file '" + filePath + "' is missing audio stream basic description.");
+  }
+
+  return Ok(
+      TrackFormat{
+          .formatId = asbd->mFormatID,
+          .sampleRate = asbd->mSampleRate,
+          .channelCount = asbd->mChannelsPerFrame,
+      });
+}
+
+[[nodiscard]] Result<std::string, std::string> validateCompatible(
+    const TrackFormat &candidate,
+    const TrackFormat &reference,
+    const std::string &filePath)
+{
+  if (candidate != reference) {
+    return Err(
+        "Input file '" + filePath +
+        "' uses a different audio codec, sample rate or channel layout.");
+  }
+  return Ok(filePath);
+}
+
+} // namespace
+
+IOSRemuxResult concatAudioFiles(
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath)
+{
+  @autoreleasepool {
+    if (inputPaths.empty()) {
+      return Err("concatAudioFiles requires at least one input path.");
+    }
+
+    NSDictionary *assetOptions = @{AVURLAssetPreferPreciseDurationAndTimingKey : @YES};
+    AVMutableComposition *composition = [AVMutableComposition composition];
+    AVMutableCompositionTrack *compositionTrack =
+        [composition addMutableTrackWithMediaType:AVMediaTypeAudio
+                                 preferredTrackID:kCMPersistentTrackID_Invalid];
+    if (compositionTrack == nil) {
+      return Err("Failed to create AVMutableComposition audio track.");
+    }
+
+    TrackFormat referenceFormat;
+    bool hasReference = false;
+    CMTime cursor = kCMTimeZero;
+
+    for (const auto &path : inputPaths) {
+      NSURL *url = [NSURL fileURLWithPath:nsStringFromPath(path)];
+      if (url == nil) {
+        return Err("Failed to create file URL for '" + path + "'.");
+      }
+
+      AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url options:assetOptions];
+      NSArray<AVAssetTrack *> *audioTracks = [asset tracksWithMediaType:AVMediaTypeAudio];
+      if (audioTracks.count == 0) {
+        return Err("Input file '" + path + "' does not contain an audio stream.");
+      }
+
+      AVAssetTrack *audioTrack = audioTracks.firstObject;
+      auto trackFormatResult = readTrackFormat(audioTrack, path);
+      if (trackFormatResult.is_err()) {
+        return Err(trackFormatResult.unwrap_err());
+      }
+      const TrackFormat trackFormat = trackFormatResult.unwrap();
+
+      if (!isAacFormatId(trackFormat.formatId)) {
+        return Err(
+            "Input file '" + path + "' is not AAC-LC in M4A; only AAC-LC concat is supported.");
+      }
+
+      if (!hasReference) {
+        referenceFormat = trackFormat;
+        hasReference = true;
+      } else {
+        auto validation = validateCompatible(trackFormat, referenceFormat, path);
+        if (validation.is_err()) {
+          return validation;
+        }
+      }
+
+      NSError *insertError = nil;
+      const CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, asset.duration);
+      const BOOL inserted = [compositionTrack insertTimeRange:timeRange
+                                                      ofTrack:audioTrack
+                                                       atTime:cursor
+                                                        error:&insertError];
+      if (!inserted) {
+        NSString *message = insertError.localizedDescription ?: @"unknown error";
+        return Err(
+            "Failed to insert '" + path + "' into composition: " + std::string(message.UTF8String));
+      }
+
+      cursor = CMTimeAdd(cursor, asset.duration);
+    }
+
+    NSURL *outputURL = [NSURL fileURLWithPath:nsStringFromPath(outputPath)];
+    if (outputURL == nil) {
+      return Err("Failed to create output file URL for '" + outputPath + "'.");
+    }
+    [[NSFileManager defaultManager] removeItemAtURL:outputURL error:nil];
+
+    // AAC-in-M4A is re-encoded once through AVAssetExportPresetAppleM4A. Passthrough
+    // export and raw compressed-sample remux both fail on rotated recorder segments
+    // (different format descriptions / priming), so this is the reliable path. It
+    // stays FFmpeg-free — encoding is done by AVFoundation.
+    AVAssetExportSession *exporter =
+        [[AVAssetExportSession alloc] initWithAsset:composition
+                                         presetName:AVAssetExportPresetAppleM4A];
+    if (exporter == nil) {
+      return Err("Failed to create AVAssetExportSession for AAC concat.");
+    }
+
+    exporter.outputURL = outputURL;
+    exporter.outputFileType = AVFileTypeAppleM4A;
+
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block AVAssetExportSessionStatus exportStatus = AVAssetExportSessionStatusUnknown;
+    __block NSString *exportErrorMessage = nil;
+
+    [exporter exportAsynchronouslyWithCompletionHandler:^{
+      exportStatus = exporter.status;
+      if (exporter.error != nil) {
+        exportErrorMessage = exporter.error.localizedDescription;
+      }
+      dispatch_semaphore_signal(semaphore);
+    }];
+
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+
+    if (exportStatus != AVAssetExportSessionStatusCompleted) {
+      std::string message = "Failed to export concatenated audio";
+      if (exportErrorMessage != nil) {
+        message += ": " + std::string(exportErrorMessage.UTF8String);
+      }
+      return Err(message);
+    }
+
+    return Ok(outputPath);
+  }
+}
+
+} // namespace audioapi::ios::remux

@@ -19,6 +19,22 @@ AudioDecoderHostObject::AudioDecoderHostObject(
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithMemoryBlock));
 }
 
+namespace {
+
+PromiseResolver rejectWithMessage(std::string message) {
+  return [message = std::move(message)](jsi::Runtime &) {
+    return message;
+  };
+}
+
+PromiseResolver resolveWithAudioBuffer(std::shared_ptr<AudioBuffer> buffer) {
+  return [buffer = std::move(buffer)](jsi::Runtime &runtime) {
+    return AudioBufferHostObject::createJsObject(runtime, buffer);
+  };
+}
+
+} // namespace
+
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
@@ -31,20 +47,10 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
     auto result = audiodecoding::decodeWithMemoryBlock(data, size, sampleRate);
 
     if (result.is_err()) {
-      return [result = std::move(result)](
-                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return result.unwrap_err();
-      };
+      return rejectWithMessage(result.unwrap_err());
     }
 
-    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
-
-    return [audioBufferHostObject = std::move(audioBufferHostObject)](
-               jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-      jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-      return jsiObject;
-    };
+    return resolveWithAudioBuffer(result.unwrap());
   });
   return promise;
 }
@@ -57,20 +63,10 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
     auto result = audiodecoding::decodeWithFilePath(sourcePath, sampleRate);
 
     if (result.is_err()) {
-      return [result = std::move(result)](
-                 jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-        return result.unwrap_err();
-      };
+      return rejectWithMessage(result.unwrap_err());
     }
 
-    auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
-
-    return [audioBufferHostObject = std::move(audioBufferHostObject)](
-               jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-      jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-      return jsiObject;
-    };
+    return resolveWithAudioBuffer(result.unwrap());
   });
 
   return promise;
@@ -88,20 +84,10 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
             b64, inputSampleRate, inputChannelCount, interleaved);
 
         if (result.is_err()) {
-          return [result = std::move(result)](
-                     jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-            return result.unwrap_err();
-          };
+          return rejectWithMessage(result.unwrap_err());
         }
 
-        auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(result.unwrap());
-
-        return [audioBufferHostObject = std::move(audioBufferHostObject)](
-                   jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-          auto jsiObject = jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
-          jsiObject.setExternalMemoryPressure(runtime, audioBufferHostObject->getSizeInBytes());
-          return jsiObject;
-        };
+        return resolveWithAudioBuffer(result.unwrap());
       });
 
   return promise;

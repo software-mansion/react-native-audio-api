@@ -40,6 +40,18 @@ type PendingParamEvent = {
   mapOptions: (value: number) => Omit<ScheduleOptions, 'output'>;
 };
 
+/**
+ * Like a browser source node, a started source stays alive until it fires
+ * `ended`.
+ */
+const startedSources = new Set<AudioBufferSourceNodeStretcher>();
+
+/** Retires the processor of a source that was dropped without ever playing. */
+const abandonedSources =
+  new FinalizationRegistry<WasmAudioBufferSourceStretcherNode>((node) =>
+    node.abandon()
+  );
+
 export default class AudioBufferSourceNodeStretcher implements AudioBufferSourceNodeBackend {
   private stretcherPromise: Promise<WasmAudioBufferSourceStretcherNode> | null =
     null;
@@ -50,13 +62,13 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
   readonly detune: AudioStretcherParam;
   readonly playbackRate: AudioStretcherParam;
 
-  private _onEnded: ((event: Event) => void) | null = null;
+  private _onended: ((event: Event) => void) | null = null;
 
   private _loop: boolean = false;
   private _loopStart: number = -1;
   private _loopEnd: number = -1;
   private _loopSkip: boolean = false;
-  private _onLoopEnded: ((event: object) => void) | undefined = undefined;
+  private _onloopended: ((event: object) => void) | undefined = undefined;
 
   private _buffer: AudioBuffer | null = null;
   private bufferHasBeenSet: boolean = false;
@@ -82,6 +94,9 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     this.stretcherPromise = stretcherPromise;
     stretcherPromise.then((node) => {
       this.node = node;
+      node.setOneShot();
+      AudioBufferSourceNodeStretcher.forwardEnded(node, new WeakRef(this));
+      abandonedSources.register(this, node);
     });
 
     this.detune = new AudioStretcherParam(
@@ -115,6 +130,19 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
       }
     );
     this.buffer = (options.buffer as AudioBuffer) ?? null;
+  }
+
+  private static forwardEnded(
+    node: WasmAudioBufferSourceStretcherNode,
+    owner: WeakRef<AudioBufferSourceNodeStretcher>
+  ): void {
+    node.addEventListener('ended', (event) => {
+      const source = owner.deref();
+      if (source) {
+        startedSources.delete(source);
+        source._onended?.(event);
+      }
+    });
   }
 
   private runOnStretcher(
@@ -235,6 +263,7 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     }
 
     this.hasBeenStarted = true;
+    startedSources.add(this);
     const startAt =
       !when || when < this.context.currentTime
         ? this.context.currentTime
@@ -367,23 +396,20 @@ export default class AudioBufferSourceNodeStretcher implements AudioBufferSource
     this._loopSkip = value;
   }
 
-  get onLoopEnded(): ((event: object) => void) | undefined {
-    return this._onLoopEnded;
+  get onloopended(): ((event: object) => void) | undefined {
+    return this._onloopended;
   }
 
   // The WASM stretcher has no per-loop event; callback is stored but never fired.
-  set onLoopEnded(callback: ((event: object) => void) | null) {
-    this._onLoopEnded = callback ?? undefined;
+  set onloopended(callback: ((event: object) => void) | null) {
+    this._onloopended = callback ?? undefined;
   }
 
-  get onEnded(): ((event: Event) => void) | null {
-    return this._onEnded;
+  get onended(): ((event: Event) => void) | null {
+    return this._onended;
   }
 
-  set onEnded(callback: ((event: Event) => void) | null) {
-    this._onEnded = callback;
-    this.runOnStretcher((node) => {
-      node.onEnded = callback;
-    });
+  set onended(callback: ((event: Event) => void) | null) {
+    this._onended = callback;
   }
 }

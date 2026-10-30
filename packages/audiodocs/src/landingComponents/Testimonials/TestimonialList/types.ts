@@ -4,7 +4,7 @@ export interface Testimonial {
   company: string;
   body: string | React.ReactNode;
   link?: string;
-  image: {
+  image?: {
     alt: string;
     src: string;
   };

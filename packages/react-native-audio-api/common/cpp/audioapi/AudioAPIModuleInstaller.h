@@ -6,8 +6,10 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
+#include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -38,6 +40,8 @@ class AudioAPIModuleInstaller {
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
+    auto isRecordingOngoing = getIsRecordingOngoingFunction(jsiRuntime);
+    auto consumeLastRecordingResult = getConsumeLastRecordingResultFunction(jsiRuntime);
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
@@ -46,6 +50,9 @@ class AudioAPIModuleInstaller {
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioBuffer", createAudioBuffer);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioDecoder", createAudioDecoder);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioFileUtils", createAudioFileUtils);
+    jsiRuntime->global().setProperty(*jsiRuntime, "isRecordingOngoing", isRecordingOngoing);
+    jsiRuntime->global().setProperty(
+        *jsiRuntime, "consumeLastRecordingResult", consumeLastRecordingResult);
 
     auto audioEventHandlerRegistryHostObject =
         std::make_shared<AudioEventHandlerRegistryHostObject>(audioEventHandlerRegistry);
@@ -63,7 +70,7 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
-        1,
+        3,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
@@ -71,8 +78,25 @@ class AudioAPIModuleInstaller {
             size_t count) -> jsi::Value {
           auto sampleRate = static_cast<float>(args[0].getNumber());
 
+          auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
+          if (count > 1 && args[1].isString()) {
+            latencyHint =
+                js_enum_parser::latencyHintFromString(args[1].getString(runtime).utf8(runtime));
+          }
+
+          auto androidOutputProfile = AndroidOutputProfile::Media;
+          if (count > 2 && args[2].isString()) {
+            androidOutputProfile = js_enum_parser::androidOutputProfileFromString(
+                args[2].getString(runtime).utf8(runtime));
+          }
+
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              sampleRate, audioEventHandlerRegistry, &runtime, jsCallInvoker);
+              sampleRate,
+              androidOutputProfile,
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              latencyHint);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
@@ -120,15 +144,59 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto options = count > 0 ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
-                                   : AudioRecorderOptions{};
+          auto optionsResult = count > 0
+              ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
+              : AudioRecorderOptions::CreateFromJSIValue(runtime, jsi::Value::undefined());
+          if (optionsResult.is_err()) {
+            throw jsi::JSError(runtime, optionsResult.unwrap_err());
+          }
 
           auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, &runtime, jsCallInvoker, std::move(options));
+              audioEventHandlerRegistry,
+              &runtime,
+              jsCallInvoker,
+              std::move(optionsResult).unwrap());
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 
           return jsiObject;
+        });
+  }
+
+  static jsi::Function getIsRecordingOngoingFunction(jsi::Runtime *jsiRuntime) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "isRecordingOngoing"),
+        0,
+        [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
+            -> jsi::Value {
+          return jsi::Value(ActiveRecorderHandle::global().isRecordingOngoing());
+        });
+  }
+
+  static jsi::Function getConsumeLastRecordingResultFunction(jsi::Runtime *jsiRuntime) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "consumeLastRecordingResult"),
+        0,
+        [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
+            -> jsi::Value {
+          auto result = ActiveRecorderHandle::global().consumeLastRecordingResult();
+          if (!result.has_value()) {
+            return jsi::Value::null();
+          }
+
+          auto jsResult = jsi::Object(runtime);
+          auto pathsArray = jsi::Array(runtime, result->paths.size());
+          for (size_t i = 0; i < result->paths.size(); ++i) {
+            pathsArray.setValueAtIndex(
+                runtime, i, jsi::String::createFromUtf8(runtime, result->paths[i]));
+          }
+          jsResult.setProperty(runtime, "paths", pathsArray);
+          jsResult.setProperty(runtime, "size", result->size);
+          jsResult.setProperty(runtime, "duration", result->duration);
+
+          return jsi::Value(std::move(jsResult));
         });
   }
 
@@ -180,8 +248,7 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(args[2].getNumber());
 
           auto audioBuffer = std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate);
-          auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-          return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          return AudioBufferHostObject::createJsObject(runtime, audioBuffer);
         });
   }
 };

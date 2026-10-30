@@ -56,6 +56,18 @@ export default class AudioBuffer implements AudioBufferLike {
     return data;
   }
 
+  /**
+   * Forgets the cached channel views once the native side has cut them off from
+   * the buffer (a source node acquired this buffer's content), so the next
+   * `getChannelData` hands out a fresh view the way a browser does after it
+   * detaches the old ones.
+   *
+   * @internal
+   */
+  public invalidateChannelDataCache(): void {
+    this.channelDataCache.length = 0;
+  }
+
   public copyFromChannel(
     destination: Float32Array<ArrayBuffer>,
     channelNumber: number,
@@ -92,7 +104,7 @@ export default class AudioBuffer implements AudioBufferLike {
     options: AudioBufferOptions
   ): IAudioBuffer {
     const { numberOfChannels = 1, length, sampleRate } = options;
-    if (numberOfChannels < 1 || numberOfChannels >= 32) {
+    if (numberOfChannels < 1 || numberOfChannels > 32) {
       throw new NotSupportedError(
         `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
       );

@@ -1,22 +1,22 @@
-#ifdef RN_AUDIO_API_NODE
-#include "NodeAudioPlayer.h"
-#elif defined(ANDROID)
-#include <audioapi/android/core/AudioPlayer.h>
-#else
-#include <audioapi/ios/core/IOSAudioPlayer.h>
-#endif
-
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+
 #include <memory>
-#include <string>
 #include <thread>
 
 namespace audioapi {
+
 AudioContext::AudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry), isInitialized_(false) {
+    AndroidOutputProfile androidOutputProfile,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    AudioContextLatencyHint latencyHint)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      latencyHint_(latencyHint),
+      androidOutputProfile_(androidOutputProfile),
+      isInitialized_(false),
+      onErrorEvent_(audioEventHandlerRegistry) {
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain the channels itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
@@ -24,35 +24,23 @@ AudioContext::AudioContext(
 }
 
 AudioContext::~AudioContext() {
-  joinPendingPromiseWorker();
   if (getState() != ContextState::CLOSED) {
     std::scoped_lock lock(driverMutex_);
-    close(nullptr);
+    stopDriver();
   }
 }
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
-#ifdef RN_AUDIO_API_NODE
-  audioPlayer_ = std::make_shared<NodeAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount());
-#elif defined(ANDROID)
-  audioPlayer_ = std::make_shared<AudioPlayer>(
+  audioPlayer_ = createPlatformAudioPlayer(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
-      &driverMutex_,
+      currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
-      currentRenders_);
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      destination_->getChannelCount(),
-      currentRenders_);
-#endif
+      &driverMutex_,
+      latencyHint_,
+      androidOutputProfile_);
 }
 
 bool AudioContext::tryStartDriver() {
@@ -70,10 +58,8 @@ bool AudioContext::tryStartDriver() {
 
   if (audioPlayer_->start()) {
     isInitialized_.store(true, std::memory_order_release);
-    // The driver also starts implicitly, from the first
-    // `AudioScheduledSourceNode::start()`. Publish RUNNING here so the visible state
-    // never reports SUSPENDED while the graph is actually rendering; `resume()`
-    // reaches the same state through its promise task.
+    // Publish RUNNING here so the visible state
+    // never reports SUSPENDED while the graph is actually rendering;
     setState(ContextState::RUNNING);
     return true;
   }
@@ -82,32 +68,37 @@ bool AudioContext::tryStartDriver() {
   return false;
 }
 
-void AudioContext::close(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+void AudioContext::close(const std::shared_ptr<ContextStateResolver> &promise) {
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(promise, "Cannot close a closed audio context.");
+    promise->reject("Cannot close a closed audio context.");
     return;
   }
 
+  stopDriver();
+  promise->resolve();
+}
+
+void AudioContext::stopDriver() {
   audioPlayer_->stop();
   waitForRenderQuiescence();
 
   // No audio-thread consumer after stop; allow producer self-drain for any
   // remaining graph mutations (and flush events already queued).
   getGraph()->enableProducerSelfDrain();
+
+  // safe to call because the caller holds the driver mutex
   processAudioEvents();
   audioPlayer_->cleanup();
-
-  ContextPromiseResolver<void>::resolve(promise);
 }
 
-bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+bool AudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) {
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(promise, "Cannot resume a closed audio context.");
+    promise->reject("Cannot resume a closed audio context.");
     return false;
   }
 
   if (getState() == ContextState::RUNNING && isDriverRunning()) {
-    ContextPromiseResolver<void>::resolve(promise);
+    promise->resolve();
     return true;
   }
 
@@ -125,17 +116,17 @@ bool AudioContext::resume(const std::shared_ptr<ContextPromiseResolver<void>> &p
 
   if (result) {
     // Visible RUNNING is applied inside the resolver
-    ContextPromiseResolver<void>::resolve(promise);
+    promise->resolve();
   } else {
-    ContextPromiseResolver<void>::reject(promise, "Failed to resume audio context.");
+    promise->reject("Failed to resume audio context.");
   }
   return result;
 }
 
-bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &promise) {
+bool AudioContext::suspend(const std::shared_ptr<ContextStateResolver> &promise) {
   // Control-message body: no locking (see `close`).
   if (getState() == ContextState::CLOSED) {
-    ContextPromiseResolver<void>::reject(promise, "Cannot suspend a closed audio context.");
+    promise->reject("Cannot suspend a closed audio context.");
     return false;
   }
 
@@ -150,7 +141,7 @@ bool AudioContext::suspend(const std::shared_ptr<ContextPromiseResolver<void>> &
   }
 
   // Visible SUSPENDED is applied inside the resolver
-  ContextPromiseResolver<void>::resolve(promise);
+  promise->resolve();
   return true;
 }
 
@@ -188,6 +179,27 @@ double AudioContext::getOutputLatency() const {
   }
 
   return audioPlayer_->getOutputLatency();
+}
+
+void AudioContext::assignOnErrorCallbackId(uint64_t callbackId) {
+  onErrorEvent_.assignCallbackId(callbackId);
+}
+
+void AudioContext::onStreamFail() {
+  assertDriverMutexHeld();
+
+  audioPlayer_->stop();
+  waitForRenderQuiescence();
+
+  // The failed driver was the only consumer of the graph channels.
+  getGraph()->enableProducerSelfDrain();
+
+  // safe to call because the driver mutex is held
+  processAudioEvents();
+
+  isInitialized_.store(false, std::memory_order_release);
+
+  onErrorEvent_.dispatchEmpty();
 }
 
 } // namespace audioapi

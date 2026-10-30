@@ -45,9 +45,23 @@ export type OscillatorType =
   | 'triangle'
   | 'custom';
 
+export type AudioContextLatencyCategory =
+  | 'balanced'
+  | 'interactive'
+  | 'playback';
+
 export interface AudioContextOptions {
   sampleRate?: number;
+  /**
+   * What the context should optimize its output stream for; defaults to
+   * `'interactive'`. See the platform table in the docs. Numeric hints are not
+   * supported yet.
+   */
+  latencyHint?: AudioContextLatencyCategory;
+  androidOutputProfile?: AndroidOutputProfile;
 }
+
+export type AndroidOutputProfile = 'media' | 'voiceCommunication';
 
 export interface OfflineAudioContextOptions {
   numberOfChannels: number;
@@ -60,11 +74,22 @@ export enum FileDirectory {
   Cache = 1,
 }
 
+// Values must stay in sync with the C++ `AudioFileProperties::Format` enum.
+// Support is platform-dependent; unsupported formats fail when recording starts.
+// See the audio recorder docs for the per-platform format matrix.
 export enum FileFormat {
-  Wav = 0,
-  Caf = 1,
-  M4A = 2,
-  Flac = 3,
+  Wav,
+  Caf,
+  M4A,
+  Adts,
+  Flac,
+  Aiff,
+  Alac,
+  OpusOgg,
+  OpusWebm,
+  VorbisWebm,
+  Ulaw,
+  Alaw,
 }
 
 export enum IOSAudioQuality {
@@ -138,7 +163,21 @@ export interface AudioRecorderFileOptions {
 
   directory?: FileDirectory;
   subDirectory?: string;
-  fileNamePrefix?: string;
+
+  /**
+   * Names the output file outright — no timestamp is added, so supply whatever
+   * identity you need (a session id, your own timestamp). Left unset, the
+   * library generates `recording_<timestamp>` instead.
+   *
+   * Give a bare name: no extension (it follows from `format`), no path
+   * separators and no `..`. With `rotateIntervalBytes` set, `_001`, `_002`, …
+   * are appended, because one recording then spans several files.
+   *
+   * An existing file of the same name is overwritten, with a warning in the
+   * native log, so make the name unique per recording yourself.
+   */
+  fileName?: string;
+
   androidFlushIntervalMs?: number;
 }
 
@@ -172,6 +211,27 @@ export interface ChannelSplitterOptions extends AudioNodeOptions {
 
 export interface StereoPannerOptions extends AudioNodeOptions {
   pan?: number;
+}
+
+export type PanningModelType = 'equalpower';
+
+export type DistanceModelType = 'linear' | 'inverse' | 'exponential';
+
+export interface PannerOptions extends AudioNodeOptions {
+  panningModel?: PanningModelType;
+  distanceModel?: DistanceModelType;
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
+  orientationX?: number;
+  orientationY?: number;
+  orientationZ?: number;
+  refDistance?: number;
+  maxDistance?: number;
+  rolloffFactor?: number;
+  coneInnerAngle?: number;
+  coneOuterAngle?: number;
+  coneOuterGain?: number;
 }
 
 export interface AnalyserOptions extends AudioNodeOptions {
@@ -295,10 +355,6 @@ export interface WaveShaperOptions extends AudioNodeOptions {
 
 export type DecodeDataInput = number | string | ArrayBuffer;
 export type AudioDurationInput = string | ArrayBuffer;
-
-export interface AudioRecorderStartOptions {
-  fileNameOverride?: string;
-}
 
 export enum AutomationEventType {
   LINEAR_RAMP,

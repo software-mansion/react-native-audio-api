@@ -22,13 +22,16 @@ class OfflineAudioContext : public BaseAudioContext {
   ~OfflineAudioContext() override;
   DELETE_COPY_AND_MOVE(OfflineAudioContext);
 
-  void resume(const std::shared_ptr<ContextPromiseResolver<void>> &promise);
-  bool suspend(double when, const std::shared_ptr<ContextPromiseResolver<void>> &promise);
-  void startRendering(const std::shared_ptr<OfflineAudioContextResultPromise> &promise);
+  void resume(const std::shared_ptr<ContextStateResolver> &promise);
+  bool suspend(double when, const std::shared_ptr<ContextStateResolver> &promise);
+  void startRendering(const std::shared_ptr<ContextRenderResolver> &promise);
+
+  /// @brief Always null, so convolver tails are computed inline on the render thread.
+  std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool() override;
 
  private:
-  std::unordered_map<size_t, std::shared_ptr<ContextPromiseResolver<void>>> scheduledSuspends_;
-  std::shared_ptr<OfflineAudioContextResultPromise> resultPromise_;
+  std::unordered_map<size_t, std::shared_ptr<ContextStateResolver>> scheduledSuspends_;
+  std::shared_ptr<ContextRenderResolver> resultPromise_;
   bool renderingStarted_{false};
 
   const size_t length_;
@@ -42,7 +45,7 @@ class OfflineAudioContext : public BaseAudioContext {
   std::thread renderThread_;
   std::atomic<bool> stopRendering_{false};
 
-  void renderAudio(const std::shared_ptr<ContextPromiseResolver<void>> &resumePromise);
+  void renderAudio(const std::shared_ptr<ContextStateResolver> &resumePromise);
 
   bool isDriverRunning() const override;
 };

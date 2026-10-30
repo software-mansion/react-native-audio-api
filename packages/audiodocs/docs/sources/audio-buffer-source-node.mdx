@@ -153,15 +153,15 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 
 It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
 
-### `onPositionChanged` <MobileOnly />
+### `onpositionchanged` <MobileOnly />
 
 Allows to set (or remove) a callback that will be fired after processing certain part of an audio.
-Frequency is defined by `onPositionChangedInterval`. By setting this callback you can achieve pause functionality.
+Frequency is defined by `onpositionchangedInterval`. By setting this callback you can achieve pause functionality.
 You can remove the callback by passing `null`.
 
-### `onPositionChangedInterval` <MobileOnly />
+### `onpositionchangedInterval` <MobileOnly />
 
-Allows to set frequency for `onPositionChanged` event. Value that can be set is around `1000/x` Hz.
+Allows to set frequency for `onpositionchanged` event. Value that can be set is around `1000/x` Hz.
 
 ```ts
 import { AudioContext, AudioBufferSourceNode } from 'react-native-audio-api';
@@ -172,23 +172,23 @@ function App() {
     sourceNode.buffer = null; //set your buffer
     let offset = 0;
 
-    sourceNode.onPositionChanged = (event) => { //setting callback
+    sourceNode.onpositionchanged = (event) => { //setting callback
         this.offset = event.value;
     };
 
-    sourceNode.onPositionChangedInterval = 100; //setting frequency to ~10Hz
+    sourceNode.onpositionchangedInterval = 100; //setting frequency to ~10Hz
 
     sourceNode.start();
 }
 ```
 
-### `onLoopEnded`
+### `onloopended`
 
 Sets (or removes) a callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
 You can remove the callback either by passing `null` or calling `remove` on the returned subscription.
 
 ```ts
-const subscription = audioBufferSourceNode.onLoopEnded = () => { // setting the callback
+const subscription = audioBufferSourceNode.onloopended = () => { // setting the callback
   console.log("loop ended");
 };
 

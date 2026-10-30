@@ -12,13 +12,28 @@ on:
       working-directory:
         required: false
         type: string
-        default: '.'
+        default: packages/react-native-audio-api
+      force:
+        description: Skip path filter and always run (manual workflow_dispatch)
+        required: false
+        type: boolean
+        default: false
+      categories:
+        description: >
+          Space-separated extended categories. When set, path filters come from
+          filters.sh. Empty means always run (smoke).
+        required: false
+        type: string
+        default: ''
 
 jobs:
   run:
     name: ${{ inputs.name }}
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -26,14 +41,55 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Compose path filters
+        if: ${{ inputs.force == false && inputs.categories != '' }}
+        env:
+          CATEGORIES: ${{ inputs.categories }}
+        working-directory: ${{ github.workspace }}
+        run: >
+          bash packages/react-native-audio-api/common/cpp/test/filters.sh
+          path-filters ${CATEGORIES}
+          > "$RUNNER_TEMP/cpp-path-filters.yml"
+
+      - name: Path filter
+        if: ${{ inputs.force == false && inputs.categories != '' }}
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: ${{ runner.temp }}/cpp-path-filters.yml
+
+      - name: Decide whether to run
+        id: decide
+        env:
+          FORCE: ${{ inputs.force }}
+          CATEGORIES: ${{ inputs.categories }}
+          FILTER_RUN: ${{ steps.filter.outputs.run }}
+          JOB_NAME: ${{ inputs.name }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [[ "$FORCE" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [[ -z "$CATEGORIES" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$FILTER_RUN" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No matching path changes; skipping $JOB_NAME."
+          fi
+
       - name: Checkout with Node
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/checkout-with-node
 
       - name: Setup Yarn
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/setup-yarn
 
       - name: Setup CMake
+        if: steps.decide.outputs.run == 'true'
         uses: ./.github/actions/setup-cmake
 
       - name: ${{ inputs.name }}
+        if: steps.decide.outputs.run == 'true'
         run: ${{ inputs.run }}

@@ -106,7 +106,7 @@ const PlaybackSpeed: FC = () => {
 
   const stopPlayback = useCallback(() => {
     if (sourceRef.current) {
-      sourceRef.current.onEnded = null;
+      sourceRef.current.onended = null;
       sourceRef.current.stop();
       sourceRef.current = null;
     }
@@ -122,7 +122,7 @@ const PlaybackSpeed: FC = () => {
 
         sourceRef.current = source;
 
-        sourceRef.current.onEnded = () => {
+        sourceRef.current.onended = () => {
           setIsPlaying(false);
           sourceRef.current = null;
           playbackAnchorRef.current = null;

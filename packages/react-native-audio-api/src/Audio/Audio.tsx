@@ -19,6 +19,22 @@ import { useStableAudioProps, resolveSourcePath } from './utils';
 import AudioControls from './controls/AudioControls';
 import { useAudioSourceLoader } from './useAudioSourceLoader';
 
+/**
+ * React counterpart of the web `<audio>` element. Plays a local, bundled or
+ * remote `source`, exposes the familiar `controls`, `autoPlay`, `loop`,
+ * `muted`, `preload` and `volume` props, and reports progress and lifecycle
+ * through `onLoad`, `onPositionChange`, `onEnded` and friends. The `ref` is an
+ * `AudioTagHandle` with `play`, `pause`, `seekToTime` and setters for volume,
+ * mute and playback rate.
+ *
+ * @see https://docs.swmansion.com/react-native-audio-api/docs/sources/audio-tag
+ *
+ * Remote http(s) sources are streamed over HTTP byte ranges, and HLS (.m3u8)
+ * playlists play at all, only when the native build includes FFmpeg. Without
+ * it every remote file is downloaded in full before playback and an HLS
+ * source rejects with `NotSupportedError`.
+ * @see https://docs.swmansion.com/react-native-audio-api/docs/other/prebuilt-libraries-support#enabling-ffmpeg
+ */
 const Audio = React.memo(
   React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {
     const { children } = props;

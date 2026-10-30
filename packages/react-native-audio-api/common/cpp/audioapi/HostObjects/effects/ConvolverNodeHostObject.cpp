@@ -24,6 +24,7 @@ ConvolverNodeHostObject::ConvolverNodeHostObject(
           std::make_unique<ConvolverNode>(context, options),
           options),
       convolverNode_(typedAudioNode<ConvolverNode>(node_)),
+      context_(context),
       normalize_(!options.disableNormalization) {
   if (options.buffer != nullptr) {
     setBuffer(options.buffer);
@@ -52,17 +53,22 @@ JSI_HOST_FUNCTION_IMPL(ConvolverNodeHostObject, setBuffer) {
   irBytes_ = bufferHostObject->getSizeInBytes();
   thisValue.asObject(runtime).setExternalMemoryPressure(runtime, getMemoryPressure());
 
-  setBuffer(bufferHostObject->audioBuffer_);
+  setBuffer(bufferHostObject->sharedBuffer_->getSamples());
 
   return jsi::Value::undefined();
 }
 
-void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
+void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<const AudioBuffer> &buffer) {
   if (buffer == nullptr) {
     return;
   }
 
   irBytes_ = buffer->getSize() * buffer->getNumberOfChannels() * sizeof(float);
+
+  auto context = context_.lock();
+  if (context == nullptr) {
+    return;
+  }
 
   auto copiedBuffer = std::make_shared<AudioBuffer>(*buffer);
 
@@ -71,17 +77,17 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
     scaleFactor = convolverNode_->calculateNormalizationScale(copiedBuffer);
   }
 
-  auto threadPool = std::make_shared<ConvolverThreadPool>(4);
-  std::vector<std::unique_ptr<Convolver>> convolvers;
+  auto threadPool = context->getConvolverThreadPool();
+  std::vector<std::shared_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
-    convolvers.push_back(std::make_unique<Convolver>());
+    convolvers.push_back(std::make_shared<Convolver>());
     convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
   if (copiedBuffer->getNumberOfChannels() == 1) {
     // add one more convolver, because right now input is always stereo
     AudioArray channelData(*copiedBuffer->getChannel(0));
-    convolvers.push_back(std::make_unique<Convolver>());
+    convolvers.push_back(std::make_shared<Convolver>());
     convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
   }
 
@@ -92,7 +98,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
 
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
-    std::vector<std::unique_ptr<Convolver>> convolvers;
+    std::vector<std::shared_ptr<Convolver>> convolvers;
     std::shared_ptr<ConvolverThreadPool> threadPool;
     std::shared_ptr<DSPAudioBuffer> internalBuffer;
     std::shared_ptr<DSPAudioBuffer> intermediateBuffer;
@@ -107,7 +113,7 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<AudioBuffer> &buff
       .intermediateBuffer = intermediateBuffer,
       .scaleFactor = scaleFactor});
 
-  auto event = [node = convolverNode_, setupData](BaseAudioContext &context) {
+  auto event = [node = convolverNode_, setupData](BaseAudioContext &context) mutable {
     node->setBuffer(
         setupData->buffer,
         std::move(setupData->convolvers),

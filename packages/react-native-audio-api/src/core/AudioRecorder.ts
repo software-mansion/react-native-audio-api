@@ -1,4 +1,5 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { NotSupportedError } from '../errors';
 import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
@@ -8,7 +9,6 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
-  AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
   FileInfo,
@@ -30,7 +30,7 @@ function withDefaultFileOptions(
   return {
     directory: FileDirectory.Cache,
     subDirectory: 'AudioAPI',
-    fileNamePrefix: 'recording',
+    fileName: '',
     channelCount: 2,
     format: FileFormat.M4A,
     preset: FilePreset.High,
@@ -45,7 +45,6 @@ export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
-  private isFileOutputEnabled: boolean = false;
   private adapterNode: IRecorderAdapterNode | null = null;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
@@ -54,6 +53,14 @@ export default class AudioRecorder {
 
   constructor(options?: AudioRecorderOptions) {
     this.recorder = globalThis.createAudioRecorder(options ?? {});
+  }
+
+  static isRecordingOngoing(): boolean {
+    return globalThis.isRecordingOngoing?.() ?? false;
+  }
+
+  static consumeLastRecordingResult(): FileInfo | null {
+    return globalThis.consumeLastRecordingResult?.() ?? null;
   }
 
   /**
@@ -70,33 +77,46 @@ export default class AudioRecorder {
    * fresh AAC encode. Practical starting points: about **512 KB–1 MB** for WAV
    * and **≥ 200 KB** for M4A. This option controls segment file size, not
    * recording memory use.
+   *
+   * The file sample rate (`preset.sampleRate`) must be at most 48000 Hz: the
+   * iOS and Android system encoders accept no higher rate.
+   *
+   * @throws {@link NotSupportedError} When the format cannot be encoded by this
+   *   platform's system encoders, the file options are invalid (including a
+   *   sample rate above 48000 Hz), or a recording session is active. The
+   *   previous file-output configuration stays in effect.
    */
-  enableFileOutput(options?: AudioRecorderFileOptions): Result<{}> {
-    this.options_ = options || {};
-    const parsedOptions = withDefaultFileOptions(this.options_);
-    const result = this.recorder.enableFileOutput(parsedOptions);
-    this.isFileOutputEnabled = true;
+  enableFileOutput(options?: AudioRecorderFileOptions): void {
+    const requestedOptions = options || {};
+    const result = this.recorder.enableFileOutput(
+      withDefaultFileOptions(requestedOptions)
+    );
 
-    return result;
+    if (result.status === 'success') {
+      this.options_ = requestedOptions;
+    } else {
+      throw new NotSupportedError(
+        'AudioRecorder.enableFileOutput failed: ' + result.message
+      );
+    }
   }
 
   public get options(): AudioRecorderFileOptions | null {
     return this.options_;
   }
 
-  disableFileOutput(): void {
+  /**
+   * Disables file output. When called mid-recording, the current file is
+   * finalized first; the returned promise resolves once it is closed.
+   */
+  disableFileOutput(): Promise<void> {
     this.options_ = null;
-    this.recorder.disableFileOutput();
-    this.isFileOutputEnabled = false;
+    return this.recorder.disableFileOutput();
   }
 
   /** Starts the audio recording process with configured output options */
-  start(options?: AudioRecorderStartOptions): Promise<Result<{}>> {
-    if (!this.isFileOutputEnabled) {
-      return this.recorder.start();
-    }
-
-    return this.recorder.start(options?.fileNameOverride);
+  start(): Promise<Result<{}>> {
+    return this.recorder.start();
   }
 
   /** Stops the audio recording process and releases internal resources */
@@ -105,13 +125,13 @@ export default class AudioRecorder {
   }
 
   /** Pauses the audio recording process without tearing down anything */
-  pause(): void {
-    this.recorder.pause();
+  pause(): Promise<void> {
+    return this.recorder.pause();
   }
 
   /** Resumes the audio recording process after being paused */
-  resume(): void {
-    this.recorder.resume();
+  resume(): Promise<void> {
+    return this.recorder.resume();
   }
 
   /** Connects the recorder to a destination node. */

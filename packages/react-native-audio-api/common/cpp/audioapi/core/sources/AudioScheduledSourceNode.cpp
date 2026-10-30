@@ -21,7 +21,7 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(
       startTime_(-1.0),
       stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
-      onEndedEvent_(context->getAudioEventHandlerRegistry()) {}
+      onEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {}
 
 void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
@@ -66,6 +66,10 @@ bool AudioScheduledSourceNode::isStopScheduled() const {
 
 bool AudioScheduledSourceNode::canBeDestructed() const {
   return isUnscheduled() || isFinished();
+}
+
+std::optional<size_t> AudioScheduledSourceNode::getOutputChannelNumber() const {
+  return outputChannelNumber_.load(std::memory_order_acquire);
 }
 
 void AudioScheduledSourceNode::updatePlaybackInfo(
@@ -158,6 +162,20 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 void AudioScheduledSourceNode::disable() {
   onEndedEvent_.dispatchEmptyFromAudioThread();
   AudioNode::disable();
+}
+
+void AudioScheduledSourceNode::advanceWithoutRender(std::size_t currentSampleFrame) {
+  if (isUnscheduled() || isFinished() || stopTime_ == -1.0) {
+    return;
+  }
+
+  const auto stopFrame = dsp::timeToSampleFrame(stopTime_, getContextSampleRate());
+  if (stopFrame >= currentSampleFrame) {
+    return;
+  }
+
+  playbackState_ = PlaybackState::STOP_SCHEDULED;
+  handleStopScheduled();
 }
 
 void AudioScheduledSourceNode::assignOnEndedCallbackId(uint64_t callbackId) {

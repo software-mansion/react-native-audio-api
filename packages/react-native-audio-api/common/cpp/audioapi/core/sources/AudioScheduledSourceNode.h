@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -49,9 +50,19 @@ class AudioScheduledSourceNode : public AudioNode {
 
   void disable() override;
 
+  /// @brief Finishes the node (one-shot `ended`, then disable) once its stop time lies
+  /// entirely before the quantum that is about to render, mirroring the "first silent
+  /// quantum" branch of the render path. A source nobody pulls never renders, so without
+  /// this a stopped-then-disconnected source would stay PLAYING, never fire `ended` and
+  /// never satisfy canBeDestructed().
+  /// @note Audio Thread only
+  void advanceWithoutRender(std::size_t currentSampleFrame) override;
+
   void assignOnEndedCallbackId(uint64_t callbackId);
 
   bool canBeDestructed() const override;
+
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
  protected:
   double startTime_;

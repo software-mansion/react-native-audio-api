@@ -1,5 +1,6 @@
 package com.swmansion.audioapi.system.notification
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -8,6 +9,15 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.audioapi.system.ForegroundServiceManager
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
+
+/**
+ * Re-posts a notification whose content changed after [BaseNotification.show] returned, such as
+ * artwork that finished loading asynchronously.
+ */
+fun interface NotificationRedisplay {
+  fun redisplay(notification: Notification)
+}
 
 /**
  * Central notification registry that manages multiple notification instances.
@@ -20,14 +30,15 @@ class NotificationRegistry(
   companion object {
     private const val TAG = "NotificationRegistry"
 
-    // Store last built notifications for foreground service access
-    private val builtNotifications = mutableMapOf<Int, Notification>()
+    // Store last built notifications for foreground service access. Concurrent because
+    // CentralizedForegroundService reads it on its main thread, outside the registry monitor.
+    private val builtNotifications = ConcurrentHashMap<Int, Notification>()
 
     fun getBuiltNotification(notificationId: Int): Notification? = builtNotifications[notificationId]
   }
 
-  private val notifications = mutableMapOf<String, BaseNotification>()
-  private val activeNotifications = mutableMapOf<String, Boolean>()
+  private val notifications = HashMap<String, BaseNotification>()
+  private val activeNotifications = HashMap<String, Boolean>()
 
   /**
    * Show or update a notification.
@@ -39,6 +50,7 @@ class NotificationRegistry(
    * @param type The type of notification (only used for first creation)
    * @param options Configuration options from JavaScript
    */
+  @Synchronized
   @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
   fun showNotification(
     key: String,
@@ -76,11 +88,7 @@ class NotificationRegistry(
     }
   }
 
-  /**
-   * Hide a notification.
-   *
-   * @param key The unique identifier of the notification
-   */
+  @Synchronized
   fun hideNotification(key: String) {
     val notification = notifications[key]
     if (notification == null) {
@@ -88,21 +96,44 @@ class NotificationRegistry(
       return
     }
 
+    // Only hide if currently active
+    if (!activeNotifications.getOrDefault(key, false)) {
+      return
+    }
+
     try {
-      // Only hide if currently active
-      if (activeNotifications.getOrDefault(key, false)) {
-        cancelNotification(notification.getNotificationId())
-        notification.hide()
-        activeNotifications[key] = false
-
-        // Unsubscribe from foreground service
-        ForegroundServiceManager.unsubscribe(notification)
-
-        Log.d(TAG, "Hiding notification: $key (unsubscribed from foreground service)")
-      }
+      cancelNotification(notification.getNotificationId())
+      notification.hide()
     } catch (e: Exception) {
       Log.e(TAG, "Error hiding notification $key: ${e.message}", e)
+    } finally {
+      activeNotifications[key] = false
+      ForegroundServiceManager.unsubscribe(notification)
     }
+  }
+
+  @Synchronized
+  fun hideNotification(id: Int) {
+    notifications.entries
+      .firstOrNull { it.value.getNotificationId() == id }
+      ?.let { hideNotification(it.key) }
+  }
+
+  /**
+   * Rebuild and re-post the recording notification with a new paused state.
+   */
+  @Synchronized
+  @SuppressLint("MissingPermission")
+  fun updateRecordingNotificationPausedState(paused: Boolean) {
+    val entry =
+      notifications.entries.firstOrNull {
+        it.value.getNotificationId() == RecordingNotification.ID
+      } ?: return
+    if (!activeNotifications.getOrDefault(entry.key, false)) {
+      return
+    }
+    val recordingNotification = entry.value as? RecordingNotification ?: return
+    displayNotification(RecordingNotification.ID, recordingNotification.rebuildWithPausedState(paused))
   }
 
   /**
@@ -123,7 +154,8 @@ class NotificationRegistry(
             audioAPIModule,
             PlaybackNotification.ID,
             "audio_playback",
-          )
+            ArtworkLoader(reactContext),
+          ) { redisplayIfActive(key, it) }
         }
 
         "recording" -> {
@@ -149,6 +181,7 @@ class NotificationRegistry(
    *
    * @param key The unique identifier of the notification
    */
+  @Synchronized
   fun destroyNotification(key: String) {
     hideNotification(key)
     notifications.remove(key)
@@ -159,16 +192,19 @@ class NotificationRegistry(
   /**
    * Check if a notification is currently active.
    */
+  @Synchronized
   fun isNotificationActive(key: String): Boolean = activeNotifications.getOrDefault(key, false)
 
   /**
    * Get all registered notification keys.
    */
+  @Synchronized
   fun getRegisteredKeys(): Set<String> = notifications.keys.toSet()
 
   /**
    * Cleanup all notifications.
    */
+  @Synchronized
   fun cleanup() {
     notifications.keys.toList().forEach { key ->
       hideNotification(key)
@@ -181,6 +217,17 @@ class NotificationRegistry(
     ForegroundServiceManager.cleanup()
 
     Log.d(TAG, "Cleaned up all notifications")
+  }
+
+  @Synchronized
+  @SuppressLint("MissingPermission")
+  private fun redisplayIfActive(
+    key: String,
+    notification: Notification,
+  ) {
+    if (!isNotificationActive(key)) return
+    val notificationId = notifications[key]?.getNotificationId() ?: return
+    displayNotification(notificationId, notification)
   }
 
   @RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -202,9 +249,10 @@ class NotificationRegistry(
   }
 
   private fun cancelNotification(id: Int) {
+    // Drop the stored notification first so the foreground service can no longer pick
+    // it up, even when the released React context prevents the system-side cancel.
+    builtNotifications.remove(id)
     val context = reactContext.get() ?: return
     NotificationManagerCompat.from(context).cancel(id)
-    // Clean up stored notification
-    builtNotifications.remove(id)
   }
 }

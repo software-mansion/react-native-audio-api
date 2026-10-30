@@ -3,6 +3,7 @@ import { icons } from 'lucide-react-native';
 import PedalBoard from './PedalBoard/PedalBoard';
 import Record from './Record/Record';
 import Crossfade from './Crossfade/Crossfade';
+import VoiceChat from './VoiceChat';
 
 interface SimplifiedIconProps {
   color?: string;
@@ -40,5 +41,13 @@ export const demos: DemoScreen[] = [
     subtitle: 'Demonstrates crossfading between two audio files.',
     icon: icons.ArrowLeftRight,
     screen: Crossfade,
+  },
+  {
+    key: 'VoiceChat',
+    title: 'Voice Chat',
+    subtitle:
+      'Full-duplex AI voice chat with platform echo cancellation and streamed audio.',
+    icon: icons.MessagesSquare,
+    screen: VoiceChat,
   },
 ] as const;

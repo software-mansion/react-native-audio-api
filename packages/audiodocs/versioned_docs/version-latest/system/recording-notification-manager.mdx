@@ -10,7 +10,7 @@ import {
 # RecordingNotificationManager <Android />
 
 The `RecordingNotificationManager` provides system integration with [`Recorder`](/docs/inputs/audio-recorder).
-It can send events about pausing and resuming to your application.
+It shows a standard notification with pause/resume and (optionally) stop actions, can route notification taps to a specific screen, and sends action events to your application.
 
 ## Example
 ```typescript
@@ -19,9 +19,10 @@ RecordingNotificationManager.show({
   contentText: 'Recording...',
   paused: false,
   smallIconResourceName: 'icon_to_display',
-  pauseIconResourceName: 'pause_icon',
-  resumeIconResourceName: 'resume_icon',
   color: 0xff6200,
+  showStopAction: true,
+  deepLinkUri: 'myapp://record',
+  usesChronometer: true,
 });
 
 const pauseEventListener = RecordingNotificationManager.addEventListener('recordingNotificationPause', () => {
@@ -30,11 +31,43 @@ const pauseEventListener = RecordingNotificationManager.addEventListener('record
 const resumeEventListener = RecordingNotificationManager.addEventListener('recordingNotificationResume', () => {
   console.log('Notification resume action received');
 });
+const stopEventListener = RecordingNotificationManager.addEventListener('recordingNotificationStop', () => {
+  console.log('Notification stop action received');
+});
 
 pauseEventListener.remove();
 resumeEventListener.remove();
+stopEventListener.remove();
 RecordingNotificationManager.hide();
 ```
+
+## Native action handling
+
+All notification actions act on the recorder **natively**, without a JS round-trip. This matters when the recording outlives the app UI (see [keeping the recording alive when the app is closed](/docs/inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed)) — pause, resume and stop keep working even after the app task has been removed and no JS listener is reachable.
+
+- **Pause / resume** pause or resume the recorder and flip the notification's action button. The matching event (`recordingNotificationPause` / `recordingNotificationResume`) still fires so a live app can sync its UI — handlers calling `AudioRecorder.pause()` / `resume()` again are harmless, the recorder ignores same-state transitions.
+- **Stop** (`showStopAction: true`) stops the recorder and finalizes the output files (their info becomes available through [`AudioRecorder.consumeLastRecordingResult()`](/docs/inputs/audio-recorder#consumelastrecordingresult)), emits `recordingNotificationStop`, then hides the notification, which also stops the foreground service. Unlike pause/resume, your `recordingNotificationStop` listener should **not** call `AudioRecorder.stop()` — the recording is already stopped. Collect the files with `AudioRecorder.consumeLastRecordingResult()` instead.
+
+## Swiping the notification away
+
+By default the notification is pinned: it cannot be swiped away while a recording is in progress or paused. Android 13 and older honour this through the ongoing flag; on Android 14 and newer, where the system lets users dismiss ongoing notifications, it is re-posted immediately after a swipe. Once the recorder is idle, a swipe is honoured — call `hide()` when you are done so the foreground service stops as well.
+
+Set `dismissible: true` to let the user swipe the notification away instead. A swipe then behaves exactly like the stop action: the recording is stopped natively and its files finalized, `recordingNotificationStop` is emitted, and the foreground service stops. Android 12 and older never let the user dismiss a foreground-service notification, so the option only takes effect on Android 13 and newer.
+
+## Routing the notification tap
+
+By default, tapping the notification opens the app's launcher activity. Set `deepLinkUri` to attach a URI to the tap intent; React Native delivers it through [`Linking`](https://reactnative.dev/docs/linking) (`getInitialURL()` on cold start, the `url` event otherwise). With React Navigation, map it to a screen with a [`linking` config](https://reactnavigation.org/docs/deep-linking/):
+
+```tsx
+const linking = {
+  prefixes: ['myapp://'],
+  config: { screens: { RecordScreen: 'record' } },
+};
+
+<NavigationContainer linking={linking}>
+```
+
+No `AndroidManifest.xml` changes are needed — the notification uses an explicit launch intent, so the URI does not go through intent filters. (If you also want the same URI to work from a browser or `adb`, declare your own scheme intent filter, e.g. via Expo's `scheme` option.)
 
 ## Methods
 
@@ -59,8 +92,7 @@ Resource name is a path to resource plased in res/drawable folder. It has to be 
 :::
 
 :::caution
-If nothing is displayed, even though your name is correct, try decreasing size of your resource.
-Notification can look vastly different on different android devices.
+The notification uses the standard Android template, so its exact look varies between devices and Android versions.
 :::
 
 ### `hide`
@@ -96,12 +128,17 @@ Add an event listener for notification actions.
 interface RecordingNotificationInfo {
   title?: string;
   contentText?: string;
-  paused?: boolean; // flag indicating whether to display pauseIcon or resumeIcon
+  paused?: boolean;
   smallIconResourceName?: string;
   largeIconResourceName?: string;
-  pauseIconResourceName?: string;
-  resumeIconResourceName?: string;
-  color?: number; //
+  color?: number;
+  showStopAction?: boolean;
+  dismissible?: boolean; // a swipe stops the recording instead of re-posting the notification, default: false
+  pauseActionTitle?: string; // default: 'Pause'
+  resumeActionTitle?: string; // default: 'Resume'
+  stopActionTitle?: string; // default: 'Stop'
+  deepLinkUri?: string; // URI attached to the notification tap intent
+  usesChronometer?: boolean; // shows the elapsed recording time, default: false
 }
 ```
 </details>
@@ -114,6 +151,7 @@ interface RecordingNotificationInfo {
 interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
+  recordingNotificationStop: EventEmptyType;
 }
 ```
 </details>

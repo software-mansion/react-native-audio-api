@@ -11,15 +11,22 @@ namespace audioapi {
 
 AudioContextHostObject::AudioContextHostObject(
     float sampleRate,
+    AndroidOutputProfile androidOutputProfile,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    AudioContextLatencyHint latencyHint)
     : BaseAudioContextHostObject(
-          std::make_shared<AudioContext>(sampleRate, audioEventHandlerRegistry),
+          std::make_shared<AudioContext>(
+              sampleRate,
+              androidOutputProfile,
+              audioEventHandlerRegistry,
+              latencyHint),
           runtime,
           callInvoker) {
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, outputLatency));
   addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioContextHostObject, baseLatency));
+  addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioContextHostObject, onerror));
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, close),
       JSI_EXPORT_FUNCTION(AudioContextHostObject, resume),
@@ -27,34 +34,29 @@ AudioContextHostObject::AudioContextHostObject(
       JSI_EXPORT_FUNCTION(AudioContextHostObject, createMediaElementSource));
 }
 
+AudioContextHostObject::~AudioContextHostObject() {
+  std::static_pointer_cast<AudioContext>(context_)->assignOnErrorCallbackId(0);
+}
+
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::CLOSED);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<AudioContext &>(context).close(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::CLOSED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<AudioContext &>(context).close(resolver);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::RUNNING);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<AudioContext &>(context).resume(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::RUNNING, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<AudioContext &>(context).resume(resolver);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
-  return promiseVendor_->createPromise([this](Promise &&promise) {
-    auto contextPromise = ContextPromiseResolver<void>::makeContextPromiseResolver(
-        std::move(promise), context_, ContextState::SUSPENDED);
-    context_->scheduleContextPromise([contextPromise](BaseAudioContext &context) {
-      dynamic_cast<AudioContext &>(context).suspend(contextPromise);
-    });
-  });
+  return createLifecyclePromise(
+      ContextState::SUSPENDED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
+        dynamic_cast<AudioContext &>(context).suspend(resolver);
+      });
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, outputLatency) {
@@ -76,6 +78,11 @@ JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
   auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);
   object.setExternalMemoryPressure(runtime, mediaElementHostObject->getMemoryPressure());
   return object;
+}
+
+JSI_PROPERTY_SETTER_IMPL(AudioContextHostObject, onerror) {
+  auto audioContext = std::static_pointer_cast<AudioContext>(context_);
+  audioContext->assignOnErrorCallbackId(std::stoull(value.getString(runtime).utf8(runtime)));
 }
 
 } // namespace audioapi

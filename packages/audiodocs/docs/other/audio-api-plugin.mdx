@@ -18,6 +18,9 @@ interface Options {
   androidPermissions: string[];
   androidForegroundService: boolean;
   androidFSTypes: string[];
+  androidFSStopWithTask: boolean;
+  enableFFmpeg?: boolean;
+  disableStaticExternalLibs?: boolean;
 }
 ```
 
@@ -84,7 +87,7 @@ export default {
 
 Defaults to `true`.
 
-Allows the app to play audio in the background on iOS.
+Allows the app to play audio in the background on iOS. Corresponds to adding `audio` to [`UIBackgroundModes`](https://developer.apple.com/documentation/bundleresources/information-property-list/uibackgroundmodes).
 
 ### `iosMicrophonePermission`
 
@@ -133,3 +136,31 @@ Types description:
 Runtime prerequisites:
 
 - Request and be granted the RECORD_AUDIO runtime permission.
+
+### `androidFSStopWithTask`
+
+Defaults to `true`.
+
+Controls the `android:stopWithTask` attribute of the Foreground Service injected by the plugin. With the default value (`true`), the service stops when the user swipes the app away from the recents screen.
+
+Set it to `false` to emit `android:stopWithTask="false"` on the service entry — on task removal the service keeps running, which keeps the app process (and e.g. an in-progress recording) alive.
+
+:::info
+The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
+:::
+
+### `enableFFmpeg`
+
+Defaults to `false`.
+
+Links the prebuilt FFmpeg libraries into the app, which enables remote URL streaming, HLS (`.m3u8`) playback and remote URL metadata. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx) for what FFmpeg adds and what it costs.
+
+### `disableStaticExternalLibs`
+
+Defaults to `false`.
+
+Removes the bundled Opus / Ogg / Vorbis static libraries. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#disabling-other-external-libraries).
+
+:::note
+`expo prebuild` writes `enableFFmpeg` and `disableStaticExternalLibs` into the `react-native-audio-api` section of the app's `package.json`, which every build (CocoaPods, Swift Package Manager, Gradle) reads. The one given here overwrites it on every prebuild, so keep each option in one place only.
+:::

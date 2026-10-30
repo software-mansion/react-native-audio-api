@@ -1,4 +1,6 @@
+#include <audioapi/core/AudioListener.h>
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/effects/PannerNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/utils/graph/Graph.h>
@@ -9,6 +11,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -58,6 +61,22 @@ class ChannelCountTestNode : public audioapi::AudioNode {
   void processNode(int /*framesToProcess*/) override {}
 };
 
+/// Source stand-in: presents its output channel number regardless of
+/// negotiation, like AudioScheduledSourceNode.
+class SourceTestNode : public audioapi::AudioNode {
+ public:
+  SourceTestNode(
+      const std::shared_ptr<audioapi::BaseAudioContext> &context,
+      const audioapi::AudioNodeOptions &options)
+      : AudioNode(context, options) {}
+
+  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override {
+    return outputChannelNumber_.load(std::memory_order_acquire);
+  }
+
+  void processNode(int /*framesToProcess*/) override {}
+};
+
 struct ChannelOpts {
   int channelCount;
   audioapi::ChannelCountMode mode;
@@ -65,20 +84,20 @@ struct ChannelOpts {
 
 /// @returns the computed number of channels on the output buffer of the
 /// AudioNode that backs `node`.
-inline size_t channelsOf(const HostGraph::Node *node) {
+inline size_t channelsOf(const HostGraph::HostVertex *node) {
   auto *audioNode = node->handle->audioNode->asAudioNode();
   return audioNode->getOutputBuffer()->getNumberOfChannels();
 }
 
-inline size_t inputChannelsOf(const HostGraph::Node *node) {
+inline size_t inputChannelsOf(const HostGraph::HostVertex *node) {
   auto *audioNode = node->handle->audioNode->asAudioNode();
   return audioNode->getInputBuffer()->getNumberOfChannels();
 }
 
 /// Adds a ChannelCountTestNode with the given options to the managed
-/// `graph`. Returns the HostGraph::Node pointer; the associated AudioGraph
+/// `graph`. Returns the HostGraph::HostVertex pointer; the associated AudioGraph
 /// slot is populated once `graph->processEvents()` is called.
-inline HostGraph::Node *addChannelCountNode(Graph &graph, const ChannelOpts &opts) {
+inline HostGraph::HostVertex *addChannelCountNode(Graph &graph, const ChannelOpts &opts) {
   audioapi::AudioNodeOptions audioNodeOpts;
   audioNodeOpts.channelCount = opts.channelCount;
   audioNodeOpts.channelCountMode = opts.mode;
@@ -87,9 +106,31 @@ inline HostGraph::Node *addChannelCountNode(Graph &graph, const ChannelOpts &opt
   return graph.addNode(std::move(audioNode));
 }
 
-inline HostGraph::Node *addStereoPannerNode(Graph &graph) {
+/// Adds a true source (no inputs) whose emitted width is decoupled from its
+/// `channelCount` attribute, the way OscillatorNode / AudioBufferSourceNode are.
+inline HostGraph::HostVertex *
+addSourceNode(Graph &graph, int channelCountAttribute, int outputChannelNumber) {
+  audioapi::AudioNodeOptions audioNodeOpts;
+  audioNodeOpts.numberOfInputs = 0;
+  audioNodeOpts.channelCount = channelCountAttribute;
+  audioNodeOpts.outputChannelNumber = outputChannelNumber;
+
+  auto audioNode = std::make_unique<SourceTestNode>(getGraphTestContext(), audioNodeOpts);
+  return graph.addNode(std::move(audioNode));
+}
+
+inline HostGraph::HostVertex *addStereoPannerNode(Graph &graph, int channelCount = 2) {
   audioapi::StereoPannerOptions options;
+  options.channelCount = channelCount;
   auto audioNode = std::make_unique<audioapi::StereoPannerNode>(getGraphTestContext(), options);
+  return graph.addNode(std::move(audioNode));
+}
+
+inline HostGraph::HostVertex *addPannerNode(Graph &graph) {
+  audioapi::PannerOptions options;
+  auto listener = std::make_shared<audioapi::AudioListener>(getGraphTestContext());
+  auto audioNode =
+      std::make_unique<audioapi::PannerNode>(getGraphTestContext(), listener.get(), options);
   return graph.addNode(std::move(audioNode));
 }
 
@@ -136,7 +177,7 @@ TEST_F(GraphTest, NoUselessEventsScheduled) {
   // Try adding SAME edge (should fail)
   auto result = graph->addEdge(node1, node2);
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), HostGraph::ResultError::EDGE_ALREADY_EXISTS);
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::EDGE_ALREADY_EXISTS);
 
   // Even if we call processEvents, state should not change (and no event should be consumed ideally,
   // impossible to check queue count easily without friend or mock, but state check is good enough)
@@ -152,7 +193,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
   // One thread processes events (consumer)
 
   std::atomic<bool> running{true};
-  std::vector<HostGraph::Node *> nodes;
+  std::vector<HostGraph::HostVertex *> nodes;
 
   // Add initial nodes
   for (int i = 0; i < 10; ++i) {
@@ -180,7 +221,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
       nodes.push_back(n);
     } else if (op == 1 && nodes.size() > 2) {
       // Add edge
-      HostGraph::Node *n1, *n2;
+      HostGraph::HostVertex *n1, *n2;
       {
         n1 = nodes[rand_r(&seed) % nodes.size()];
         n2 = nodes[rand_r(&seed) % nodes.size()];
@@ -191,7 +232,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
       }
     } else if (op == 2 && nodes.size() > 5) {
       // Remove edge
-      HostGraph::Node *n1, *n2;
+      HostGraph::HostVertex *n1, *n2;
       {
         n1 = nodes[rand_r(&seed) % nodes.size()];
         n2 = nodes[rand_r(&seed) % nodes.size()];
@@ -222,14 +263,14 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
   }
 }
 
-// ─── Channel-count negotiation on connect/disconnect ─────────────────────
+// ─── Channel negotiation on connect/disconnect ───────────────────────────
 //
-// These tests assert the Web Audio contract: the computed number of
-// channels on a node's output buffer must follow `channelCountMode`
-//   - MAX          -> max(computed output channel count of each connected input)
+// These tests assert the Web Audio contract: a node's negotiated buffer is
+// `computedNumberOfChannels` wide, which follows `channelCountMode`
+//   - MAX          -> max(output channel number of each connected input)
 //                     (the node's channelCount attribute is ignored)
 //   - CLAMPED_MAX  -> min(channelCount attribute,
-//                         max(computed output channel count of each connected input))
+//                         max(output channel number of each connected input))
 //   - EXPLICIT     -> always the channelCount attribute
 //
 // The computation must happen on the HostGraph side at addEdge/removeEdge
@@ -237,7 +278,7 @@ TEST_F(GraphTest, ThreadRaceConcurrency) {
 // applied on the AudioGraph side — therefore each test calls
 // `graph->processEvents()` before inspecting `channelsOf(...)`.
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_SingleInput) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_SingleInput) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
   auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
@@ -251,7 +292,22 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_SingleInput) {
          "must be resized to 4 channels (channelCount attribute is ignored)";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_MultipleInputsTakeMax) {
+TEST_F(GraphTest, ComputedNumberOfChannels_SourceOutputChannelNumberIgnoresItsChannelCount) {
+  auto *monoSource = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(monoSource), 1u) << "A source's buffer follows outputChannelNumber";
+
+  ASSERT_TRUE(graph->addEdge(monoSource, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 1u)
+      << "MAX mode: a mono source with channelCount=2 (spec default for oscillator / "
+         "constant source) must negotiate a 1-channel downstream buffer";
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_MultipleInputsTakeMax) {
   auto *mono = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
   auto *six = addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
   auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
@@ -265,7 +321,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_MultipleInputsTakeMax) {
       << "MAX mode: the downstream buffer must follow the largest connected input";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ClampsAboveAttribute) {
+TEST_F(GraphTest, ComputedNumberOfChannels_ClampedMaxMode_ClampsAboveAttribute) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
   auto *dest =
@@ -279,7 +335,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ClampsAboveAttribute) {
       << "CLAMPED_MAX should clamp a 6-channel input down to channelCount=2";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_FollowsInputWhenBelowAttribute) {
+TEST_F(GraphTest, ComputedNumberOfChannels_ClampedMaxMode_FollowsInputWhenBelowAttribute) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
   auto *dest =
@@ -293,7 +349,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_FollowsInputWhenBelowAt
       << "CLAMPED_MAX: mono input with channelCount=4 must still produce a mono buffer";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_ExplicitMode_IgnoresInput) {
+TEST_F(GraphTest, ComputedNumberOfChannels_ExplicitMode_IgnoresInput) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
   auto *dest = addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
@@ -305,7 +361,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_ExplicitMode_IgnoresInput) {
   EXPECT_EQ(channelsOf(dest), 4u) << "EXPLICIT must always produce exactly channelCount channels";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnSecondConnection) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_RecomputesOnSecondConnection) {
   auto *stereoSource =
       addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
   auto *quadSource =
@@ -324,7 +380,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnSecondConnection) 
       << "MAX: connecting a 4-channel source must grow the buffer to 4 channels";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnDisconnection) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_RecomputesOnDisconnection) {
   auto *stereoSource =
       addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
   auto *quadSource =
@@ -344,7 +400,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_RecomputesOnDisconnection) {
       << "MAX: removing the 4-channel source should shrink the buffer back to 2 channels";
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_ChainedNodes_ConnectDownstreamFirst) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_ChainedNodes_ConnectDownstreamFirst) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
   auto *gain1 = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
@@ -360,7 +416,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_ChainedNodes_ConnectDownstream
   EXPECT_EQ(channelsOf(gain2), 1u);
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_ChainedNodes_ConnectUpstreamFirst) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_ChainedNodes_ConnectUpstreamFirst) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
   auto *gain1 = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
@@ -375,7 +431,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_ChainedNodes_ConnectUpstreamFi
   EXPECT_EQ(channelsOf(gain2), 1u);
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ChainedNodes) {
+TEST_F(GraphTest, ComputedNumberOfChannels_ClampedMaxMode_ChainedNodes) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 6, .mode = ChannelCountMode::EXPLICIT});
   auto *gain1 =
@@ -393,7 +449,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_ClampedMaxMode_ChainedNodes) {
   EXPECT_EQ(channelsOf(gain2), 2u);
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_CascadeOnLateUpstreamConnect) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_CascadeOnLateUpstreamConnect) {
   auto *quadSource =
       addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
   auto *monoSource =
@@ -414,7 +470,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_CascadeOnLateUpstreamConnect) 
   EXPECT_EQ(channelsOf(gain2), 4u);
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_CascadeOnUpstreamDisconnect) {
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_CascadeOnUpstreamDisconnect) {
   auto *quadSource =
       addChannelCountNode(*graph, {.channelCount = 4, .mode = ChannelCountMode::EXPLICIT});
   auto *monoSource =
@@ -435,7 +491,7 @@ TEST_F(GraphTest, ChannelCountNegotiation_MaxMode_CascadeOnUpstreamDisconnect) {
   EXPECT_EQ(channelsOf(gain2), 1u);
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_StereoPanner_MonoInputKeepsStereoOutput) {
+TEST_F(GraphTest, ComputedNumberOfChannels_StereoPanner_MonoInputKeepsStereoOutput) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
   auto *panner = addStereoPannerNode(*graph);
@@ -448,10 +504,53 @@ TEST_F(GraphTest, ChannelCountNegotiation_StereoPanner_MonoInputKeepsStereoOutpu
   EXPECT_EQ(channelsOf(panner), 2u);
 }
 
-TEST_F(GraphTest, ChannelCountNegotiation_StereoPanner_DownstreamSeesStereoOutput) {
+TEST_F(GraphTest, ComputedNumberOfChannels_StereoPanner_DownstreamSeesStereoOutput) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
   auto *panner = addStereoPannerNode(*graph);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, panner).is_ok());
+  ASSERT_TRUE(graph->addEdge(panner, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u);
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_StereoPanner_MonoChannelCountKeepsStereoOutput) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  auto *panner = addStereoPannerNode(*graph, /*channelCount=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, panner).is_ok());
+  ASSERT_TRUE(graph->addEdge(panner, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(inputChannelsOf(panner), 1u) << "CLAMPED_MAX(1) mixes the stereo input to mono";
+  EXPECT_EQ(channelsOf(panner), 2u) << "StereoPannerNode always outputs stereo";
+  EXPECT_EQ(channelsOf(dest), 2u);
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_Panner_MonoInputKeepsStereoOutput) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *panner = addPannerNode(*graph);
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, panner).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(inputChannelsOf(panner), 1u);
+  EXPECT_EQ(channelsOf(panner), 2u);
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_Panner_DownstreamSeesStereoOutput) {
+  auto *source =
+      addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *panner = addPannerNode(*graph);
   auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
   graph->processEvents();
 
@@ -486,6 +585,48 @@ TEST_F(GraphTest, RenegotiateNode_ExplicitCountChange_UpdatesBuffer) {
       << "After changing channelCount to 6 and renegotiating, the buffer must be 6 channels";
 }
 
+TEST_F(GraphTest, RenegotiateNode_SourceOutputChannelNumberChange_CascadesDownstream) {
+  // Mirrors AudioBufferSourceNode.setBuffer: the host object publishes the new
+  // output width, then renegotiates, before the audio thread swaps the buffer.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(dest), 1u) << "MAX mode follows the mono source";
+
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(2);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "After the source publishes a stereo output and renegotiates, the MAX-mode "
+         "downstream buffer must widen to 2 channels";
+}
+
+TEST_F(GraphTest, RenegotiateNode_LeavesSourceBufferToTheSource) {
+  // A source swaps its own output buffer together with the content that sets
+  // its width (AudioBufferSourceNode `setBuffer`); the graph must only cascade
+  // the declared width downstream, never install a buffer on the source.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(dest), 1u);
+
+  // Declare stereo without swapping the source's buffer, as the host object
+  // does before its own swap event lands.
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(2);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(source), 1u) << "The graph must not touch a source's output buffer";
+  EXPECT_EQ(channelsOf(dest), 2u) << "The declared width still cascades downstream";
+}
+
 TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
   auto *source =
       addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
@@ -509,6 +650,80 @@ TEST_F(GraphTest, RenegotiateNode_CascadesDownstream) {
   EXPECT_EQ(channelsOf(mid), 6u);
   EXPECT_EQ(channelsOf(dest), 6u)
       << "MAX-mode downstream must follow the renegotiated 6-channel upstream output";
+}
+
+// ─── Several changes applied in one render quantum ─────────────────────────
+//
+// On a running context the audio thread applies every queued event at the
+// start of the next quantum, so these tests skip `processEvents()` between the
+// changes. A node that goes back to its live width within the batch must still
+// queue a swap, otherwise the earlier queued swap is applied last.
+
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_BatchedChangesBackToLiveWidth) {
+  auto *mono = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *stereo =
+      addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(mono, dest).is_ok());
+  ASSERT_TRUE(graph->addEdge(stereo, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "Connecting a mono and a stereo input in one batch must leave a stereo buffer";
+}
+
+TEST_F(GraphTest, ComputedNumberOfChannels_MaxMode_BatchedConnectThenDisconnect) {
+  auto *mono = addChannelCountNode(*graph, {.channelCount = 1, .mode = ChannelCountMode::EXPLICIT});
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(mono, dest).is_ok());
+  ASSERT_TRUE(graph->removeEdge(mono, dest).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "Without inputs the buffer falls back to channelCount, even if a mono swap was queued";
+}
+
+TEST_F(GraphTest, RenegotiateNode_BatchedSourceWideningAfterConnect) {
+  // Mirrors `source.connect(gain); source.buffer = stereoBuffer;` in one JS task.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/1);
+  auto *dest = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, dest).is_ok());
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(2);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(dest), 2u)
+      << "A source widened to stereo in the same batch as its connect must leave a stereo buffer";
+}
+
+TEST_F(GraphTest, RenegotiateNode_TriangleReadsSiblingAfterItNarrows) {
+  // source → join, source → sibling → join, with source → join connected
+  // first, so a depth-first cascade reaches `join` before `sibling`. `join`
+  // must still read the narrowed width of `sibling`, not the stale one.
+  auto *source = addSourceNode(*graph, /*channelCountAttribute=*/2, /*outputChannelNumber=*/2);
+  auto *sibling = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  auto *join = addChannelCountNode(*graph, {.channelCount = 2, .mode = ChannelCountMode::MAX});
+  graph->processEvents();
+
+  ASSERT_TRUE(graph->addEdge(source, join).is_ok());
+  ASSERT_TRUE(graph->addEdge(source, sibling).is_ok());
+  ASSERT_TRUE(graph->addEdge(sibling, join).is_ok());
+  graph->processEvents();
+  ASSERT_EQ(channelsOf(sibling), 2u);
+  ASSERT_EQ(channelsOf(join), 2u);
+
+  source->handle->audioNode->asAudioNode()->setOutputChannelNumber(1);
+  ASSERT_TRUE(graph->renegotiateNodeChannels(source).is_ok());
+  graph->processEvents();
+
+  EXPECT_EQ(channelsOf(sibling), 1u);
+  EXPECT_EQ(channelsOf(join), 1u) << "Both inputs of the join are mono now";
 }
 
 } // namespace audioapi::utils::graph

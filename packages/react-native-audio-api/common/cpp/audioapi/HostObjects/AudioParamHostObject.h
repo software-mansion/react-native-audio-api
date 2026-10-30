@@ -16,8 +16,10 @@ using namespace facebook;
 class AudioParam;
 
 /// Rough native footprint of an AudioParamHostObject:
-/// two DSPAudioBuffer(RQ) (k-rate + a-rate scratch) + control queue + atomics.
-inline constexpr size_t kAudioParamBytes = 2 * RENDER_QUANTUM_SIZE * sizeof(float) + 512;
+/// two DSPAudioBuffer(RQ) (k-rate + a-rate scratch) + the preallocated control
+/// and render event queues (~160 B combined per slot) + atomics.
+inline constexpr size_t kAudioParamBytes =
+    2 * RENDER_QUANTUM_SIZE * sizeof(float) + AUDIO_PARAM_MAX_QUEUED_EVENTS * 160 + 512;
 
 /// @brief Host object for AudioParam that owns its BridgeNode.
 ///
@@ -28,15 +30,15 @@ inline constexpr size_t kAudioParamBytes = 2 * RENDER_QUANTUM_SIZE * sizeof(floa
 /// When destroyed, the BridgeNode is removed from the graph.
 class AudioParamHostObject : public HostObject {
  public:
-  using HNode = utils::graph::HostGraph::Node;
+  using HostVertex = utils::graph::HostGraph::HostVertex;
 
   /// @brief Creates an AudioParamHostObject with its BridgeNode.
   /// @param graph The audio graph
-  /// @param ownerNode The HNode* of the AudioNode that owns this param
+  /// @param ownerNode The HostVertex* of the AudioNode that owns this param
   /// @param param The AudioParam this host object represents
   explicit AudioParamHostObject(
       std::shared_ptr<utils::graph::Graph> graph,
-      HNode *ownerNode,
+      HostVertex *ownerNode,
       const std::shared_ptr<AudioParam> &param);
 
   ~AudioParamHostObject() override;
@@ -58,7 +60,7 @@ class AudioParamHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(checkCurveExclusion);
 
   /// @brief Returns the bridge node for this param (for source → bridge connections).
-  [[nodiscard]] HNode *bridgeNode() const {
+  [[nodiscard]] HostVertex *bridgeNode() const {
     return bridgeNode_;
   }
 
@@ -68,8 +70,8 @@ class AudioParamHostObject : public HostObject {
   friend class AudioNodeHostObject;
 
   std::shared_ptr<utils::graph::Graph> graph_;
-  HNode *ownerNode_ = nullptr;
-  HNode *bridgeNode_ = nullptr;
+  HostVertex *ownerNode_ = nullptr;
+  HostVertex *bridgeNode_ = nullptr;
   bool isConnectedToGraph_ = false;
   std::shared_ptr<AudioParam> param_;
   ParamControlQueue controlQueue_;

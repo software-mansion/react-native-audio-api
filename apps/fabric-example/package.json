@@ -7,20 +7,25 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
+    "test:server": "node --test server/realtime-token-server.test.mjs"
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "lucide-react-native": "^0.555.0",
-    "react": "19.2.3",
-    "react-native": "0.87.0",
-    "react-native-svg": "15.15.4"
+    "lucide-react-native": "catalog:",
+    "react": "catalog:",
+    "react-native": "catalog:",
+    "react-native-svg": "catalog:"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "catalog:"
   },
   "engines": {
     "node": ">=22.11.0"
+  },
+  "react-native-audio-api": {
+    "enableFFmpeg": true
   },
   "reactNativeVectorIcons": {
     "fontDir": "./assets/fonts"
