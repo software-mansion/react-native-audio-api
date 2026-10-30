@@ -11,6 +11,10 @@ describe('React Native Audio API Mocks', () => {
       expect(context.state).toBe('running');
       expect(context.baseLatency).toBe(0.005);
       expect(context.outputLatency).toBe(0.01);
+      expect(context.getOutputTimestamp()).toEqual({
+        contextTime: 0,
+        performanceTime: 0,
+      });
       expect(context.destination).toBeInstanceOf(MockAPI.AudioDestinationNode);
     });
 

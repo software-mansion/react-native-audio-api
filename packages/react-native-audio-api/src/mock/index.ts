@@ -32,7 +32,7 @@ import type {
   DistanceModelType,
   WaveShaperOptions,
 } from '../types';
-import { FileDirectory, FileFormat } from '../types';
+import { AudioTimestamp, FileDirectory, FileFormat } from '../types';
 import { toFloat32Array } from '../utils';
 
 /* eslint-disable no-useless-constructor */
@@ -948,6 +948,10 @@ class AudioContextMock extends BaseAudioContextMock {
 
   get outputLatency(): number {
     return 0.01;
+  }
+
+  getOutputTimestamp(): AudioTimestamp {
+    return { contextTime: 0, performanceTime: 0 };
   }
 
   close(): Promise<void> {

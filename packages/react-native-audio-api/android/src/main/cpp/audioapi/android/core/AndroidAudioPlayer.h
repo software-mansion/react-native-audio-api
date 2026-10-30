@@ -47,6 +47,11 @@ class AndroidAudioPlayer : public AudioPlayer,
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
 
+  /// Maps the stream position Oboe reports as presented (`getTimestamp`) onto context frames.
+  /// Without a device timestamp (OpenSL ES, or right after start) it assumes the last callback's
+  /// first frame plays one output latency after that callback ran.
+  [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
+
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
 
@@ -61,6 +66,8 @@ class AndroidAudioPlayer : public AudioPlayer,
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   AndroidOutputProfile outputProfile_;
+  /// `steady_clock` time of the last `startStreamLocked`; guarded by `streamMutex_`.
+  std::int64_t streamStartedAtNs_ = 0;
 
   bool openAudioStreamLocked();
   bool rebuildStreamLocked();

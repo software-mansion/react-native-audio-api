@@ -1,6 +1,11 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import { assertSupportedSampleRate } from '../utils/validation';
-import { AudioContextOptions, ContextState, DecodeDataInput } from '../types';
+import {
+  AudioContextOptions,
+  AudioTimestamp,
+  ContextState,
+  DecodeDataInput,
+} from '../types';
 import AnalyserNode from './AnalyserNode.web';
 import AudioBuffer from './AudioBuffer.web';
 import AudioBufferSourceNode from './AudioBufferSourceNode.web';
@@ -62,6 +67,12 @@ export default class AudioContext implements BaseAudioContext {
 
   public get outputLatency(): number {
     return this.context.outputLatency;
+  }
+
+  getOutputTimestamp(): AudioTimestamp {
+    const { contextTime = 0, performanceTime = 0 } =
+      this.context.getOutputTimestamp();
+    return { contextTime, performanceTime };
   }
 
   createOscillator(): OscillatorNode {
