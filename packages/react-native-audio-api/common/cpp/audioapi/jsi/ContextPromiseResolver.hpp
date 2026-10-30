@@ -76,8 +76,7 @@ class ContextRenderResolver final : public ContextPromiseResolver {
 
   void resolve(const std::shared_ptr<AudioBuffer> &buffer) const {
     settle([buffer](jsi::Runtime &runtime) {
-      return jsi::Object::createFromHostObject(
-          runtime, std::make_shared<AudioBufferHostObject>(buffer));
+      return AudioBufferHostObject::createJsObject(runtime, buffer);
     });
   }
 };

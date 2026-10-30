@@ -21,6 +21,20 @@ AudioBufferHostObject::AudioBufferHostObject(const std::shared_ptr<AudioBuffer> 
       JSI_EXPORT_FUNCTION(AudioBufferHostObject, copyToChannel));
 }
 
+jsi::Object AudioBufferHostObject::createJsObject(
+    jsi::Runtime &runtime,
+    const std::shared_ptr<AudioBufferHostObject> &hostObject) {
+  auto object = jsi::Object::createFromHostObject(runtime, hostObject);
+  object.setExternalMemoryPressure(runtime, hostObject->getSizeInBytes());
+  return object;
+}
+
+jsi::Object AudioBufferHostObject::createJsObject(
+    jsi::Runtime &runtime,
+    const std::shared_ptr<AudioBuffer> &audioBuffer) {
+  return createJsObject(runtime, std::make_shared<AudioBufferHostObject>(audioBuffer));
+}
+
 JSI_PROPERTY_GETTER_IMPL(AudioBufferHostObject, sampleRate) {
   return {sharedBuffer_->getSamples()->getSampleRate()};
 }
@@ -42,11 +56,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
   auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
-  auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
-
-  float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
-
-  return float32Array;
+  return float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, copyFromChannel) {
