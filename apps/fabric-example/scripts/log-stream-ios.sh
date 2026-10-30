@@ -2,13 +2,14 @@
 
 print_help() {
   cat <<'EOF'
-Usage: bash scripts/log-stream-ios.sh [--device UDID] [--subsystem LIST] [--module LIST] [--level LEVEL]
+Usage: bash scripts/log-stream-ios.sh [--device UDID | --simulator] [--subsystem LIST] [--module LIST] [--level LEVEL]
 
-Streams iOS logs from the first USB device, or from the booted simulator if none is connected.
+Streams iOS logs from the first device on USB, otherwise from the first booted simulator.
 Devices need pymobiledevice3 (pipx install pymobiledevice3).
 
 Options:
   --device UDID       Stream from this device.
+  --simulator         Stream from the booted simulator, even when a device is connected.
   --subsystem LIST    Subsystems, separated by '|'. A full name is used as-is.
                       Shortcuts:
                         audioapi  com.swmansion.audioapi (default)
@@ -29,12 +30,14 @@ EOF
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/shared/common.sh"
+source "$SCRIPT_DIR/shared/ios.sh"
+
 readonly OWN_SUBSYSTEM="com.swmansion.audioapi"
-readonly LEVELS_BY_SEVERITY=(error warning debug trace)
 readonly MODULE_NAME_PATTERN='^[A-Za-z_][A-Za-z0-9_]*$'
 readonly SUBSYSTEM_NAME_PATTERN='^[A-Za-z0-9][A-Za-z0-9_-]*(\.[A-Za-z0-9_-]+)+$'
 
-device_udid=""
 subsystems="audioapi"
 modules=""
 level=""
@@ -42,8 +45,11 @@ level=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --device)
-      device_udid="${2:?--device needs a UDID}"
+      select_target device "${2:?--device needs a UDID}"
       shift
+      ;;
+    --simulator)
+      select_target simulator
       ;;
     --subsystem)
       subsystems="${2:?--subsystem needs a value}"
@@ -105,14 +111,11 @@ fi
 
 selected_levels=()
 if [[ -n "$level" ]]; then
-  for candidate in "${LEVELS_BY_SEVERITY[@]}"; do
+  require_log_level "$level"
+  for candidate in "${LOG_LEVELS[@]}"; do
     selected_levels+=("$candidate")
     [[ "$candidate" == "$level" ]] && break
   done
-  if [[ "${selected_levels[${#selected_levels[@]} - 1]}" != "$level" ]]; then
-    echo "Invalid level: '$level'. Expected one of: ${LEVELS_BY_SEVERITY[*]}" >&2
-    exit 1
-  fi
 fi
 
 # The unified log has no warning or trace type, so for OWN_SUBSYSTEM the level is matched on the
@@ -122,11 +125,6 @@ fi
 # `error` keeps only the error and fault types of other subsystems.
 
 stream_from_simulator() {
-  if ! xcrun simctl list devices booted | grep -q "(Booted)"; then
-    echo "No booted iOS simulator. Boot one, for example with 'yarn workspace fabric-example ios'." >&2
-    exit 1
-  fi
-
   local clauses=()
   if [[ ${#selected_subsystems[@]} -gt 0 ]]; then
     local quoted_subsystems
@@ -161,7 +159,7 @@ stream_from_simulator() {
     predicate="$(printf ' AND %s' "${clauses[@]}")"
     arguments+=(--predicate "${predicate# AND }")
   fi
-  exec xcrun simctl spawn booted "${arguments[@]}"
+  exec xcrun simctl spawn "$target_id" "${arguments[@]}"
 }
 
 # Apple's tools cannot stream a device log: `log stream` has no device option, and
@@ -173,7 +171,7 @@ stream_from_device() {
     exit 1
   fi
 
-  local arguments=(syslog live --udid "$device_udid" --label)
+  local arguments=(syslog live --udid "$target_id" --label)
   local subsystem
   for subsystem in "${selected_subsystems[@]+"${selected_subsystems[@]}"}"; do
     arguments+=(--subsystem "$subsystem")
@@ -203,27 +201,13 @@ stream_from_device() {
   exec pymobiledevice3 "${arguments[@]}"
 }
 
-# pymobiledevice3 prints a JSON list of UDIDs. The first one is the device usbmux reports first.
-first_usb_udid() {
-  pymobiledevice3 usbmux list --usb --simple \
-    | sed -n 's/^[[:space:]]*"\([^"]*\)".*/\1/p' \
-    | head -1
-}
+resolve_ios_target
+require_running_ios_target
 
-if [[ -z "$device_udid" ]]; then
-  if ! command -v pymobiledevice3 >/dev/null 2>&1; then
-    echo "pymobiledevice3 is not installed, so no USB device is checked. Streaming from the booted simulator." >&2
-  else
-    device_udid="$(first_usb_udid)"
-    if [[ -z "$device_udid" ]]; then
-      echo "No USB device found. Streaming from the booted simulator." >&2
-    fi
-  fi
-fi
-
-if [[ -n "$device_udid" ]]; then
-  echo "Streaming from USB device $device_udid" >&2
+if [[ "$target_kind" == "device" ]]; then
+  echo "Streaming from device $target_id" >&2
   stream_from_device
 else
+  echo "Streaming from simulator $target_id" >&2
   stream_from_simulator
 fi
