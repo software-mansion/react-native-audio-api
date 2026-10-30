@@ -68,7 +68,6 @@
     "ios",
     "RNAudioAPI.podspec",
     "Package.swift",
-    "metro-config",
     "!ios/build",
     "!android/build",
     "!android/gradle",
@@ -166,8 +165,14 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
+    "@expo/config-plugins": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "@expo/config-plugins": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",
@@ -241,7 +246,6 @@
         "typescript",
         {
           "project": "tsconfig.json",
-          "tsc": "../../node_modules/.bin/tsc",
           "esm": true,
           "commonjs": true
         }

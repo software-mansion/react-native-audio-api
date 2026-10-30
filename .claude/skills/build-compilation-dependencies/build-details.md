@@ -221,13 +221,14 @@ Static library and static framework builds archive the pod with libtool, which d
 
 ### `rnaa_utils.rb` — dynamic path resolution at `pod install` time
 
-Resolves three paths that vary per machine/monorepo layout:
+Resolves two paths that vary per machine/monorepo layout:
 
 1. `react_native_common_dir` — ReactCommon path relative to Pods root
 2. `dynamic_frameworks_audio_api_dir` — this pod's dir relative to Pods root
-3. `dynamic_frameworks_worklets_dir` — worklets pod dir (only if enabled)
 
 These vary per machine/monorepo layout, so they're computed at install time rather than hardcoded.
+
+`ReactCommon` is joined onto react-native's **own** directory (`File.dirname(require.resolve('react-native/package.json'))`), never `<that dir>/../react-native`: isolated layouts (pnpm, Yarn's pnpm linker) store the package in a folder not named `react-native` (e.g. `.store/react-native-virtual-<hash>/package`), and the sibling lookup made `pod install` fail for those consumers. The `REACT_NATIVE_NODE_MODULES_DIR` fallback accepts either react-native's directory or the `node_modules` containing it.
 
 ### System frameworks linked
 
@@ -242,6 +243,8 @@ s.ios.frameworks = 'Accelerate', 'AVFoundation', 'MediaPlayer'
 Enables New Architecture: `ENV['RCT_NEW_ARCH_ENABLED'] = '1'` at the top. This is the only example app using the new arch — always test new features here.
 
 The podfile resolves the minimum iOS version from RN's `min_ios_version_supported` helper — do not hardcode `14.0` in the Podfile itself.
+
+**No hard-coded `node_modules` paths in fabric-example.** `RN_RELATIVE_PATH` (Podfile), `reactNativeDir` / `codegenDir` / `cliFile` / `hermesCommand` (`android/app/build.gradle`), the `@react-native/gradle-plugin` `includeBuild` (`settings.gradle`) and `apps/common-app/scripts/dependencies.js` all resolve packages with Node, so they hold for hoisted and isolated `node_modules`. Packages that are react-native's dependencies (gradle-plugin, codegen, hermes-compiler) are resolved from react-native's location, since the app doesn't declare them. The pbxproj sets `REACT_NATIVE_PATH` only at project level (written by `pod install` from `RN_RELATIVE_PATH`); targets inherit it — don't add target-level overrides. fabric-example declares every package its own JS config uses (babel preset, module-resolver, metro-config, RN CLI, `react-native-worklets` for its babel plugin) instead of relying on common-app's being hoisted.
 
 ---
 

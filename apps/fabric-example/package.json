@@ -16,9 +16,19 @@
     "lucide-react-native": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
-    "react-native-svg": "catalog:"
+    "react-native-svg": "catalog:",
+    "react-native-worklets": "catalog:"
   },
   "devDependencies": {
+    "@babel/core": "catalog:",
+    "@babel/runtime": "catalog:",
+    "@react-native-community/cli": "catalog:",
+    "@react-native-community/cli-platform-android": "catalog:",
+    "@react-native-community/cli-platform-ios": "catalog:",
+    "@react-native/babel-preset": "catalog:",
+    "@react-native/metro-config": "catalog:",
+    "@types/react": "catalog:",
+    "babel-plugin-module-resolver": "^4.1.0",
     "prettier": "catalog:"
   },
   "engines": {
