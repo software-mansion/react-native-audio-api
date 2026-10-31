@@ -29,10 +29,9 @@ class RuntimeInstanceCache : public RuntimeObserverListener {
   }
 
   ~RuntimeInstanceCache() override {
-    for (auto &cache : runtimeCaches_) {
-      // remove all `onRuntimeDestroyed` listeners.
-      RuntimeObserver::removeListener(*cache.first, this);
-    }
+    // Unregister under the observer's lock rather than walking `runtimeCaches_`, which a runtime
+    // being torn down on another thread may be erasing from at the same time.
+    RuntimeObserver::removeListener(this);
   }
 
   T &get(jsi::Runtime &rt) {
