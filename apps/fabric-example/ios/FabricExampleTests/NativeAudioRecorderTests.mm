@@ -80,6 +80,7 @@
 
 @property(nonatomic, strong) FakeRecorderAVAudioEngine *fakeAVAudioEngine;
 @property(nonatomic, assign) BOOL startIfNecessaryResult;
+@property(nonatomic, strong) NSError *startIfNecessaryError;
 @property(nonatomic, assign) NSInteger stopIfNecessaryCallCount;
 @property(nonatomic, assign) NSInteger attachInputNodeCallCount;
 @property(nonatomic, assign) NSInteger startIfNecessaryCallCount;
@@ -126,7 +127,7 @@
   (void)onInputNotification;
 }
 
-- (bool)startIfNecessary
+- (bool)startIfNecessaryWithError:(NSError **)error
 {
   self.startIfNecessaryCallCount += 1;
   BOOL observedSessionDeactivation = self.sessionDeactivationInvalidatedGraph;
@@ -138,6 +139,8 @@
   if (self.startIfNecessaryResult) {
     self.state = AudioEngineStateRunning;
     self.sessionDeactivationInvalidatedGraph = NO;
+  } else if (error != nil) {
+    *error = self.startIfNecessaryError;
   }
 
   return self.startIfNecessaryResult;
@@ -454,6 +457,41 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertFalse([recorder resume]);
 
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
+}
+
+- (void)testResumeReportsTheEngineErrorWhenEngineStartFails
+{
+  // The code iOS returns when a non-mixable session may not go active in the background.
+  NSError *activationRefused = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                                   code:560557684
+                                               userInfo:nil];
+  self.audioEngine.startIfNecessaryResult = NO;
+  self.audioEngine.startIfNecessaryError = activationRefused;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  NSError *error = nil;
+  XCTAssertFalse([recorder resume:&error]);
+
+  XCTAssertEqualObjects(error, activationRefused);
+}
+
+- (void)testResumeReportsAFallbackErrorWhenTheEngineGivesNone
+{
+  self.audioEngine.startIfNecessaryResult = NO;
+  self.audioEngine.startIfNecessaryError = nil;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  NSError *error = nil;
+  XCTAssertFalse([recorder resume:&error]);
+
+  XCTAssertNotNil(error);
+  XCTAssertEqualObjects(error.domain, @"NativeAudioRecorder");
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath

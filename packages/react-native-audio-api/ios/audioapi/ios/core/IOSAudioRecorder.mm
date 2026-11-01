@@ -365,7 +365,16 @@ void IOSAudioRecorder::resume()
     return;
   }
 
-  if (![nativeRecorder_ resume]) {
+  NSError *resumeError = nil;
+  if (![nativeRecorder_ resume:&resumeError]) {
+    std::string message = "iOS recorder error: failed to resume";
+
+    if (resumeError != nil) {
+      message += ": ";
+      message += [[resumeError debugDescription] UTF8String];
+    }
+
+    reportError(message);
     return;
   }
 

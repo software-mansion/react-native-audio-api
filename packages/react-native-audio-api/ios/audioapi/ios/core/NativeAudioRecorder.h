@@ -34,6 +34,10 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 /// Returns NO when the audio engine could not be started, in which case input stays disarmed.
 - (BOOL)resume;
 
+/// Like resume, and on NO sets `error` to the engine's reason (session activation refused,
+/// engine start failed, no live input format).
+- (BOOL)resume:(NSError **)error;
+
 - (void)cleanup;
 
 @end
