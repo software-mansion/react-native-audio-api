@@ -611,7 +611,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Sets an error callback for internal errors that might happen during file writing, callback invocation, or adapter access.
+          Sets an error callback for internal errors that might happen during file writing, callback invocation, or adapter access. On iOS it also reports a [`resume`](#resume) that the system refused, with the native error (domain, code, description) in the message, for example `NSOSStatusErrorDomain` code `560557684` (`!int`) when a non-mixable session may not go active in the background.
 
           For details, see [OnRecorderErrorEventType](#onrecordererroreventtype).
         </div>

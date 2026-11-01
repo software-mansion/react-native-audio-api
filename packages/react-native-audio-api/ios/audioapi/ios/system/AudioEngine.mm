@@ -55,6 +55,7 @@
 - (void)resetInputNode;
 - (BOOL)mustRebuildBeforeStart;
 - (void)rebuildGraphForCurrentHardware;
+- (bool)startEngine:(NSError **)error;
 - (void)settleStateAfterFailedStart;
 - (void)resumeAfterRebuild;
 - (dispatch_block_t)inputNotificationBlock:(AudioEngineInputNotification)notification;
@@ -67,6 +68,23 @@
 @implementation AudioEngine
 
 static AudioEngine *_sharedInstance = nil;
+static NSString *const AudioEngineErrorDomain = @"AudioEngine";
+static const NSInteger AudioEngineErrorCodeNoTrackedGraph = 1;
+static const NSInteger AudioEngineErrorCodeMissingLiveInputFormat = 2;
+
+static void AudioEngineSetError(NSError **error, NSError *value)
+{
+  if (error != nil) {
+    *error = value;
+  }
+}
+
+static NSError *AudioEngineMakeError(NSInteger code, NSString *description)
+{
+  return [NSError errorWithDomain:AudioEngineErrorDomain
+                             code:code
+                         userInfo:@{NSLocalizedDescriptionKey : description}];
+}
 
 - (void)createAudioEngineIfNeeded
 {
@@ -680,7 +698,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     return;
   }
 
-  if (![self startEngine]) {
+  if (![self startEngine:nil]) {
     [self settleStateAfterFailedStart];
     [self notifyOutputRecoveryFailed];
   }
@@ -730,7 +748,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   self.graphNeedsRebuild = false;
 }
 
-- (bool)startEngine
+- (bool)startEngine:(NSError **)outError
 {
   NSError *error = nil;
 
@@ -743,6 +761,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (![self.sessionManager ensureActive:true error:&error]) {
     NSLog(@"Error while activating audio session: %@", [error debugDescription]);
+    AudioEngineSetError(outError, error);
     return false;
   }
 
@@ -751,6 +770,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
     NSLog(@"Error while materializing the audio input node: missing live input format");
+    AudioEngineSetError(
+        outError,
+        AudioEngineMakeError(
+            AudioEngineErrorCodeMissingLiveInputFormat,
+            @"Audio input node could not be materialized: missing live input format"));
     return false;
   }
 
@@ -759,6 +783,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if (error != nil) {
     NSLog(@"Error while starting the audio engine: %@", [error debugDescription]);
+    AudioEngineSetError(outError, error);
     return false;
   }
 
@@ -782,6 +807,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 - (bool)startIfNecessary
 {
+  return [self startIfNecessaryWithError:nil];
+}
+
+- (bool)startIfNecessaryWithError:(NSError **)error
+{
   std::scoped_lock lock(_engineLock);
   if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
       [self.audioEngine isRunning]) {
@@ -790,6 +820,10 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   if (![self hasTrackedGraph]) {
+    AudioEngineSetError(
+        error,
+        AudioEngineMakeError(
+            AudioEngineErrorCodeNoTrackedGraph, @"Audio engine has no nodes to start"));
     return false;
   }
 
@@ -797,7 +831,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     [self rebuildGraphForCurrentHardware];
   }
 
-  if ([self startEngine]) {
+  if ([self startEngine:error]) {
     return true;
   }
 

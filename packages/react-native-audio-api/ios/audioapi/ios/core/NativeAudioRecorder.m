@@ -126,12 +126,13 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
                          voiceProcessingEnabled:self.voiceProcessingEnabled
                             onInputNotification:self.onInputNotification];
 
-  if (![audioEngine startIfNecessary]) {
+  NSError *engineError = nil;
+  if (![audioEngine startIfNecessaryWithError:&engineError]) {
     [audioEngine detachInputNode];
     [audioEngine stopIfPossible];
 
     if (error != nil) {
-      *error = [NSError
+      *error = engineError ?: [NSError
           errorWithDomain:@"NativeAudioRecorder"
                      code:1
                  userInfo:@{
@@ -173,10 +174,32 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
 - (BOOL)resume
 {
+  return [self resume:nil];
+}
+
+- (BOOL)resume:(NSError **)error
+{
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  return [audioEngine startIfNecessary];
+  NSError *engineError = nil;
+  if ([audioEngine startIfNecessaryWithError:&engineError]) {
+    if (error != nil) {
+      *error = nil;
+    }
+    return YES;
+  }
+
+  if (error != nil) {
+    *error = engineError ?: [NSError
+        errorWithDomain:@"NativeAudioRecorder"
+                   code:1
+               userInfo:@{
+                 NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
+               }];
+  }
+
+  return NO;
 }
 
 - (void)cleanup

@@ -16,6 +16,8 @@
 #import <audioapi/encoding/EncoderCapabilities.h>
 #import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
+#import <audioapi/events/AudioEventPayload.h>
+#import <audioapi/events/IAudioEventHandlerRegistry.h>
 
 #include <cstring>
 #include <memory>
@@ -130,6 +132,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 @property(nonatomic, assign) NSInteger pauseCallCount;
 @property(nonatomic, assign) NSInteger resumeCallCount;
 @property(nonatomic, assign) BOOL resumeResult;
+@property(nonatomic, strong) NSError *resumeError;
 @property(nonatomic, assign) NSInteger cleanupCallCount;
 @property(nonatomic, assign) NSInteger setInputArmedCallCount;
 @property(nonatomic, assign) BOOL lastInputArmed;
@@ -196,8 +199,13 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   self.pauseCallCount += 1;
 }
 
-- (BOOL)resume {
+- (BOOL)resume:(NSError **)error {
   self.resumeCallCount += 1;
+
+  if (!self.resumeResult && error != nil) {
+    *error = self.resumeError;
+  }
+
   return self.resumeResult;
 }
 
@@ -207,6 +215,50 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 }
 
 @end
+
+/// Records every dispatched event so a test can read what reached JS.
+class RecordingEventRegistry : public IAudioEventHandlerRegistry {
+public:
+  struct Dispatched {
+    AudioEvent event;
+    uint64_t listenerId;
+    std::string reason;
+  };
+
+  std::vector<Dispatched> dispatched;
+
+  uint64_t registerHandler(
+      AudioEvent eventName,
+      const std::shared_ptr<facebook::jsi::Function> &handler) override {
+    return 0;
+  }
+
+  void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
+
+  bool dispatchEvent(
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    std::string reason;
+    if (auto *stringPayload = std::get_if<StringPayload>(&payload)) {
+      reason = stringPayload->reason;
+    }
+    dispatched.push_back({eventName, listenerId, reason});
+    return true;
+  }
+
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override {
+    return nullptr;
+  }
+
+  bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return dispatchEvent(eventName, listenerId, std::move(payload));
+  }
+};
 
 class TestableIOSAudioRecorder : public IOSAudioRecorder {
 public:
@@ -514,6 +566,50 @@ public:
   XCTAssertEqual(self.nativeRecorder.resumeCallCount, 1);
   XCTAssertTrue(_recorder->isPaused());
   XCTAssertFalse(_recorder->isRecording());
+}
+
+- (void)testResumeReportsTheNativeErrorThroughRecorderError {
+  auto registry = std::make_shared<RecordingEventRegistry>();
+  auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
+  NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
+  recorder->setOnErrorCallback(42);
+  recorder->setRecorderState(RecorderState::Recording);
+  self.audioEngine.state = AudioEngineStateRunning;
+  recorder->pause();
+
+  self.nativeRecorder.resumeResult = NO;
+  self.nativeRecorder.resumeError =
+      [NSError errorWithDomain:NSOSStatusErrorDomain code:560557684 userInfo:nil];
+
+  recorder->resume();
+
+  XCTAssertEqual(registry->dispatched.size(), 1UL);
+  XCTAssertEqual(registry->dispatched[0].event, AudioEvent::RECORDER_ERROR);
+  XCTAssertEqual(registry->dispatched[0].listenerId, 42ULL);
+  NSString *reason = NSStringFromStdString(registry->dispatched[0].reason);
+  XCTAssertTrue([reason containsString:@"failed to resume"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"NSOSStatusErrorDomain"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
+
+  recorder->replaceNativeRecorder(original);
+  [original cleanup];
+}
+
+- (void)testResumeReportsNothingWhenNoErrorCallbackIsSet {
+  auto registry = std::make_shared<RecordingEventRegistry>();
+  auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
+  NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
+  recorder->setRecorderState(RecorderState::Recording);
+  self.audioEngine.state = AudioEngineStateRunning;
+  recorder->pause();
+  self.nativeRecorder.resumeResult = NO;
+
+  recorder->resume();
+
+  XCTAssertEqual(registry->dispatched.size(), 0UL);
+
+  recorder->replaceNativeRecorder(original);
+  [original cleanup];
 }
 
 - (void)testStopReturnsErrorWhileIdle {

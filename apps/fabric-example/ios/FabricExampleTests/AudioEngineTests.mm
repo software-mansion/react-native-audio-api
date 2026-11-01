@@ -738,6 +738,39 @@
   XCTAssertEqual(fakeEngine.startCallCount, 0);
 }
 
+- (void)testStartIfNecessaryWithErrorReportsTheSessionActivationError {
+  [self attachSourceNodeToAudioEngine];
+  NSError *activationRefused = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                                   code:560557684
+                                               userInfo:nil];
+  self.sessionManager.ensureActiveResult = NO;
+  self.sessionManager.ensureActiveFailure = activationRefused;
+
+  NSError *error = nil;
+  XCTAssertFalse([self.audioEngine startIfNecessaryWithError:&error]);
+
+  XCTAssertEqualObjects(error, activationRefused);
+}
+
+- (void)testStartIfNecessaryWithErrorReportsTheEngineStartError {
+  [self attachSourceNodeToAudioEngine];
+  NSError *startRefused = [NSError errorWithDomain:@"AudioEngineTests" code:9 userInfo:nil];
+  self.audioEngine.currentFakeAudioEngine.startError = startRefused;
+
+  NSError *error = nil;
+  XCTAssertFalse([self.audioEngine startIfNecessaryWithError:&error]);
+
+  XCTAssertEqualObjects(error, startRefused);
+}
+
+- (void)testStartIfNecessaryWithErrorReportsAnEmptyGraph {
+  NSError *error = nil;
+  XCTAssertFalse([self.audioEngine startIfNecessaryWithError:&error]);
+
+  XCTAssertEqualObjects(error.domain, @"AudioEngine");
+  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 0);
+}
+
 - (void)testStartIfNecessaryRebuildsWhenInterrupted {
   [self attachSourceNodeToAudioEngine];
   FakeAudioEngine *oldEngine = self.audioEngine.currentFakeAudioEngine;
