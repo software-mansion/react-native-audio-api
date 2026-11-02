@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <optional>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -116,6 +118,159 @@ AudioFileTypeID guessFileTypeHint(const void *data, size_t size)
 }
 // NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
 
+using ChannelLayoutStorage = std::vector<std::byte>;
+
+AudioChannelLayout *asChannelLayout(ChannelLayoutStorage &storage)
+{
+  return reinterpret_cast<AudioChannelLayout *>(storage.data());
+}
+
+// Reads a variable-size AudioChannelLayout property through a GetPropertyInfo / GetProperty pair.
+template <typename GetInfo, typename Get>
+std::optional<ChannelLayoutStorage> readChannelLayout(GetInfo &&getInfo, Get &&get)
+{
+  UInt32 size = 0;
+  if (getInfo(&size) != noErr || size < sizeof(AudioChannelLayout)) {
+    return std::nullopt;
+  }
+  ChannelLayoutStorage storage(size);
+  if (get(&size, storage.data()) != noErr) {
+    return std::nullopt;
+  }
+  return storage;
+}
+
+// The layout is not always published by ExtAudioFile itself: for MP4/AAC it lives on
+// the wrapped AudioFile or only on the codec converter ExtAudioFile builds internally.
+std::optional<ChannelLayoutStorage> readFileChannelLayout(ExtAudioFileRef extFile)
+{
+  if (auto layout = readChannelLayout(
+          [&](UInt32 *size) {
+            return ExtAudioFileGetPropertyInfo(
+                extFile, kExtAudioFileProperty_FileChannelLayout, size, nullptr);
+          },
+          [&](UInt32 *size, void *data) {
+            return ExtAudioFileGetProperty(
+                extFile, kExtAudioFileProperty_FileChannelLayout, size, data);
+          })) {
+    return layout;
+  }
+
+  AudioFileID audioFile = nullptr;
+  UInt32 audioFileSize = sizeof(audioFile);
+  if (ExtAudioFileGetProperty(
+          extFile, kExtAudioFileProperty_AudioFile, &audioFileSize, &audioFile) == noErr &&
+      audioFile != nullptr) {
+    if (auto layout = readChannelLayout(
+            [&](UInt32 *size) {
+              return AudioFileGetPropertyInfo(
+                  audioFile, kAudioFilePropertyChannelLayout, size, nullptr);
+            },
+            [&](UInt32 *size, void *data) {
+              return AudioFileGetProperty(audioFile, kAudioFilePropertyChannelLayout, size, data);
+            })) {
+      return layout;
+    }
+  }
+
+  AudioConverterRef converter = nullptr;
+  UInt32 converterSize = sizeof(converter);
+  if (ExtAudioFileGetProperty(
+          extFile, kExtAudioFileProperty_AudioConverter, &converterSize, &converter) == noErr &&
+      converter != nullptr) {
+    if (auto layout = readChannelLayout(
+            [&](UInt32 *size) {
+              return AudioConverterGetPropertyInfo(
+                  converter, kAudioConverterInputChannelLayout, size, nullptr);
+            },
+            [&](UInt32 *size, void *data) {
+              return AudioConverterGetProperty(
+                  converter, kAudioConverterInputChannelLayout, size, data);
+            })) {
+      return layout;
+    }
+  }
+  return std::nullopt;
+}
+
+// Expands a tag- or bitmap-described layout into explicit per-channel descriptions.
+std::optional<ChannelLayoutStorage> expandToChannelDescriptions(ChannelLayoutStorage layout)
+{
+  const AudioChannelLayout *source = asChannelLayout(layout);
+  if (source->mChannelLayoutTag == kAudioChannelLayoutTag_UseChannelDescriptions) {
+    return layout;
+  }
+
+  const bool usesBitmap = source->mChannelLayoutTag == kAudioChannelLayoutTag_UseChannelBitmap;
+  const AudioFormatPropertyID property = usesBitmap ? kAudioFormatProperty_ChannelLayoutForBitmap
+                                                    : kAudioFormatProperty_ChannelLayoutForTag;
+  const void *specifier = usesBitmap ? static_cast<const void *>(&source->mChannelBitmap)
+                                     : static_cast<const void *>(&source->mChannelLayoutTag);
+  const UInt32 specifierSize =
+      usesBitmap ? sizeof(source->mChannelBitmap) : sizeof(source->mChannelLayoutTag);
+
+  UInt32 size = 0;
+  if (AudioFormatGetPropertyInfo(property, specifierSize, specifier, &size) != noErr ||
+      size < sizeof(AudioChannelLayout)) {
+    return std::nullopt;
+  }
+  ChannelLayoutStorage expanded(size);
+  if (AudioFormatGetProperty(property, specifierSize, specifier, &size, expanded.data()) != noErr) {
+    return std::nullopt;
+  }
+  return expanded;
+}
+
+bool isSpeakerLabel(AudioChannelLabel label)
+{
+  return label != kAudioChannelLabel_Unknown && label != kAudioChannelLabel_Unused &&
+      label < kAudioChannelLabel_Discrete;
+}
+
+// Decoded channels must follow the WAVE / Web Audio speaker order
+// (L R C LFE Ls Rs …), but AudioToolbox emits them in the file's native order —
+// C L R Ls Rs LFE for 5.1 AAC. Core Audio numbers its speaker labels in WAVE
+// order, so sorting the file's channels by label yields the target layout, and
+// ExtAudioFile reorders to it. Layouts without speaker positions stay in file order.
+void requestWebAudioChannelOrder(ExtAudioFileRef extFile, int channels)
+{
+  if (channels <= 2) {
+    return;
+  }
+  auto fileLayout = readFileChannelLayout(extFile);
+  if (!fileLayout) {
+    return;
+  }
+  auto described = expandToChannelDescriptions(std::move(*fileLayout));
+  if (!described) {
+    return;
+  }
+
+  AudioChannelLayout *layout = asChannelLayout(*described);
+  if (layout->mNumberChannelDescriptions != static_cast<UInt32>(channels)) {
+    return;
+  }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  std::span descriptions(layout->mChannelDescriptions, layout->mNumberChannelDescriptions);
+  const bool allSpeakers = std::ranges::all_of(descriptions, [](const auto &description) {
+    return isSpeakerLabel(description.mChannelLabel);
+  });
+  if (!allSpeakers ||
+      std::ranges::is_sorted(descriptions, {}, &AudioChannelDescription::mChannelLabel)) {
+    return;
+  }
+
+  std::ranges::sort(descriptions, {}, &AudioChannelDescription::mChannelLabel);
+  layout->mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelDescriptions;
+  layout->mChannelBitmap = 0;
+  // Best effort: on failure the channels simply keep the file order.
+  ExtAudioFileSetProperty(
+      extFile,
+      kExtAudioFileProperty_ClientChannelLayout,
+      static_cast<UInt32>(described->size()),
+      described->data());
+}
+
 } // namespace
 
 IOSDecoder::IOSDecoder() = default;
@@ -165,6 +320,8 @@ decoding::DecoderResult IOSDecoder::finishOpeningDecoder(
     return Err(
         "IOSDecoder: ExtAudioFileSetProperty(ClientDataFormat) failed: " + std::to_string(status));
   }
+  // After ClientDataFormat: setting the client format resets the client channel layout.
+  requestWebAudioChannelOrder(extFile, channels);
 
   SInt64 fileLengthFrames = 0;
   propSize = sizeof(fileLengthFrames);

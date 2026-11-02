@@ -1,15 +1,19 @@
 import React, { useEffect, useRef, useState, FC } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
+  AudioBuffer,
+  AudioBufferSourceNode,
   AudioContext,
   GainNode,
-  OscillatorNode,
   PannerNode,
 } from 'react-native-audio-api';
 import type { DistanceModelType } from 'react-native-audio-api';
 
 import { Button, Container, Slider, Spacer } from '../../components';
 import { colors, layout } from '../../styles';
+
+const MUSIC_URL =
+  'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
 const LABEL_WIDTH = 100;
 const DISTANCE_MODELS: DistanceModelType[] = [
@@ -92,6 +96,7 @@ const PRESETS: Preset[] = [
 
 const PannerNodeExample: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [gain, setGain] = useState(0.4);
   const [spatial, setSpatial] = useState<SpatialState>(INITIAL_SPATIAL);
   const [listener, setListener] = useState<Vec3State>(INITIAL_LISTENER);
@@ -107,12 +112,24 @@ const PannerNodeExample: FC = () => {
   );
 
   const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const musicBufferRef = useRef<AudioBuffer | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const pannerRef = useRef<PannerNode | null>(null);
 
   useEffect(() => {
-    audioContextRef.current = new AudioContext();
+    const ctx = new AudioContext();
+    audioContextRef.current = ctx;
+    fetch(MUSIC_URL)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
+      .then((buffer) => {
+        musicBufferRef.current = buffer;
+      })
+      .catch((error) => {
+        console.error('PannerNode: failed to load music', error);
+      })
+      .finally(() => setIsLoading(false));
     return () => {
       audioContextRef.current?.close();
       audioContextRef.current = null;
@@ -188,9 +205,9 @@ const PannerNodeExample: FC = () => {
     }
 
     const ctx = audioContextRef.current;
-    oscillatorRef.current = ctx.createOscillator();
-    oscillatorRef.current.type = 'sine';
-    oscillatorRef.current.frequency.value = 440;
+    sourceRef.current = ctx.createBufferSource();
+    sourceRef.current.buffer = musicBufferRef.current;
+    sourceRef.current.loop = true;
 
     gainRef.current = ctx.createGain();
     gainRef.current.gain.value = gain;
@@ -202,20 +219,20 @@ const PannerNodeExample: FC = () => {
     applySpatial(spatial);
     applyListener(listener);
 
-    oscillatorRef.current.connect(gainRef.current);
+    sourceRef.current.connect(gainRef.current);
     gainRef.current.connect(pannerRef.current);
     pannerRef.current.connect(ctx.destination);
   };
 
   const handlePlayPause = () => {
     if (isPlaying) {
-      oscillatorRef.current?.stop(0);
-      oscillatorRef.current = null;
+      sourceRef.current?.stop(0);
+      sourceRef.current = null;
       gainRef.current = null;
       pannerRef.current = null;
     } else {
       setup();
-      oscillatorRef.current?.start(0);
+      sourceRef.current?.start(0);
     }
     setIsPlaying((prev) => !prev);
   };
@@ -243,7 +260,10 @@ const PannerNodeExample: FC = () => {
 
         <Button
           onPress={handlePlayPause}
-          title={isPlaying ? 'Stop' : 'Play tone'}
+          title={
+            isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play music'
+          }
+          disabled={isLoading || !musicBufferRef.current}
         />
         <Spacer.Vertical size={20} />
 
@@ -253,7 +273,8 @@ const PannerNodeExample: FC = () => {
             <Pressable
               key={preset.label}
               style={styles.chip}
-              onPress={() => applyPreset(preset)}>
+              onPress={() => applyPreset(preset)}
+            >
               <Text style={styles.chipText}>{preset.label}</Text>
             </Pressable>
           ))}
@@ -273,10 +294,9 @@ const PannerNodeExample: FC = () => {
                 ? 'Cone on — use inner/outer angle + outer gain with orientation'
                 : 'Cone off (360°) — orientation has no effect'
             );
-          }}>
-          <Text style={styles.chipText}>
-            Cone {coneEnabled ? 'ON' : 'OFF'}
-          </Text>
+          }}
+        >
+          <Text style={styles.chipText}>Cone {coneEnabled ? 'ON' : 'OFF'}</Text>
         </Pressable>
         <Spacer.Vertical size={12} />
 
@@ -358,7 +378,8 @@ const PannerNodeExample: FC = () => {
                 if (pannerRef.current) {
                   pannerRef.current.distanceModel = model;
                 }
-              }}>
+              }}
+            >
               <Text style={styles.chipText}>{model}</Text>
             </Pressable>
           ))}
