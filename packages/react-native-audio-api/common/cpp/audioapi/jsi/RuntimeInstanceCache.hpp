@@ -3,6 +3,7 @@
 #include <audioapi/jsi/RuntimeObserver.h>
 
 #include <jsi/jsi.h>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
 
@@ -24,7 +25,7 @@ template <typename T>
 class RuntimeInstanceCache : public RuntimeObserverListener {
  public:
   void onRuntimeDestroyed(jsi::Runtime *rt) override {
-    // A runtime has been destroyed, so destroy the related cache.
+    std::scoped_lock lock(runtimeCachesMutex_);
     runtimeCaches_.erase(rt);
   }
 
@@ -35,19 +36,25 @@ class RuntimeInstanceCache : public RuntimeObserverListener {
   }
 
   T &get(jsi::Runtime &rt) {
-    if (runtimeCaches_.count(&rt) == 0) {
-      // This is the first time this Runtime has been accessed.
-      // We set up a `onRuntimeDestroyed` listener for it and
-      // initialize the cache map.
-      RuntimeObserver::addListener(rt, this);
-
-      T cache;
-      runtimeCaches_.emplace(&rt, std::move(cache));
+    {
+      std::scoped_lock lock(runtimeCachesMutex_);
+      if (auto cache = runtimeCaches_.find(&rt); cache != runtimeCaches_.end()) {
+        return cache->second;
+      }
     }
-    return runtimeCaches_.at(&rt);
+    // Registered without holding `runtimeCachesMutex_`: teardown takes the observer's lock and
+    // then this one, so taking them in the opposite order here could deadlock.
+    RuntimeObserver::addListener(rt, this);
+
+    std::scoped_lock lock(runtimeCachesMutex_);
+    // first time this runtime has seen this cache, create it and return it.
+    return runtimeCaches_.emplace(&rt, T{}).first->second;
   }
 
  private:
+  // Guards the map structure: `get` runs on each runtime's JS thread while `onRuntimeDestroyed`
+  // runs on whichever thread tears another runtime down.
+  std::mutex runtimeCachesMutex_;
   std::unordered_map<jsi::Runtime *, T> runtimeCaches_;
 };
 
