@@ -217,12 +217,13 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
     return outputsResult;
   }
 
-  if (targetState == RecorderState::Recording) {
-    auto result = mStream_->requestStart();
+  // Started even when restoring a paused session: AAudio can't pause an input stream, so
+  // pause() leaves it running and onAudioReady drops its buffers. A paused session keeps
+  // the same started stream across a restart as before it.
+  auto result = mStream_->requestStart();
 
-    if (result != oboe::Result::OK) {
-      return Err("Failed to start stream: " + std::string(oboe::convertToText(result)));
-    }
+  if (result != oboe::Result::OK) {
+    return Err("Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
   state_.store(targetState, std::memory_order_release);
