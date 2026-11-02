@@ -132,12 +132,13 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
     [audioEngine stopIfPossible];
 
     if (error != nil) {
-      *error = engineError ?: [NSError
-          errorWithDomain:@"NativeAudioRecorder"
-                     code:1
-                 userInfo:@{
-                   NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
-                 }];
+      *error = engineError
+          ?: [NSError
+                 errorWithDomain:@"NativeAudioRecorder"
+                            code:1
+                        userInfo:@{
+                          NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
+                        }];
     }
 
     return NO;
@@ -191,12 +192,13 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   }
 
   if (error != nil) {
-    *error = engineError ?: [NSError
-        errorWithDomain:@"NativeAudioRecorder"
-                   code:1
-               userInfo:@{
-                 NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
-               }];
+    *error = engineError
+        ?: [NSError
+               errorWithDomain:@"NativeAudioRecorder"
+                          code:1
+                      userInfo:@{
+                        NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
+                      }];
   }
 
   return NO;
