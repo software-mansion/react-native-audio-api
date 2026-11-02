@@ -36,6 +36,13 @@ set_source_files_properties(
   COMPILE_FLAGS "-O3 -D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability"
 )
 
+# APerformanceHint (API 33) is weak-linked and guarded the same way.
+set_source_files_properties(
+  "${ANDROID_CPP_DIR}/audioapi/android/ThroughputHintSession.cpp"
+  PROPERTIES
+  COMPILE_FLAGS "-D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability"
+)
+
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
   set_source_files_properties(
     "${COMMON_CPP_DIR}/audioapi/dsp/r8brain/fft/pffft_double.c"

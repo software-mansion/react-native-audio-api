@@ -1,5 +1,6 @@
 #include <audioapi/android/AndroidDecoding.h>
 #include <audioapi/android/AndroidDecodingDataSource.h>
+#include <audioapi/android/ThroughputHintSession.h>
 #include <audioapi/android/core/utils/AndroidMediaFormat.h>
 
 #include <audioapi/dsp/r8brain/Resampler.hpp>
@@ -7,7 +8,6 @@
 #include <audioapi/utils/Path.h>
 
 #include <android/api-level.h>
-#include <android/performance_hint.h>
 #include <media/NdkMediaCodec.h>
 #include <media/NdkMediaExtractor.h>
 #include <media/NdkMediaFormat.h>
@@ -47,9 +47,6 @@ constexpr auto CODEC_TIMEOUT = std::chrono::microseconds(CODEC_TIMEOUT_US);
 constexpr const char *MIME_AUDIO_RAW = "audio/raw";
 constexpr size_t RAW_PACKET_INITIAL_BYTES = size_t{64} * 1024;
 constexpr size_t RAW_PACKET_MAX_BYTES = size_t{16} * 1024 * 1024;
-// Shorter than any decode step on purpose: every report then asks for more
-// CPU, keeping the clocks raised for the whole decode.
-constexpr int64_t THROUGHPUT_HINT_TARGET_NS = 1'000'000;
 // Bail out of the drain loop if MediaCodec keeps saying "try again" after EOS
 // input without ever flagging EOS output (defensive against a stuck codec).
 constexpr int MAX_TRY_AGAIN_AFTER_EOS = 200;
@@ -174,36 +171,6 @@ void onAsyncError(
   events.ready.notify_one();
 }
 
-struct PerformanceHintSessionCloser {
-  void operator()(APerformanceHintSession *session) const {
-    if (__builtin_available(android 33, *)) {
-      APerformanceHint_closeSession(session);
-    }
-  }
-};
-
-using PerformanceHintSessionPtr =
-    std::unique_ptr<APerformanceHintSession, PerformanceHintSessionCloser>;
-
-// Null below API 33 or when the device offers no performance hint sessions.
-PerformanceHintSessionPtr createThroughputHintSession(const std::vector<int32_t> &threadIds) {
-  if (__builtin_available(android 33, *)) {
-    APerformanceHintManager *manager = APerformanceHint_getManager();
-    if (manager == nullptr) {
-      return nullptr;
-    }
-    return PerformanceHintSessionPtr(APerformanceHint_createSession(
-        manager, threadIds.data(), threadIds.size(), THROUGHPUT_HINT_TARGET_NS));
-  }
-  return nullptr;
-}
-
-void reportThroughputHintWork(APerformanceHintSession *session, int64_t durationNs) {
-  if (__builtin_available(android 33, *)) {
-    APerformanceHint_reportActualWorkDuration(session, std::max<int64_t>(durationNs, 1));
-  }
-}
-
 decoding::DecoderResult attachMemoryExtractorViaTempFile(
     AMediaExtractor *extractor,
     FilePtr &tempFile,
@@ -275,7 +242,7 @@ struct AndroidDecoderState {
   // them stays busy long enough for the CPU governor to raise clocks, which
   // roughly halves decoding speed. The session asks for those clocks on our
   // side of the chain: the decoding thread and the codec callback thread.
-  PerformanceHintSessionPtr throughputHint;
+  std::unique_ptr<ThroughputHintSession> throughputHint;
   bool throughputHintRequested = false;
 };
 
@@ -697,7 +664,7 @@ void startThroughputHint(AndroidDecoderState &state) {
       threadIds.push_back(callbackThreadId);
     }
   }
-  state.throughputHint = createThroughputHintSession(threadIds);
+  state.throughputHint = ThroughputHintSession::create(threadIds);
 }
 
 decoding::DecoderResult ensureCodecStarted(AndroidDecoderState &state) {
@@ -923,11 +890,7 @@ size_t AndroidDecoder::readPcmFrames(float *outInterleaved, size_t frameCount) {
   }
 
   if (state.throughputHint != nullptr) {
-    reportThroughputHintWork(
-        state.throughputHint.get(),
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::steady_clock::now() - workStart)
-            .count());
+    state.throughputHint->reportWork(std::chrono::steady_clock::now() - workStart);
   }
 
   framePosition_ += static_cast<int64_t>(filled);
@@ -981,8 +944,13 @@ decoding::DecoderResult AndroidDecoder::seekToTime(double seconds) {
   return Ok(None);
 }
 
-void AndroidDecoder::preferThroughput() {
-  preferThroughput_ = true;
+void AndroidDecoder::setPreferThroughput(bool preferThroughput) {
+  preferThroughput_ = preferThroughput;
+  if (!preferThroughput && impl_ != nullptr) {
+    // Closing the session lets the clocks drop; re-enabling starts a new one.
+    impl_->throughputHint.reset();
+    impl_->throughputHintRequested = false;
+  }
 }
 
 void AndroidDecoder::releaseImpl() {

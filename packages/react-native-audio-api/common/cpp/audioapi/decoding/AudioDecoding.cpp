@@ -48,24 +48,39 @@ makeEncodedMemorySource(const void *data, size_t size, int sampleRate) {
       .sampleRate = sampleRate};
 }
 
+// Container durations are estimates, trusted only up to this length so a
+// corrupt header cannot force a huge allocation. Longer files grow past it.
 constexpr float MAX_TRUSTED_ESTIMATE_SECONDS = 30.0F * 60.0F;
+// Headroom over the estimate (1/64 ≈ 1.6%) for encoder padding and priming.
+constexpr size_t ESTIMATE_HEADROOM_DIVISOR = 64;
+// Capacity growth once the estimate is exceeded: x1.5.
+constexpr size_t GROWTH_NUMERATOR = 3;
+constexpr size_t GROWTH_DENOMINATOR = 2;
+// Unused capacity up to 1/8 of the decoded length is trimmed in place (the
+// allocation stays); more than that is worth an exact-size copy.
+constexpr size_t IN_PLACE_TRIM_SLACK_DIVISOR = 8;
+
+size_t initialDecodeCapacity(size_t estimatedFrames, float sampleRate, size_t chunkFrames) {
+  const auto maxTrustedEstimate =
+      static_cast<size_t>(std::max(1.0F, sampleRate) * MAX_TRUSTED_ESTIMATE_SECONDS);
+  const size_t trustedEstimate = std::min(estimatedFrames, maxTrustedEstimate);
+  return trustedEstimate + trustedEstimate / ESTIMATE_HEADROOM_DIVISOR + chunkFrames;
+}
+
+size_t grownDecodeCapacity(size_t currentCapacity, size_t requiredFrames) {
+  return std::max(requiredFrames, currentCapacity * GROWTH_NUMERATOR / GROWTH_DENOMINATOR);
+}
 
 // Decodes straight into the returned planar buffer, sized up front from the
 // decoder's frame estimate, so peak memory stays near one copy of the PCM.
 AudioBufferResult decodeAll(decoding::AudioDecoderBackend &decoder) {
   constexpr size_t chunkFrames = decoding::AudioDecoderBackend::CHUNK_SIZE;
-  decoder.preferThroughput();
+  decoder.setPreferThroughput(true);
   const int channels = std::max(1, decoder.outputChannels());
   const auto outputSampleRate = static_cast<float>(decoder.outputSampleRate());
 
-  // Container durations are estimates; leave headroom for encoder padding, and
-  // trust them only up to half an hour so a corrupt header cannot force a huge
-  // allocation. Longer files grow geometrically past that.
-  const size_t estimatedFrames = decoder.getTotalPcmFrameCount();
-  const auto maxTrustedEstimate =
-      static_cast<size_t>(std::max(1.0F, outputSampleRate) * MAX_TRUSTED_ESTIMATE_SECONDS);
-  const size_t trustedEstimate = std::min(estimatedFrames, maxTrustedEstimate);
-  const size_t initialCapacity = trustedEstimate + trustedEstimate / 64 + chunkFrames;
+  const size_t initialCapacity =
+      initialDecodeCapacity(decoder.getTotalPcmFrameCount(), outputSampleRate, chunkFrames);
   auto audioBuffer = std::make_shared<AudioBuffer>(initialCapacity, channels, outputSampleRate);
 
   std::vector<float> chunk(chunkFrames * static_cast<size_t>(channels));
@@ -76,7 +91,7 @@ AudioBufferResult decodeAll(decoding::AudioDecoderBackend &decoder) {
       break;
     }
     if (framesDecoded + framesRead > audioBuffer->getSize()) {
-      audioBuffer->resize(std::max(framesDecoded + framesRead, audioBuffer->getSize() * 3 / 2));
+      audioBuffer->resize(grownDecodeCapacity(audioBuffer->getSize(), framesDecoded + framesRead));
     }
     audioBuffer->deinterleaveFrom(chunk.data(), framesDecoded, framesRead);
     framesDecoded += framesRead;
@@ -87,9 +102,7 @@ AudioBufferResult decodeAll(decoding::AudioDecoderBackend &decoder) {
   }
 
   const size_t capacity = audioBuffer->getSize();
-  // Shrinking in place keeps the allocation, so only trim small slack that
-  // way; a badly overestimated duration gets an exact-size copy instead.
-  if (capacity - framesDecoded <= framesDecoded / 8) {
+  if (capacity - framesDecoded <= framesDecoded / IN_PLACE_TRIM_SLACK_DIVISOR) {
     audioBuffer->resize(framesDecoded);
   } else {
     auto exact = std::make_shared<AudioBuffer>(framesDecoded, channels, outputSampleRate);

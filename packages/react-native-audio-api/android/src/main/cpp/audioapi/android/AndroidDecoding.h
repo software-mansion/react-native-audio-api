@@ -31,9 +31,9 @@ class AndroidDecoder : public decoding::OsDecoderBase {
   [[nodiscard]] decoding::DecoderResult open(const decoding::EncodedMemorySource &source);
   [[nodiscard]] size_t readPcmFrames(float *outInterleaved, size_t frameCount) override;
   [[nodiscard]] decoding::DecoderResult seekToTime(double seconds) override;
-  /// Boosts CPU clocks for the decoding threads through an ADPF performance
-  /// hint session on API 33+; does nothing below that.
-  void preferThroughput() override;
+  /// While on, boosts CPU clocks for the decoding threads through an ADPF
+  /// performance hint session on API 33+; does nothing below that.
+  void setPreferThroughput(bool preferThroughput) override;
 
  private:
   [[nodiscard]] decoding::DecoderResult finishOpeningDecoder(
