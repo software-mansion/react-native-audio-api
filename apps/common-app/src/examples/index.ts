@@ -150,7 +150,7 @@ export const Examples: Example[] = [
   },
   {
     key: 'EchoCancellation',
-    title: 'EAC',
+    title: 'AEC',
     Icon: icons.AudioLines,
     screen: EchoCancellation,
   },
