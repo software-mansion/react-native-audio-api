@@ -217,9 +217,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
     return outputsResult;
   }
 
-  // Started even when restoring a paused session: AAudio can't pause an input stream, so
-  // pause() leaves it running and onAudioReady drops its buffers. A paused session keeps
-  // the same started stream across a restart as before it.
+  // Started in both states, so a paused session comes back from a restart as it was; see pause().
   auto result = mStream_->requestStart();
 
   if (result != oboe::Result::OK) {
@@ -276,6 +274,8 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
 
 /// @brief Pauses the audio recording stream.
 /// For session without active file output, this method acts same as stop().
+/// Oboe can't pause an input stream (AAudio and OpenSL ES both return Unimplemented), so the
+/// stream keeps running while Paused and onAudioReady drops its buffers.
 /// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 void AndroidAudioRecorder::pause() {
   std::scoped_lock streamLock(streamMutex_);

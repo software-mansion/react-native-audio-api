@@ -13,7 +13,7 @@ import java.util.concurrent.Executors
 
 class RecordingNotificationReceiver(
   private val module: AudioAPIModule,
-  /** Whether the pause and resume actions only notify JS, leaving the recorder to the app. */
+  /** Reads [RecordingNotificationState.appHandlesPauseResume] live. */
   private val appHandlesPauseResume: () -> Boolean,
 ) : BroadcastReceiver() {
   companion object {
