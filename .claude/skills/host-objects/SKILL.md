@@ -28,7 +28,7 @@ Golden references: `GainNodeHostObject.h/.cpp` (effect node), `OscillatorNodeHos
 - **ALWAYS register getters/setters/functions in the constructor.** Anything not added to `addGetters`/`addSetters`/`addFunctions` is silently missing from JS.
 - **Match property names exactly.** The string in `JSI_EXPORT_PROPERTY_GETTER` becomes the JS property name. A typo means the property doesn't exist in JS.
 - **Clear callback IDs in the destructor** for any HO that registers audio events. Otherwise the audio thread fires into a destroyed JS function.
-- **Call `setExternalMemoryPressure`** when returning HOs or typed arrays backed by large native buffers.
+- **Call `setExternalMemoryPressure` once per native allocation, on the JS object whose collection frees it**, never again on objects that merely share it (see *External memory pressure*).
 - **Use `jsiutils::throwException()`** from `audioapi/jsi/JsiUtils.h` when throwing a named JS error (for example, `InvalidAccessError`) instead of rebuilding the `Error` object in a HostObject.
 - **Shadow state must be initialized** from `options` in the constructor — JS may read a property before ever setting it.
 - **Typed node pointers are `T *const`.** Mirror `AudioNode *const audioNode_` — declare as `GainNode *const gainNode_;` (const pointer, mutable object), initialize in the ctor initializer list via `typedAudioNode<T>(node_)`. Never use `T *foo_ = nullptr`.
@@ -349,7 +349,6 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferHostObject, getChannelData) {
       .callAsConstructor(runtime, arrayBuffer)
       .getObject(runtime);
 
-  float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
   return float32Array;
 }
 ```
@@ -358,17 +357,19 @@ The view aliases native memory for as long as JS keeps it, and the `shared_ptr` 
 
 That bookkeeping — copy-on-write against playing nodes, tracking exposed views, the spec's `copyFromChannel` / `copyToChannel` range rules — lives in the engine class `core/sources/SharedAudioBuffer`, not in `AudioBufferHostObject`. An AudioBuffer involves no inter-thread events (every member runs on the JS thread), so nothing forces its logic into the host layer; the host object only unpacks JSI arguments and wraps the returned storage. `SharedAudioBuffer` is unit-tested in `test/src/core/sources/SharedAudioBufferTest.cpp`, which the HostObject layer cannot be (see `build-compilation-dependencies`). Its per-channel flag vectors are sized in the constructor: sizing them lazily on first share crashed the view cut-off the moment the order of the two steps flipped.
 
-`AudioBufferSourceNodeHostObject` holds the assigned `SharedAudioBuffer` and hands samples to the audio thread in exactly one place, `acquireBufferContent`, which runs on `start()` and on a `setBuffer()` made after start. A `setBuffer()` before start only records the buffer and publishes its channel count; the node reads nothing until acquire, so every JS write made in between is played and nothing has to track content versions. `SharedAudioBuffer::acquireContent` both cuts off the live views and returns the storage-sharing buffer the node plays.
+`AudioBufferSourceNodeHostObject` holds the assigned `AudioBufferHostObject` and hands samples to the audio thread in exactly one place, `acquireBufferContent`, which runs on `start()` and on a `setBuffer()` made after start. A `setBuffer()` before start only records the buffer and publishes its channel count; the node reads nothing until acquire, so every JS write made in between is played and nothing has to track content versions. `SharedAudioBuffer::acquireContent` both cuts off the live views and returns the storage-sharing buffer the node plays.
 
 `AudioBufferQueueSourceNodeHostObject::enqueueBuffer` reuses the same mechanism: a buffer of the queue's width is shared through `SharedAudioBuffer::acquireContent` instead of copied, only a buffer of another width is mixed into a private copy, and the TS wrapper calls `invalidateChannelDataCache` after every enqueue. The stretcher is configured inline on the JS thread by the host base `initStretch`, once per node and with no audio event: the audio thread touches it only once the node has content, and the first content is always scheduled behind that call. Audio events are `FatFunction<72, …>`; a handle, a node pointer, two `shared_ptr`s and one scalar already fill the slot, so derive what you can on the audio thread (the queue event reads the width off its content) instead of capturing it.
 
 ### External memory pressure
 
-Call `setExternalMemoryPressure` whenever returning a HostObject or typed array that wraps a large native buffer. This lets the JS GC schedule collection correctly:
+`setExternalMemoryPressure(amount)` attaches `amount` to that one JS object. Hermes keeps a single global total; the amount leaves it only when *that* object is collected. It never looks at what an object references and never prioritizes big objects: the total only moves the next collection earlier, and a collection removes everything unreachable in the generation it covers. Report memory on the JS object **whose collection frees it**, and report each byte **once**:
 
-```cpp
-jsiObject.setExternalMemoryPressure(runtime, bufferHostObject->getSizeInBytes());
-```
+- **Samples are reported by the AudioBuffer's JS object only.** Every AudioBuffer reaches JS through `AudioBufferHostObject::createJsObject` (`createAudioBuffer`, decoding, offline rendering, recorder `onAudioReady`). Nodes keep the TS `AudioBuffer` in `_buffer`, which keeps the credited object reachable, so the samples stay counted for as long as any node or user reference exists.
+- **Never credit a shared buffer per node.** It was `size × nodes`: on Android, about 210 unstarted source nodes on one 22 MB buffer hit Hermes' `Max heap size was exceeded` at `external ≈ 4.6 GB` and crashed with SIGSEGV in `mqt_v_js`, the #1285 signature. On iOS it never aborted, but ran about one full GC per node (2000 created-and-dropped nodes: 2120 GCs instead of 55). A credit on a young object also shrinks the young generation, so a large credit per newly created node forces a young-generation collection almost every time a node is created.
+- **Storage left behind is deliberately unreported.** `detachSharedChannel` gives the *buffer* the fresh copy, so a JS write or `getChannelData` on a channel nodes are playing leaves the old storage to those nodes, and `acquireContent` leaves a cut-off view its old storage. Nobody reports that copy: writing into a buffer after `start()` is rare, and under-reporting only delays a collection, whereas over-reporting aborts the runtime. (Handing the old storage to the holders' JS objects via `jsi::WeakObject`s was implemented and then removed as not worth the bookkeeping.) So `getChannelData` views report nothing, and a node's own credit (`getMemoryPressure()`) covers only its own state.
+
+Verify with `HermesInternal.getInstrumentedStats().js_externalBytes` around `gc()` (both exist in debug builds) through `debugger-evaluate`.
 
 ---
 

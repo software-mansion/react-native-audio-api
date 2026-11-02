@@ -56,9 +56,9 @@ else:
     newest = max(android_dbs, key=lambda p: p.stat().st_mtime)
     entries = json.loads(newest.read_text())
 
-    # Gradle records either the node_modules symlink path or the real path,
-    # depending on how autolinking resolved the package; rewrite the former to
-    # the latter so clangd matches the files open in the editor.
+    # Gradle reports the library either through the node_modules symlink or,
+    # when autolinking registers the realpath, through packages/ directly.
+    # Normalise to the real path so clangd matches the files open in the editor.
     node_modules_dir = str(repo_root / "node_modules" / "react-native-audio-api")
     real_dir = str(package_dir)
 

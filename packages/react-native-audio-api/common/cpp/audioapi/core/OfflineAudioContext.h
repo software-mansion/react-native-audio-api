@@ -26,6 +26,9 @@ class OfflineAudioContext : public BaseAudioContext {
   bool suspend(double when, const std::shared_ptr<ContextStateResolver> &promise);
   void startRendering(const std::shared_ptr<ContextRenderResolver> &promise);
 
+  /// @brief Always null, so convolver tails are computed inline on the render thread.
+  std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool() override;
+
  private:
   std::unordered_map<size_t, std::shared_ptr<ContextStateResolver>> scheduledSuspends_;
   std::shared_ptr<ContextRenderResolver> resultPromise_;

@@ -23,6 +23,14 @@ class AudioBufferHostObject : public HostObject {
 
   ~AudioBufferHostObject() override = default;
 
+  /// The JS object for @p hostObject, reporting the samples as external memory pressure.
+  static jsi::Object createJsObject(
+      jsi::Runtime &runtime,
+      const std::shared_ptr<AudioBufferHostObject> &hostObject);
+  static jsi::Object createJsObject(
+      jsi::Runtime &runtime,
+      const std::shared_ptr<AudioBuffer> &audioBuffer);
+
   [[nodiscard]] size_t getSizeInBytes() const {
     return sharedBuffer_->getSizeInBytes();
   }

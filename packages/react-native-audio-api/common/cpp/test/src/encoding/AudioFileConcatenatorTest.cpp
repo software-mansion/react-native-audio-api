@@ -296,10 +296,12 @@ TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForWAVOnDesktop) {
 }
 
 TEST(AudioFileConcatenatorTest, RejectsUnsupportedOutputFormat) {
-  auto result = concatAudioFiles({"/tmp/input.ogg"}, "/tmp/output.ogg");
+  auto result = concatAudioFiles({"/tmp/input.caf"}, "/tmp/output.caf");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, FLAC, and ADTS output.");
+  EXPECT_EQ(
+      result.unwrap_err(),
+      "concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) output.");
 }
 
 TEST(AudioFileConcatenatorTest, ReturnsUnavailableErrorForFLACOnDesktop) {
@@ -322,7 +324,9 @@ TEST(AudioFileConcatenatorTest, RejectsMismatchedRemuxExtensions) {
   auto result = concatAudioFiles({"/tmp/input.m4a"}, "/tmp/output.caf");
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_EQ(result.unwrap_err(), "concatAudioFiles supports WAV, M4A, FLAC, and ADTS output.");
+  EXPECT_EQ(
+      result.unwrap_err(),
+      "concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) output.");
 }
 
 TEST(AudioFileConcatenatorTest, AppendsAdtsFramesByteForByte) {

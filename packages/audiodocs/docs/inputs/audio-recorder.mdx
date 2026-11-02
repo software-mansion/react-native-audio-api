@@ -696,7 +696,7 @@ export default MyRecorder;
         <div class="text-content">
           Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
-          Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's system encoders at this call, so an unsupported format fails here.
+          Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's encoders at this call, so an unsupported format fails here.
 
           The file sample rate (`preset.sampleRate`) must be at most 48000 Hz, the highest rate the iOS and Android system encoders accept.
 
@@ -997,8 +997,6 @@ restarts at `_001` every time. Make the name unique per recording yourself.
 
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
-All encoding is done with platform system APIs — iOS AVFoundation and Android MediaCodec/MediaMuxer. Because each platform exposes a different set of system encoders, format support is platform-specific.
-
 ```tsx
 enum FileFormat {
   Wav,
@@ -1016,20 +1014,20 @@ enum FileFormat {
 }
 ```
 
-The table below lists which formats each platform can encode with its system APIs:
+Each platform exposes a different set of encoders, making format support platform-specific. The table below lists which formats each platform can encode:
 
 | `FileFormat` | Container / codec | iOS | Android |
 | :--- | :--- | :---: | :---: |
 | `Wav` | WAV / PCM | ✅ | ✅ |
 | `M4A` | M4A / AAC-LC | ✅ | ✅ |
 | `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `OpusOgg` | OGG / Opus | ✅ | ✅ |
 | `Adts` | ADTS / AAC-LC | ✅ | ✅ |
 | `Caf` | CAF / PCM | ✅ | ❌ |
 | `Aiff` | AIFF / PCM | ✅ | ❌ |
 | `Alac` | M4A / Apple Lossless | ✅ | ❌ |
 | `Ulaw` | WAV / µ-law | ✅ | ❌ |
 | `Alaw` | WAV / a-law | ✅ | ❌ |
-| `OpusOgg` | OGG / Opus | ❌ | ✅ |
 | `OpusWebm` | WebM / Opus | ❌ | ✅ |
 | `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
 
@@ -1043,7 +1041,11 @@ Every format is encoded at no more than 48000 Hz, because that is the highest ra
 :::
 
 :::caution Platform support
-Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac` or `Adts` for the widest cross-platform support.
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusWebm` on iOS) fails when file output is enabled, with a descriptive error. If a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac`, `Adts`, or `OpusOgg` for the widest cross-platform support.
+:::
+
+:::note Opus
+Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
 :::
 
 #### FileInfo
