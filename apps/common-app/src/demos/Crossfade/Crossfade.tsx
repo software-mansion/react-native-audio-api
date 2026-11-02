@@ -122,7 +122,7 @@ const Crossfade: FC = () => {
 
   useAnimatedReaction(
     () => progress.value,
-    (p) => {
+    (p: number) => {
       if (isPlayingShared.value === 1) {
         scheduleOnRN(applyGainFromProgress, p);
       }
@@ -131,7 +131,7 @@ const Crossfade: FC = () => {
 
   useAnimatedReaction(
     () => swipeEndSnapTo.value,
-    (snapTo) => {
+    (snapTo: number) => {
       if (snapTo >= 0) {
         scheduleOnRN(commitSwipeEnd, snapTo);
         swipeEndSnapTo.value = -1;
@@ -148,12 +148,10 @@ const Crossfade: FC = () => {
         return;
       }
 
-      buffer1.current = await audioContext.current.decodeAudioData(
-        TRACKS[0].uri
-      );
-      buffer2.current = await audioContext.current.decodeAudioData(
-        TRACKS[1].uri
-      );
+      [buffer1.current, buffer2.current] = await Promise.all([
+        audioContext.current.decodeAudioData(TRACKS[0].uri),
+        audioContext.current.decodeAudioData(TRACKS[1].uri),
+      ]);
       setTrackDuration(buffer1.current.duration);
       setPlaybackPosition(0);
       setIsLoading(false);
