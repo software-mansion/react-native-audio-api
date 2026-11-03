@@ -45,6 +45,15 @@ TEST(AudioFilePropertiesTest, RejectsANonPositiveSampleRate) {
   EXPECT_TRUE(properties.validate().is_err());
 }
 
+TEST(AudioFilePropertiesTest, RejectsASampleRateAboveTheEncoderLimit) {
+  auto properties = validProperties();
+  properties.fileLayout.sampleRate = AudioFileProperties::MAX_FILE_SAMPLE_RATE;
+  EXPECT_TRUE(properties.validate().is_ok());
+
+  properties.fileLayout.sampleRate = 96000.0F;
+  EXPECT_TRUE(properties.validate().is_err());
+}
+
 TEST(AudioFilePropertiesTest, AcceptsOnlyMonoOrStereo) {
   auto properties = validProperties();
   properties.fileLayout.channelCount = 0;

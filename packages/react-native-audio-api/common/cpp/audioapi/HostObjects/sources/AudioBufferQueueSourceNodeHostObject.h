@@ -42,7 +42,6 @@ class AudioBufferQueueSourceNodeHostObject : public AudioBufferBaseSourceNodeHos
   AudioBufferQueueSourceNode *const bufferQueueSourceNode_;
 
   size_t bufferId_ = 0;
-  bool stretchHasBeenInit_ = false;
   /// Width of the first enqueued buffer; later buffers are mixed to it. 0 until then.
   size_t outputChannelNumber_ = 0;
 };

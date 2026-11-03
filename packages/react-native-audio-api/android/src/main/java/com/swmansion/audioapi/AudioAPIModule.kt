@@ -17,6 +17,7 @@ import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.ForegroundServiceManager
 import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.NativeFileInfo
+import com.swmansion.audioapi.system.NativeRecorderControl
 import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
 import kotlin.concurrent.thread
@@ -92,6 +93,8 @@ class AudioAPIModule(
   }
 
   override fun invalidate() {
+    // Before the cleanups below pull the foreground service and input routing from under it.
+    NativeRecorderControl.stop()
     reactContext.get()?.removeLifecycleEventListener(this)
     ForegroundServiceManager.cleanup()
     MediaSessionManager.cleanup()

@@ -40,7 +40,9 @@ class AudioBufferBaseSourceNodeHostObject : public AudioScheduledSourceNodeHostO
   double inputLatency_ = 0;
   double outputLatency_ = 0;
   bool pitchCorrection_;
+  bool stretchHasBeenInit_ = false;
 
+  /// Configures the node's stretcher for content of this shape, inline and only once
   void initStretch(int channelCount, float sampleRate);
 };
 

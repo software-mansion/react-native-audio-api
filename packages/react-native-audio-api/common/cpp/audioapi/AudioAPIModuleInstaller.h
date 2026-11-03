@@ -248,8 +248,7 @@ class AudioAPIModuleInstaller {
           auto sampleRate = static_cast<float>(args[2].getNumber());
 
           auto audioBuffer = std::make_shared<AudioBuffer>(length, numberOfChannels, sampleRate);
-          auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-          return jsi::Object::createFromHostObject(runtime, audioBufferHostObject);
+          return AudioBufferHostObject::createJsObject(runtime, audioBuffer);
         });
   }
 };

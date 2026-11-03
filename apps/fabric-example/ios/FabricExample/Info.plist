@@ -40,7 +40,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>$(PRODUCT_NAME) wants to access your microphone in order to use voice memo recording</string>
+	<string>$(PRODUCT_NAME) uses your microphone for recording and voice chat demos.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

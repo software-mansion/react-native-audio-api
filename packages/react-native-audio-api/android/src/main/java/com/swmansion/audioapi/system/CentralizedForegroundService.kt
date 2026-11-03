@@ -32,6 +32,9 @@ class CentralizedForegroundService : Service() {
     private const val PLACEHOLDER_NOTIFICATION_ID = 300
   }
 
+  /** Set when the library itself stops the service, so onDestroy can tell that apart from a system kill. */
+  private var explicitStop = false
+
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onCreate() {
@@ -51,6 +54,7 @@ class CentralizedForegroundService : Service() {
 
       ACTION_STOP -> {
         if (stopSelfResult(startId)) {
+          explicitStop = true
           stopForeground(STOP_FOREGROUND_REMOVE)
         } else {
           Log.d(TAG, "Stop superseded by a newer start request, service stays in the foreground")
@@ -113,6 +117,7 @@ class CentralizedForegroundService : Service() {
       // process with ForegroundServiceDidNotStartInTimeException. Unlike ACTION_STOP this
       // exit is unconditional, because there is nothing to keep in the foreground; a start
       // racing it is picked up again by ForegroundServiceManager.onServiceDestroyed.
+      explicitStop = true
       stopForeground(STOP_FOREGROUND_REMOVE)
       stopSelf()
     }
@@ -213,7 +218,30 @@ class CentralizedForegroundService : Service() {
 
   override fun onDestroy() {
     Log.d(TAG, "Centralized foreground service destroyed")
+    if (!explicitStop) {
+      finalizeRecordingOnSystemDestroy()
+    }
     ForegroundServiceManager.onServiceDestroyed()
     super.onDestroy()
+  }
+
+  /**
+   * With android:stopWithTask="true" swiping the task away destroys the service without
+   * delivering onTaskRemoved, so this is the last chance to finalize an in-progress
+   * recording. It runs synchronously on the calling thread: the process may be frozen as
+   * soon as onDestroy returns, and an AAC finalize is only a flush and close. Hiding the
+   * notification unsubscribes it from ForegroundServiceManager before onServiceDestroyed
+   * evaluates whether the service is still wanted, so a dying process does not restart it.
+   */
+  private fun finalizeRecordingOnSystemDestroy() {
+    try {
+      if (NativeRecorderControl.stop() == RecorderState.IDLE) {
+        MediaSessionManager.hideRecordingNotification()
+      }
+    } catch (e: LinkageError) {
+      Log.w(TAG, "Native library unavailable, cannot finalize the recording: ${e.message}")
+    } catch (e: Exception) {
+      Log.e(TAG, "Error finalizing the recording on service destroy: ${e.message}", e)
+    }
   }
 }

@@ -22,8 +22,8 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
-// concatAudioFiles supports WAV, M4A, and FLAC — the formats recordable on
-// both iOS and Android.
+// concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) — the formats
+// recordable on both iOS and Android.
 const RECORDING_EXTENSION = FileFormat.M4A;
 const ROTATING_SIZE = 250_000;
 
@@ -31,6 +31,8 @@ const RECORDING_EXTENSION_NAME_MAP = {
   [FileFormat.Wav]: 'wav',
   [FileFormat.M4A]: 'm4a',
   [FileFormat.Flac]: 'flac',
+  [FileFormat.OpusOgg]: 'ogg',
+  [FileFormat.Adts]: 'aac',
 };
 
 const Record: FC = () => {
@@ -125,7 +127,12 @@ const Record: FC = () => {
       ios: {
         category: 'playAndRecord',
         mode: 'default',
-        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+        options: [
+          'defaultToSpeaker',
+          'allowBluetoothA2DP',
+          'allowBluetoothHFP',
+          'mixWithOthers',
+        ],
       },
     });
 

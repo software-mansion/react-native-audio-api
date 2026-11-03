@@ -26,10 +26,15 @@ bool isWithin(Enum value, Enum last) {
   return static_cast<std::uint8_t>(value) <= static_cast<std::uint8_t>(last);
 }
 
-/// A positive sample rate, and between 1 and MAX_FILE_CHANNEL_COUNT channels.
+/// A sample rate in (0, MAX_FILE_SAMPLE_RATE], and between 1 and MAX_FILE_CHANNEL_COUNT channels.
 Result<NoneType, std::string> validateFileLayout(const AudioLayout &fileLayout) {
   if (!(fileLayout.sampleRate > 0)) {
     return Err("sampleRate must be greater than 0.");
+  }
+  if (fileLayout.sampleRate > AudioFileProperties::MAX_FILE_SAMPLE_RATE) {
+    return Err(
+        "sampleRate must be at most 48000 Hz; the system encoders accept no higher rate, got " +
+        std::to_string(static_cast<int>(fileLayout.sampleRate)) + ".");
   }
   if (fileLayout.channelCount <= 0 ||
       fileLayout.channelCount > AudioFileProperties::MAX_FILE_CHANNEL_COUNT) {

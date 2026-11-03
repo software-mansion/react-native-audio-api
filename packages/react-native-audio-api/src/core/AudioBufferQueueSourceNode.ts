@@ -24,9 +24,13 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
   }
 
   public enqueueBuffer(buffer: AudioBuffer): string {
-    return (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
+    const bufferId = (this.node as IAudioBufferQueueSourceNode).enqueueBuffer(
       buffer.buffer
     );
+    // The node plays the buffer's own storage from now on, so native has cut off the
+    // views this buffer handed out; the wrapper must stop returning those dead views.
+    buffer.invalidateChannelDataCache();
+    return bufferId;
   }
 
   public dequeueBuffer(bufferId: string): void {

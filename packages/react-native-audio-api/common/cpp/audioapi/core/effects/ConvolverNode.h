@@ -28,7 +28,7 @@ class ConvolverNode : public AudioNode {
   /// @note Audio Thread only
   void setBuffer(
       const std::shared_ptr<AudioBuffer> &buffer,
-      std::vector<std::unique_ptr<Convolver>> convolvers,
+      std::vector<std::shared_ptr<Convolver>> convolvers,
       const std::shared_ptr<ConvolverThreadPool> &threadPool,
       const std::shared_ptr<DSPAudioBuffer> &internalBuffer,
       const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
@@ -56,12 +56,17 @@ class ConvolverNode : public AudioNode {
   // buffer to hold internal processed data
   std::shared_ptr<DSPAudioBuffer> internalBuffer_;
   // vectors of convolvers, one per channel
-  std::vector<std::unique_ptr<Convolver>> convolvers_;
+  std::vector<std::shared_ptr<Convolver>> convolvers_;
   std::shared_ptr<ConvolverThreadPool> threadPool_;
   std::array<int, 4> inputChannelMap_;
   std::array<int, 4> outputChannelMap_;
 
   void performConvolution(const std::shared_ptr<DSPAudioBuffer> &processingBuffer);
+
+  /// @brief Hands each convolver's next tail block to the pool. Tasks own their convolver
+  /// through a shared_ptr, so a node released mid-flight cannot leave a dangling read.
+  /// @note Audio Thread only. Never waits for the pool, not even on a full queue.
+  void scheduleTails();
 };
 
 } // namespace audioapi

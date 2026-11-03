@@ -2,6 +2,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
+#include <audioapi/encoding/AdtsHeader.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
@@ -24,13 +25,14 @@
 #include <utility>
 #include <vector>
 
-// AMEDIAMUXER_OUTPUT_FORMAT_OGG was added to the NDK at API level 34; fall back
-// to a numeric value so builds against older NDK headers still compile. Runtime
-// availability is still gated by the device OS version.
-// NOLINTBEGIN
+// AMediaMuxer writes Ogg from API level 34 on. The constant arrived in the NDK headers at the
+// same level, so a numeric fallback keeps older NDKs compiling; the device OS still decides at
+// runtime.
 #ifndef AMEDIAMUXER_OUTPUT_FORMAT_OGG
 #define AMEDIAMUXER_OUTPUT_FORMAT_OGG 4
 #endif
+
+// NOLINTBEGIN
 
 namespace audioapi::android::encoder {
 namespace {
@@ -289,6 +291,11 @@ class MediaCodecBackend : public IEncoderBackend {
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mime);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, sampleRate);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, channelCount);
+    // MediaCodec AAC encoders reject a format without a bit rate.
+    if (isAac && bitRate <= 0) {
+      bitRate = std::min(sampleRate * AAC_DEFAULT_BITS_PER_SAMPLE, AAC_MAX_DEFAULT_BIT_RATE) *
+          channelCount;
+    }
     if (bitRate > 0) {
       AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitRate);
     }
@@ -446,8 +453,10 @@ class MediaCodecBackend : public IEncoderBackend {
   static constexpr int64_t STREAM_TIMEOUT_US = 0;
   static constexpr int64_t DRAIN_TIMEOUT_US = 10000;
   static constexpr int MAX_TRY_AGAIN_AT_EOS = 200;
-  static constexpr int AAC_PROFILE_LC = 2;     // MediaCodecInfo.CodecProfileLevel.AACObjectLC
-  static constexpr int PCM_ENCODING_16BIT = 2; // AudioFormat.ENCODING_PCM_16BIT
+  static constexpr int AAC_PROFILE_LC = 2; // MediaCodecInfo.CodecProfileLevel.AACObjectLC
+  static constexpr int AAC_DEFAULT_BITS_PER_SAMPLE = 2;
+  static constexpr int AAC_MAX_DEFAULT_BIT_RATE = 96000; // per channel
+  static constexpr int PCM_ENCODING_16BIT = 2;           // AudioFormat.ENCODING_PCM_16BIT
 
   std::vector<uint8_t> pcmLeftover_;
   uint64_t framesFed_{0};
@@ -457,7 +466,9 @@ class MediaCodecBackend : public IEncoderBackend {
 };
 
 // ---------------------------------------------------------------------------
-// Muxed backend — AAC / Opus / Vorbis via AMediaMuxer.
+// Muxed backend — AAC in M4A, Opus and Vorbis in WebM, and Opus in Ogg (Android 14 and later)
+// via AMediaMuxer. encoding::createEncoder (EncoderFactory.cpp) sends Opus in Ogg to the bundled
+// encoder instead whenever the build has it, so Ogg reaches this backend only without it.
 // ---------------------------------------------------------------------------
 
 class MuxedBackend : public MediaCodecBackend {
@@ -485,8 +496,11 @@ class MuxedBackend : public MediaCodecBackend {
         if (bitRate <= 0) {
           bitRate = 96000;
         }
-        muxerFormat_ = outputSpec.container == AudioContainer::OGG ? AMEDIAMUXER_OUTPUT_FORMAT_OGG
-                                                                   : AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
+        if (outputSpec.container == AudioContainer::WEBM) {
+          muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
+        } else {
+          muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_OGG;
+        }
         break;
       case AudioCodec::VORBIS:
         mime = "audio/vorbis";
@@ -664,6 +678,101 @@ class FlacBackend : public MediaCodecBackend {
 };
 
 // ---------------------------------------------------------------------------
+// ADTS backend — MediaCodec AAC-LC encoder, each access unit written behind its own
+// ADTS header. No muxer: the stream is complete after any frame, so a killed
+// recording keeps everything up to its last complete frame.
+// ---------------------------------------------------------------------------
+
+class AdtsBackend : public MediaCodecBackend {
+ public:
+  std::string open(
+      const AudioLayout &desired,
+      const std::string &filePath,
+      const AudioFileProperties::EncodingConfig &encoding,
+      const EncoderOutputSpec &outputSpec,
+      AudioLayout &effective) override {
+    (void)outputSpec;
+    effective = desired;
+
+    auto layoutResult = adts::validateLayout(desired);
+    if (layoutResult.is_err()) {
+      return "AdtsBackend: " + layoutResult.unwrap_err();
+    }
+    samplingFrequencyIndex_ = *adts::samplingFrequencyIndex(static_cast<int>(desired.sampleRate));
+
+    file_.reset(std::fopen(filePath.c_str(), "wb"));
+    if (file_ == nullptr) {
+      return "AdtsBackend: failed to open file for writing";
+    }
+
+    std::string err = startCodec(
+        "audio/mp4a-latm",
+        static_cast<int>(desired.sampleRate),
+        desired.channelCount,
+        static_cast<int>(encoding.bitRate),
+        true);
+    if (!err.empty()) {
+      file_.reset();
+      return err;
+    }
+    return "";
+  }
+
+  [[nodiscard]] size_t getFileSizeBytes() const override {
+    return bytesWritten_;
+  }
+
+ protected:
+  std::string onFormatChanged(AMediaFormat *outputFormat) override {
+    (void)outputFormat;
+    return "";
+  }
+
+  std::string onEncodedSample(const uint8_t *data, const AMediaCodecBufferInfo &info) override {
+    // The AudioSpecificConfig the codec emits first belongs in a container; ADTS headers
+    // carry the same information per frame.
+    if ((info.flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) != 0) {
+      return "";
+    }
+    if (file_ == nullptr) {
+      return "AdtsBackend: file not open";
+    }
+
+    const auto payloadSize = static_cast<size_t>(info.size);
+    auto header = adts::makeHeader(samplingFrequencyIndex_, channelCount_, payloadSize);
+    if (!header.has_value()) {
+      return "AdtsBackend: encoded frame too long for an ADTS header";
+    }
+
+    if (std::fwrite(header->data(), 1, header->size(), file_.get()) != header->size() ||
+        std::fwrite(data + info.offset, 1, payloadSize, file_.get()) != payloadSize) {
+      return "AdtsBackend: short write";
+    }
+    // Flushed per frame, so the crash-recoverability the format exists for holds at frame
+    // granularity rather than at stdio's buffer size.
+    if (std::fflush(file_.get()) != 0) {
+      return "AdtsBackend: failed to flush file";
+    }
+    bytesWritten_ += header->size() + payloadSize;
+    return "";
+  }
+
+  std::string finalize() override {
+    codec_.reset();
+    if (file_ != nullptr && std::fclose(file_.release()) != 0) {
+      return "AdtsBackend: failed to close file";
+    }
+    return "";
+  }
+
+ private:
+  // Also closes the file when codec draining fails before finalize() is reached.
+  std::unique_ptr<std::FILE, decltype(&std::fclose)> file_{nullptr, &std::fclose};
+  uint8_t samplingFrequencyIndex_{0};
+  size_t bytesWritten_{0};
+};
+
+// ---------------------------------------------------------------------------
 // Conversion state — planar scratch for channel mapping and rate conversion, built at
 // open() only when the input differs from the backend's effective format.
 // ---------------------------------------------------------------------------
@@ -732,6 +841,12 @@ OpenEncoderResult AndroidEncoder::open(
       backend_ = std::make_unique<FlacBackend>();
       break;
     case AudioCodec::AAC:
+      if (outputSpec.container == AudioContainer::ADTS) {
+        backend_ = std::make_unique<AdtsBackend>();
+      } else {
+        backend_ = std::make_unique<MuxedBackend>();
+      }
+      break;
     case AudioCodec::OPUS:
     case AudioCodec::VORBIS:
       backend_ = std::make_unique<MuxedBackend>();

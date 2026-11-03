@@ -1,37 +1,38 @@
 #pragma once
 
+#include <audioapi/core/sources/SharedAudioBuffer.h>
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 #include <jsi/jsi.h>
 #include <cstddef>
 #include <memory>
-#include <utility>
 
 namespace audioapi {
 using namespace facebook;
 
 class AudioBufferHostObject : public HostObject {
  public:
-  std::shared_ptr<AudioBuffer> audioBuffer_;
+  std::shared_ptr<SharedAudioBuffer> sharedBuffer_;
 
   explicit AudioBufferHostObject(const std::shared_ptr<AudioBuffer> &audioBuffer);
   AudioBufferHostObject(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject &operator=(const AudioBufferHostObject &) = delete;
-  AudioBufferHostObject(AudioBufferHostObject &&other) noexcept;
-  AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept {
-    if (this != &other) {
-      HostObject::operator=(std::move(other));
-      audioBuffer_ = std::move(other.audioBuffer_);
-    }
-    return *this;
-  }
+  AudioBufferHostObject(AudioBufferHostObject &&other) noexcept = default;
+  AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept = default;
 
   ~AudioBufferHostObject() override = default;
 
+  /// The JS object for @p hostObject, reporting the samples as external memory pressure.
+  static jsi::Object createJsObject(
+      jsi::Runtime &runtime,
+      const std::shared_ptr<AudioBufferHostObject> &hostObject);
+  static jsi::Object createJsObject(
+      jsi::Runtime &runtime,
+      const std::shared_ptr<AudioBuffer> &audioBuffer);
+
   [[nodiscard]] size_t getSizeInBytes() const {
-    // *2 because every time buffer is passed we create a copy of it.
-    return audioBuffer_->getSize() * audioBuffer_->getNumberOfChannels() * sizeof(float) * 2;
+    return sharedBuffer_->getSizeInBytes();
   }
 
   JSI_PROPERTY_GETTER_DECL(sampleRate);

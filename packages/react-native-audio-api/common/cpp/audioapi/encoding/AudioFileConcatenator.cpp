@@ -1,21 +1,29 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/decoding/DecoderFactory.h>
 #include <audioapi/decoding/DecoderSource.h>
+#include <audioapi/encoding/AdtsHeader.h>
 #include <audioapi/encoding/AudioFileConcatenator.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
+#include <audioapi/encoding/EncoderFactory.h>
 #include <audioapi/encoding/OSEncoding.h>
 #include <audioapi/encoding/OSRemux.h>
+#include <audioapi/encoding/OggOpusRemux.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
 #include <audioapi/utils/Path.h>
 
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -66,10 +74,45 @@ ValidationResult validatePaths(
 
 /// The formats concat can write. The output path's extension picks one, and every input must
 /// carry the same extension.
-constexpr std::array CONCAT_OUTPUT_FORMATS = {FileFormat::WAV, FileFormat::M4A, FileFormat::FLAC};
+constexpr std::array CONCAT_OUTPUT_FORMATS =
+    {FileFormat::WAV, FileFormat::M4A, FileFormat::FLAC, FileFormat::ADTS, FileFormat::OPUS_OGG};
 
 std::string extensionOf(FileFormat format) {
   return std::string(encoder_capabilities::specForFormat(format).extension);
+}
+
+std::string toUpper(std::string text) {
+  std::ranges::transform(text, text.begin(), [](unsigned char character) {
+    return static_cast<char>(std::toupper(character));
+  });
+  return text;
+}
+
+/// How concat errors name @p format, one of CONCAT_OUTPUT_FORMATS.
+std::string concatFormatName(FileFormat format) {
+  switch (format) {
+    case FileFormat::ADTS:
+      return "ADTS";
+    case FileFormat::OPUS_OGG:
+      return "OGG";
+    default:
+      return toUpper(extensionOf(format));
+  }
+}
+
+/// Concat never converts between containers, so every input must carry the output's extension.
+ValidationResult validateInputExtensions(
+    const std::vector<std::string> &inputPaths,
+    FileFormat outputFormat) {
+  const std::string extension = extensionOf(outputFormat);
+  for (const auto &inputPath : inputPaths) {
+    if (!path::hasExtension(inputPath, {extension})) {
+      return Err(
+          "concatAudioFiles " + concatFormatName(outputFormat) +
+          " output requires all input files to use the " + toUpper(extension) + " extension.");
+    }
+  }
+  return Ok(None);
 }
 
 std::optional<FileFormat> outputFormatForPath(const std::string &path) {
@@ -79,6 +122,22 @@ std::optional<FileFormat> outputFormatForPath(const std::string &path) {
     }
   }
   return std::nullopt;
+}
+
+/// A sibling of @p outputPath under a name no file holds yet. The extension is kept because
+/// the iOS writers pick the container from it.
+std::string makeStagingPath(const std::string &outputPath) {
+  const std::filesystem::path finalPath(outputPath);
+  const std::string stem = finalPath.stem().string();
+  const std::string extension = finalPath.extension().string();
+  std::random_device entropy;
+  while (true) {
+    std::filesystem::path candidate = finalPath;
+    candidate.replace_filename(stem + ".partial-" + std::to_string(entropy()) + extension);
+    if (!file_system::fileExists(candidate.string())) {
+      return candidate.string();
+    }
+  }
 }
 
 } // namespace
@@ -222,13 +281,20 @@ ValidationResult validateRiffWaveOutputSize(
 AudioFileConcatResult concatAudioFilesWithOsRemux(
     const std::vector<std::string> &inputPaths,
     const std::string &outputPath) {
-  for (const auto &inputPath : inputPaths) {
-    if (!path::hasExtension(inputPath, {extensionOf(FileFormat::M4A)})) {
-      return Err("concatAudioFiles M4A output requires all input files to use the M4A extension.");
-    }
-  }
-
   return remuxConcatAudioFiles(inputPaths, outputPath);
+}
+
+/// Ogg/Opus has no OS remux on either platform; the bundled libogg re-pages the packets.
+AudioFileConcatResult concatAudioFilesWithOggOpusRemux(
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath) {
+#if !RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED
+  return ogg_opus::concatOggOpusFiles(inputPaths, outputPath);
+#else
+  (void)inputPaths;
+  (void)outputPath;
+  return Err("concatAudioFiles OGG output requires the bundled Opus libraries.");
+#endif
 }
 
 EncoderSettings makeEncoderSettings(FileFormat format, const AudioLayout &layout) {
@@ -256,15 +322,7 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
     const EncoderFactory &createEncoder) {
   const EncoderOutputSpec outputSpec = encoder_capabilities::specForFormat(format);
   const bool isWav = format == FileFormat::WAV;
-  const std::string formatName = isWav ? "WAV" : "FLAC";
-
-  for (const auto &inputPath : inputPaths) {
-    if (!path::hasExtension(inputPath, {std::string(outputSpec.extension)})) {
-      return Err(
-          "concatAudioFiles " + formatName + " output requires all input files to use the " +
-          formatName + " extension.");
-    }
-  }
+  const std::string formatName = concatFormatName(format);
 
   const std::string unavailableError =
       "concatAudioFiles " + formatName + " output requires iOS or Android.";
@@ -356,9 +414,166 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
   return Ok(outputPath);
 }
 
+/// What a walk over an ADTS input found: the layout its frames declare and how many bytes
+/// hold complete frames. A recording cut off by a crash ends in a partial frame, which is
+/// left behind so the frame after it, from the next input, is not swallowed by a desync.
+struct AdtsInputInfo {
+  uint8_t samplingFrequencyIndex = 0;
+  uint8_t channelConfiguration = 0;
+  std::streamoff completeFrameBytes = 0;
+};
+
+constexpr size_t COPY_CHUNK_BYTES = 64 * 1024;
+
+Result<AdtsInputInfo, std::string> scanAdtsFrames(const std::string &inputPath) {
+  std::ifstream input(inputPath, std::ios::binary | std::ios::ate);
+  if (!input.is_open()) {
+    return Err("Failed to open input file '" + inputPath + "'.");
+  }
+  const std::streamoff fileSize = input.tellg();
+
+  std::optional<adts::FrameInfo> firstFrame;
+  std::streamoff offset = 0;
+  while (offset + static_cast<std::streamoff>(adts::HEADER_SIZE) <= fileSize) {
+    adts::HeaderBytes header{};
+    input.seekg(offset);
+    input.read(
+        reinterpret_cast<char *>(header.data()), static_cast<std::streamsize>(header.size()));
+    if (!input) {
+      return Err("Failed to read input file '" + inputPath + "'.");
+    }
+
+    const auto frame = adts::parseHeader(header);
+    if (!frame.has_value()) {
+      return Err(
+          "Input file '" + inputPath + "' is not an ADTS stream (no frame at byte " +
+          std::to_string(offset) + ").");
+    }
+    if (firstFrame.has_value() &&
+        (frame->samplingFrequencyIndex != firstFrame->samplingFrequencyIndex ||
+         frame->channelConfiguration != firstFrame->channelConfiguration)) {
+      return Err(
+          "Input file '" + inputPath + "' changes its sample rate or channel count mid-stream.");
+    }
+    if (!firstFrame.has_value()) {
+      firstFrame = frame;
+    }
+
+    const auto frameEnd = offset + static_cast<std::streamoff>(frame->frameLength);
+    if (frameEnd > fileSize) {
+      break;
+    }
+    offset = frameEnd;
+  }
+
+  if (!firstFrame.has_value()) {
+    return Err("Input file '" + inputPath + "' contains no ADTS frames.");
+  }
+  return Ok(
+      AdtsInputInfo{
+          .samplingFrequencyIndex = firstFrame->samplingFrequencyIndex,
+          .channelConfiguration = firstFrame->channelConfiguration,
+          .completeFrameBytes = offset});
+}
+
+/// Appends the first @p byteCount bytes of @p inputPath to @p output.
+ValidationResult
+appendLeadingBytes(const std::string &inputPath, std::streamoff byteCount, std::ofstream &output) {
+  std::ifstream input(inputPath, std::ios::binary);
+  if (!input.is_open()) {
+    return Err("Failed to open input file '" + inputPath + "'.");
+  }
+
+  std::vector<char> chunk(COPY_CHUNK_BYTES);
+  std::streamoff remaining = byteCount;
+  while (remaining > 0) {
+    const auto toRead = static_cast<std::streamsize>(
+        std::min<std::streamoff>(remaining, static_cast<std::streamoff>(chunk.size())));
+    input.read(chunk.data(), toRead);
+    const std::streamsize bytesRead = input.gcount();
+    if (bytesRead <= 0) {
+      return Err("Failed to read input file '" + inputPath + "'.");
+    }
+    output.write(chunk.data(), bytesRead);
+    if (!output) {
+      return Err("Failed to write the output file.");
+    }
+    remaining -= bytesRead;
+  }
+  return Ok(None);
+}
+
+/// ADTS has no container, so the inputs' frames follow each other unchanged. Every input must
+/// be an ADTS stream with the first one's sample rate and channel configuration; nothing is
+/// decoded, so this works on every platform.
+AudioFileConcatResult concatAudioFilesWithFrameAppend(
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath) {
+  std::vector<AdtsInputInfo> inputs;
+  inputs.reserve(inputPaths.size());
+  for (const auto &inputPath : inputPaths) {
+    auto infoResult = scanAdtsFrames(inputPath);
+    if (infoResult.is_err()) {
+      return Err(std::move(infoResult).unwrap_err());
+    }
+    inputs.push_back(std::move(infoResult).unwrap());
+
+    const auto &reference = inputs.front();
+    if (inputs.back().samplingFrequencyIndex != reference.samplingFrequencyIndex) {
+      return Err("Input file '" + inputPath + "' uses a different sample rate.");
+    }
+    if (inputs.back().channelConfiguration != reference.channelConfiguration) {
+      return Err("Input file '" + inputPath + "' uses a different channel count.");
+    }
+  }
+
+  std::ofstream output(outputPath, std::ios::binary | std::ios::trunc);
+  if (!output.is_open()) {
+    return Err("Failed to open ADTS output '" + outputPath + "'.");
+  }
+
+  for (size_t i = 0; i < inputPaths.size(); ++i) {
+    auto copyResult = appendLeadingBytes(inputPaths[i], inputs[i].completeFrameBytes, output);
+    if (copyResult.is_err()) {
+      output.close();
+      file_system::removeFile(outputPath);
+      return Err(std::move(copyResult).unwrap_err());
+    }
+  }
+
+  output.close();
+  if (!output) {
+    file_system::removeFile(outputPath);
+    return Err("Failed to finalize ADTS output '" + outputPath + "'.");
+  }
+  return Ok(outputPath);
+}
+
+/// Writes @p inputPaths to @p outputPath in @p format through the path that format takes:
+/// a remux, a frame append, or a decode and re-encode.
+AudioFileConcatResult concatAudioFilesAs(
+    FileFormat format,
+    const std::vector<std::string> &inputPaths,
+    const std::string &outputPath,
+    const EncoderFactory &createEncoder) {
+  switch (format) {
+    case FileFormat::M4A:
+      return concatAudioFilesWithOsRemux(inputPaths, outputPath);
+    case FileFormat::ADTS:
+      return concatAudioFilesWithFrameAppend(inputPaths, outputPath);
+    case FileFormat::OPUS_OGG:
+      return concatAudioFilesWithOggOpusRemux(inputPaths, outputPath);
+    case FileFormat::WAV:
+    case FileFormat::FLAC:
+      return concatAudioFilesWithEncoder(inputPaths, outputPath, format, createEncoder);
+    default:
+      return Err("concatAudioFiles cannot write ." + extensionOf(format) + " output.");
+  }
+}
+
 EncoderFactory platformEncoderFactory() {
 #if RN_AUDIO_API_HAS_OS_ENCODER
-  return &createOsEncoder;
+  return &encoding::createEncoder;
 #else
   return {};
 #endif
@@ -389,19 +604,37 @@ AudioFileConcatResult concatAudioFiles(
     return Err(std::move(pathValidationResult).unwrap_err());
   }
 
-  // M4A remuxes the inputs' AAC packets through OS APIs. WAV and FLAC have no remux path on
-  // either platform, so their inputs are decoded and re-encoded through the system encoder:
-  // WAV as float32 PCM, FLAC losslessly.
+  // M4A remuxes the inputs' AAC packets through OS APIs and Ogg/Opus its Opus packets through
+  // the bundled libogg. ADTS frames are self-delimiting, so its inputs are appended byte for
+  // byte. WAV and FLAC have no remux path on either platform, so their inputs are decoded and
+  // re-encoded through the system encoder: WAV as float32 PCM, FLAC losslessly.
   const auto outputFormat = outputFormatForPath(normalizedOutputPath);
   if (!outputFormat.has_value()) {
-    return Err("concatAudioFiles supports WAV, M4A, and FLAC output.");
+    return Err("concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) output.");
+  }
+  auto extensionValidationResult = validateInputExtensions(normalizedInputPaths, *outputFormat);
+  if (extensionValidationResult.is_err()) {
+    return Err(std::move(extensionValidationResult).unwrap_err());
   }
 
-  auto result = *outputFormat == FileFormat::M4A
-      ? concatAudioFilesWithOsRemux(normalizedInputPaths, normalizedOutputPath)
-      : concatAudioFilesWithEncoder(
-            normalizedInputPaths, normalizedOutputPath, *outputFormat, createEncoder);
-  return std::move(result).map([&outputPath](const std::string &) { return outputPath; });
+  // The output is written under a staging name and moved into place once complete, so a failure
+  // never leaves a truncated file at the output path and the output may be one of the inputs.
+  const std::string stagingPath = makeStagingPath(normalizedOutputPath);
+  AudioFileConcatResult result =
+      concatAudioFilesAs(*outputFormat, normalizedInputPaths, stagingPath, createEncoder);
+  if (result.is_err()) {
+    file_system::removeFile(stagingPath);
+    return Err(std::move(result).unwrap_err());
+  }
+
+  const std::error_code moveError = file_system::moveFile(stagingPath, normalizedOutputPath);
+  if (moveError) {
+    file_system::removeFile(stagingPath);
+    return Err(
+        "Failed to move the concatenated file to '" + normalizedOutputPath +
+        "': " + moveError.message());
+  }
+  return Ok(outputPath);
 }
 
 } // namespace audioapi

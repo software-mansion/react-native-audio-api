@@ -1,5 +1,6 @@
 import { AudioContext, AudioBuffer } from "react-native-audio-api";
 import { PCM_DATA } from "./constants";
+import { isTestRunInterrupted, sleep } from "./interruption";
 
 const ESPRESSIF_STEREO =
   'https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.';
@@ -73,6 +74,9 @@ export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<Au
           }
           buffers.push({ format, buffer: audioBuffer });
         } catch (error) {
+          if (isTestRunInterrupted()) {
+            throw error;
+          }
           setTestingInfo(`Error decoding audio buffer: ${format} - ${error}`);
         }
       })
@@ -83,7 +87,7 @@ export const audioBufferFormatsTest = async (audioContextRef: React.RefObject<Au
     bufferSource.buffer = buffers[i].buffer;
     bufferSource.connect(audioContextRef.current!.destination);
     bufferSource.start();
-    await new Promise(resolve => setTimeout(resolve, 4000));
+    await sleep(4000);
     if (i === buffers.length - 1) {
       bufferSource.onended = () => {
         setTestingInfo('Audio buffer test completed.');
@@ -120,7 +124,7 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
             bufferSource.buffer = audioBuffer;
             bufferSource.connect(audioContextRef.current!.destination);
             bufferSource.start();
-            await new Promise(resolve => setTimeout(resolve, 4000));
+            await sleep(4000);
             if (channels === lastChannelCount) {
               bufferSource.onended = () => {
                 setTestingInfo('Audio buffer channels test completed.');
@@ -129,6 +133,9 @@ export const audioBufferChannelsTest = async (audioContextRef: React.RefObject<A
             bufferSource.stop();
           }
         } catch (error) {
+          if (isTestRunInterrupted()) {
+            throw error;
+          }
           setTestingInfo(`Error decoding audio buffer with ${channels} channels - ${error}`);
         }
       })
@@ -143,6 +150,6 @@ export const audioBufferBase64Test = async (audioContextRef: React.RefObject<Aud
   bufferSource.start();
   bufferSource.stop(audioContextRef.current!.currentTime + 5);
   setTestingInfo('Playing audio buffer decoded from Base64 PCM data');
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await sleep(5000);
   setTestingInfo('Audio buffer Base64 test completed.');
 }

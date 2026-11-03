@@ -5,8 +5,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
 
-# =1 swaps real types for dummy stand-ins too (e.g. JsiBuffer), so production
-# code needs =0; only test/*.cpp needs =1 — split via separate targets below.
 set(RN_AUDIO_API_TEST 0)
 set(REACT_NATIVE_DIR ../../../../../node_modules/react-native)
 

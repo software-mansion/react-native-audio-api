@@ -20,6 +20,7 @@ const std::vector<FileFormat> kAllFormats = {
     FileFormat::WAV,
     FileFormat::CAF,
     FileFormat::M4A,
+    FileFormat::ADTS,
     FileFormat::FLAC,
     FileFormat::AIFF,
     FileFormat::ALAC,
@@ -46,6 +47,10 @@ TEST(EncoderCapabilitiesTest, SpecForFormatMapsKnownFormats) {
 
   EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::FLAC).container, AudioContainer::FLAC);
   EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::FLAC).codec, AudioCodec::FLAC);
+
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::ADTS).container, AudioContainer::ADTS);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::ADTS).codec, AudioCodec::AAC);
+  EXPECT_EQ(encoder_capabilities::specForFormat(FileFormat::ADTS).extension, "aac");
 }
 
 TEST(EncoderCapabilitiesTest, ExtensionsAreLowercaseAndNonEmpty) {
@@ -84,6 +89,7 @@ TEST(EncoderCapabilitiesTest, ApplePlatformSupportsCoreFormats) {
   EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::WAV, AudioCodec::PCM));
   EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::CAF, AudioCodec::PCM));
   EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::M4A, AudioCodec::AAC));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::ADTS, AudioCodec::AAC));
   EXPECT_FALSE(encoder_capabilities::isSupported(AudioContainer::WEBM, AudioCodec::OPUS));
 }
 #elif defined(__ANDROID__)
@@ -91,6 +97,7 @@ TEST(EncoderCapabilitiesTest, AndroidPlatformSupportsCoreFormats) {
   EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::WAV, AudioCodec::PCM));
   EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::M4A, AudioCodec::AAC));
   EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::WEBM, AudioCodec::OPUS));
+  EXPECT_TRUE(encoder_capabilities::isSupported(AudioContainer::ADTS, AudioCodec::AAC));
   EXPECT_FALSE(encoder_capabilities::isSupported(AudioContainer::CAF, AudioCodec::PCM));
 }
 #endif

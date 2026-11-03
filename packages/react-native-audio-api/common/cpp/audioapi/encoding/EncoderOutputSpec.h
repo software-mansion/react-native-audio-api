@@ -24,6 +24,7 @@ enum class AudioContainer : uint8_t {
   WEBM,
   OGG,
   FLAC,
+  ADTS,
 };
 
 struct EncoderOutputSpec {
@@ -70,6 +71,8 @@ inline const char *toString(AudioContainer container) {
       return "OGG";
     case AudioContainer::FLAC:
       return "FLAC";
+    case AudioContainer::ADTS:
+      return "ADTS";
   }
   return "unknown";
 }

@@ -29,6 +29,7 @@ class AudioFileProperties {
     WAV,
     CAF,
     M4A,
+    ADTS,
     FLAC,
     AIFF,
     ALAC,
@@ -64,6 +65,8 @@ class AudioFileProperties {
 
   /// Mono or stereo.
   static constexpr int MAX_FILE_CHANNEL_COUNT = 2;
+  /// The highest rate the iOS and Android system encoders accept (AAC caps at 48 kHz).
+  static constexpr float MAX_FILE_SAMPLE_RATE = 48000.0F;
 
   struct EncodingConfig {
     FileFormat format;

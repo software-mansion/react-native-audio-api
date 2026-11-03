@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["react", "react-native"],
+    "paths": {
+      "react-native-audio-api": [
+        "../../packages/react-native-audio-api/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/demos/VoiceChat/**/*.ts",
+    "src/demos/VoiceChat/**/*.tsx",
+    "../../packages/react-native-audio-api/src/AudioAPIModule/globals.d.ts",
+    "../../packages/react-native-audio-api/src/Audio/assets.d.ts"
+  ]
+}

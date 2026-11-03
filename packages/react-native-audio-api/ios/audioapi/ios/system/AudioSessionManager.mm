@@ -70,7 +70,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)setPreferredIOBufferFrames:(int)frames
 {
-  if (!self.shouldManageSession) {
+  if (!self.shouldManageSession || self.audioSession == nil) {
     return;
   }
 

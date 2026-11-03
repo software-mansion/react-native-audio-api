@@ -33,6 +33,6 @@ class ConvolverNodeHostObject : public AudioNodeHostObject {
 
   bool normalize_;
   size_t irBytes_ = 0;
-  void setBuffer(const std::shared_ptr<AudioBuffer> &buffer);
+  void setBuffer(const std::shared_ptr<const AudioBuffer> &buffer);
 };
 } // namespace audioapi

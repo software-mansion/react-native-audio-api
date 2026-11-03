@@ -8,25 +8,30 @@
 namespace audioapi {
 
 static std::unordered_map<jsi::Runtime *, std::unordered_set<RuntimeObserverListener *>> listeners;
-static std::mutex listenersMutex;
+// Host objects are destroyed on whichever thread drops their last reference, and runtimes can be
+// torn down off the JS thread. Recursive because notifying a listener can destroy other host
+// objects, which remove themselves on the same thread.
+static std::recursive_mutex listenersMutex;
 
 struct RuntimeObserverObject : public jsi::HostObject {
   jsi::Runtime *rt_;
   explicit RuntimeObserverObject(jsi::Runtime *rt) : rt_(rt) {}
   ~RuntimeObserverObject() override {
-    std::unordered_set<RuntimeObserverListener *> toNotify;
-    {
-      std::scoped_lock lock(listenersMutex);
-      auto listenersSet = listeners.find(rt_);
-      if (listenersSet != listeners.end()) {
-        toNotify = std::move(listenersSet->second);
-        listeners.erase(listenersSet);
-      }
+    // Notify while holding the lock, so a listener being destroyed on another thread cannot be
+    // freed between leaving the set and being notified. Take one listener at a time: a notified
+    // listener can remove others from this set.
+    std::scoped_lock lock(listenersMutex);
+    auto listenersSet = listeners.find(rt_);
+    if (listenersSet == listeners.end()) {
+      return;
     }
-    // Notify outside the lock — listener callbacks may re-enter add/remove.
-    for (auto *listener : toNotify) {
+    auto &runtimeListeners = listenersSet->second;
+    while (!runtimeListeners.empty()) {
+      auto *listener = *runtimeListeners.begin();
+      runtimeListeners.erase(runtimeListeners.begin());
       listener->onRuntimeDestroyed(rt_);
     }
+    listeners.erase(rt_);
   }
 };
 
@@ -57,6 +62,13 @@ void RuntimeObserver::removeListener(jsi::Runtime &rt, RuntimeObserverListener *
     // nothing to do here
   } else {
     listenersSet->second.erase(listener);
+  }
+}
+
+void RuntimeObserver::removeListener(RuntimeObserverListener *listener) {
+  std::scoped_lock lock(listenersMutex);
+  for (auto &[rt, runtimeListeners] : listeners) {
+    runtimeListeners.erase(listener);
   }
 }
 
