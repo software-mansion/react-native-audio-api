@@ -10,7 +10,7 @@ import { useDelayPlayground } from '@site/src/components/InteractivePlayground/E
 
 # DelayNode
 
-The `DelayNode` interface represents latency in an audio signal by a given amount of time. It is an [`AudioNode`](../core/audio-node.mdx) that applies time shift to incoming signal f.e.
+The `DelayNode` interface represents latency in an audio signal by a given amount of time. It is an [`AudioNode`](../core/audio-node.mdx) that applies a time shift to the incoming signal.
 if `delayTime` value is `0.5`, it means that audio will be played after `0.5` seconds.
 
 Press play, then click the `DelayNode` box to mute the echoes and hear the dry voice alone. A `GainNode` feeds part of the delayed signal back into the delay, which is what turns a single repeat into a decaying echo.
@@ -49,7 +49,7 @@ Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 | `delayTime`| <ReadOnly /> [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing value of time shift to apply. |
 
 :::warning
-In web audio api specs `delayTime` is an `a-rate` param.
+In the Web Audio API spec `delayTime` is an `a-rate` param.
 :::
 
 ## Methods
