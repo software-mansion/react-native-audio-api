@@ -127,7 +127,12 @@ const Record: FC = () => {
       ios: {
         category: 'playAndRecord',
         mode: 'default',
-        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+        options: [
+          'defaultToSpeaker',
+          'allowBluetoothA2DP',
+          'allowBluetoothHFP',
+          'mixWithOthers',
+        ],
       },
     });
 
