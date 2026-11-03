@@ -24,6 +24,7 @@ run_directory=""
 journal_file=""
 target_bundle_id=""
 test_initialized=false
+deferred_test_failure=false
 
 print_test_help() {
   cat <<EOF
@@ -67,6 +68,9 @@ cleanup_test() {
   trap - EXIT INT TERM
 
   if [[ "$test_initialized" == true ]]; then
+    if [[ $exit_code -eq 0 && "$deferred_test_failure" == true ]]; then
+      exit_code=1
+    fi
     if [[ $exit_code -eq 0 ]]; then
       journal_note "[test:pass] $TEST_NAME"
     else
@@ -271,15 +275,30 @@ prompt_choice() {
   shift
 
   local pass_options=""
-  if [[ "${1:-}" == "--pass" ]]; then
-    pass_options="${2:?--pass needs comma-separated option numbers}"
-    shift 2
-  fi
+  local continue_options=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --pass)
+        pass_options="${2:?--pass needs comma-separated option numbers}"
+        shift 2
+        ;;
+      --continue)
+        continue_options="${2:?--continue needs comma-separated option numbers}"
+        shift 2
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
 
   local args
   args=(--mode choice --message "$message" --journal-file "$journal_file")
   if [[ -n "$pass_options" ]]; then
     args+=(--pass-options "$pass_options")
+  fi
+  if [[ -n "$continue_options" ]]; then
+    args+=(--continue-options "$continue_options")
   fi
   if [[ "$use_gui_prompts" == true ]]; then
     args+=(--gui)
@@ -288,5 +307,14 @@ prompt_choice() {
     args+=(--option "$option")
   done
 
+  set +e
   node "$PROMPT_SCRIPT" "${args[@]}"
+  local status=$?
+  set -e
+  if [[ $status -eq 2 ]]; then
+    deferred_test_failure=true
+    echo "Human verification failed; continuing the test." >&2
+    return 0
+  fi
+  return "$status"
 }

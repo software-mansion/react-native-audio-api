@@ -1,0 +1,14 @@
+executionPrerequisite: FabricExample is running in the foreground on the target device
+steps:
+  - run: ../shared/open-audio-io-playground.yaml
+  - echo: Apply and activate the default Record demo session preset
+  - tap: { id: system-apply }
+  - tap: { id: system-activate }
+  - echo: Record a short warmup take and stop it
+  - tap: { id: recorder-start }
+  - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }
+  - tap: { id: recorder-stop }
+  - await: { text: { in: { id: recorder-status }, equals: idle } }
+  - tap: { id: 'playback-source-option-Last take' }
+  - tap: { id: playback-play }
+  - await: { text: { in: { id: playback-status }, contains: source playing } }

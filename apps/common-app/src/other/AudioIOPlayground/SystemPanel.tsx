@@ -5,7 +5,6 @@ import type {
   AudioRecorderOptions,
 } from 'react-native-audio-api';
 
-import { Select } from '../../components';
 import AndroidSystemFields from './AndroidSystemFields';
 import IosSystemFields from './IosSystemFields';
 import type { Log } from './log';
@@ -23,10 +22,20 @@ import {
   PresetChoice,
   PRESETS,
 } from './systemPresets';
-import { CallButton, Field, Section } from './ui';
+import { ButtonRow, CallButton, ChoiceSelect, Field, Section } from './ui';
 import { PLAYBACK_CALLS } from './usePlayback';
 import { RECORDER_CALLS } from './useRecorder';
 import { SYSTEM_CALLS, useSystem } from './useSystem';
+
+const PRESET_SHORT_LABELS: Record<PresetChoice, string> = {
+  'Mix with others': 'Mix',
+  'Duck others': 'Duck',
+  'Interrupt others': 'Interrupt',
+  'Record demo': 'Rec demo',
+  'Voice call, speaker': 'Call spk',
+  'Voice call, earpiece': 'Call ear',
+  Custom: 'Custom',
+};
 
 interface SystemPanelProps {
   log: Log;
@@ -75,12 +84,13 @@ const SystemPanel: FC<SystemPanelProps> = ({
   };
 
   return (
-    <Section title="System">
-      <Field label="Preset">
-        <Select<PresetChoice>
+    <Section title="System" shortTitle="Sys">
+      <Field label="Preset" shortLabel="Preset">
+        <ChoiceSelect<PresetChoice>
           testID="system-preset"
           value={presetName}
           options={[...PRESET_NAMES, CUSTOM_PRESET]}
+          shortLabels={PRESET_SHORT_LABELS}
           onChange={selectPreset}
         />
       </Field>
@@ -92,58 +102,66 @@ const SystemPanel: FC<SystemPanelProps> = ({
           onChange={editAndroidDraft}
         />
       )}
-      {!isIos && (
+      <ButtonRow>
+        {!isIos && (
+          <CallButton
+            testID="system-focus"
+            title="Focus"
+            shortTitle="Focus"
+            call={SYSTEM_CALLS.focus}
+            onPress={() => requestFocus(androidDraft.focus)}
+          />
+        )}
         <CallButton
-          testID="system-focus"
-          title="Focus"
-          call={SYSTEM_CALLS.focus}
-          onPress={() => requestFocus(androidDraft.focus)}
+          testID="system-apply"
+          title="Apply"
+          shortTitle="Apply"
+          call={SYSTEM_CALLS.apply}
+          onPress={() =>
+            apply(
+              isIos
+                ? { ios: iosSystemGroup(iosDraft) }
+                : { android: androidSystemGroup(androidDraft) }
+            )
+          }
         />
-      )}
-      <CallButton
-        testID="system-apply"
-        title="Apply"
-        call={SYSTEM_CALLS.apply}
-        onPress={() =>
-          apply(
-            isIos
-              ? { ios: iosSystemGroup(iosDraft) }
-              : { android: androidSystemGroup(androidDraft) }
-          )
-        }
-      />
-      <CallButton
-        testID="system-activate"
-        title="Activate"
-        call={SYSTEM_CALLS.activate}
-        onPress={activate}
-      />
-      <CallButton
-        testID="system-deactivate"
-        title="Deactivate"
-        call={SYSTEM_CALLS.deactivate}
-        onPress={deactivate}
-      />
-      <CallButton
-        testID="system-recreate-recorder"
-        title="New recorder"
-        call={RECORDER_CALLS.recreate}
-        onPress={() =>
-          onRecreateRecorder(
-            isIos
-              ? iosRecorderOptions(iosDraft)
-              : androidRecorderOptions(androidDraft)
-          )
-        }
-      />
-      <CallButton
-        testID="system-recreate-context"
-        title="New context"
-        call={PLAYBACK_CALLS.recreate}
-        onPress={() =>
-          onRecreateContext(isIos ? {} : androidContextOptions(androidDraft))
-        }
-      />
+        <CallButton
+          testID="system-activate"
+          title="Activate"
+          shortTitle="Act"
+          call={SYSTEM_CALLS.activate}
+          onPress={activate}
+        />
+        <CallButton
+          testID="system-deactivate"
+          title="Deactivate"
+          shortTitle="Deact"
+          call={SYSTEM_CALLS.deactivate}
+          onPress={deactivate}
+        />
+        <CallButton
+          testID="system-recreate-recorder"
+          title="New recorder"
+          shortTitle="New Rec"
+          call={RECORDER_CALLS.recreate}
+          onPress={() =>
+            onRecreateRecorder(
+              isIos
+                ? iosRecorderOptions(iosDraft)
+                : androidRecorderOptions(androidDraft)
+            )
+          }
+        />
+        <CallButton
+          testID="system-recreate-context"
+          title="New context"
+          shortTitle="New Ctx"
+          call={PLAYBACK_CALLS.recreate}
+          onPress={() =>
+            onRecreateContext(isIos ? {} : androidContextOptions(androidDraft))
+          }
+        />
+      </ButtonRow>
     </Section>
   );
 };

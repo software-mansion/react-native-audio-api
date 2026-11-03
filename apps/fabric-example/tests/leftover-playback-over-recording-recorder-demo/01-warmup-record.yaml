@@ -1,0 +1,14 @@
+executionPrerequisite: FabricExample is running in the foreground on the target device
+steps:
+  - echo: Open the Recorder demo
+  - when: { hidden: { id: record-status } }
+    steps:
+      - tap: { text: Demo Apps }
+      - await: { visible: { text: Recorder } }
+      - await: { idle: true }
+      - tap: { text: Recorder }
+  - await: { visible: { id: record-status } }
+  - await: { text: { in: { id: record-status }, equals: Idle } }
+  - echo: Start the warmup recording
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Recording...' } }

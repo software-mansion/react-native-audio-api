@@ -10,7 +10,7 @@ import {
   useAudioInput,
 } from 'react-native-audio-api';
 
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, AppState, StyleSheet, View } from 'react-native';
 import { Container, Select } from '../../components';
 
 import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -34,6 +34,10 @@ const RECORDING_EXTENSION_NAME_MAP = {
   [FileFormat.OpusOgg]: 'ogg',
   [FileFormat.Adts]: 'aac',
 };
+
+function log(message: string): void {
+  console.log(`[record] ${message}`);
+}
 
 const Record: FC = () => {
   // Recover from "app disabled" state - recording can survive the app kill (android)
@@ -69,9 +73,12 @@ const Record: FC = () => {
       return;
     }
 
+    log(`selectInput ${label}`);
     try {
       await selectInput(input);
+      log(`selectInput ${label}: ok`);
     } catch (error) {
+      log(`selectInput ${label}: failed: ${error}`);
       Alert.alert('Input Device Error', `${error}`);
     }
   };
@@ -79,6 +86,7 @@ const Record: FC = () => {
   const stopPlayback = useCallback(() => {
     const source = playbackSourceRef.current;
     if (source) {
+      log('stop playback');
       source.onended = null;
       source.disconnect();
       playbackSourceRef.current = null;
@@ -110,30 +118,41 @@ const Record: FC = () => {
       return;
     }
 
+    log('start recording');
     setState(RecordingState.Loading);
 
     if (!hasPermissions) {
       const permissionStatus = await AudioManager.requestRecordingPermissions();
+      log(`AudioManager.requestRecordingPermissions() → ${permissionStatus}`);
 
       if (permissionStatus !== 'Granted') {
         Alert.alert('Error', "Recording permissions are no't granted");
+        setState(RecordingState.Idle);
         return;
       }
 
       setHasPermissions(true);
     }
 
-    AudioManager.setSystemOptions({
+    const systemOptions = {
       ios: {
-        category: 'playAndRecord',
-        mode: 'default',
-        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+        category: 'playAndRecord' as const,
+        mode: 'default' as const,
+        options: [
+          'defaultToSpeaker' as const,
+          'allowBluetoothA2DP' as const,
+          'mixWithOthers' as const,
+        ],
       },
-    });
+    };
+    log(`AudioManager.setSystemOptions(${JSON.stringify(systemOptions)})`);
+    AudioManager.setSystemOptions(systemOptions);
 
     try {
       await AudioManager.setAudioSessionActivity(true);
+      log('AudioManager.setAudioSessionActivity(true): ok');
     } catch (error) {
+      log(`AudioManager.setAudioSessionActivity(true): failed: ${error}`);
       console.error(error);
       Alert.alert('Error', 'Failed to activate audio session for recording.');
       setState(RecordingState.Idle);
@@ -141,6 +160,7 @@ const Record: FC = () => {
     }
 
     const result = await Recorder.start();
+    log(`recorder.start() → ${JSON.stringify(result)}`);
 
     setupNotification(false);
 
@@ -150,12 +170,12 @@ const Record: FC = () => {
       return;
     }
 
-    console.log('Recording start error:', result);
     Alert.alert('Error', `Failed to start recording: ${result.message}`);
     setState(RecordingState.Idle);
   }, [state, hasPermissions]);
 
   const onPauseRecording = useCallback(() => {
+    log('recorder.pause()');
     Recorder.pause();
     updateNotification(true);
     setIsInterrupted(false);
@@ -163,6 +183,7 @@ const Record: FC = () => {
   }, []);
 
   const onResumeRecording = useCallback(() => {
+    log('recorder.resume()');
     Recorder.resume();
     updateNotification(false);
     setState(RecordingState.Recording);
@@ -180,8 +201,17 @@ const Record: FC = () => {
               paths[0].replace(/[^/]+$/, `recording.${extension}`)
             )
           : paths[0];
+      log(
+        paths.length > 1
+          ? `concat ${paths.length} files → ${finalPath}`
+          : `take ${finalPath}`
+      );
 
+      log(`decode ${finalPath}`);
       const audioBuffer = await audioContext.decodeAudioData(finalPath);
+      log(
+        `decoded ${audioBuffer.duration.toFixed(2)} s, ${audioBuffer.numberOfChannels} ch`
+      );
       setRecordedBuffer(audioBuffer);
 
       setState(RecordingState.ReadyToPlay);
@@ -191,7 +221,9 @@ const Record: FC = () => {
   );
 
   const onStopRecording = useCallback(async () => {
+    log('recorder.stop()');
     const info = await Recorder.stop();
+    log(`recorder.stop() → ${JSON.stringify(info)}`);
     AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
     setIsInterrupted(false);
@@ -209,6 +241,9 @@ const Record: FC = () => {
 
   const onStopRecordingFromNotification = useCallback(async () => {
     const info = AudioRecorder.consumeLastRecordingResult();
+    log(
+      `notification stop, consumeLastRecordingResult() → ${JSON.stringify(info)}`
+    );
 
     if (!info || info.paths.length === 0) {
       setRecordedBuffer(null);
@@ -241,10 +276,12 @@ const Record: FC = () => {
     playbackSourceRef.current = source;
 
     source.onended = () => {
+      log('playback ended');
       stopPlayback();
       setState(RecordingState.Idle);
     };
 
+    log(`play ${recordedBuffer.duration.toFixed(2)} s`);
     source.start(audioContext.currentTime);
 
     setTimeout(() => {
@@ -308,12 +345,24 @@ const Record: FC = () => {
 
   useEffect(() => {
     stateRef.current = state;
+    log(`state ${state}`);
   }, [state]);
 
   useEffect(() => {
+    log(
+      `mount, AudioRecorder.isRecordingOngoing() → ${AudioRecorder.isRecordingOngoing()}, state ${stateRef.current}`
+    );
+
+    const appStateSubscription = AppState.addEventListener('change', (next) =>
+      log(`AppState '${next}'`)
+    );
+
     (async () => {
       const recordingPermissionStatus =
         await AudioManager.checkRecordingPermissions();
+      log(
+        `AudioManager.checkRecordingPermissions() → ${recordingPermissionStatus}`
+      );
 
       if (recordingPermissionStatus === 'Granted') {
         setHasPermissions(true);
@@ -321,21 +370,31 @@ const Record: FC = () => {
 
       const notificationPermissionStatus =
         await AudioManager.checkNotificationPermissions();
+      log(
+        `AudioManager.checkNotificationPermissions() → ${notificationPermissionStatus}`
+      );
       if (notificationPermissionStatus !== 'Granted') {
         const result = await AudioManager.requestNotificationPermissions();
+        log(`AudioManager.requestNotificationPermissions() → ${result}`);
         if (result !== 'Granted') {
           console.warn('Notification permissions are not granted');
         }
       }
     })();
+
+    return () => {
+      appStateSubscription.remove();
+      log('unmount');
+    };
   }, []);
 
   useEffect(() => {
     AudioManager.observeAudioInterruptions(true);
+    log('AudioManager.observeAudioInterruptions(true)');
 
-    const interruptionSubscription = AudioManager.addSystemEventListener(
-      'interruption',
-      (event) => {
+    const subscriptions = [
+      AudioManager.addSystemEventListener('interruption', (event) => {
+        log(`'interruption' ${JSON.stringify(event)}`);
         if (event.type === 'began') {
           if (stateRef.current === RecordingState.Recording) {
             setIsInterrupted(true);
@@ -346,17 +405,22 @@ const Record: FC = () => {
         if (event.type === 'ended') {
           setIsInterrupted(false);
         }
-      }
-    );
+      }),
+      AudioManager.addSystemEventListener('routeChange', (event) =>
+        log(`'routeChange' ${JSON.stringify(event)}`)
+      ),
+      AudioManager.addSystemEventListener('duck', () => log("'duck'")),
+    ];
 
     return () => {
-      interruptionSubscription.remove();
+      subscriptions.forEach((subscription) => subscription.remove());
       AudioManager.observeAudioInterruptions(false);
     };
   }, []);
 
   useEffect(() => {
     Recorder.onError((error) => {
+      log(`recorder.onError: ${error.message}`);
       Alert.alert('Recorder Error', error.message);
     });
 
@@ -369,7 +433,7 @@ const Record: FC = () => {
     const pauseListener = RecordingNotificationManager.addEventListener(
       'recordingNotificationPause',
       () => {
-        console.log('Notification pause action received');
+        log('notification pause');
         onPauseRecording();
       }
     );
@@ -377,7 +441,7 @@ const Record: FC = () => {
     const resumeListener = RecordingNotificationManager.addEventListener(
       'recordingNotificationResume',
       () => {
-        console.log('Notification resume action received');
+        log('notification resume');
         onResumeRecording();
       }
     );
@@ -385,7 +449,7 @@ const Record: FC = () => {
     const stopListener = RecordingNotificationManager.addEventListener(
       'recordingNotificationStop',
       () => {
-        console.log('Notification stop action received');
+        log('notification stop');
         onStopRecordingFromNotification();
       }
     );
@@ -405,23 +469,27 @@ const Record: FC = () => {
 
     const info = AudioRecorder.consumeLastRecordingResult();
     if (info && info.paths.length > 0) {
+      log(`recovered stopped recording ${JSON.stringify(info.paths)}`);
       loadRecordedAudio(info.paths);
     }
   }, [loadRecordedAudio]);
 
   useEffect(() => {
     if (!AudioRecorder.isRecordingOngoing()) {
-      Recorder.enableFileOutput({
+      const fileOutput = {
         rotateIntervalBytes: ROTATING_SIZE,
         format: RECORDING_EXTENSION,
         fileName: 'my_recording',
-      });
+      };
+      log(`recorder.enableFileOutput(${JSON.stringify(fileOutput)})`);
+      Recorder.enableFileOutput(fileOutput);
     }
 
     return () => {
       stopPlayback();
 
       if (!AudioRecorder.isRecordingOngoing()) {
+        log('AudioManager.setAudioSessionActivity(false)');
         AudioManager.setAudioSessionActivity(false);
       }
     };

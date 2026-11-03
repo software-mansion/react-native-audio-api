@@ -1,0 +1,8 @@
+executionPrerequisite: Audio I/O Playground is in the foreground after the meet.jit.si interruption, still recording
+steps:
+  - echo: Stop the interrupted recording and start playback of that take
+  - tap: { id: recorder-stop }
+  - await: { text: { in: { id: recorder-status }, equals: idle } }
+  - tap: { id: 'playback-source-option-Last take' }
+  - tap: { id: playback-play }
+  - await: { text: { in: { id: playback-status }, contains: source playing } }

@@ -1,0 +1,10 @@
+executionPrerequisite: The Recorder demo is recording the warmup take
+steps:
+  - echo: Stop the warmup recording and play it through
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Ready to Play' } }
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Playing...' } }
+  - await:
+      text: { in: { id: record-status }, equals: Idle }
+      timeout: 20000

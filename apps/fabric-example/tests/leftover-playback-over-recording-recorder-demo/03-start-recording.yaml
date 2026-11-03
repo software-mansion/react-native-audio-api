@@ -1,0 +1,5 @@
+executionPrerequisite: The Recorder demo is idle after the warmup playback
+steps:
+  - echo: Start the recording that will be interrupted in the background
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Recording...' } }

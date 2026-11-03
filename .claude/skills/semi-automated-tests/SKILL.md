@@ -27,16 +27,11 @@ Author and run semi-automated E2E tests in `apps/fabric-example/tests/` that int
    - Argent YAML workflows cannot prompt a human with arguments or read terminal `stdin`.
    - Split every test into numbered Argent fragment files (`01-before.yaml`, `02-after.yaml`, ...) orchestrated by `run.sh` with `prompt_action`, `prompt_choice`, or `prompt_text` calls in between.
 4. **Use `id: log-clear` for `AudioIOPlayground` screen identity.**
-   - On `AudioIOPlayground`, controls sit inside a top `ScrollView` (`y: 0.142 .. 0.675`) while `LogView` (`id: log-clear`, `id: log`) is pinned below it.
-   - Off-screen children of a `ScrollView` are clipped from the iOS runner tree. Never gate screen arrival on `id: recorder-start` before scrolling; gate on `id: log-clear` (or reuse `../shared/open-audio-io-playground.yaml`).
-5. **Always scope `scroll-to` on `AudioIOPlayground` to the upper `ScrollView`.**
-   - `AudioIOPlayground` has two `ScrollView`s (controls at top, log at bottom). Unscoped `scroll-to` uses full-screen height (`1.0`) and overshoots controls inside the `0.533`-tall upper `ScrollView`.
-   - Always pass `within: { role: ScrollView, next: { text: Audio I/O Playground } }`:
-     ```yaml
-     - scroll-to:
-         target: { id: recorder-start }
-         within: { role: ScrollView, next: { text: Audio I/O Playground } }
-     ```
+   - `AudioIOPlayground` opens in **Detailed mode**. Tests switch to Compact mode with `tap: { id: playground-compact }` (`id: playground-detailed` switches back). `../shared/open-audio-io-playground.yaml` does that after opening the screen.
+   - In Compact mode, all buttons, statuses, and inline `<testID>-option-<value>` chips fit inside the viewport above `LogView` (`id: log-clear`, `id: log`) with no scrolling and no modal dropdowns.
+5. **Tap `<testID>-option-<value>` chips directly in Compact mode.**
+   - Presets, categories, modes, options, playback sources, and device inputs render as inline chips in Compact mode (`id: 'playback-source-option-Last take'`, `id: 'system-preset-option-Record demo'`, etc.), so a single `tap:` selects the value without opening a modal or scrolling.
+   - If a test ever switches to Detailed mode (`tap: { id: playground-detailed }`), scope any `scroll-to` to the upper `ScrollView` with `within: { role: ScrollView, next: { text: Audio I/O Playground } }`.
 6. **Follow `argent-create-e2e` when recording new UI steps.**
    - Record steps live against the running app, use strict `testID` selectors (`{ id: ... }`), never commit device UDIDs in `.yaml` files, and verify each fragment with `e2e-execute` or `yarn test:e2e <test-name>`.
 
@@ -102,14 +97,14 @@ prompt_choice "What did you hear during playback of the recorded take?" \
 
 ### 2. `test-harness.sh` API
 
-| Function        | Usage                                                             | Behavior                                                                                                                                                                                                                                                                                              |
-| --------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init_test`     | `init_test [log-defaults...] "$@"`                                | Resolves the target device once (`resolve_ios_target`), starts `journal-execution.mjs --headless` writing to `$TEST_DIR/logs/`, registers the app via `launch-app`, and sets an `EXIT` trap to merge `logs.log` + `journal.log` on exit. Always pass `"$@"` last so CLI flags override test defaults. |
-| `run_flow`      | `run_flow "01-step.yaml"`                                         | Appends `[flow:start]` to `journal.log`, runs `npx argent e2e run` on the resolved `--device <udid>`, auto-recovers if the physical device's `ArgentRunner` session went stale (`Code=41`), and appends `[flow:pass]` or `[flow:fail]`.                                                               |
-| `prompt_action` | `prompt_action "<instruction>"`                                   | Pauses for the human to perform an external action. Logs `[prompt:action:start]` and `[prompt:action:done]` (with optional tester note).                                                                                                                                                              |
-| `prompt_choice` | `prompt_choice "<question>" [--pass "1,2"] "<opt1>" "<opt2>" ...` | Displays numbered options plus an automatic `Other (provide custom answer)` option. If `--pass` is set and the human picks another option, logs `[test:failed]` and exits `1`.                                                                                                                        |
-| `prompt_text`   | `prompt_text "<question>"`                                        | Prompts for free-form prose observation and logs `[prompt:question]` + `[prompt:answer]`.                                                                                                                                                                                                             |
-| `journal_note`  | `journal_note "<text>"`                                           | Appends a timestamped `[journal] <text>` line directly to `journal.log`.                                                                                                                                                                                                                              |
+| Function        | Usage                                                                              | Behavior                                                                                                                                                                                                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init_test`     | `init_test [log-defaults...] "$@"`                                                 | Resolves the target device once (`resolve_ios_target`), starts `journal-execution.mjs --headless` writing to `$TEST_DIR/logs/`, registers the app via `launch-app`, and sets an `EXIT` trap to merge `logs.log` + `journal.log` on exit. Always pass `"$@"` last so CLI flags override test defaults. |
+| `run_flow`      | `run_flow "01-step.yaml"`                                                          | Appends `[flow:start]` to `journal.log`, runs `npx argent e2e run` on the resolved `--device <udid>`, auto-recovers if the physical device's `ArgentRunner` session went stale (`Code=41`), and appends `[flow:pass]` or `[flow:fail]`.                                                               |
+| `prompt_action` | `prompt_action "<instruction>"`                                                    | Pauses for the human to perform an external action. Logs `[prompt:action:start]` and `[prompt:action:done]` (with optional tester note).                                                                                                                                                              |
+| `prompt_choice` | `prompt_choice "<question>" [--pass "1,2"] [--continue "3"] "<opt1>" "<opt2>" ...` | Displays numbered options plus an automatic `Other (provide custom answer)` option. If `--pass` is set and the human picks another option, logs `[test:failed]` and exits `1`. Options listed in `--continue` log the same failure but let the test proceed; the run still exits `1` at the end.      |
+| `prompt_text`   | `prompt_text "<question>"`                                                         | Prompts for free-form prose observation and logs `[prompt:question]` + `[prompt:answer]`.                                                                                                                                                                                                             |
+| `journal_note`  | `journal_note "<text>"`                                                            | Appends a timestamped `[journal] <text>` line directly to `journal.log`.                                                                                                                                                                                                                              |
 
 ### 3. Log Collection Options for `init_test`
 
@@ -127,27 +122,21 @@ executionPrerequisite: FabricExample is running in the foreground on the target 
 steps:
   - run: ../shared/open-audio-io-playground.yaml
   - echo: Apply and activate the default Record demo session preset
-  - scroll-to:
-      target: { id: system-apply }
-      direction: up
-      within: { role: ScrollView, next: { text: Audio I/O Playground } }
   - tap: { id: system-apply }
   - tap: { id: system-activate }
   - echo: Start recording in Audio I/O Playground
-  - scroll-to:
-      target: { id: recorder-start }
-      within: { role: ScrollView, next: { text: Audio I/O Playground } }
   - tap: { id: recorder-start }
   - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }
 ```
 
 Key `AudioIOPlayground` `testID`s (defined in `apps/common-app/src/other/AudioIOPlayground/`):
 
+- **Mode toggle:** `playground-detailed` (shown while in Compact mode), `playground-compact` (shown while in Detailed mode)
 - **System:** `system-preset`, `system-category`, `system-mode`, `system-options`, `system-options-done`, `system-voice-processing`, `system-apply`, `system-activate`, `system-deactivate`, `system-recreate-recorder`, `system-recreate-context`
 - **Recorder:** `recorder-status` (`idle` / `recording N.N s` / `paused N.N s`), `recorder-level`, `recorder-start`, `recorder-pause`, `recorder-resume`, `recorder-stop`, `recorder-options`
-- **Playback:** `playback-status` (`context <state>, <sourceState>`), `playback-last-take`, `playback-source`, `playback-loop`, `playback-play`, `playback-pause`, `playback-resume`, `playback-stop`, `playback-options`
+- **Playback:** `playback-status` (`context <state>, <sourceState>`), `playback-last-take`, `playback-source`, `playback-loop`, `playback-play`, `playback-pause`, `playback-resume`, `playback-stop`, `playback-disconnect`, `playback-options`
 - **Devices & Log:** `device-current-inputs`, `device-current-outputs`, `device-input`, `device-refresh`, `log`, `log-clear`
-- **`Select` / `MultiSelect` modal options:** `<testID>-option-<value>`, e.g. `id: 'playback-source-option-Last take'`.
+- **Option chips / modal options:** `<testID>-option-<value>`, e.g. `id: 'playback-source-option-Last take'`, `id: 'system-preset-option-Record demo'`. In Compact mode these are always visible inline.
 
 ---
 

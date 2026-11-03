@@ -1,22 +1,9 @@
 executionPrerequisite: Audio I/O Playground is open with an active recording
 steps:
   - echo: Stop the active recording
-  - scroll-to:
-      target: { id: recorder-stop }
-      within: { role: ScrollView, next: { text: Audio I/O Playground } }
   - tap: { id: recorder-stop }
   - await: { text: { in: { id: recorder-status }, equals: idle } }
   - echo: Select Last take as the playback source and start playback
-  - scroll-to:
-      target: { id: playback-source }
-      within: { role: ScrollView, next: { text: Audio I/O Playground } }
-  - tap: { id: playback-source }
-  - await: { visible: { id: 'playback-source-option-Last take' } }
-  - await: { idle: true }
   - tap: { id: 'playback-source-option-Last take' }
-  - await: { hidden: { id: 'playback-source-option-Last take' } }
-  - scroll-to:
-      target: { id: playback-play }
-      within: { role: ScrollView, next: { text: Audio I/O Playground } }
   - tap: { id: playback-play }
   - await: { text: { in: { id: playback-status }, contains: source playing } }

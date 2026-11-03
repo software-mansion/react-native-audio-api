@@ -1,6 +1,6 @@
 executionPrerequisite: FabricExample is running in the foreground on the target device
 steps:
-  - echo: Ensure Audio I/O Playground is open
+  - echo: Ensure Audio I/O Playground is open in Compact mode
   - when: { hidden: { id: log-clear } }
     steps:
       - tap: { text: Other }
@@ -8,4 +8,7 @@ steps:
       - await: { idle: true }
       - tap: { text: Audio I/O Playground }
   - await: { visible: { id: log-clear } }
-  - await: { idle: true }
+  - when: { visible: { id: playground-compact } }
+    steps:
+      - tap: { id: playground-compact }
+  - await: { visible: { id: playground-detailed } }
