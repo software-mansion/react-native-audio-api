@@ -1,0 +1,149 @@
+---
+sidebar_position: 6
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Prebuilt libraries support
+
+`react-native-audio-api` can link a number of prebuilt third-party libraries that are downloaded at build time. They enable additional decoding and streaming features, but also add several megabytes to the resulting application binary, so each one can be toggled with a build option.
+
+| Library set | Default | Option | What it adds |
+| :---- | :---: | :---: | :---- |
+| FFmpeg (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | **off** | `enableFFmpeg` | Remote URL streaming (HTTP byte ranges), HLS (`.m3u8`), remote URL metadata — see [Runtime flags](./runtime-flags#where-ffmpeg-is-used). |
+| Static libs (`libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile`) | **on** | `disableStaticExternalLibs` | Decoding `ogg`, `opus`, `oga` files |
+
+The options are independent and can be combined.
+
+:::tip Reducing app size
+Leaving FFmpeg off (the default) and setting `disableStaticExternalLibs` can shave several MB off the final app size across all ABIs / device slices. Pick the set of formats you actually need and turn the rest off.
+:::
+
+:::info FFmpeg is opt-in
+Apps that would like to decode HLS or make use of URL streaming have to enable it explicitly (see below). Use [`isFfmpegEnabled`](./runtime-flags#isffmpegenabled) to branch at runtime.
+:::
+
+## Setting the options
+
+Every build (CocoaPods, [Swift Package Manager](./swift-package-manager.mdx) and Gradle) reads the
+options from a `react-native-audio-api` section of the app's `package.json`. In an Expo app, pass
+them as [Expo plugin options](./audio-api-plugin.mdx#enableffmpeg) instead and `expo prebuild`
+writes that section for you.
+
+<Tabs groupId="app-type">
+<TabItem value="expo" label="Expo" default>
+
+`app.json` / `app.config.js`:
+
+```json
+"plugins": [
+  [
+    "react-native-audio-api",
+    {
+      "enableFFmpeg": true,
+      "disableStaticExternalLibs": false
+    }
+  ]
+]
+```
+
+</TabItem>
+<TabItem value="bare" label="React Native">
+
+The app's `package.json`:
+
+```json
+"react-native-audio-api": {
+  "enableFFmpeg": true,
+  "disableStaticExternalLibs": false
+}
+```
+
+</TabItem>
+</Tabs>
+
+After changing them:
+
+<Tabs groupId="app-type">
+<TabItem value="expo" label="Expo" default>
+
+Run `npx expo prebuild`. It updates the `package.json` section from the plugin options and then runs `pod install`.
+
+</TabItem>
+<TabItem value="bare" label="React Native">
+
+- **CocoaPods**: run `pod install`.
+- **Swift Package Manager**: run `npx react-native spm` in `ios`. If the app was already built, [reset the package cache](./swift-package-manager.mdx#build-options) first.
+- **Android**: just rebuild. Gradle reads the file on every build.
+
+</TabItem>
+</Tabs>
+
+## Enabling FFmpeg
+
+<Tabs groupId="app-type">
+<TabItem value="expo" label="Expo" default>
+
+`app.json` / `app.config.js`:
+
+```json
+"plugins": [
+  [
+    "react-native-audio-api",
+    {
+      "enableFFmpeg": true
+    }
+  ]
+]
+```
+
+</TabItem>
+<TabItem value="bare" label="React Native">
+
+The app's `package.json`:
+
+```json
+"react-native-audio-api": {
+  "enableFFmpeg": true
+}
+```
+
+</TabItem>
+</Tabs>
+
+With FFmpeg enabled, the FFmpeg binaries are downloaded during `pod install` / Swift package resolution / the first Gradle build and linked into the app. FFmpeg is distributed under the LGPL — see `THIRD_PARTY.md` in the repository for the notice that applies to FFmpeg-enabled builds.
+
+## Disabling other external libraries
+
+<Tabs groupId="app-type">
+<TabItem value="expo" label="Expo" default>
+
+`app.json` / `app.config.js`:
+
+```json
+"plugins": [
+  [
+    "react-native-audio-api",
+    {
+      "disableStaticExternalLibs": true
+    }
+  ]
+]
+```
+
+</TabItem>
+<TabItem value="bare" label="React Native">
+
+The app's `package.json`:
+
+```json
+"react-native-audio-api": {
+  "disableStaticExternalLibs": true
+}
+```
+
+</TabItem>
+</Tabs>
+
+This removes the bundled Opus / Ogg / Vorbis static libraries. With this option enabled, attempts to decode `.ogg`, `.opus`, or `.oga` files through `AudioContext.decodeAudioData` (or any other decoding path) will return an error — those formats are handled inside miniaudio via the now-disabled custom backends.
