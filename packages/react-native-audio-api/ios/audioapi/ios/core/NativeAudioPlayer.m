@@ -1,6 +1,8 @@
 #import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#define LOG_MODULE NativeAudioPlayer
+#import <audioapi/ios/utils/Log.h>
 
 @interface NativeAudioPlayer () {
   int _preferredIOBufferFrames;
@@ -87,7 +89,8 @@
 
   NSError *error = nil;
   if (![sessionManager ensureActive:false error:&error]) {
-    NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
+    AUDIO_LOG_ERROR(
+        "Error while activating audio session for playback: %{public}@", [error debugDescription]);
     [sessionManager resetPreferredIOBufferFrames];
     return false;
   }

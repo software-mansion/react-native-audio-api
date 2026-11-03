@@ -6,6 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "log:stream:ios": "bash scripts/log-stream-ios.sh",
     "start": "react-native start",
     "test": "jest",
     "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
