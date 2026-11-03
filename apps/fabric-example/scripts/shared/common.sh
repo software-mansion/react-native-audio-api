@@ -1,7 +1,7 @@
 # Sourced by the FabricExample build and run scripts. Platform-independent helpers.
 
-APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-REPO_ROOT="$(cd "$APP_DIR/../.." && pwd)"
+APP_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+REPO_ROOT="$(cd -P "$APP_DIR/../.." && pwd -P)"
 readonly APP_DIR REPO_ROOT
 readonly LOG_LEVELS=(error warning debug trace)
 readonly METRO_STATUS_URL="http://localhost:8081/status"
