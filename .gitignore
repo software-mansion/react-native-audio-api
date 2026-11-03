@@ -6,7 +6,8 @@
 .expo/
 
 # VSCode
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 jsconfig.json
 
 # Xcode
@@ -89,8 +90,13 @@ react-native-audio-api*.tgz
 .env
 apps/fabric-example/.env.local
 .cursor/*
+!.cursor/mcp.json
 !.cursor/rules/
 !.cursor/rules/*.mdc
+
+# Argent local state. install.json and e2e flows stay tracked.
+.argent/secrets.env
+.argent/recordings/
 
 compile_commands.json
 openssl-prebuilt/
