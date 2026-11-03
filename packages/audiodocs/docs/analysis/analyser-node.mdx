@@ -5,6 +5,7 @@ sidebar_position: 1
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+import SignalDomainsDiagram from '@site/src/components/SignalDomainsDiagram';
 
 # AnalyserNode
 
@@ -13,7 +14,7 @@ It is an [`AudioNode`](../core/audio-node.mdx) that passes the audio data unchan
 
 #### Time domain vs Frequency domain
 
-![time-domain-vs-frequency-domain](/img/time_domain_vs_frequency_domain.jpg)
+<SignalDomainsDiagram />
 
 A time-domain graph illustrates how a signal evolves over time, displaying changes in amplitude or intensity as time progresses.
 In contrast, a frequency-domain graph reveals how the signal's energy or power is distributed across different frequency bands, highlighting the presence and strength of various frequency components over a specified range.
