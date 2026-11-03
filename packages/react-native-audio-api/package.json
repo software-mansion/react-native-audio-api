@@ -105,8 +105,6 @@
     "test:cpp:coverage": "bash common/cpp/test/run-coverage.sh",
     "test:full": "yarn test:js && yarn test:cpp:full",
     "test:cpp:docker": "bash common/cpp/test/run-tests-docker.sh",
-    "build:android": "cd ../../apps/fabric-example/android && ./gradlew :react-native-audio-api:assembleDebug",
-    "build:ios": "cd ../../apps/fabric-example/ios && pod install && xcodebuild build -workspace FabricExample.xcworkspace -scheme FabricExample -destination 'generic/platform=iOS Simulator' -quiet",
     "typecheck": "tsc --noEmit",
     "lint": "yarn lint:js && yarn lint:cpp && yarn lint:ios && yarn lint:kotlin",
     "lint:js": "eslint src && yarn prettier --check src",

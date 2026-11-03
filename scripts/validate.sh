@@ -176,8 +176,8 @@ run_android() {
 
   run_prebuild_for_platform android
 
-  log_step "yarn workspace react-native-audio-api build:android"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api build:android)
+  log_step "yarn workspace fabric-example build:android --all-architectures"
+  (cd "$REPO_ROOT" && yarn workspace fabric-example build:android --all-architectures)
 }
 
 run_ios() {
@@ -204,8 +204,8 @@ run_ios() {
 
   run_prebuild_for_platform ios
 
-  log_step "yarn workspace react-native-audio-api build:ios"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api build:ios)
+  log_step "yarn workspace fabric-example build:ios --simulator --pod-install"
+  (cd "$REPO_ROOT" && yarn workspace fabric-example build:ios --simulator --pod-install)
 }
 
 run_full() {
