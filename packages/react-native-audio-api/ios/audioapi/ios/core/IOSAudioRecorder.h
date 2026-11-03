@@ -34,13 +34,19 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<NoneType, std::string> start() override;
   Result<FileInfo, std::string> stop() override;
 
+  /// Also pauses a recording whose capture an interruption stopped, so it stays paused once the
+  /// interruption ends.
   void pause() override;
+  /// Resumes a paused recording, and also restarts capture that the system stopped while the
+  /// recording was meant to continue.
   void resume() override;
   /// Nothing to do: the session reroutes capture itself and the recorder follows through
   /// the input notifications.
   Result<NoneType, std::string> rerouteInput() override;
 
   bool isRecording() const override;
+  /// Only a pause the user asked for. A recording whose capture was stopped by an interruption is
+  /// neither paused nor recording.
   bool isPaused() const override;
   bool isIdle() const override;
 
