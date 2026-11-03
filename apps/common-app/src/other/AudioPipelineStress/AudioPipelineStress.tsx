@@ -629,9 +629,7 @@ const AudioPipelineStress: FC = () => {
             async () => {
               await activateRecordingSession();
               resourcesRef.current.configureRecorderTap();
-              await resourcesRef.current.startRecording(
-                `record-deactivation-${Date.now()}`
-              );
+              await resourcesRef.current.startRecording();
               await waitForRecordingCallbacks(1);
             }
           );
