@@ -1,6 +1,7 @@
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <mutex>
 
 @interface AudioEngineSourceRegistration : NSObject
@@ -149,6 +150,9 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)cleanup
 {
+  // outside of lock because it locks on its own
+  (void)audioapi::ActiveRecorderHandle::global().stopAndReturnInfo();
+
   std::scoped_lock lock(_engineLock);
   [self destroyAudioEngine];
   self.state = AudioEngineState::AudioEngineStateIdle;

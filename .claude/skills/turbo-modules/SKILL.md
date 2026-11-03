@@ -143,6 +143,8 @@ Uses ObjC++ with `RCT_EXPORT_MODULE` and `RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD
 
 **Lazy `AVAudioEngine` invariant**: allocating the `AudioEngine` ObjC object at install does NOT create the underlying `AVAudioEngine`. It is created on demand by `createAudioEngineIfNeeded` (first node attach, engine start, rebuild), so apps that only use session management and notifications never allocate it. Every reader of `self.audioEngine` inside `AudioEngine.mm` must either nil-guard or call `createAudioEngineIfNeeded` first, and system-driven restart paths (`restartAudioEngine`) must not resurrect an engine when there is no tracked graph.
 
+**Teardown order on reload**: `invalidate` cleans up `AudioEngine` (nils `sharedInstance`) and `AudioSessionManager` (nils `audioSession`) *before* the JS runtime destroys its HostObjects. So `-[AudioEngine cleanup]` stops the active recorder through `ActiveRecorderHandle` (before taking `_engineLock`) and the later `~AudioRecorderHostObject` stop finds the slot empty. Native recorder/player paths keep `assert`ing on the engine singleton: anything that must run at teardown belongs in `cleanup`, not in a destructor. Not in `destroyAudioEnginePreservingSessionDeactivationState`: it runs with `_engineLock` held and is also the route-change rebuild path.
+
 **New Architecture support** (`getTurboModule`):
 ```objc
 #ifdef RCT_NEW_ARCH_ENABLED
