@@ -257,6 +257,10 @@ public:
     return previous;
   }
 
+  float streamSampleRate() const {
+    return streamSampleRate_.load(std::memory_order_acquire);
+  }
+
   void setRecorderState(RecorderState state) {
     state_.store(state, std::memory_order_release);
   }
@@ -592,6 +596,49 @@ public:
       0);
   XCTAssertFalse(nativeRecorder.armedWhileReprepareParked);
   XCTAssertTrue(nativeRecorder.lastInputArmed);
+}
+
+- (void)testHardwareChangeOfStoppedSessionFinishesBeforeNextStart {
+  self.audioEngine.state = AudioEngineStateRunning;
+  XCTAssertTrue(_recorder->start().is_ok());
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  void (^notifyInput)(AudioEngineInputNotification) =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // A notification for the first session is held while re-preparing its
+  // outputs in the first session's format.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), queue,
+                 ^{
+                   dispatch_semaphore_signal(releaseParkedReprepare);
+                 });
+
+  // The session stops and a new one starts in another format meanwhile.
+  XCTAssertTrue(_recorder->stop().is_ok());
+  nativeRecorder.mockResolvedInputFormat =
+      [[AVAudioFormat alloc] initStandardFormatWithSampleRate:48000
+                                                     channels:2];
+  XCTAssertTrue(_recorder->start().is_ok());
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertEqual(_recorder->streamSampleRate(), 48000.0F);
 }
 
 - (void)testStopReturnsErrorWhileIdle {

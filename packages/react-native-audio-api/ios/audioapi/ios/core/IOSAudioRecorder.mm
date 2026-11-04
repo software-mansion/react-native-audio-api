@@ -210,6 +210,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
     return Err("Recorder is already recording");
   }
 
+  std::scoped_lock hardwareChangeLock(hardwareChangeMutex_);
   std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
   AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
 

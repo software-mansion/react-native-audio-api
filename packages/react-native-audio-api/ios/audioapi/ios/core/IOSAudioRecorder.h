@@ -62,11 +62,13 @@ class IOSAudioRecorder : public AudioRecorder {
   void handleHardwareChange();
 
   int32_t inputChannelCount_{0};
-  /// Serializes `handleHardwareChange()`: the engine may notify the same rebuilt graph from two
-  /// threads and starts it once either call returns, so a returning call must find the outputs
-  /// already re-prepared for the live format. Taken after the `isIdle()` check, so `start()`,
-  /// which holds the consumer mutexes while its engine start notifies the idle recorder, never
-  /// waits on it.
+  /// Serializes `handleHardwareChange()` and `start()`. The engine may notify the same rebuilt
+  /// graph from two threads and starts it once either call returns, so a returning call must
+  /// find the outputs already re-prepared for the live format; and a call for a session that has
+  /// since stopped must finish before a new session prepares its outputs. Lock order: this
+  /// mutex, then the consumer mutexes, then `_engineLock` (briefly). The handler takes it only
+  /// after its `isIdle()` check, so the notification `start()`'s own engine start sends on the
+  /// same thread returns before reaching it.
   std::mutex hardwareChangeMutex_;
 };
 
