@@ -6,12 +6,11 @@ import {
   AudioRecorder,
   AudioManager,
 } from 'react-native-audio-api';
-import { Container } from '../../components';
+import { Button, Container } from '../../components';
 import { audioContext } from '../../singletons';
 import {
   ActivityIndicator,
   View,
-  Button,
   StyleSheet,
   ScrollView,
   Dimensions,
@@ -175,20 +174,20 @@ export default function PedalBoard() {
               );
             })}
           </ScrollView>
+          {/* Both sources feed the first pedal, so only one runs at a time. */}
           <View style={styles.controls}>
-            <View style={{ display: isRecording ? 'none' : 'flex' }}>
-              <Button
-                title={isPlaying ? 'Stop' : 'Play'}
-                onPress={togglePlayback}
-              />
-            </View>
-
-            <View style={{ display: isPlaying ? 'none' : 'flex' }}>
-              <Button
-                title={isRecording ? 'Stop' : 'Record'}
-                onPress={toggleRecording}
-              />
-            </View>
+            <Button
+              title={isPlaying ? 'Stop' : 'Play'}
+              onPress={togglePlayback}
+              disabled={isRecording}
+              minWidth={120}
+            />
+            <Button
+              title={isRecording ? 'Stop' : 'Record'}
+              onPress={toggleRecording}
+              disabled={isPlaying}
+              minWidth={120}
+            />
           </View>
         </>
       )}
@@ -203,11 +202,9 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   controls: {
-    display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-    marginTop: 20,
-    width: 200,
+    justifyContent: 'center',
+    gap: 16,
+    marginVertical: 20,
   },
 });

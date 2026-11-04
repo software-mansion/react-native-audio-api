@@ -2,16 +2,22 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
-import { GainNode, BiquadFilterNode, AudioNode, AudioContext, OscillatorNode } from 'react-native-audio-api';
+import {
+  GainNode,
+  BiquadFilterNode,
+  AudioNode,
+  AudioContext,
+  OscillatorNode,
+} from 'react-native-audio-api';
 
 // LFO Settings
 const MIN_LFO_RATE = 0.3; // Slow sweep (0.5 Hz)
 const MAX_LFO_RATE = 4; // Fast wobble (8 Hz)
-const MIN_DEPTH = 50;    // Narrow frequency sweep
-const MAX_DEPTH = 250;   // Wide frequency sweep
+const MIN_DEPTH = 50; // Narrow frequency sweep
+const MAX_DEPTH = 250; // Wide frequency sweep
 
 // Filter Settings
-const BASE_FREQ = 800;    // Center frequency for the sweep
+const BASE_FREQ = 800; // Center frequency for the sweep
 const MIN_Q = 1;
 const MAX_Q = 20;
 
@@ -29,9 +35,9 @@ export default function AutoWahPedal({
   const [isActive, setIsActive] = useState(false);
 
   // Repurposed State Variables
-  const [rate, setRate] = useState(0.5);        // LFO Speed (was Frequency)
+  const [rate, setRate] = useState(0.5); // LFO Speed (was Frequency)
   const [resonance, setResonance] = useState(0.5);
-  const [depth, setDepth] = useState(0.5);      // LFO Width (was Sensitivity)
+  const [depth, setDepth] = useState(0.5); // LFO Width (was Sensitivity)
 
   // Audio Nodes
   const inputGainRef = useRef<GainNode | null>(null);
@@ -48,9 +54,9 @@ export default function AutoWahPedal({
   useEffect(() => {
     initialize(context);
     return () => {
-       try {
-         lfoOscillatorRef.current?.stop();
-       } catch(e) {}
+      try {
+        lfoOscillatorRef.current?.stop();
+      } catch (e) {}
     };
   }, [context]);
 
@@ -91,15 +97,19 @@ export default function AutoWahPedal({
 
     // 4. Connect LFO -> Depth -> Filter Frequency
     if (lfoOscillatorRef.current && lfoGainRef.current && filterRef.current) {
-        lfoOscillatorRef.current.connect(lfoGainRef.current);
-        lfoGainRef.current.connect(filterRef.current.frequency);
+      lfoOscillatorRef.current.connect(lfoGainRef.current);
+      lfoGainRef.current.connect(filterRef.current.frequency);
     }
 
     updateAudioParams(rate, resonance, depth);
   };
 
   const updateAudioParams = (r: number, res: number, d: number) => {
-    if (!filterRef.current || !lfoOscillatorRef.current || !lfoGainRef.current) {
+    if (
+      !filterRef.current ||
+      !lfoOscillatorRef.current ||
+      !lfoGainRef.current
+    ) {
       return;
     }
 
@@ -148,9 +158,11 @@ export default function AutoWahPedal({
     setIsActive((prev) => !prev);
   };
 
+  // onActivate fires only for a recognised tap; onDeactivate also fires for
+  // touches the tap never claimed, such as dragging a fader on the pedal.
   const powerGesture = useTapGesture({
     runOnJS: true,
-    onDeactivate: togglePower,
+    onActivate: togglePower,
   });
 
   return (
@@ -199,9 +211,7 @@ export default function AutoWahPedal({
               <View style={styles.stompInner} />
             </View>
           </GestureDetector>
-          <Text style={styles.switchLabel}>
-            {isActive ? 'ON' : 'BYPASS'}
-          </Text>
+          <Text style={styles.switchLabel}>{isActive ? 'ON' : 'BYPASS'}</Text>
         </View>
       </View>
     </View>

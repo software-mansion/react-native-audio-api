@@ -19,14 +19,22 @@ interface PlayerOptions {
   setup: (AudioContext: AudioContext) => SetupResponse;
 }
 
-function getPlayingInstruments(
-  iName?: InstrumentName,
-  iValue: boolean = false
-) {
+function createNoHits(): PlayingInstruments {
   return instruments.reduce((acc, name) => {
-    acc[name] = iName === name ? iValue : false;
+    acc[name] = false;
     return acc;
   }, {} as PlayingInstruments);
+}
+
+/** How long a hit stays highlighted: most of a step, capped for slow tempos. */
+function hitFlashDuration(timePerNote: number) {
+  return Math.min(0.15, timePerNote * 0.6);
+}
+
+interface ScheduledStep {
+  step: number;
+  time: number;
+  hits: PlayingInstruments;
 }
 
 function r<T>(ref: React.MutableRefObject<T>) {
@@ -44,12 +52,15 @@ export default function usePlayer(options: PlayerOptions) {
   const notesPerBeatRef = useRef(notesPerBeat);
   const numBeatsRef = useRef(numBeats);
 
+  /**
+   * Loop position in [0, 1), advanced from the note clock rather than wall
+   * time.
+   */
   const progressSV = useSharedValue(0);
-  const currentBeat = useSharedValue(0);
-
-  const playingInstruments = useSharedValue<PlayingInstruments>(
-    getPlayingInstruments()
-  );
+  /** Index of the step currently sounding, or -1 before the first one. */
+  const playingStep = useSharedValue(-1);
+  /** Every instrument hit on `playingStep`, while its highlight lasts. */
+  const playingInstruments = useSharedValue<PlayingInstruments>(createNoHits());
 
   useLayoutEffect(() => {
     bpmRef.current = bpm;
@@ -71,40 +82,82 @@ export default function usePlayer(options: PlayerOptions) {
     let startTime = 0;
     let currentTime = 0;
 
-    function advancePattern() {
-      for (let i = 0; i < r(patternsRef).length; i += 1) {
-        if (r(patternsRef)[i].steps[currentBeat.value]) {
-          playingInstruments.value = getPlayingInstruments(
-            r(patternsRef)[i].instrumentName,
-            true
-          );
+    let nextStep = 0;
+    /**
+     * The sounding step, mirrored in a plain variable: reading a shared value
+     * back on the JS thread right after writing it can return a stale value.
+     */
+    let soundingStep = -1;
+    let stepStartTime = 0;
+    let hitsVisible = false;
+    let pendingStep: ScheduledStep | null = null;
 
-          playNote(r(patternsRef)[i].instrumentName, nextNoteTime);
+    function resetVisuals() {
+      progressSV.value = 0;
+      soundingStep = -1;
+      playingStep.value = -1;
+      playingInstruments.value = createNoHits();
+    }
+
+    function scheduleNextStep() {
+      const hits = createNoHits();
+
+      for (const pattern of r(patternsRef)) {
+        if (pattern.steps[nextStep]) {
+          hits[pattern.instrumentName] = true;
+          playNote(pattern.instrumentName, nextNoteTime);
         }
       }
 
-      currentBeat.value = (currentBeat.value + 1) % r(numBeatsRef);
+      pendingStep = { step: nextStep, time: nextNoteTime, hits };
+      nextStep = (nextStep + 1) % r(numBeatsRef);
+    }
+
+    /**
+     * Shows a scheduled step once its notes actually start, not when they are
+     * queued.
+     */
+    function revealDueStep() {
+      if (!pendingStep || currentTime < pendingStep.time) {
+        return;
+      }
+
+      soundingStep = pendingStep.step;
+      playingStep.value = soundingStep;
+      playingInstruments.value = pendingStep.hits;
+      stepStartTime = pendingStep.time;
+      hitsVisible = true;
+      pendingStep = null;
     }
 
     function playerLoop() {
       frameCount += 1;
 
       const timePerNote = 60.0 / (r(bpmRef) * r(notesPerBeatRef));
-      const totalLoopTime = timePerNote * r(numBeatsRef);
 
       currentTime = audioContext.currentTime;
-      const timeDiff = currentTime - startTime;
+      averageFrameTime = (currentTime - startTime) / frameCount;
 
-      averageFrameTime = timeDiff / frameCount;
+      revealDueStep();
 
-      progressSV.value = (timeDiff % totalLoopTime) / totalLoopTime;
+      if (
+        hitsVisible &&
+        currentTime - stepStartTime > hitFlashDuration(timePerNote)
+      ) {
+        playingInstruments.value = createNoHits();
+        hitsVisible = false;
+      }
 
-      if (currentTime - (nextNoteTime - timePerNote) > 0.05) {
-        playingInstruments.value = getPlayingInstruments();
+      if (soundingStep >= 0) {
+        const stepFraction = Math.min(
+          1,
+          Math.max(0, (currentTime - stepStartTime) / timePerNote)
+        );
+        progressSV.value = (soundingStep + stepFraction) / r(numBeatsRef);
       }
 
       if (currentTime + averageFrameTime >= nextNoteTime) {
-        advancePattern();
+        scheduleNextStep();
         nextNoteTime += timePerNote;
       }
 
@@ -117,10 +170,11 @@ export default function usePlayer(options: PlayerOptions) {
       requestAnimationFrame(() => {
         frameCount = 0;
         averageFrameTime = 0;
+        nextStep = 0;
+        pendingStep = null;
+        hitsVisible = false;
+        resetVisuals();
 
-        progressSV.value = 0;
-        currentBeat.value = 0;
-        playingInstruments.value = getPlayingInstruments();
         startTime = audioContext.currentTime;
         currentTime = audioContext.currentTime;
         nextNoteTime = audioContext.currentTime;
@@ -128,16 +182,11 @@ export default function usePlayer(options: PlayerOptions) {
         playerLoop();
       });
     } else {
-      frameCount = 0;
-      averageFrameTime = 0;
-
-      progressSV.value = 0;
-      currentBeat.value = 0;
-      playingInstruments.value = getPlayingInstruments();
+      resetVisuals();
     }
 
     return () => {
-      playingInstruments.value = getPlayingInstruments();
+      playingInstruments.value = createNoHits();
       audioContext.close();
     };
 
@@ -155,6 +204,7 @@ export default function usePlayer(options: PlayerOptions) {
 
   return {
     playingInstruments,
+    playingStep,
     progressSV,
     isPlaying,
     play,

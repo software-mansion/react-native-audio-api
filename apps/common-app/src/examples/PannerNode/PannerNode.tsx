@@ -13,7 +13,6 @@ import { colors, layout } from '../../styles';
 const MUSIC_URL =
   'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
-const LABEL_WIDTH = 100;
 const ORBIT_RADIUS = 2;
 const VIEW_SIZE = 220;
 const VIEW_SCALE = VIEW_SIZE / 2 / 4.5;
@@ -121,7 +120,10 @@ const figureEightOutline = Array.from({ length: 48 }, (_, i) => {
 /** Degrees in the horizontal plane: 0 in front, -90 left, 90 right, ±180 behind. */
 const azimuthOf = ({ x, z }: Vec3) => (Math.atan2(x, -z) * 180) / Math.PI;
 
-/** Equal-power panning folds the back half onto the front, so behind sounds centred. */
+/**
+ * Equal-power panning folds the back half onto the front, so behind sounds
+ * centred.
+ */
 const expectedBalance = (position: Vec3) => {
   const azimuth = azimuthOf(position);
   const folded =
@@ -415,9 +417,7 @@ const PannerNodeExample: FC = () => {
         <View style={styles.row}>
           <Button
             onPress={handlePlayPause}
-            title={
-              isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play'
-            }
+            title={isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play'}
             disabled={isLoading}
           />
         </View>
@@ -458,7 +458,6 @@ const PannerNodeExample: FC = () => {
             min={4}
             max={16}
             step={0.5}
-            minLabelWidth={LABEL_WIDTH}
           />
         ) : (
           <View style={styles.row}>
@@ -468,10 +467,7 @@ const PannerNodeExample: FC = () => {
             >
               <Text style={styles.chipText}>Previous</Text>
             </Pressable>
-            <Pressable
-              style={styles.chip}
-              onPress={() => goToStep(stepIndex)}
-            >
+            <Pressable style={styles.chip} onPress={() => goToStep(stepIndex)}>
               <Text style={styles.chipText}>Repeat</Text>
             </Pressable>
             <Pressable

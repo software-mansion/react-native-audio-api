@@ -1,47 +1,87 @@
+import {
+  isLiquidGlassSupported,
+  LiquidGlassView,
+} from '@callstack/liquid-glass';
 import { FC } from 'react';
-import { Text, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, layout } from '../styles';
+import { colors } from '../styles';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
   disabled?: boolean;
-  width?: number;
+  /** The button grows past this to fit its title. */
+  minWidth?: number;
 }
 
+const height = 44;
+
+/**
+ * A liquid glass capsule sized to its title. Before iOS 26 it falls back to a
+ * plain surface capsule.
+ */
 const Button: FC<ButtonProps> = ({
   title,
   onPress,
   disabled = false,
-  width = 100,
+  minWidth = 100,
 }) => {
   return (
     <Pressable
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        {
-          backgroundColor: pressed ? `${colors.main}88` : colors.main,
-          opacity: disabled ? 0.5 : 1,
-          width: width,
-        },
-      ]}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      style={styles.hitArea}
     >
-      <Text style={styles.text}>{title}</Text>
+      {({ pressed }) => (
+        <LiquidGlassView
+          interactive={!disabled}
+          colorScheme="dark"
+          style={[
+            styles.capsule,
+            { minWidth },
+            !isLiquidGlassSupported && styles.fallback,
+            !isLiquidGlassSupported && pressed && styles.fallbackPressed,
+          ]}
+        >
+          <Text
+            style={[styles.title, disabled && styles.titleDisabled]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        </LiquidGlassView>
+      )}
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  button: {
-    padding: layout.spacing,
-    borderRadius: layout.radius,
+  hitArea: {
+    alignSelf: 'center',
   },
-  text: {
-    color: colors.white,
-    textAlign: 'center',
+  capsule: {
+    height,
+    borderRadius: height / 2,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fallback: {
+    backgroundColor: colors.surface,
+  },
+  fallbackPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  titleDisabled: {
+    color: colors.textMuted,
   },
 });
 

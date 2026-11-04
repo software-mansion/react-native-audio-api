@@ -715,3 +715,75 @@ public:
 }
 
 @end
+
+/// Inputs with more than two channels (multichannel interfaces, aggregate and virtual devices,
+/// and whatever the Mac's default input is on the simulator) must still open: AVAudioFormat
+/// only builds formats wider than stereo when given a channel layout.
+@interface IOSEncoderMultichannelInputTests : XCTestCase
+@end
+
+@implementation IOSEncoderMultichannelInputTests
+
+- (void)testFourChannelInputWritesItsFirstTwoChannelsToAStereoFile {
+  NSString *path = [NSTemporaryDirectory()
+      stringByAppendingPathComponent:@"ios-encoder-multichannel-input-test.wav"];
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+
+  const AudioLayout fileLayout{.sampleRate = 48000, .channelCount = 2};
+  const AudioLayout inputLayout{.sampleRate = 48000, .channelCount = 4};
+  ios::encoder::IOSEncoder encoder(EncoderSettings{
+      .fileLayout = fileLayout,
+      .encoding =
+          AudioFileProperties::EncodingConfig{
+              .format = AudioFileProperties::FileFormat::WAV,
+              .bitRate = 0,
+              .bitDepth = AudioFileProperties::BitDepth::Bit16,
+              .flacCompressionLevel = 0,
+              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+          },
+  });
+
+  auto openResult = encoder.open(
+      StreamFormat{.layout = inputLayout, .maxFramesPerBuffer = 1024},
+      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::WAV),
+      path.UTF8String);
+  XCTAssertTrue(openResult.is_ok(), @"%s",
+                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+  if (openResult.is_err()) {
+    return;
+  }
+
+  // Each input channel carries its own level, so the file shows where each one went.
+  const float levels[4] = {0.5f, 0.25f, 0.125f, 0.0625f};
+  std::vector<std::vector<float>> input(4);
+  const float *channels[4];
+  for (int channel = 0; channel < 4; ++channel) {
+    input[channel].assign(1024, levels[channel]);
+    channels[channel] = input[channel].data();
+  }
+  for (int block = 0; block < 10; ++block) {
+    XCTAssertTrue(encoder.encode(channels, 1024).is_ok());
+  }
+  XCTAssertTrue(encoder.close().is_ok());
+
+  NSError *error = nil;
+  AVAudioFile *file = [[AVAudioFile alloc] initForReading:[NSURL fileURLWithPath:path]
+                                             commonFormat:AVAudioPCMFormatFloat32
+                                              interleaved:NO
+                                                    error:&error];
+  XCTAssertNotNil(file, @"%@", error);
+  XCTAssertEqual(file.processingFormat.channelCount, 2u);
+  XCTAssertEqual(file.length, 10240);
+
+  AVAudioPCMBuffer *buffer =
+      [[AVAudioPCMBuffer alloc] initWithPCMFormat:file.processingFormat
+                                    frameCapacity:(AVAudioFrameCount)file.length];
+  XCTAssertTrue([file readIntoBuffer:buffer error:&error], @"%@", error);
+  const AVAudioFrameCount middle = buffer.frameLength / 2;
+  XCTAssertEqualWithAccuracy(buffer.floatChannelData[0][middle], levels[0], 1e-3);
+  XCTAssertEqualWithAccuracy(buffer.floatChannelData[1][middle], levels[1], 1e-3);
+
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+}
+
+@end

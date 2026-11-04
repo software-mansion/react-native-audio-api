@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
-import { ScrollView } from 'react-native-gesture-handler';
-import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { MenuView, type NativeActionEvent } from '@react-native-menu/menu';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
-import withSeparators from '../utils/withSeparators';
 import { colors } from '../styles';
-import Spacer from './Spacer';
-import MenuIcon from './icons/MenuIcon';
-import CheckCircleIcon from './icons/CheckedCircleIcon';
+import AppIcon from './AppIcon';
 
 interface SelectProps<T extends string> {
   value: T;
@@ -14,105 +11,62 @@ interface SelectProps<T extends string> {
   onChange: (value: T) => void;
 }
 
+const height = 44;
+
+/**
+ * A capsule trigger that opens the platform pull-down menu (UIMenu on iOS,
+ * which renders as liquid glass on iOS 26; PopupMenu on Android). The current
+ * option is checkmarked on iOS.
+ */
 function Select<T extends string>(props: SelectProps<T>) {
   const { options, value, onChange } = props;
-  const [isModalOpen, setModalOpen] = useState(false);
 
-  const renderSeparator = (index: number) => (
-    <View key={index} style={styles.separator} />
-  );
+  const actions = options.map((option) => ({
+    id: option,
+    title: option,
+    state: option === value ? ('on' as const) : ('off' as const),
+  }));
 
-  const renderOption = (option: T) => (
-    <Pressable
-      key={option}
-      onPress={() => {
-        onChange(option);
-        setModalOpen(false);
-      }}>
-      <View style={styles.optionRow}>
-        <CheckCircleIcon selected={option === value} color={colors.white} />
-        <Spacer.Horizontal size={12} />
-        <Text style={styles.selectText}>{option}</Text>
-      </View>
-    </Pressable>
-  );
+  const onPressAction = ({ nativeEvent }: NativeActionEvent) => {
+    const selected = options.find((option) => option === nativeEvent.event);
+    if (selected !== undefined) {
+      onChange(selected);
+    }
+  };
 
   return (
-    <>
-      <Pressable onPress={() => setModalOpen(true)}>
-        <View style={styles.selectBox}>
-          <Text style={styles.selectText}>{value}</Text>
-          <MenuIcon size={24} color={colors.white} />
-        </View>
-      </Pressable>
-      <Modal visible={isModalOpen} animationType="fade" transparent>
-        <View style={styles.modalBackdrop} />
-        <Pressable
-          style={styles.modalSpacer}
-          onPress={() => {
-            setModalOpen(false);
-          }}
-        />
-        <View style={styles.modalContainer}>
-          <ScrollView>
-            {withSeparators(options, renderSeparator, renderOption)}
-          </ScrollView>
-        </View>
-      </Modal>
-    </>
+    <MenuView actions={actions} onPressAction={onPressAction}>
+      <View
+        style={styles.trigger}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={value}
+        accessibilityHint="Opens a list of options"
+      >
+        <Text style={styles.value} numberOfLines={1}>
+          {value}
+        </Text>
+        <AppIcon name="chevrons-up-down" size={16} color={colors.textMuted} />
+      </View>
+    </MenuView>
   );
 }
 
 export default Select;
 
 const styles = StyleSheet.create({
-  selectBox: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
+  trigger: {
+    height,
+    borderRadius: height / 2,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    gap: 8,
+    backgroundColor: colors.surface,
   },
-  selectText: {
+  value: {
     flex: 1,
-    color: colors.white,
-    fontSize: 16,
-    paddingVertical: 12,
-  },
-  modalBackdrop: {
-    backgroundColor: colors.modalBackdrop,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  modalSpacer: {
-    flex: 3,
-  },
-  modalContainer: {
-    flex: 2,
-    backgroundColor: `${colors.background}ee`,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-  },
-  modalCanvas: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.separator,
-    marginHorizontal: 12,
-    marginVertical: 6,
+    fontSize: 15,
+    color: colors.textPrimary,
   },
 });

@@ -4,7 +4,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
 import { makeDistortionCurve } from './curves';
-import { GainNode, BiquadFilterNode, WaveShaperNode, AudioNode, AudioContext } from 'react-native-audio-api';
+import {
+  GainNode,
+  BiquadFilterNode,
+  WaveShaperNode,
+  AudioNode,
+  AudioContext,
+} from 'react-native-audio-api';
 
 const MIN_DRIVE_GAIN = 0.05;
 const MAX_DRIVE_GAIN = 10;
@@ -81,7 +87,12 @@ export default function OverdrivePedal({
   };
 
   const applyEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    if (!driveRef.current || !toneRef.current || !levelRef.current || !shaperRef.current) {
+    if (
+      !driveRef.current ||
+      !toneRef.current ||
+      !levelRef.current ||
+      !shaperRef.current
+    ) {
       console.warn('OverdrivePedal: Audio nodes not initialized');
       return;
     }
@@ -107,9 +118,11 @@ export default function OverdrivePedal({
     setIsActive((prev) => !prev);
   };
 
+  // onActivate fires only for a recognised tap; onDeactivate also fires for
+  // touches the tap never claimed, such as dragging a fader on the pedal.
   const powerGesture = useTapGesture({
     runOnJS: true,
-    onDeactivate: togglePower,
+    onActivate: togglePower,
   });
 
   return (
@@ -120,21 +133,9 @@ export default function OverdrivePedal({
       </View>
 
       <View style={styles.controlsRow}>
-        <VerticalSlider
-          label="DRIVE"
-          value={drive}
-          onValueChange={setDrive}
-        />
-        <VerticalSlider
-          label="TONE"
-          value={tone}
-          onValueChange={setTone}
-        />
-        <VerticalSlider
-          label="LEVEL"
-          value={level}
-          onValueChange={setLevel}
-        />
+        <VerticalSlider label="DRIVE" value={drive} onValueChange={setDrive} />
+        <VerticalSlider label="TONE" value={tone} onValueChange={setTone} />
+        <VerticalSlider label="LEVEL" value={level} onValueChange={setLevel} />
       </View>
 
       <View style={styles.footer}>
@@ -152,9 +153,7 @@ export default function OverdrivePedal({
               <View style={styles.stompInner} />
             </View>
           </GestureDetector>
-          <Text style={styles.switchLabel}>
-            {isActive ? 'ON' : 'BYPASS'}
-          </Text>
+          <Text style={styles.switchLabel}>{isActive ? 'ON' : 'BYPASS'}</Text>
         </View>
       </View>
     </View>

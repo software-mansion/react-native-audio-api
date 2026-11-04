@@ -2,7 +2,13 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { VerticalSlider } from '../../components';
-import { ConvolverNode, AudioNode, AudioContext, AudioBuffer, GainNode } from 'react-native-audio-api';
+import {
+  ConvolverNode,
+  AudioNode,
+  AudioContext,
+  AudioBuffer,
+  GainNode,
+} from 'react-native-audio-api';
 import { makeReverbCurve } from './curves';
 
 interface ReverbPedalProps {
@@ -40,7 +46,11 @@ export default function ReverbPedal({
     }
   }, [level]);
 
-  const applyEffect = (context: AudioContext,inputNode: AudioNode, outputNode: AudioNode) => {
+  const applyEffect = (
+    context: AudioContext,
+    inputNode: AudioNode,
+    outputNode: AudioNode
+  ) => {
     // Select convolver based on level
     let buffer: AudioBuffer;
     let desiredDuration: number;
@@ -91,9 +101,11 @@ export default function ReverbPedal({
     setIsActive((prev) => !prev);
   };
 
+  // onActivate fires only for a recognised tap; onDeactivate also fires for
+  // touches the tap never claimed, such as dragging a fader on the pedal.
   const powerGesture = useTapGesture({
     runOnJS: true,
-    onDeactivate: togglePower,
+    onActivate: togglePower,
   });
 
   return (
@@ -107,8 +119,8 @@ export default function ReverbPedal({
         <VerticalSlider
           label="LEVEL"
           value={level}
-          labelColor='#fff'
-          valueColor='#ffda'
+          labelColor="#fff"
+          valueColor="#ffda"
           onValueChange={setLevel}
           possibleValues={[0, 0.5, 1]}
         />
@@ -129,9 +141,7 @@ export default function ReverbPedal({
               <View style={styles.stompInner} />
             </View>
           </GestureDetector>
-          <Text style={styles.switchLabel}>
-            {isActive ? 'ON' : 'BYPASS'}
-          </Text>
+          <Text style={styles.switchLabel}>{isActive ? 'ON' : 'BYPASS'}</Text>
         </View>
       </View>
     </View>

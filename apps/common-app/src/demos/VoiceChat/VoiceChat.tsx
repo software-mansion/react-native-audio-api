@@ -1,99 +1,145 @@
 import React, { FC } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Button, Container } from '../../components';
-import { colors, layout } from '../../styles';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+
+import { Container } from '../../components';
+import { colors } from '../../styles';
+import { CallControls } from './components/CallControls';
+import { CallTimer } from './components/CallTimer';
 import { Transcript } from './components/Transcript';
 import { useVoiceChat } from './hooks/useVoiceChat';
+import { useOrbAudio } from './orb/orbAudio';
+import VoiceOrb from './orb/VoiceOrb';
 import type { SessionStatus } from './voiceSession';
 
 const ERROR_COLOR = '#ff8d8d';
+const ORB_SHARE_OF_WIDTH = 0.58;
+const MAX_ORB_SIZE = 240;
 
-const statusColor: Record<SessionStatus, string> = {
-  idle: colors.gray,
-  connecting: colors.yellow,
-  connected: '#7bd88f',
-  error: ERROR_COLOR,
-};
+const IDLE_PLACEHOLDER =
+  'Talk naturally. The assistant can respond while you speak, and your voice interrupts unfinished replies.';
+const IN_CALL_PLACEHOLDER = 'The assistant is listening. Say hello to start.';
 
-const statusText: Record<SessionStatus, string> = {
-  idle: 'Ready to connect',
-  connecting: 'Connecting…',
-  connected: 'Listening',
-  error: 'Connection failed',
-};
+function statusWord(
+  status: SessionStatus,
+  assistantSpeaking: boolean,
+  muted: boolean
+): string | null {
+  switch (status) {
+    case 'connecting':
+      return 'Connecting';
+    case 'connected':
+      if (assistantSpeaking) {
+        return 'Speaking';
+      }
+      return muted ? 'Muted' : 'Listening';
+    case 'error':
+      return 'Couldn’t connect';
+    default:
+      return null;
+  }
+}
 
 const VoiceChat: FC = () => {
-  const { status, detail, speaking, entries, toggleConnection } =
-    useVoiceChat();
+  const { width } = useWindowDimensions();
+  const orbSize = Math.min(
+    MAX_ORB_SIZE,
+    Math.round(width * ORB_SHARE_OF_WIDTH)
+  );
+  const { readings, pushSamples } = useOrbAudio();
+  const {
+    status,
+    detail,
+    assistantSpeaking,
+    muted,
+    connectedAt,
+    entries,
+    toggleConnection,
+    toggleMuted,
+  } = useVoiceChat(pushSamples);
+
+  const inCall = status === 'connecting' || status === 'connected';
+  const word = statusWord(status, assistantSpeaking, muted);
 
   return (
     <Container>
       <View style={styles.content}>
-        <Text style={styles.description}>
-          Talk naturally. The assistant can respond while you speak, and your
-          voice interrupts unfinished replies.
-        </Text>
-        <View style={styles.statusRow}>
-          <View
-            style={[styles.statusDot, { backgroundColor: statusColor[status] }]}
-          />
-          <Text style={styles.status}>
-            {speaking ? 'Speech detected' : statusText[status]}
-          </Text>
-        </View>
-        {detail ? <Text style={styles.error}>{detail}</Text> : null}
+        <Transcript
+          entries={entries}
+          assistantSpeaking={assistantSpeaking}
+          placeholder={inCall ? IN_CALL_PLACEHOLDER : IDLE_PLACEHOLDER}
+        />
 
-        <Transcript entries={entries} />
-
-        <View style={styles.actions}>
-          <Button
-            title={
-              status === 'connected' || status === 'connecting'
-                ? 'End call'
-                : 'Connect'
-            }
-            onPress={toggleConnection}
-            width={160}
+        <View style={styles.orbSection}>
+          <VoiceOrb
+            readings={readings}
+            size={orbSize}
+            isActive={status === 'connected'}
           />
+          <View style={styles.statusBlock} accessibilityLiveRegion="polite">
+            {word && (
+              <Text
+                style={[styles.status, status === 'error' && styles.errorText]}
+              >
+                {word}
+              </Text>
+            )}
+            {status === 'connected' && connectedAt !== null ? (
+              <CallTimer since={connectedAt} style={styles.timer} />
+            ) : detail ? (
+              <Text style={styles.detail} numberOfLines={3}>
+                {detail}
+              </Text>
+            ) : null}
+          </View>
         </View>
+
+        <CallControls
+          inCall={inCall}
+          muted={muted}
+          onStart={toggleConnection}
+          onEnd={toggleConnection}
+          onToggleMuted={toggleMuted}
+        />
       </View>
     </Container>
   );
 };
 
+export default VoiceChat;
+
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    gap: layout.spacing * 2,
+    gap: 20,
+    paddingBottom: 16,
   },
-  description: {
-    color: colors.gray,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  statusRow: {
+  orbSection: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: layout.spacing,
+    gap: 14,
   },
-  statusDot: {
-    borderRadius: 6,
-    height: 12,
-    width: 12,
+  statusBlock: {
+    minHeight: 46,
+    alignItems: 'center',
+    gap: 2,
   },
   status: {
-    color: colors.white,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+    color: colors.textPrimary,
   },
-  error: {
+  errorText: {
     color: ERROR_COLOR,
-    fontSize: 13,
   },
-  actions: {
-    alignItems: 'center',
-    paddingBottom: layout.spacing,
+  timer: {
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    color: colors.textMuted,
+  },
+  detail: {
+    maxWidth: 300,
+    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textMuted,
   },
 });
-
-export default VoiceChat;

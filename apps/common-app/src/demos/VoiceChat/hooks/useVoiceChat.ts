@@ -3,11 +3,31 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { AudioManager } from 'react-native-audio-api';
 import { VoiceSession } from '../voiceSession';
-import type { SessionStatus, TranscriptEntry } from '../voiceSession';
+import type {
+  SessionStatus,
+  TranscriptEntry,
+  VoiceSource,
+} from '../voiceSession';
 
-export function useVoiceChat() {
+type AudioListener = (
+  source: VoiceSource,
+  samples: Float32Array,
+  frames: number
+) => void;
+
+/**
+ * @param onAudio Receives both voices' raw audio, e.g. for the orb. It's read
+ *   through a ref, so it may change between renders.
+ */
+export function useVoiceChat(onAudio: AudioListener) {
   const navigation = useNavigation();
   const [status, setStatus] = useState<SessionStatus>('idle');
+  const [assistantSpeaking, setAssistantSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+  /** When the current call connected, for the call timer. */
+  const [connectedAt, setConnectedAt] = useState<number | null>(null);
+  const onAudioRef = useRef(onAudio);
+  onAudioRef.current = onAudio;
   const [detail, setDetail] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
@@ -19,8 +39,14 @@ export function useVoiceChat() {
       onStatus: (nextStatus, nextDetail) => {
         setStatus(nextStatus);
         setDetail(nextDetail ?? null);
+        setConnectedAt((current) =>
+          nextStatus === 'connected' ? (current ?? Date.now()) : null
+        );
       },
       onSpeechActivity: setSpeaking,
+      onAssistantSpeaking: setAssistantSpeaking,
+      onAudio: (source, samples, frames) =>
+        onAudioRef.current(source, samples, frames),
       onTranscript: (entry) => {
         setEntries((current) => {
           const index = current.findIndex((item) => item.id === entry.id);
@@ -92,8 +118,27 @@ export function useVoiceChat() {
     }
     setEntries([]);
     setDetail(null);
+    setMuted(false);
+    session.setMuted(false);
     session.connect().catch(() => undefined);
   }, [navigation, status]);
 
-  return { status, detail, speaking, entries, toggleConnection };
+  const toggleMuted = useCallback(() => {
+    setMuted((current) => {
+      sessionRef.current?.setMuted(!current);
+      return !current;
+    });
+  }, []);
+
+  return {
+    status,
+    detail,
+    speaking,
+    assistantSpeaking,
+    muted,
+    connectedAt,
+    entries,
+    toggleConnection,
+    toggleMuted,
+  };
 }
