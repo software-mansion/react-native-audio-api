@@ -602,8 +602,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
-  [self stopEngine];
-  [self rebuildAudioEngine];
+  [self rebuildGraphForCurrentHardware];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
     NSLog(
@@ -635,7 +634,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
-  self.sessionDeactivationInvalidatedGraph = false;
   return AudioEngineInterruptionEndOutcomeRunning;
 }
 
@@ -647,8 +645,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 /// notified again here, and started as soon as this call lets it through. So the handler must
 /// leave the input's consumers matching the live format by the time any call returns, even
 /// while another call for the same build is in flight.
-/// @return Whether the current graph may be started. NO when the engine was replaced while the
-/// lock was released: the caller decides again.
+/// Every rebuild meant for a start leaves `graphIsStale` false, so a stale mark seen afterwards
+/// was set while the lock was released (a route change, a session deactivation or
+/// reconfiguration).
+/// @return Whether the current graph may be started. NO when the engine was replaced or marked
+/// stale while the lock was released: the caller decides again.
 - (BOOL)notifyInputOfRebuiltGraph:(std::unique_lock<std::mutex> &)lock
 {
   if (!_inputAwaitsHardwareChange) {
@@ -665,7 +666,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     lock.lock();
   }
 
-  if (self.audioEngine != notifiedEngine) {
+  if (self.audioEngine != notifiedEngine || [self graphIsStale]) {
     return NO;
   }
 
@@ -790,7 +791,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
-  self.sessionDeactivationInvalidatedGraph = false;
   return true;
 }
 

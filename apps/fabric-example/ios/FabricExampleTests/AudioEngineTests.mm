@@ -969,6 +969,68 @@
   XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
 }
 
+- (void)testRouteChangeDuringInterruptionEndNotificationRebuildsBeforeStart {
+  __weak TestableAudioEngine *weakEngine = self.audioEngine;
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
+      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+        [weakEngine onRouteChange];
+      }];
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.state = AudioEngineStateInterrupted;
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeRunning);
+
+  FakeAudioEngine *staleEngine = enginesNotifiedBeforeStart.firstObject;
+  FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(startedEngine, staleEngine);
+  XCTAssertEqual(staleEngine.startCallCount, 0);
+  XCTAssertEqual(startedEngine, self.audioEngine.createdFakeEngines.lastObject);
+  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
+  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+}
+
+- (void)testSessionReconfigurationDuringRestartNotificationRebuildsBeforeStart {
+  __weak TestableAudioEngine *weakEngine = self.audioEngine;
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
+      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+        [weakEngine markSessionDeactivationInvalidatedGraph];
+      }];
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+  self.audioEngine.state = AudioEngineStateRunning;
+
+  [self.audioEngine restartAudioEngine];
+
+  FakeAudioEngine *staleEngine = enginesNotifiedBeforeStart.firstObject;
+  FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(startedEngine, staleEngine);
+  XCTAssertEqual(staleEngine.startCallCount, 0);
+  XCTAssertTrue(startedEngine.isRunning);
+  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
+  XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
+}
+
+- (void)testHardwareChangeDuringStartNotificationRebuildsBeforeStart {
+  __weak TestableAudioEngine *weakEngine = self.audioEngine;
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
+      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+        [weakEngine markGraphNeedsRebuild];
+      }];
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.state = AudioEngineStatePaused;
+  self.audioEngine.graphNeedsRebuild = YES;
+
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+
+  FakeAudioEngine *staleEngine = enginesNotifiedBeforeStart.firstObject;
+  FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(startedEngine, staleEngine);
+  XCTAssertEqual(staleEngine.startCallCount, 0);
+  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
+  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+}
+
 - (void)testPauseIfNecessaryNoOpsWhenAlreadyPaused {
   FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
   self.audioEngine.state = AudioEngineStatePaused;
