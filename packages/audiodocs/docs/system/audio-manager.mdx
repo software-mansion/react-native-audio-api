@@ -237,7 +237,7 @@ After the app has been interrupted by, for example a phone call, it is possible 
   - `ios.options` include `mixWithOthers`, so the system can mix this session with audio from active sessions in other apps. Trying to resume recording in the background with a non-mixable session leads to [`cannotInterruptOthers`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotinterruptothers).
 - The app must declare [background audio mode](../other/audio-api-plugin.mdx#iosbackgroundmode).
 
-Even if background interruption recovery is unsuccessful, the library retries with a best-effort strategy when the app returns to the foreground after a failed resume. A refused resume is reported through [`AudioRecorder.onError`](../inputs/audio-recorder.mdx#onerror) with the native error in the message, so the app can log why iOS declined.
+Even if background interruption recovery is unsuccessful, the library retries with a best-effort strategy when the app returns to the foreground after a failed resume. Each failed attempt is reported through [`AudioRecorder.onError`](../inputs/audio-recorder.mdx#onerror).
 
 ## Types
 
