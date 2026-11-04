@@ -360,20 +360,20 @@ Result<NoneType, std::string> IOSAudioRecorder::rerouteInput()
   return Result<NoneType, std::string>::Ok(None);
 }
 
-void IOSAudioRecorder::resume()
+Result<NoneType, std::string> IOSAudioRecorder::resume()
 {
   if (!isPaused()) {
-    return;
+    return Ok(None);
   }
 
   NSError *resumeError = nil;
   if (![nativeRecorder_ resume:&resumeError]) {
-    reportError("iOS recorder error: failed to resume: " + describeNativeError(resumeError));
-    return;
+    return Err("Failed to resume native recorder: " + describeNativeError(resumeError));
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
   handleHardwareChange();
+  return Ok(None);
 }
 
 /// Any thread. Also requires the audio engine to be running, so a recorder whose session was

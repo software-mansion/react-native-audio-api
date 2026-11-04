@@ -568,7 +568,7 @@ public:
   XCTAssertFalse(_recorder->isRecording());
 }
 
-- (void)testResumeReportsTheNativeErrorThroughRecorderError {
+- (void)testResumeReturnsTheNativeErrorWithoutReportingIt {
   auto registry = std::make_shared<RecordingEventRegistry>();
   auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
   NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
@@ -581,31 +581,14 @@ public:
   self.nativeRecorder.resumeError =
       [NSError errorWithDomain:NSOSStatusErrorDomain code:560557684 userInfo:nil];
 
-  recorder->resume();
+  auto result = recorder->resume();
 
-  XCTAssertEqual(registry->dispatched.size(), 1UL);
-  XCTAssertEqual(registry->dispatched[0].event, AudioEvent::RECORDER_ERROR);
-  XCTAssertEqual(registry->dispatched[0].listenerId, 42ULL);
-  NSString *reason = NSStringFromStdString(registry->dispatched[0].reason);
-  XCTAssertTrue([reason containsString:@"failed to resume"], @"%@", reason);
+  XCTAssertTrue(result.is_err());
+  NSString *reason = NSStringFromStdString(result.unwrap_err());
+  XCTAssertTrue([reason containsString:@"Failed to resume"], @"%@", reason);
   XCTAssertTrue([reason containsString:@"NSOSStatusErrorDomain"], @"%@", reason);
   XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
-
-  recorder->replaceNativeRecorder(original);
-  [original cleanup];
-}
-
-- (void)testResumeReportsNothingWhenNoErrorCallbackIsSet {
-  auto registry = std::make_shared<RecordingEventRegistry>();
-  auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
-  NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
-  recorder->setRecorderState(RecorderState::Recording);
-  self.audioEngine.state = AudioEngineStateRunning;
-  recorder->pause();
-  self.nativeRecorder.resumeResult = NO;
-
-  recorder->resume();
-
+  XCTAssertTrue(recorder->isPaused());
   XCTAssertEqual(registry->dispatched.size(), 0UL);
 
   recorder->replaceNativeRecorder(original);

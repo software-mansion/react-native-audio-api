@@ -35,7 +35,7 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<FileInfo, std::string> stop() override;
 
   void pause() override;
-  void resume() override;
+  Result<NoneType, std::string> resume() override;
   /// Nothing to do: the session reroutes capture itself and the recorder follows through
   /// the input notifications.
   Result<NoneType, std::string> rerouteInput() override;

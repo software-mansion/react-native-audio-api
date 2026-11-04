@@ -129,8 +129,12 @@ export default class AudioRecorder {
     return this.recorder.pause();
   }
 
-  /** Resumes the audio recording process after being paused */
-  resume(): Promise<void> {
+  /**
+   * Resumes the audio recording process after being paused. Resolves with an
+   * error status when the recorder was not started, or when the platform
+   * refuses to resume, in which case the recording stays paused.
+   */
+  resume(): Promise<Result<{}>> {
     return this.recorder.resume();
   }
 

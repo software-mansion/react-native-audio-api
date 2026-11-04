@@ -177,8 +177,24 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, resume) {
   auto audioRecorder = audioRecorder_;
 
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
-    ActiveRecorderHandle::global().resume(audioRecorder);
-    return resolveWithUndefined();
+    auto result = ActiveRecorderHandle::global().resume(audioRecorder);
+
+    return [result =
+                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+      auto jsResult = jsi::Object(runtime);
+
+      jsResult.setProperty(
+          runtime,
+          "status",
+          jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+
+      if (!result.is_ok()) {
+        jsResult.setProperty(
+            runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+      }
+
+      return jsi::Value(std::move(jsResult));
+    };
   });
 }
 
