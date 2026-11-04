@@ -17,3 +17,5 @@ export {
   default as BottomAccessory,
   useBottomAccessorySpace,
 } from './BottomAccessory';
+export { default as Knob } from './Knob';
+export { default as RoundButton } from './RoundButton';

@@ -31,6 +31,19 @@ function hitFlashDuration(timePerNote: number) {
   return Math.min(0.15, timePerNote * 0.6);
 }
 
+/**
+ * How far ahead of the audio clock notes are handed to the audio thread. Long
+ * enough to survive a dropped frame and the clock's own granularity: the clock
+ * only moves once per output buffer, 10–85 ms depending on the device.
+ */
+const SCHEDULE_AHEAD_SECONDS = 0.1;
+/**
+ * How far the visual clock may run past `currentTime` while carrying it between
+ * buffer updates, so a stalled context freezes the playhead instead of letting
+ * it drift.
+ */
+const CLOCK_LEAD_CAP_SECONDS = 0.1;
+
 interface ScheduledStep {
   step: number;
   time: number;
@@ -75,14 +88,13 @@ export default function usePlayer(options: PlayerOptions) {
 
     const { playNote } = setup(audioContext);
 
-    let frameCount = 0;
-    let nextNoteTime = 0;
-    let averageFrameTime = 0;
-
-    let startTime = 0;
-    let currentTime = 0;
-
+    /** Set on cleanup so a loop left running by a stale effect stops. */
+    let cancelled = false;
     let nextStep = 0;
+    let nextNoteTime = 0;
+    /** Handed to the audio thread, not yet reached by the clock; oldest first. */
+    const scheduled: ScheduledStep[] = [];
+
     /**
      * The sounding step, mirrored in a plain variable: reading a shared value
      * back on the JS thread right after writing it can return a stale value.
@@ -90,7 +102,34 @@ export default function usePlayer(options: PlayerOptions) {
     let soundingStep = -1;
     let stepStartTime = 0;
     let hitsVisible = false;
-    let pendingStep: ScheduledStep | null = null;
+
+    let renderedTime = 0;
+    let lastWallTime = 0;
+
+    function timePerNote() {
+      return 60.0 / (r(bpmRef) * r(notesPerBeatRef));
+    }
+
+    /**
+     * The audio clock as the listener hears it. `currentTime` stands still
+     * between output buffers, then jumps by a whole buffer, which can be longer
+     * than a frame, so it is carried forward with wall time between jumps.
+     * Sound scheduled at a given time leaves the speaker one output latency
+     * later (tens of ms on a phone, ~170 ms on the Android emulator), so the
+     * visuals run that far behind the clock.
+     */
+    function advanceAudibleTime() {
+      const wallTime = performance.now() / 1000;
+      const elapsed = wallTime - lastWallTime;
+      lastWallTime = wallTime;
+
+      const currentTime = audioContext.currentTime;
+      renderedTime = Math.max(
+        currentTime,
+        Math.min(renderedTime + elapsed, currentTime + CLOCK_LEAD_CAP_SECONDS)
+      );
+      return renderedTime - audioContext.outputLatency;
+    }
 
     function resetVisuals() {
       progressSV.value = 0;
@@ -99,66 +138,74 @@ export default function usePlayer(options: PlayerOptions) {
       playingInstruments.value = createNoHits();
     }
 
-    function scheduleNextStep() {
-      const hits = createNoHits();
+    function scheduleStepsAhead() {
+      const horizon = audioContext.currentTime + SCHEDULE_AHEAD_SECONDS;
 
-      for (const pattern of r(patternsRef)) {
-        if (pattern.steps[nextStep]) {
-          hits[pattern.instrumentName] = true;
-          playNote(pattern.instrumentName, nextNoteTime);
+      while (nextNoteTime < horizon) {
+        const hits = createNoHits();
+
+        for (const pattern of r(patternsRef)) {
+          if (pattern.steps[nextStep]) {
+            hits[pattern.instrumentName] = true;
+            playNote(pattern.instrumentName, nextNoteTime);
+          }
         }
-      }
 
-      pendingStep = { step: nextStep, time: nextNoteTime, hits };
-      nextStep = (nextStep + 1) % r(numBeatsRef);
+        scheduled.push({ step: nextStep, time: nextNoteTime, hits });
+        nextStep = (nextStep + 1) % r(numBeatsRef);
+        nextNoteTime += timePerNote();
+      }
     }
 
     /**
      * Shows a scheduled step once its notes actually start, not when they are
-     * queued.
+     * queued. A long frame may skip past several; the latest one shows.
      */
-    function revealDueStep() {
-      if (!pendingStep || currentTime < pendingStep.time) {
+    function revealDueSteps(now: number) {
+      let due: ScheduledStep | null = null;
+      while (scheduled.length > 0 && scheduled[0].time <= now) {
+        due = scheduled.shift() as ScheduledStep;
+      }
+      if (!due) {
         return;
       }
 
-      soundingStep = pendingStep.step;
+      soundingStep = due.step;
       playingStep.value = soundingStep;
-      playingInstruments.value = pendingStep.hits;
-      stepStartTime = pendingStep.time;
+      playingInstruments.value = due.hits;
+      stepStartTime = due.time;
       hitsVisible = true;
-      pendingStep = null;
     }
 
     function playerLoop() {
-      frameCount += 1;
+      if (cancelled) {
+        return;
+      }
+      const now = advanceAudibleTime();
 
-      const timePerNote = 60.0 / (r(bpmRef) * r(notesPerBeatRef));
-
-      currentTime = audioContext.currentTime;
-      averageFrameTime = (currentTime - startTime) / frameCount;
-
-      revealDueStep();
+      scheduleStepsAhead();
+      revealDueSteps(now);
 
       if (
         hitsVisible &&
-        currentTime - stepStartTime > hitFlashDuration(timePerNote)
+        now - stepStartTime > hitFlashDuration(timePerNote())
       ) {
         playingInstruments.value = createNoHits();
         hitsVisible = false;
       }
 
       if (soundingStep >= 0) {
+        const stepEndTime = scheduled.length
+          ? scheduled[0].time
+          : stepStartTime + timePerNote();
         const stepFraction = Math.min(
           1,
-          Math.max(0, (currentTime - stepStartTime) / timePerNote)
+          Math.max(
+            0,
+            (now - stepStartTime) / Math.max(1e-6, stepEndTime - stepStartTime)
+          )
         );
         progressSV.value = (soundingStep + stepFraction) / r(numBeatsRef);
-      }
-
-      if (currentTime + averageFrameTime >= nextNoteTime) {
-        scheduleNextStep();
-        nextNoteTime += timePerNote;
       }
 
       if (r(isPlayingRef)) {
@@ -166,26 +213,36 @@ export default function usePlayer(options: PlayerOptions) {
       }
     }
 
+    function startLoop() {
+      if (cancelled) {
+        return;
+      }
+      nextStep = 0;
+      scheduled.length = 0;
+      hitsVisible = false;
+      resetVisuals();
+
+      renderedTime = audioContext.currentTime;
+      lastWallTime = performance.now() / 1000;
+      nextNoteTime = audioContext.currentTime + SCHEDULE_AHEAD_SECONDS;
+
+      playerLoop();
+    }
+
     if (isPlaying) {
-      requestAnimationFrame(() => {
-        frameCount = 0;
-        averageFrameTime = 0;
-        nextStep = 0;
-        pendingStep = null;
-        hitsVisible = false;
-        resetVisuals();
-
-        startTime = audioContext.currentTime;
-        currentTime = audioContext.currentTime;
-        nextNoteTime = audioContext.currentTime;
-
-        playerLoop();
-      });
+      // A new context stays suspended, its clock frozen, until something wakes
+      // it. Scheduling waits for the clock to approach each note, so without
+      // this the first note would never be scheduled.
+      audioContext
+        .resume()
+        .catch(() => undefined)
+        .then(() => requestAnimationFrame(startLoop));
     } else {
       resetVisuals();
     }
 
     return () => {
+      cancelled = true;
       playingInstruments.value = createNoHits();
       audioContext.close();
     };

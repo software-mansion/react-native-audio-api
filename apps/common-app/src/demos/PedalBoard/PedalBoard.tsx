@@ -1,26 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {
   AudioBufferSourceNode,
   AudioBuffer,
   GainNode,
   AudioRecorder,
   AudioManager,
 } from 'react-native-audio-api';
-import { Button, Container } from '../../components';
+
+import { Container, RoundButton } from '../../components';
 import { audioContext } from '../../singletons';
-import {
-  ActivityIndicator,
-  View,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-  Alert,
-} from 'react-native';
+import { colors } from '../../styles';
+import AutoWahPedal from './AutoWahPedal';
 import OverdrivePedal from './OverdrivePedal';
 import ReverbPedal from './ReverbPedal';
-import AutoWahPedal from './AutoWahPedal';
-
-const screenWdith = Dimensions.get('window').width;
 
 const URL = 'https://files.catbox.moe/xbj6gn.flac';
 const PEDALS = [
@@ -155,38 +155,46 @@ export default function PedalBoard() {
   };
 
   return (
-    <Container centered>
+    <Container disablePadding>
       {isLoading ? (
-        <ActivityIndicator color="#FFFFFF" />
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accent} />
+          <Text style={styles.loadingText}>Loading guitar loop…</Text>
+        </View>
       ) : (
         <>
-          <ScrollView>
+          <ScrollView
+            contentContainerStyle={styles.board}
+            showsVerticalScrollIndicator={false}
+          >
             {PEDALS.map((pedal, index) => {
               const PedalComponent = pedal.component;
               return (
-                <View key={pedal.id} style={styles.container}>
-                  <PedalComponent
-                    context={audioContext}
-                    inputNode={pedalInputNodesRef.current[index]}
-                    outputNode={pedalOutputNodesRef.current[index]}
-                  />
-                </View>
+                <PedalComponent
+                  key={pedal.id}
+                  context={audioContext}
+                  inputNode={pedalInputNodesRef.current[index]}
+                  outputNode={pedalOutputNodesRef.current[index]}
+                />
               );
             })}
           </ScrollView>
           {/* Both sources feed the first pedal, so only one runs at a time. */}
-          <View style={styles.controls}>
-            <Button
-              title={isPlaying ? 'Stop' : 'Play'}
+          <View style={styles.transport}>
+            <RoundButton
+              icon={isPlaying ? 'stop' : 'play'}
+              label={isPlaying ? 'Stop' : 'Guitar loop'}
               onPress={togglePlayback}
               disabled={isRecording}
-              minWidth={120}
+              color={colors.accent}
             />
-            <Button
-              title={isRecording ? 'Stop' : 'Record'}
+            <RoundButton
+              icon={isRecording ? 'mic-off' : 'mic'}
+              label={isRecording ? 'Stop' : 'Live mic'}
               onPress={toggleRecording}
               disabled={isPlaying}
-              minWidth={120}
+              color={colors.main}
+              variant={isRecording ? 'solid' : 'outline'}
             />
           </View>
         </>
@@ -196,15 +204,28 @@ export default function PedalBoard() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: screenWdith * 0.9,
+  loading: {
+    flex: 1,
     alignItems: 'center',
-    gap: 20,
+    justifyContent: 'center',
+    gap: 12,
   },
-  controls: {
+  loadingText: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  board: {
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+    gap: 14,
+  },
+  transport: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    marginVertical: 20,
+    gap: 48,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.listSeparator,
   },
 });

@@ -34,7 +34,6 @@ import { colors } from '../../styles';
 import ArtworkStack from './ArtworkStack';
 import CoverBackdrop from './CoverBackdrop';
 import CrossfadePlayer from './CrossfadePlayer';
-import CrossfadeCapsule from './CrossfadeCapsule';
 import { TRACKS } from './tracks';
 
 /** A skip button crossfades over this long while playing. */
@@ -85,7 +84,6 @@ const Crossfade: FC = () => {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
-  const [destinationTrack, setDestinationTrack] = useState(0);
   const [durations, setDurations] = useState<Record<number, number>>({});
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [likedTracks, setLikedTracks] = useState<Set<number>>(new Set());
@@ -94,8 +92,6 @@ const Crossfade: FC = () => {
 
   /** Index of the current track; fractions are mid-crossfade. */
   const progress = useSharedValue(0);
-  /** Where `progress` is heading, for the "Crossfading to …" capsule. */
-  const destination = useSharedValue(0);
   const swipeStartTrack = useSharedValue(0);
 
   useEffect(() => {
@@ -128,13 +124,6 @@ const Crossfade: FC = () => {
     }
   );
 
-  useAnimatedReaction(
-    () => destination.value,
-    (track: number) => {
-      scheduleOnRN(setDestinationTrack, track);
-    }
-  );
-
   const play = useCallback(async () => {
     setIsPlaying(true);
     await player.current?.play();
@@ -150,14 +139,13 @@ const Crossfade: FC = () => {
       if (track < 0 || track > LAST_TRACK || track === currentTrack) {
         return;
       }
-      destination.value = track;
       progress.value = withTiming(track, {
         duration: isPlaying ? SKIP_CROSSFADE_MS : SKIP_SWAP_MS,
         easing: Easing.inOut(Easing.quad),
       });
       setCurrentTrack(track);
     },
-    [currentTrack, destination, isPlaying, progress]
+    [currentTrack, isPlaying, progress]
   );
 
   const panGesture = usePanGesture({
@@ -174,10 +162,6 @@ const Crossfade: FC = () => {
         Math.min(LAST_TRACK, start + 1),
         Math.max(Math.max(0, start - 1), next)
       );
-      destination.value =
-        progress.value >= start
-          ? Math.min(LAST_TRACK, start + 1)
-          : Math.max(0, start - 1);
     },
     onDeactivate: (event) => {
       const start = swipeStartTrack.value;
@@ -200,7 +184,6 @@ const Crossfade: FC = () => {
         track = start + direction;
       }
       track = Math.min(LAST_TRACK, Math.max(0, track));
-      destination.value = track;
       progress.value = withSpring(track, { damping: 100, stiffness: 300 });
       scheduleOnRN(setCurrentTrack, track);
     },
@@ -342,12 +325,6 @@ const Crossfade: FC = () => {
               <AppIcon name="skip-forward" size={30} color={colors.white} />
             </Pressable>
           </View>
-
-          <CrossfadeCapsule
-            progress={progress}
-            destination={destination}
-            destinationTitle={TRACKS[destinationTrack].title}
-          />
         </View>
       </Container>
     </View>

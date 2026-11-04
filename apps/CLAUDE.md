@@ -47,6 +47,10 @@ Examples and demos can move their options into an always-visible bottom sheet: s
 
 On iOS 26 react-native-screens enables the system's content-wide back gesture by default (`fullScreenSwipeEnabled` → `interactiveContentPopGestureRecognizer`), so a rightward pan anywhere on a pushed screen can pop it. A screen with its own horizontal swipes sets `navigation.setOptions({ fullScreenGestureEnabled: false })`, which leaves the edge swipe and back button. Reference: `demos/Crossfade/Crossfade.tsx`.
 
+Controls sheets are transparent on iOS so the glass shows, but opaque (`colors.recess`, `layout.cardRadius` corners) on Android: react-native-screens gives Android sheets a 24 dp elevation, and through a transparent sheet that shadow reads as a lighter outline offset inside the real edge, so the controls looked like they spilled over it.
+
+React Navigation's native tabs report a tab bar height of 0 (`useBottomTabBarHeight`), so on Android, where the opaque tab bar overlays the scene, `TabScreen` wraps its scroll view in `SafeAreaView` from `react-native-screens/experimental` with the bottom edge and `insetType="interface"`, which reads the tab container's real bar height.
+
 Native tabs cannot render React elements as icons: `tabBarIcon` returns `nativeNanoSymbol('<svg name>')` from a symbol set (see Icons).
 
 ## Icons
@@ -264,14 +268,21 @@ const player = usePlayer({ bpm, patterns, numBeats, setup: setupPlayer });
 // player.play() / player.stop() / player.isPlaying
 ```
 
+`usePlayer` resumes its context before the loop starts: a new `AudioContext` stays suspended (clock frozen at 0) until a source starts, and a scheduler that waits for the clock to approach the first note then never schedules it (the Drum Machine stopped starting on Android). `usePlayer` keeps two clocks. Notes are handed to the audio thread 100 ms ahead of `audioContext.currentTime` (a queue of scheduled steps, not one), because `currentTime` only moves once per output buffer (10–21 ms steps on the iOS simulator, up to ~50 ms on the Android emulator) and a one-frame lookahead misses notes, which then start late. The playhead and hit highlights run on an *audible* clock: `currentTime` carried forward with wall time between buffer jumps, minus `audioContext.outputLatency` (≈3 ms on the simulator, ~170 ms on the Android emulator), so the spoke touches a dot exactly when its hit is heard.
+
 Use `react-native-background-timer` (not `setTimeout`) for scheduling — it continues running when the screen is locked.
 
 ### Long scheduled playback (Simple Piano score)
 
-`examples/Piano/usePianoDevApi.ts` exposes `globalThis.__piano` in dev builds (`play(score)`, `stop`, `focus`, `isReady`) so a JSON score can be driven from the debugger (argent `debugger-evaluate`, or Metro CDP on a physical phone). While a score plays, `ScorePlayback` shows falling notes and slides the keyboard along a precomputed follow track (`followTrack.ts`). Two rules when scheduling many notes:
+`examples/Piano/usePianoDevApi.ts` exposes `globalThis.__piano` in dev builds (`play(score)`, `stop`, `focus`, `isReady`) so a JSON score can be driven from the debugger (argent `debugger-evaluate`, or Metro CDP on a physical phone). While a score plays, `ScorePlayback` shows falling notes and slides the keyboard along a precomputed follow track (`followTrack.ts`). Rules for voices:
 
 - Create voices just ahead of time (rolling ~1 s window topped up every 250 ms), not all up front: an 844-note score scheduled at once played silent.
 - Disconnect each voice once its scheduled stop time has passed. Finished voices left connected to the destination made simulator playback decay into glitches after about a minute.
+- Live key presses follow the same rule through `onended`, damp a still-ringing voice of the same key when it is struck again, and skip the lowpass when its cutoff is above hearing (every live tap is full velocity). On a Samsung A26 debug build, eight ringing voices took ~2.5 ms of the 2.67 ms render budget per 128-frame callback and the stream underran hundreds of times a second, which is heard as buzzing; the core engine compiles unoptimised in debug (only `dsp/` sources get `-O3`).
+
+### Moving AudioParams from an animation loop
+
+Never assign `param.value` once per frame for continuous motion: each assignment is a step, and 60 steps a second are heard as a buzz at the frame rate. Glide with `param.setTargetAtTime(value, ctx.currentTime, ~0.03)` instead. Reference: `examples/PannerNode/PannerNode.tsx` (`applyPose`). Screens that never react to a tap can open their context with `latencyHint: 'playback'` (Oboe power-saving mode, a 20 ms mixer period instead of a 2 ms exclusive stream) for more render headroom. With that hint `currentTime` freezes for whole 20–40 ms buffers, so drive animation from `currentTime` carried forward with wall time between jumps (as `usePlayer` does), not from raw `currentTime` deltas. When the animation also drives the audio (it computes a pose and schedules it at that clock time), schedule at the clock but show what is heard: keep the recent frames and display the newest one at least `outputLatency` plus the glide time constant old (~200 ms with the playback hint on Android); otherwise the picture runs ahead of the sound. Keep per-frame `useState` in a small child component: re-rendering the whole PannerNode screen every frame held the JS thread at ~20 fps on a Samsung A26, against ~50 fps with only the live readouts re-rendering.
 
 ### Effects chain (PedalBoard pattern)
 
@@ -321,6 +332,10 @@ const status = await AudioManager.requestRecordingPermissions();
 if (status !== 'Granted') return;
 ```
 
+### Voice Chat token server
+
+The Voice Chat demo never holds the OpenAI key. `yarn server` (repository root) runs `apps/fabric-example/server/realtime-token-server.mjs`, which reads `OPENAI_API_KEY` from the git-ignored `apps/fabric-example/.env.local` and serves short-lived secrets on port 8787. The app requests `/token` from the host that served its bundle. A USB-connected Android device loads the bundle from `localhost` through `adb reverse`, so it also needs `adb reverse tcp:8787 tcp:8787`; re-run it after reconnecting the cable.
+
 ### Interruption handling
 
 Enable emission with `AudioManager.observeAudioInterruptions(true)`, then listen.
@@ -348,7 +363,9 @@ All in `apps/common-app/src/components/`:
 | `Container` | `centered?`, `disablePadding?` — stack-screen root; content starts below the measured (transparent) header via `useHeaderHeight` |
 | `Button` | `title`, `onPress`, `disabled?`, `minWidth?` (default 100) — liquid glass capsule sized to its title; plain `surface` capsule before iOS 26 |
 | `Slider` | `label?`, `min`, `max`, `step`, `value`, `scale?` (`'linear'` \| `'logarithmic'`, needs `min > 0`), `onValueChange` (called on release, rounded to `step`) — system slider (`@react-native-community/slider`, UISlider with the glass thumb on iOS 26) under a label / live value row; stretches to the parent width, so place it in a column |
-| `VerticalSlider` | `label`, `value` (0–1), `onValueChange`, `labelColor?`, `valueColor?`, `possibleValues?` (snap points, drawn as ticks) — hardware-style fader (thin slot, square cap) printed on the Pedal Board pedals; only the cap is draggable |
+| `VerticalSlider` | `label`, `value` (0–1), `onValueChange`, `labelColor?`, `valueColor?`, `possibleValues?` (snap points, drawn as ticks) — hardware-style fader (thin slot, square cap); only the cap is draggable. Currently unused (the Pedal Board moved to `Knob`) |
+| `Knob` | `label`, `value` (0–1), `onValueChange`, `color?`, `size?` (default 64), `formatValue?` (worklet) — Skia rotary control turned by a vertical pan (160 px = full range); the readout is an animated `TextInput` so dragging does not re-render. Reference: Pedal Board pedals |
+| `RoundButton` | `icon` (`AppIconName` or `'stop'`, a filled square the font lacks), `onPress`, `label?`, `size?` (default 64), `color?`, `variant?` (`'solid'` fill \| `'outline'` surface circle with tinted glyph), `disabled?` — circular transport button with a glow in its colour. Reference: Pedal Board transport row |
 | `Spacer.Vertical` | `size` |
 | `Switch` | `value`, `onValueChange` — native switch tinted with the accent |
 | `Select` | `options`, `value`, `onChange` — native pull-down menu (`@react-native-menu/menu`; glass UIMenu on iOS 26) |
@@ -358,9 +375,11 @@ All in `apps/common-app/src/components/`:
 
 Colours come from the audiodocs dark palette in `styles.ts` (`surface`, `textPrimary`/`textSecondary`/`textMuted`, `accent` + `onAccent`, `track`, hues `blue`/`green`/`purple`/`yellow`). Content drawn on an `accent` fill uses `onAccent` (navy) for contrast.
 
-A tap gesture (`useTapGesture`, Gesture Handler 3) acts in `onActivate`, which fires only for a recognised tap. `onDeactivate` also fires for touches the tap never claimed: the pedals' footswitches toggled whenever a fader on the same pedal was dragged.
+A tap gesture (`useTapGesture`, Gesture Handler 3) acts in `onActivate`, which fires only for a recognised tap. `onDeactivate` also fires for touches the tap never claimed: the pedals' footswitches once toggled whenever a fader on the same pedal was dragged (they are plain `Pressable`s now, in `demos/PedalBoard/PedalShell.tsx`).
 
-Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents; animate transforms, not opacity, on wrappers. Reference: `demos/Crossfade/CrossfadeCapsule.tsx`.
+The icon font has no `power` glyph; `PedalShell` draws Lucide's power symbol inline with `react-native-svg` instead of regenerating the font. Add the SVG to `assets/icons/app/` and regenerate when a second screen needs it.
+
+Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents; animate transforms, not opacity, on wrappers.
 
 `@react-native-menu/menu` 2.0.0 is patched (`.yarn/patches/`) to import `<React/RCTBridge.h>` instead of the quoted `"RCTBridge.h"`, which RN 0.88's header layout no longer resolves.
 

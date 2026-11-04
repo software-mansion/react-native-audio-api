@@ -1,207 +1,232 @@
 import { Canvas, Fill, Shader } from '@shopify/react-native-skia';
-import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import {
+  AccessibilityInfo,
+  AppState,
+  PixelRatio,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Animated, {
   FrameInfo,
   useDerivedValue,
   useFrameCallback,
   useSharedValue,
 } from 'react-native-reanimated';
 
-import {
-  createVoiceState,
-  OrbReadings,
-  OrbVoiceState,
-  stepVoiceState,
-} from './orbAudio';
-import { assistantPalette, orbEffect, userPalette } from './orbShader';
+import { OrbColor, OrbPalette, orbPalettes, OrbState } from './orbPalettes';
+import { orbEdgeWidth, orbEffect } from './orbShader';
+import { useOrbTapAnimation } from './useOrbTapAnimation';
 
 interface VoiceOrbProps {
-  readings: OrbReadings;
+  state: OrbState;
+  /** Speech detected on the microphone. Only this moves the listening orb. */
+  hearing: boolean;
   size: number;
-  /** Before a call the orb only breathes, dimmed. */
-  isActive: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+  disabled?: boolean;
 }
 
-// Smoothing from rn-audio-shader's voice orb renderer.
-const LEVEL_ATTACK_SECONDS = 0.28;
-const LEVEL_RELEASE_SECONDS = 0.62;
-const PULSE_ATTACK_SECONDS = 0.08;
-const PULSE_RELEASE_SECONDS = 0.2;
-const BRIGHTNESS_SMOOTH_SECONDS = 0.4;
-const MAX_FRAME_DELTA_SECONDS = 1 / 20;
-const FLOW_TIME_WRAP_SECONDS = 900;
-/** How fast the palette follows a change of speaker. */
-const SPEAKER_SMOOTH_SECONDS = 0.35;
-/** A voice quieter than this doesn't take the palette over. */
-const SPEAKER_THRESHOLD = 0.04;
-const IDLE_BRIGHTNESS = 0.15;
+const MAX_FRAME_DELTA_SECONDS = 0.05;
+/** How fast colours and motion follow a change of state. */
+const BLEND_SECONDS = 0.18;
+const TIME_WRAP_SECONDS = 900;
 
-type OrbState = {
-  user: OrbVoiceState;
-  assistant: OrbVoiceState;
-  level: number;
-  pulse: number;
-  brightness: number;
-  /** 0 is the assistant's palette, 1 the user's. */
-  speaker: number;
-  flowTime: number;
+type OrbAppearance = OrbPalette & {
+  time: number;
+  listening: number;
+  speaking: number;
 };
 
-function approach(
-  current: number,
-  target: number,
-  seconds: number,
-  dt: number
-) {
+const paletteChannels = ['primary', 'accent', 'highlight'] as const;
+
+function approachColor(current: OrbColor, target: OrbColor, blend: number) {
   'worklet';
-  return current + (target - current) * (1 - Math.exp(-dt / seconds));
+  for (let i = 0; i < 3; i += 1) {
+    current[i] += (target[i] - current[i]) * blend;
+  }
 }
 
-function frameLevel(voice: OrbVoiceState) {
+function isAt(appearance: OrbAppearance, target: OrbAppearance) {
   'worklet';
-  return Math.min(
-    1,
-    voice.level * 0.45 + voice.smoothedLevel * 1.2 + voice.smoothedPeak * 0.25
+  return (
+    appearance.listening === target.listening &&
+    appearance.speaking === target.speaking &&
+    paletteChannels.every((channel) =>
+      appearance[channel].every((value, i) => value === target[channel][i])
+    )
   );
 }
 
-function mixColor(from: number[], to: number[], amount: number) {
-  'worklet';
-  return [0, 1, 2].map((i) => from[i] + (to[i] - from[i]) * amount);
+/** Whether the system asks for reduced motion; the orb then holds still. */
+function useReduceMotion() {
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotion
+    );
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) {
+          setReduceMotion(enabled);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+  return reduceMotion;
+}
+
+function useForeground() {
+  const [foreground, setForeground] = useState(
+    AppState.currentState === 'active'
+  );
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      setForeground(next === 'active');
+    });
+    return () => subscription.remove();
+  }, []);
+  return foreground;
 }
 
 /**
- * The voice chat's orb: the rn-audio-shader voice orb as a Skia runtime shader.
- * It follows the louder of the two voices and blends its palette toward whoever
- * is speaking.
+ * The voice chat's orb: the aec-workshop promo orb as a Skia runtime shader.
+ * Its palette follows the session state, it stirs while someone is talking, and
+ * tapping it starts or ends the conversation.
  */
-const VoiceOrb: React.FC<VoiceOrbProps> = ({ readings, size, isActive }) => {
-  const isActiveShared = useSharedValue(isActive);
-  useEffect(() => {
-    isActiveShared.value = isActive;
-  }, [isActive, isActiveShared]);
+const VoiceOrb: React.FC<VoiceOrbProps> = ({
+  state,
+  hearing,
+  size,
+  onPress,
+  accessibilityLabel,
+  disabled = false,
+}) => {
+  const reduceMotion = useReduceMotion();
+  const foreground = useForeground();
+  const { animatedStyle, pulse } = useOrbTapAnimation();
 
-  const state = useSharedValue<OrbState>({
-    user: createVoiceState(),
-    assistant: createVoiceState(),
-    level: 0,
-    pulse: 0,
-    brightness: 0,
-    speaker: 0,
-    flowTime: 0,
+  const target = useSharedValue<OrbAppearance>({
+    ...orbPalettes[state],
+    time: 0,
+    listening: 0,
+    speaking: 0,
+  });
+  const stationary = useSharedValue(reduceMotion);
+  useEffect(() => {
+    const palette = orbPalettes[state];
+    // Listening colours stay on while the mic is open; motion needs speech.
+    const hearingSpeech = !reduceMotion && state === 'listening' && hearing;
+    target.value = {
+      primary: [...palette.primary],
+      accent: [...palette.accent],
+      highlight: [...palette.highlight],
+      time: 0,
+      listening: hearingSpeech ? 1 : 0,
+      speaking: state === 'speaking' ? 1 : 0,
+    };
+    stationary.value = reduceMotion;
+  }, [state, hearing, reduceMotion, target, stationary]);
+
+  const appearance = useSharedValue<OrbAppearance>({
+    primary: [...orbPalettes[state].primary],
+    accent: [...orbPalettes[state].accent],
+    highlight: [...orbPalettes[state].highlight],
+    time: 0,
+    listening: 0,
+    speaking: 0,
   });
 
-  useFrameCallback(({ timeSincePreviousFrame }: FrameInfo) => {
+  const frame = useFrameCallback(({ timeSincePreviousFrame }: FrameInfo) => {
+    const current = appearance.value;
+    const goal = target.value;
+    if (stationary.value && isAt(current, goal)) {
+      return;
+    }
     const dt = Math.min(
       MAX_FRAME_DELTA_SECONDS,
       Math.max(0, (timeSincePreviousFrame ?? 16.7) / 1000)
     );
-    const frames = dt * 60;
-    const next = state.value;
-    stepVoiceState(next.user, readings.user.value, frames);
-    stepVoiceState(next.assistant, readings.assistant.value, frames);
-
-    const userLevel = frameLevel(next.user);
-    const assistantLevel = frameLevel(next.assistant);
-    const louder = userLevel > assistantLevel ? next.user : next.assistant;
-    const rawLevel = Math.max(userLevel, assistantLevel);
-    const rawPulse = Math.min(
-      1,
-      louder.level * 0.78 +
-        louder.peak * 0.44 +
-        Math.max(0, rawLevel - next.level) * 1.4
-    );
-    const rawBrightness = isActiveShared.value
-      ? louder.brightness
-      : IDLE_BRIGHTNESS;
-
-    next.level = approach(
-      next.level,
-      rawLevel,
-      rawLevel > next.level ? LEVEL_ATTACK_SECONDS : LEVEL_RELEASE_SECONDS,
-      dt
-    );
-    next.pulse = approach(
-      next.pulse,
-      rawPulse,
-      rawPulse > next.pulse ? PULSE_ATTACK_SECONDS : PULSE_RELEASE_SECONDS,
-      dt
-    );
-    next.brightness = approach(
-      next.brightness,
-      rawBrightness,
-      BRIGHTNESS_SMOOTH_SECONDS,
-      dt
-    );
-    if (rawLevel > SPEAKER_THRESHOLD) {
-      next.speaker = approach(
-        next.speaker,
-        userLevel > assistantLevel ? 1 : 0,
-        SPEAKER_SMOOTH_SECONDS,
-        dt
-      );
+    const blend = stationary.value ? 1 : 1 - Math.exp(-dt / BLEND_SECONDS);
+    current.listening += (goal.listening - current.listening) * blend;
+    current.speaking += (goal.speaking - current.speaking) * blend;
+    for (const channel of paletteChannels) {
+      approachColor(current[channel], goal[channel], blend);
     }
-    next.flowTime += dt * (0.75 + next.level * 0.18 + next.pulse * 0.08);
-    if (next.flowTime > FLOW_TIME_WRAP_SECONDS) {
-      next.flowTime -= FLOW_TIME_WRAP_SECONDS;
+    if (!stationary.value) {
+      current.time =
+        (current.time +
+          dt * (0.75 + current.listening * 0.45 + current.speaking * 1.8)) %
+        TIME_WRAP_SECONDS;
     }
-    state.value = { ...next };
-  });
+    appearance.value = { ...current };
+  }, false);
+  useEffect(() => {
+    frame.setActive(foreground);
+  }, [foreground, frame]);
 
+  const edgeWidth = orbEdgeWidth(size * PixelRatio.get());
   const uniforms = useDerivedValue(() => {
-    const { level, pulse, brightness, speaker, flowTime } = state.value;
+    const { time, listening, speaking, primary, accent, highlight } =
+      appearance.value;
     return {
       resolution: [size, size],
-      time: flowTime,
-      amplitude: 0.18 + level * 1.7,
-      radius: Math.min(0.9, 0.76 + level * 0.11),
-      glow: Math.min(0.58, 0.08 + level * 0.7),
-      brightness,
-      pulse,
-      baseColor: mixColor(assistantPalette.base, userPalette.base, speaker),
-      highlightColor: mixColor(
-        assistantPalette.highlight,
-        userPalette.highlight,
-        speaker
-      ),
-      accentColor: mixColor(
-        assistantPalette.accent,
-        userPalette.accent,
-        speaker
-      ),
-      softAccentColor: mixColor(
-        assistantPalette.softAccent,
-        userPalette.softAccent,
-        speaker
-      ),
-      shadowColor: mixColor(
-        assistantPalette.shadow,
-        userPalette.shadow,
-        speaker
-      ),
+      time,
+      listening,
+      speaking,
+      edgeWidth,
+      primaryColor: primary,
+      accentColor: accent,
+      highlightColor: highlight,
     };
   });
 
   return (
-    <View
-      style={[styles.container, { width: size, height: size }]}
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Starts or ends the conversation."
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={() => {
+        pulse();
+        onPress();
+      }}
+      style={[styles.control, { width: size, height: size }]}
     >
-      <Canvas style={StyleSheet.absoluteFill}>
-        <Fill>
-          <Shader source={orbEffect} uniforms={uniforms} />
-        </Fill>
-      </Canvas>
-    </View>
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, animatedStyle]}
+      >
+        <View
+          style={StyleSheet.absoluteFill}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Canvas style={StyleSheet.absoluteFill}>
+            <Fill>
+              <Shader source={orbEffect} uniforms={uniforms} />
+            </Fill>
+          </Canvas>
+        </View>
+      </Animated.View>
+    </Pressable>
   );
 };
 
 export default VoiceOrb;
 
 const styles = StyleSheet.create({
-  container: {
+  control: {
     alignSelf: 'center',
+    borderRadius: 999,
   },
 });

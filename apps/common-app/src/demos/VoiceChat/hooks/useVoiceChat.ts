@@ -16,10 +16,10 @@ type AudioListener = (
 ) => void;
 
 /**
- * @param onAudio Receives both voices' raw audio, e.g. for the orb. It's read
- *   through a ref, so it may change between renders.
+ * @param onAudio Receives both voices' raw audio, e.g. for a level meter. It's
+ *   read through a ref, so it may change between renders.
  */
-export function useVoiceChat(onAudio: AudioListener) {
+export function useVoiceChat(onAudio?: AudioListener) {
   const navigation = useNavigation();
   const [status, setStatus] = useState<SessionStatus>('idle');
   const [assistantSpeaking, setAssistantSpeaking] = useState(false);
@@ -46,7 +46,7 @@ export function useVoiceChat(onAudio: AudioListener) {
       onSpeechActivity: setSpeaking,
       onAssistantSpeaking: setAssistantSpeaking,
       onAudio: (source, samples, frames) =>
-        onAudioRef.current(source, samples, frames),
+        onAudioRef.current?.(source, samples, frames),
       onTranscript: (entry) => {
         setEntries((current) => {
           const index = current.findIndex((item) => item.id === entry.id);

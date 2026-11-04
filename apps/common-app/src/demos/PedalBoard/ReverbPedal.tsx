@@ -1,7 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
-import { VerticalSlider } from '../../components';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   ConvolverNode,
   AudioNode,
@@ -9,7 +7,19 @@ import {
   AudioBuffer,
   GainNode,
 } from 'react-native-audio-api';
+
+import { colors } from '../../styles';
 import { makeReverbCurve } from './curves';
+import PedalShell from './PedalShell';
+
+const PEDAL_COLOR = '#38ACDD';
+
+// Each space maps onto the level thresholds applyEffect uses to pick an impulse length.
+const SPACES = [
+  { label: 'Room', level: 0 },
+  { label: 'Hall', level: 0.5 },
+  { label: 'Cathedral', level: 1 },
+] as const;
 
 interface ReverbPedalProps {
   context: AudioContext;
@@ -101,131 +111,65 @@ export default function ReverbPedal({
     setIsActive((prev) => !prev);
   };
 
-  // onActivate fires only for a recognised tap; onDeactivate also fires for
-  // touches the tap never claimed, such as dragging a fader on the pedal.
-  const powerGesture = useTapGesture({
-    runOnJS: true,
-    onActivate: togglePower,
-  });
-
   return (
-    <View style={styles.pedalBody}>
-      <View style={styles.header}>
-        <Text style={styles.brand}>RN AUDIO API</Text>
-        <Text style={styles.model}>REVERB</Text>
+    <PedalShell
+      name="REVERB"
+      color={PEDAL_COLOR}
+      isActive={isActive}
+      onToggle={togglePower}
+    >
+      <View style={styles.segments}>
+        {SPACES.map((space) => {
+          const selected = space.level === level;
+          return (
+            <Pressable
+              key={space.label}
+              onPress={() => setLevel(space.level)}
+              style={[styles.segment, selected && styles.segmentSelected]}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  selected && styles.segmentTextSelected,
+                ]}
+              >
+                {space.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
-
-      <View style={styles.controlsRow}>
-        <VerticalSlider
-          label="LEVEL"
-          value={level}
-          labelColor="#fff"
-          valueColor="#ffda"
-          onValueChange={setLevel}
-          possibleValues={[0, 0.5, 1]}
-        />
-      </View>
-
-      <View style={styles.footer}>
-        <View style={styles.switchContainer}>
-          <View
-            style={[
-              styles.led,
-              {
-                backgroundColor: isActive ? '#ff0000' : '#330000',
-              },
-            ]}
-          />
-          <GestureDetector gesture={powerGesture}>
-            <View style={[styles.stompSwitch]}>
-              <View style={styles.stompInner} />
-            </View>
-          </GestureDetector>
-          <Text style={styles.switchLabel}>{isActive ? 'ON' : 'BYPASS'}</Text>
-        </View>
-      </View>
-    </View>
+    </PedalShell>
   );
 }
 
 const styles = StyleSheet.create({
-  pedalBody: {
+  segments: {
     flex: 1,
-    backgroundColor: '#4368a3',
-    margin: 10,
-    borderRadius: 20,
-    borderWidth: 4,
-    borderColor: '#283f63',
-    padding: 10,
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  brand: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 2,
-  },
-  model: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#fff',
-    fontStyle: 'italic',
-  },
-  controlsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    backgroundColor: colors.surfacePressed,
+    borderRadius: 999,
+    padding: 4,
+    gap: 4,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
     alignItems: 'center',
   },
-  footer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  switchContainer: {
-    alignItems: 'center',
-    gap: 10,
-  },
-  led: {
-    width: 15,
-    height: 15,
-    borderRadius: 8,
+  segmentSelected: {
+    backgroundColor: `${PEDAL_COLOR}33`,
     borderWidth: 1,
-    borderColor: '#000',
-    marginBottom: 10,
-    shadowColor: '#f00',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
+    borderColor: `${PEDAL_COLOR}99`,
   },
-  stompSwitch: {
-    width: 30,
-    height: 30,
-    borderRadius: 30,
-    backgroundColor: '#c0c0c0',
-    borderWidth: 2,
-    borderColor: '#888',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
+  segmentText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
-  stompInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
-    borderWidth: 1,
-    borderColor: '#aaa',
-  },
-  switchLabel: {
-    fontWeight: 'bold',
-    color: '#fff',
+  segmentTextSelected: {
+    color: colors.white,
   },
 });

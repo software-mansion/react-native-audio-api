@@ -5,11 +5,12 @@ import {
 } from '@react-navigation/native-stack';
 import type { FC, ReactNode } from 'react';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { DemoControlsKey, demos, DemoKey } from '../demos';
 import { ExampleControlsKey, ExampleKey, Examples } from '../examples';
 import { otherScreens } from '../other';
-import { colors } from '../styles';
+import { colors, layout } from '../styles';
 import { ControlsSheetLayout } from './ControlsSheetLayout';
 import MainTabsNavigator, { MainTabs } from './MainTabs';
 
@@ -36,19 +37,21 @@ const controlsSheets = [...Examples, ...demos].flatMap(({ key, controls }) => {
   }
 
   const name = `${key}Controls` as const;
-  const layout = ({ children }: { children: ReactNode }) => (
+  const sheetLayout = ({ children }: { children: ReactNode }) => (
     <ControlsSheetLayout sheet={name} owner={key}>
       {children}
     </ControlsSheetLayout>
   );
 
-  return [{ name, component: controls, layout }];
+  return [{ name, component: controls, layout: sheetLayout }];
 });
 
 /**
  * A non-dismissable sheet sized to its content. Nothing behind it is dimmed, so
- * the screen underneath stays interactive. The transparent content lets the
- * native sheet material (liquid glass on iOS 26) show through.
+ * the screen underneath stays interactive. On iOS the transparent content lets
+ * the native sheet material (liquid glass on iOS 26) show through. Android has
+ * no sheet material: a transparent sheet shows its own elevation shadow through
+ * itself, a lighter outline offset from the real edge, so it gets a surface.
  */
 const controlsSheetOptions: NativeStackNavigationOptions = {
   presentation: 'formSheet',
@@ -57,7 +60,13 @@ const controlsSheetOptions: NativeStackNavigationOptions = {
   sheetAllowedDetents: 'fitToContents',
   sheetLargestUndimmedDetentIndex: 'last',
   sheetGrabberVisible: false,
-  contentStyle: { backgroundColor: 'transparent' },
+  ...Platform.select<NativeStackNavigationOptions>({
+    android: {
+      contentStyle: { backgroundColor: colors.recess },
+      sheetCornerRadius: layout.cardRadius,
+    },
+    default: { contentStyle: { backgroundColor: 'transparent' } },
+  }),
 };
 
 const RootStackNavigator: FC = () => (

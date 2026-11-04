@@ -7,7 +7,7 @@ import { CallControls } from './components/CallControls';
 import { CallTimer } from './components/CallTimer';
 import { Transcript } from './components/Transcript';
 import { useVoiceChat } from './hooks/useVoiceChat';
-import { useOrbAudio } from './orb/orbAudio';
+import type { OrbState } from './orb/orbPalettes';
 import VoiceOrb from './orb/VoiceOrb';
 import type { SessionStatus } from './voiceSession';
 
@@ -18,6 +18,24 @@ const MAX_ORB_SIZE = 240;
 const IDLE_PLACEHOLDER =
   'Talk naturally. The assistant can respond while you speak, and your voice interrupts unfinished replies.';
 const IN_CALL_PLACEHOLDER = 'The assistant is listening. Say hello to start.';
+
+function orbState(
+  status: SessionStatus,
+  assistantSpeaking: boolean,
+  muted: boolean
+): OrbState {
+  switch (status) {
+    case 'connected':
+      if (assistantSpeaking) {
+        return 'speaking';
+      }
+      return muted ? 'paused' : 'listening';
+    case 'error':
+      return 'error';
+    default:
+      return 'idle';
+  }
+}
 
 function statusWord(
   status: SessionStatus,
@@ -45,20 +63,22 @@ const VoiceChat: FC = () => {
     MAX_ORB_SIZE,
     Math.round(width * ORB_SHARE_OF_WIDTH)
   );
-  const { readings, pushSamples } = useOrbAudio();
   const {
     status,
     detail,
+    speaking,
     assistantSpeaking,
     muted,
     connectedAt,
     entries,
     toggleConnection,
     toggleMuted,
-  } = useVoiceChat(pushSamples);
+  } = useVoiceChat();
 
   const inCall = status === 'connecting' || status === 'connected';
   const word = statusWord(status, assistantSpeaking, muted);
+  const orb = orbState(status, assistantSpeaking, muted);
+  const orbAction = inCall ? 'End conversation' : 'Start conversation';
 
   return (
     <Container>
@@ -71,9 +91,11 @@ const VoiceChat: FC = () => {
 
         <View style={styles.orbSection}>
           <VoiceOrb
-            readings={readings}
+            state={orb}
+            hearing={orb === 'listening' && speaking}
             size={orbSize}
-            isActive={status === 'connected'}
+            onPress={toggleConnection}
+            accessibilityLabel={word ? `${orbAction}. ${word}` : orbAction}
           />
           <View style={styles.statusBlock} accessibilityLiveRegion="polite">
             {word && (
