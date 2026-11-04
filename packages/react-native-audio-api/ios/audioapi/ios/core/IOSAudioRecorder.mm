@@ -129,6 +129,7 @@ void IOSAudioRecorder::handleHardwareChange()
     return;
   }
 
+  std::scoped_lock hardwareChangeLock(hardwareChangeMutex_);
   BOOL formatChanged = NO;
   if (![nativeRecorder_ refreshResolvedInputFormatReturningChanged:&formatChanged]) {
     return;

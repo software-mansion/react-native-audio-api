@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,12 @@ class IOSAudioRecorder : public AudioRecorder {
   void handleHardwareChange();
 
   int32_t inputChannelCount_{0};
+  /// Serializes `handleHardwareChange()`: the engine may notify the same rebuilt graph from two
+  /// threads and starts it once either call returns, so a returning call must find the outputs
+  /// already re-prepared for the live format. Taken after the `isIdle()` check, so `start()`,
+  /// which holds the consumer mutexes while its engine start notifies the idle recorder, never
+  /// waits on it.
+  std::mutex hardwareChangeMutex_;
 };
 
 } // namespace audioapi
