@@ -119,6 +119,11 @@
   padding: 12px;
 }
 
+.waveShape {
+  width: 100%;
+  margin-top: 56px;
+}
+
 .playButton {
   position: absolute;
   top: 10px;

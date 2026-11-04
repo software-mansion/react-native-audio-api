@@ -307,8 +307,12 @@ fields, so assigning them does not reach the browser node — the demos rely on 
 Pitfall: `package.json` depends on `react-native-audio-api: latest`, so the docs bundle the
 **published npm release** from `packages/audiodocs/node_modules/`, not the workspace source. A web
 demo may only call APIs that release ships (e.g. `createChannelSplitter` on the web `AudioContext`
-was missing in 0.13.1); reach for the browser objects behind the wrappers (`ctx.context`,
-`node.node`) for documentation-only plumbing such as meters.
+was missing in 0.13.1, and 0.13.1 ships no web `PannerNode` at all); reach for the browser objects
+behind the wrappers (`ctx.context`, `node.node`) for documentation-only plumbing such as meters.
+`usePannerPlayground` splices a browser `PannerNode` between two wrapper gains this way.
+
+`PeriodicWave` is not a node, so its playground (`PeriodicWaveExample/`) follows the
+`OscillatorExample` pattern (own context, play button, waveform) instead of `useEffectPlayground`.
 
 ### InteractiveExample — side-by-side code + rendered output
 
