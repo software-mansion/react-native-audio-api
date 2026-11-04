@@ -49,6 +49,12 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
                            (nullable OnOutputRecoveryFailedBlock)onOutputRecoveryFailed;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
 
+/// @brief Registers the input and connects it to the engine.
+/// @param onInputNotification Hears `HardwareChanged` for every graph the engine rebuilds with
+/// the input, before that graph starts and with no engine lock held, so it may call back into
+/// the engine. It can be called for the same graph from two threads at once, and the graph may
+/// start as soon as either call returns: every call must leave the input's consumers matching
+/// the live input format by the time it returns.
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
                      onInputNotification:

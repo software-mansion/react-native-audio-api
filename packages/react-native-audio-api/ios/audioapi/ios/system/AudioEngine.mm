@@ -642,12 +642,9 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 /// @discussion While `_inputAwaitsHardwareChange` is set, runs the input's `HardwareChanged`
 /// handler with @p lock released, since the handler calls back into the engine. Others may
 /// rebuild, drop or start the engine meanwhile; a build another caller is still notifying is
-/// notified again here, and started as soon as this call lets it through. So the handler must
-/// leave the input's consumers matching the live format by the time any call returns, even
-/// while another call for the same build is in flight.
-/// Every rebuild meant for a start leaves `graphIsStale` false, so a stale mark seen afterwards
-/// was set while the lock was released (a route change, a session deactivation or
-/// reconfiguration).
+/// notified again here. Every rebuild meant for a start leaves `graphIsStale` false, so a stale
+/// mark seen afterwards was set while the lock was released (a route change, a session
+/// deactivation or reconfiguration).
 /// @return Whether the current graph may be started. NO when the engine was replaced or marked
 /// stale while the lock was released: the caller decides again.
 - (BOOL)notifyInputOfRebuiltGraph:(std::unique_lock<std::mutex> &)lock
