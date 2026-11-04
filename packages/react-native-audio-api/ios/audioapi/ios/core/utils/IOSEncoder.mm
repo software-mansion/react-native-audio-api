@@ -284,11 +284,23 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
             static_cast<size_t>(inputLayout.channelCount) * sizeof(::AudioBuffer),
         0);
 
-    state_->inputFormat =
-        [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                         sampleRate:inputLayout.sampleRate
-                                           channels:(AVAudioChannelCount)inputLayout.channelCount
-                                        interleaved:NO];
+    const auto inputChannelCount = static_cast<AVAudioChannelCount>(inputLayout.channelCount);
+    // Above two channels AVAudioFormat requires a channel layout. The input's channels have no
+    // speaker positions (e.g. a multi-input interface), so they are described as discrete.
+    const bool isDiscreteInput = inputChannelCount > 2;
+    if (isDiscreteInput) {
+      AVAudioChannelLayout *channelLayout = [[AVAudioChannelLayout alloc]
+          initWithLayoutTag:kAudioChannelLayoutTag_DiscreteInOrder | inputChannelCount];
+      state_->inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                                             sampleRate:inputLayout.sampleRate
+                                                            interleaved:NO
+                                                          channelLayout:channelLayout];
+    } else {
+      state_->inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                                             sampleRate:inputLayout.sampleRate
+                                                               channels:inputChannelCount
+                                                            interleaved:NO];
+    }
     if (state_->inputFormat == nil) {
       return Err("Failed to build input AVAudioFormat");
     }
@@ -298,6 +310,21 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
                                         toFormat:[state_->audioFile processingFormat]];
     if (state_->converter == nil) {
       return Err("Failed to create AVAudioConverter");
+    }
+    if (isDiscreteInput) {
+      // Discrete channels have no positions to mix from, so the default channel map leaves every
+      // output channel silent. Take the input's channels in order, as the converter does for a
+      // stereo input written to a mono file.
+      const AVAudioChannelCount outputChannelCount =
+          [state_->audioFile processingFormat].channelCount;
+      NSMutableArray<NSNumber *> *channelMap =
+          [NSMutableArray arrayWithCapacity:outputChannelCount];
+      for (AVAudioChannelCount channel = 0; channel < outputChannelCount; ++channel) {
+        const NSInteger sourceChannel =
+            channel < inputChannelCount ? static_cast<NSInteger>(channel) : -1;
+        [channelMap addObject:@(sourceChannel)];
+      }
+      state_->converter.channelMap = channelMap;
     }
     state_->converter.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     state_->converter.sampleRateConverterQuality = AVAudioQualityMax;
