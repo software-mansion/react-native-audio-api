@@ -38,12 +38,12 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
 
   HostVertex *doAddNode() {
     std::unique_ptr<GraphObject> obj = std::make_unique<MNode>();
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     size_t id = nextId++;
     hostNode->test_node_identifier__ = id;
     event(audioGraph, disposer_);
-    audioGraph[handle->index].test_node_identifier__ = id;
+    audioGraph[*handle].test_node_identifier__ = id;
     liveNodes.push_back(hostNode);
     return hostNode;
   }
@@ -203,8 +203,8 @@ class GraphCycleDebugTest : public ::testing::TestWithParam<uint64_t> {
     for (auto *hn : hostGraph.nodes) {
       if (cycleIds.count(hn->test_node_identifier__)) {
         std::cerr << "  id=" << hn->test_node_identifier__ << " ghost=" << hn->ghost
-                  << " handle.idx=" << hn->handle->index << " use_count=" << hn->handle.use_count()
-                  << " inputs={";
+                  << " handle.idx=" << audioGraph.indexOf(*hn->handle)
+                  << " use_count=" << hn->handle.use_count() << " inputs={";
         for (size_t j = 0; j < hn->inputs.size(); j++) {
           if (j)
             std::cerr << ",";

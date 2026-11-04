@@ -92,7 +92,7 @@ HostGraph TestGraphUtils::makeFromAdjacencyList(
 
   for (size_t i = 0; i < adjacencyList.size(); ++i) {
     auto audioNode = std::make_unique<BasicAudioNode>(getGraphTestContext(), AudioNodeOptions());
-    auto handle = std::make_shared<NodeHandle>(static_cast<uint32_t>(i), std::move(audioNode));
+    auto handle = std::make_shared<NodeHandle>(std::move(audioNode));
     auto *node = new HostGraph::HostVertex();
     node->handle = handle;
     node->test_node_identifier__ = i;
@@ -126,12 +126,12 @@ AudioGraph TestGraphUtils::createAudioGraphFromHostGraph(const HostGraph &hostGr
   }
 
   for (auto *n : hostGraph.nodes) {
-    uint32_t idx = n->handle->index;
+    uint32_t idx = audioGraph.indexOf(*n->handle);
     audioGraph[idx].test_node_identifier__ = n->test_node_identifier__;
 
     audioGraph.pool().freeAll(audioGraph[idx].input_head);
     for (HostGraph::HostVertex *input : n->inputs) {
-      audioGraph.pool().push(audioGraph[idx].input_head, input->handle->index);
+      audioGraph.pool().push(audioGraph[idx].input_head, audioGraph.indexOf(*input->handle));
     }
   }
 

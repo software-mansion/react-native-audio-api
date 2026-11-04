@@ -20,14 +20,14 @@ class AudioGraphTest : public ::testing::Test {
 
   /// @brief Creates a shared NodeHandle with no node (for structural tests)
   std::shared_ptr<NodeHandle> makeHandle(size_t testId = 0) {
-    auto h = std::make_shared<NodeHandle>(0, nullptr);
+    auto h = std::make_shared<NodeHandle>(nullptr);
     return h;
   }
 
   /// @brief Creates a shared NodeHandle with a MockNode
   std::shared_ptr<NodeHandle> makeHandleWithNode(bool destructible = true) {
     std::unique_ptr<GraphObject> obj = std::make_unique<MockNode>(destructible);
-    return std::make_shared<NodeHandle>(0, std::move(obj));
+    return std::make_shared<NodeHandle>(std::move(obj));
   }
 
   /// @brief Adds N nodes with test identifiers 0..N-1 and returns their handles
@@ -37,7 +37,7 @@ class AudioGraphTest : public ::testing::Test {
     for (size_t i = 0; i < n; i++) {
       auto h = withAudioNode ? makeHandleWithNode() : makeHandle(i);
       graph.addNode(h);
-      graph[h->index].test_node_identifier__ = i;
+      graph[*h].test_node_identifier__ = i;
       handles.push_back(std::move(h));
     }
     return handles;
@@ -75,9 +75,9 @@ TEST_F(AudioGraphTest, AddNode_AssignsSequentialIndices) {
   graph.addNode(h1);
   graph.addNode(h2);
 
-  EXPECT_EQ(h0->index, 0u);
-  EXPECT_EQ(h1->index, 1u);
-  EXPECT_EQ(h2->index, 2u);
+  EXPECT_EQ(graph.indexOf(*h0), 0u);
+  EXPECT_EQ(graph.indexOf(*h1), 1u);
+  EXPECT_EQ(graph.indexOf(*h2), 2u);
   EXPECT_EQ(graph.size(), 3u);
 }
 
@@ -93,8 +93,8 @@ TEST_F(AudioGraphTest, AddNode_EmptyGraph) {
 TEST_F(AudioGraphTest, TopoSort_LinearChain) {
   // 0 -> 1 -> 2  (inputs: 1 has 0, 2 has 1)
   auto h = addNodes(3);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -107,8 +107,8 @@ TEST_F(AudioGraphTest, TopoSort_ReversedInsertion) {
   // Insert in reverse but edges say 0 -> 1 -> 2
   auto h = addNodes(3);
   // Wire: 2 needs 1, 1 needs 0
-  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -128,10 +128,10 @@ TEST_F(AudioGraphTest, TopoSort_Diamond) {
   //    \ /
   //     3
   auto h = addNodes(4);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[2]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[1]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[2]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -149,9 +149,9 @@ TEST_F(AudioGraphTest, TopoSort_Diamond) {
 TEST_F(AudioGraphTest, TopoSort_FanIn) {
   // 0, 1, 2 all feed into 3
   auto h = addNodes(4);
-  graph.pool().push(graph[h[3]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[1]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[2]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -168,8 +168,8 @@ TEST_F(AudioGraphTest, TopoSort_FanIn) {
 TEST_F(AudioGraphTest, TopoSort_DisconnectedComponents) {
   // Two separate chains: 0->1   2->3
   auto h = addNodes(4);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[2]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -198,8 +198,8 @@ TEST_F(AudioGraphTest, TopoSort_SingleNode) {
 
 TEST_F(AudioGraphTest, TopoSort_SkippedWhenNotDirty) {
   auto h = addNodes(3);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -219,12 +219,12 @@ TEST_F(AudioGraphTest, TopoSort_SkippedWhenNotDirty) {
 TEST_F(AudioGraphTest, Compact_RemovesOrphanedDestructibleLeaf) {
   // 3 nodes: 0 -> 1 -> 2, mark node 2 as orphaned
   auto h = addNodes(3, /*withAudioNode=*/true);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
-  graph[h[2]->index].orphaned = true;
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
+  graph[*h[2]].orphaned = true;
 
   // also clear node 2's inputs so it qualifies (orphaned + no inputs + canBeDestructed)
-  graph.pool().freeAll(graph[h[2]->index].input_head);
+  graph.pool().freeAll(graph[*h[2]].input_head);
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -240,8 +240,8 @@ TEST_F(AudioGraphTest, Compact_RemovesOrphanedDestructibleLeaf) {
 
 TEST_F(AudioGraphTest, Compact_KeepsOrphanedNodeWithInputs) {
   auto h = addNodes(2, /*withAudioNode=*/true);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph[h[1]->index].orphaned = true;
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph[*h[1]].orphaned = true;
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -259,11 +259,11 @@ TEST_F(AudioGraphTest, Compact_KeepsNonDestructible) {
   auto h1 = makeHandleWithNode(/*destructible=*/false); // can't be destructed
 
   graph.addNode(h0);
-  graph[h0->index].test_node_identifier__ = 0;
+  graph[*h0].test_node_identifier__ = 0;
   graph.addNode(h1);
-  graph[h1->index].test_node_identifier__ = 1;
+  graph[*h1].test_node_identifier__ = 1;
 
-  graph[h1->index].orphaned = true;
+  graph[*h1].orphaned = true;
   // h1 has no inputs, is orphaned, but canBeDestructed() returns false
 
   graph.markDirty();
@@ -281,11 +281,11 @@ TEST_F(AudioGraphTest, Compact_RemovesOnceDestructible) {
   auto h1 = makeHandleWithNode(/*destructible=*/false);
 
   graph.addNode(h0);
-  graph[h0->index].test_node_identifier__ = 0;
+  graph[*h0].test_node_identifier__ = 0;
   graph.addNode(h1);
-  graph[h1->index].test_node_identifier__ = 1;
+  graph[*h1].test_node_identifier__ = 1;
 
-  graph[h1->index].orphaned = true;
+  graph[*h1].orphaned = true;
 
   graph.markDirty();
   graph.sortAndCompact(); // first pass: node 1 stays (not destructible)
@@ -308,19 +308,19 @@ TEST_F(AudioGraphTest, Compact_RemovesOnceDestructible) {
 TEST_F(AudioGraphTest, Compact_UpdatesHandleIndices) {
   auto h = addNodes(4, /*withAudioNode=*/true);
   // Chain: 0 -> 1 -> 2 -> 3
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[2]));
 
   graph.markDirty();
   graph.sortAndCompact();
 
   // Now orphan node 1 (remove its inputs so it can be deleted)
-  graph[h[1]->index].orphaned = true;
-  graph.pool().freeAll(graph[h[1]->index].input_head);
+  graph[*h[1]].orphaned = true;
+  graph.pool().freeAll(graph[*h[1]].input_head);
 
   // Also remove node 1 from node 2's inputs (otherwise it references a deleted node)
-  graph.pool().remove(graph[h[2]->index].input_head, h[1]->index);
+  graph.pool().remove(graph[*h[2]].input_head, graph.indexOf(*h[1]));
 
   graph.sortAndCompact();
 
@@ -329,7 +329,7 @@ TEST_F(AudioGraphTest, Compact_UpdatesHandleIndices) {
 
   // Each surviving handle's index should match its actual position
   for (uint32_t i = 0; i < graph.size(); i++) {
-    EXPECT_EQ(graph[i].handle->index, i);
+    EXPECT_EQ(graph.indexOf(*graph[i].handle), i);
   }
 }
 
@@ -340,8 +340,8 @@ TEST_F(AudioGraphTest, Compact_UpdatesHandleIndices) {
 TEST_F(AudioGraphTest, Compact_MultipleOrphans) {
   auto h = addNodes(5, /*withAudioNode=*/true);
   // No edges — all independent
-  graph[h[1]->index].orphaned = true;
-  graph[h[3]->index].orphaned = true;
+  graph[*h[1]].orphaned = true;
+  graph[*h[3]].orphaned = true;
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -355,7 +355,7 @@ TEST_F(AudioGraphTest, Compact_MultipleOrphans) {
 
   // Verify handle indices
   for (uint32_t i = 0; i < graph.size(); i++) {
-    EXPECT_EQ(graph[i].handle->index, i);
+    EXPECT_EQ(graph.indexOf(*graph[i].handle), i);
   }
 }
 
@@ -367,10 +367,10 @@ TEST_F(AudioGraphTest, Compact_CascadingRemoval) {
   // 0 -> 1 (orphaned), node 1 has no other inputs
   // After removing 1, no further cascade because 0 is not orphaned
   auto h = addNodes(2, /*withAudioNode=*/true);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
 
   // Orphan node 0 — it has no inputs, so it's removable
-  graph[h[0]->index].orphaned = true;
+  graph[*h[0]].orphaned = true;
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -386,9 +386,9 @@ TEST_F(AudioGraphTest, Compact_CascadingRemoval) {
 
 TEST_F(AudioGraphTest, Compact_RemoveAllNodes) {
   auto h = addNodes(3, /*withAudioNode=*/true);
-  graph[h[0]->index].orphaned = true;
-  graph[h[1]->index].orphaned = true;
-  graph[h[2]->index].orphaned = true;
+  graph[*h[0]].orphaned = true;
+  graph[*h[1]].orphaned = true;
+  graph[*h[2]].orphaned = true;
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -412,7 +412,7 @@ TEST_F(AudioGraphTest, Process_EmptyGraph) {
 
 TEST_F(AudioGraphTest, MarkDirty_Idempotent) {
   auto h = addNodes(2);
-  graph.pool().push(graph[h[1]->index].input_head, h[0]->index);
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
 
   graph.markDirty();
   graph.markDirty();
@@ -436,14 +436,14 @@ TEST_F(AudioGraphTest, TopoSort_ComplexDAG) {
   //    \ /
   //     5
   auto h = addNodes(6);
-  graph.pool().push(graph[h[2]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[2]->index].input_head, h[1]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[0]->index);
-  graph.pool().push(graph[h[3]->index].input_head, h[2]->index);
-  graph.pool().push(graph[h[4]->index].input_head, h[2]->index);
-  graph.pool().push(graph[h[4]->index].input_head, h[1]->index);
-  graph.pool().push(graph[h[5]->index].input_head, h[3]->index);
-  graph.pool().push(graph[h[5]->index].input_head, h[4]->index);
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[2]));
+  graph.pool().push(graph[*h[4]].input_head, graph.indexOf(*h[2]));
+  graph.pool().push(graph[*h[4]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[5]].input_head, graph.indexOf(*h[3]));
+  graph.pool().push(graph[*h[5]].input_head, graph.indexOf(*h[4]));
 
   graph.markDirty();
   graph.sortAndCompact();
@@ -467,19 +467,19 @@ TEST_F(AudioGraphTest, Process_AddAndRemoveInterleaved) {
   auto h0 = makeHandleWithNode();
   auto h1 = makeHandleWithNode();
   graph.addNode(h0);
-  graph[h0->index].test_node_identifier__ = 0;
+  graph[*h0].test_node_identifier__ = 0;
   graph.addNode(h1);
-  graph[h1->index].test_node_identifier__ = 1;
+  graph[*h1].test_node_identifier__ = 1;
 
   graph.markDirty();
   graph.sortAndCompact();
   EXPECT_EQ(graph.size(), 2u);
 
   // Orphan 0, add 2
-  graph[h0->index].orphaned = true;
+  graph[*h0].orphaned = true;
   auto h2 = makeHandleWithNode();
   graph.addNode(h2);
-  graph[h2->index].test_node_identifier__ = 2;
+  graph[*h2].test_node_identifier__ = 2;
 
   graph.markDirty();
   graph.sortAndCompact();
