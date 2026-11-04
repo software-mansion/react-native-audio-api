@@ -1,5 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 #include <algorithm>
@@ -35,6 +36,11 @@ static std::string describeRecorderFormat(AVAudioFormat *format)
   return "engineFormat={sampleRate=" + std::to_string(format.sampleRate) +
       ", channelCount=" + std::to_string(format.channelCount) +
       ", interleaved=" + (format.interleaved ? "true" : "false") + "}";
+}
+
+static std::string describeNativeError(NSError *error)
+{
+  return [[AudioAPIError describe:error] UTF8String];
 }
 
 /// Returns false — dropping the buffer — when the layout no longer
@@ -240,13 +246,8 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   if (!didStartNativeRecorder) {
-    std::string message = "Failed to start native recorder";
-
-    if (nativeStartError != nil) {
-      message += ": ";
-      message += [[nativeStartError debugDescription] UTF8String];
-    }
-
+    std::string message =
+        "Failed to start native recorder: " + describeNativeError(nativeStartError);
     message += "; ";
     message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
 
@@ -367,14 +368,7 @@ void IOSAudioRecorder::resume()
 
   NSError *resumeError = nil;
   if (![nativeRecorder_ resume:&resumeError]) {
-    std::string message = "iOS recorder error: failed to resume";
-
-    if (resumeError != nil) {
-      message += ": ";
-      message += [[resumeError debugDescription] UTF8String];
-    }
-
-    reportError(message);
+    reportError("iOS recorder error: failed to resume: " + describeNativeError(resumeError));
     return;
   }
 

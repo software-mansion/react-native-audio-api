@@ -1,4 +1,5 @@
 #import <audioapi/ios/core/NativeAudioPlayer.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
@@ -31,12 +32,12 @@
                                             onOutputRecoveryFailed:self.onStreamFail];
 }
 
-- (bool)startPlaybackGraph:(AudioEngine *)audioEngine
+- (bool)startPlaybackGraph:(AudioEngine *)audioEngine error:(NSError **)error
 {
   [audioEngine stopIfNecessary];
   [self attachSourceNodeIfNeeded:audioEngine];
 
-  if (![audioEngine startIfNecessary]) {
+  if (![audioEngine startIfNecessary:error]) {
     [self detachSourceNodeIfAttached:audioEngine];
     [audioEngine stopIfPossible];
     return false;
@@ -76,7 +77,7 @@
   return self;
 }
 
-- (bool)start
+- (bool)start:(NSError **)error
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
@@ -85,11 +86,10 @@
   // AVAudioEngine adopts a new buffer duration only when it starts, so it is requested first.
   [sessionManager setPreferredIOBufferFrames:_preferredIOBufferFrames];
 
-  NSError *error = nil;
-  if (![sessionManager ensureActive:false error:&error]) {
-    NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
+  NSError *activationError = nil;
+  if (![sessionManager ensureActive:false error:&activationError]) {
     [sessionManager resetPreferredIOBufferFrames];
-    return false;
+    return [AudioAPIError fail:error with:[AudioAPIError sessionActivationFailed:activationError]];
   }
 
   // AudioEngine allows us to attach and connect nodes at runtime but with few
@@ -100,7 +100,7 @@
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
-  if (![self startPlaybackGraph:audioEngine]) {
+  if (![self startPlaybackGraph:audioEngine error:error]) {
     [sessionManager resetPreferredIOBufferFrames];
     return false;
   }
@@ -119,9 +119,9 @@
   }
 }
 
-- (bool)resume
+- (bool)resume:(NSError **)error
 {
-  return [self start];
+  return [self start:error];
 }
 
 - (void)suspend

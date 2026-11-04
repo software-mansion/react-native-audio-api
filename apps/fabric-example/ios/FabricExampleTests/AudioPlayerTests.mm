@@ -143,7 +143,7 @@ class IOSAudioPlayer : public AudioPlayer {
   self.stopIfNecessaryCallCount += 1;
 }
 
-- (bool)startIfNecessary
+- (bool)startIfNecessary:(NSError **)error
 {
   self.startIfNecessaryCallCount += 1;
   self.sourceNodeIdsPresentAtLastStart = [self.attachedSourceNodeIds copy];
@@ -215,7 +215,7 @@ class IOSAudioPlayer : public AudioPlayer {
   return self;
 }
 
-- (bool)start
+- (bool)start:(NSError **)error
 {
   self.startCallCount += 1;
   return self.startResult;
@@ -226,7 +226,7 @@ class IOSAudioPlayer : public AudioPlayer {
   self.stopCallCount += 1;
 }
 
-- (bool)resume
+- (bool)resume:(NSError **)error
 {
   self.resumeCallCount += 1;
   return self.resumeResult;
@@ -347,11 +347,11 @@ struct TestAudioOutput {
 - (void)assertStartLikeOperationRunsGraphForSelector:(SEL)selector
 {
   NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL);
+  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL, NSError **);
   NativeAudioPlayerBoolMethod operation =
       (NativeAudioPlayerBoolMethod)[player methodForSelector:selector];
 
-  XCTAssertTrue(operation(player, selector));
+  XCTAssertTrue(operation(player, selector, nil));
   XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
   XCTAssertFalse(self.sessionManager.lastEnsureActiveForce);
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
@@ -421,14 +421,14 @@ struct TestAudioOutput {
 
 - (void)testStartAndResumeActivateSessionAttachSourceAndStartEngine
 {
-  [self assertStartLikeOperationRunsGraphForSelector:@selector(start)];
+  [self assertStartLikeOperationRunsGraphForSelector:@selector(start:)];
 
   self.audioEngine.stopIfNecessaryCallCount = 0;
   self.audioEngine.attachSourceNodeCallCount = 0;
   self.audioEngine.startIfNecessaryCallCount = 0;
   self.sessionManager.ensureActiveCallCount = 0;
 
-  [self assertStartLikeOperationRunsGraphForSelector:@selector(resume)];
+  [self assertStartLikeOperationRunsGraphForSelector:@selector(resume:)];
 }
 
 - (void)testStartReturnsFalseWhenSessionActivationFails
@@ -438,7 +438,7 @@ struct TestAudioOutput {
   self.sessionManager.ensureActiveFailure =
       [NSError errorWithDomain:@"AudioPlayerTests" code:1 userInfo:nil];
 
-  XCTAssertFalse([player start]);
+  XCTAssertFalse([player start:nil]);
   XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 0);
   XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 0);
@@ -450,11 +450,11 @@ struct TestAudioOutput {
 {
   NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
   self.audioEngine.startIfNecessaryResult = NO;
-  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL);
+  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL, NSError **);
   NativeAudioPlayerBoolMethod operation =
       (NativeAudioPlayerBoolMethod)[player methodForSelector:selector];
 
-  XCTAssertFalse(operation(player, selector));
+  XCTAssertFalse(operation(player, selector, nil));
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
@@ -468,7 +468,7 @@ struct TestAudioOutput {
 
 - (void)testStartAndResumeDetachSourceWhenEngineFailsToStart
 {
-  [self assertFailedEngineStartDetachesSourceForSelector:@selector(start)];
+  [self assertFailedEngineStartDetachesSourceForSelector:@selector(start:)];
 
   self.audioEngine.stopIfNecessaryCallCount = 0;
   self.audioEngine.attachSourceNodeCallCount = 0;
@@ -478,7 +478,7 @@ struct TestAudioOutput {
   self.audioEngine.lastDetachedSourceNodeId = nil;
   self.sessionManager.ensureActiveCallCount = 0;
 
-  [self assertFailedEngineStartDetachesSourceForSelector:@selector(resume)];
+  [self assertFailedEngineStartDetachesSourceForSelector:@selector(resume:)];
 }
 
 - (void)testFailedPlayerStartLeavesNoSourceForFollowingRecorderStart
@@ -486,7 +486,7 @@ struct TestAudioOutput {
   NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
   self.audioEngine.startIfNecessaryResult = NO;
 
-  XCTAssertFalse([player start]);
+  XCTAssertFalse([player start:nil]);
   XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
   XCTAssertNil(player.sourceNodeId);
 

@@ -3,6 +3,7 @@
 #import <objc/runtime.h>
 
 #import <audioapi/ios/core/NativeAudioRecorder.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
@@ -127,7 +128,7 @@
   (void)onInputNotification;
 }
 
-- (bool)startIfNecessaryWithError:(NSError **)error
+- (bool)startIfNecessary:(NSError **)error
 {
   self.startIfNecessaryCallCount += 1;
   BOOL observedSessionDeactivation = self.sessionDeactivationInvalidatedGraph;
@@ -140,7 +141,8 @@
     self.state = AudioEngineStateRunning;
     self.sessionDeactivationInvalidatedGraph = NO;
   } else if (error != nil) {
-    *error = self.startIfNecessaryError;
+    // The real engine always sets the error when it fails to start.
+    *error = self.startIfNecessaryError ?: [AudioAPIError engineStartFailed:nil];
   }
 
   return self.startIfNecessaryResult;
@@ -438,7 +440,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   self.audioEngine.startIfNecessaryResult = YES;
 
   [recorder pause];
-  XCTAssertTrue([recorder resume]);
+  XCTAssertTrue([recorder resume:nil]);
 
   XCTAssertEqual(self.audioEngine.pauseIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
@@ -454,17 +456,18 @@ static void ClearFakeRecorderSharedAudioSession(void)
       voiceProcessingEnabled:NO];
 
   [recorder pause];
-  XCTAssertFalse([recorder resume]);
+  XCTAssertFalse([recorder resume:nil]);
 
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
 }
 
-- (void)testResumeReportsTheEngineErrorWhenEngineStartFails
+- (void)testResumeRelaysTheEngineErrorWhenEngineStartFails
 {
   // The code iOS returns when a non-mixable session may not go active in the background.
-  NSError *activationRefused = [NSError errorWithDomain:NSOSStatusErrorDomain
-                                                   code:560557684
-                                               userInfo:nil];
+  NSError *activationRefused = [AudioAPIError
+      sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
+                                                  code:560557684
+                                              userInfo:nil]];
   self.audioEngine.startIfNecessaryResult = NO;
   self.audioEngine.startIfNecessaryError = activationRefused;
   NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
@@ -476,22 +479,6 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertFalse([recorder resume:&error]);
 
   XCTAssertEqualObjects(error, activationRefused);
-}
-
-- (void)testResumeReportsAFallbackErrorWhenTheEngineGivesNone
-{
-  self.audioEngine.startIfNecessaryResult = NO;
-  self.audioEngine.startIfNecessaryError = nil;
-  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
-       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
-      voiceProcessingEnabled:NO];
-
-  [recorder pause];
-  NSError *error = nil;
-  XCTAssertFalse([recorder resume:&error]);
-
-  XCTAssertNotNil(error);
-  XCTAssertEqualObjects(error.domain, @"NativeAudioRecorder");
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath

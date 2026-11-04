@@ -74,10 +74,8 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 /// True only for the AVAudioEngine this object drives now: not nil, foreign or replaced ones.
 - (bool)isCurrentEngine:(AVAudioEngine *)engine;
 
-- (bool)startIfNecessary;
-/// Like startIfNecessary, and on failure sets `error` to the reason: the session activation
-/// error, the AVAudioEngine start error, or a missing live input format.
-- (bool)startIfNecessaryWithError:(NSError **)error;
+/// On false, `error` is an `AudioAPIErrorDomain` error naming the step that failed.
+- (bool)startIfNecessary:(NSError **)error;
 - (void)pauseIfNecessary;
 - (void)stopIfNecessary;
 
