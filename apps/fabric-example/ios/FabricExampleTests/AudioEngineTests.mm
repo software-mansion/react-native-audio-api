@@ -682,6 +682,75 @@
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
 }
 
+/// Attaches an input whose notifications are appended to the returned array as
+/// `@[ @(notification), error ?: NSNull ]`.
+- (NSMutableArray<NSArray *> *)attachInputRecordingNotifications {
+  NSMutableArray<NSArray *> *notifications = [NSMutableArray array];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+                   onInputNotification:^(AudioEngineInputNotification notification,
+                                         NSError *error) {
+                     @synchronized(notifications) {
+                       [notifications addObject:@[ @(notification), error ?: [NSNull null] ]];
+                     }
+                   }];
+  return notifications;
+}
+
+- (void)assertLastNotificationIn:(NSArray<NSArray *> *)notifications
+       isRecoveryFailedWithCode:(AudioAPIErrorCode)code {
+  XCTAssertGreaterThan(notifications.count, 0UL);
+  NSArray *last = notifications.lastObject;
+  XCTAssertEqualObjects(last[0], @(AudioEngineInputNotificationRecoveryFailed));
+  NSError *error = [last[1] isKindOfClass:[NSError class]] ? last[1] : nil;
+  XCTAssertEqualObjects(error.domain, AudioAPIErrorDomain);
+  XCTAssertEqual(error.code, code);
+}
+
+- (void)testOnInterruptionEndTellsTheInputWhenActivationIsRefused {
+  NSMutableArray<NSArray *> *notifications = [self attachInputRecordingNotifications];
+  self.audioEngine.state = AudioEngineStateInterrupted;
+  self.sessionManager.ensureActiveResult = NO;
+  self.sessionManager.ensureActiveFailure =
+      [NSError errorWithDomain:NSOSStatusErrorDomain code:560557684 userInfo:nil];
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeStillInterrupted);
+
+  XCTAssertEqual(notifications.count, 1UL);
+  [self assertLastNotificationIn:notifications
+        isRecoveryFailedWithCode:AudioAPIErrorCodeSessionActivationFailed];
+}
+
+- (void)testOnInterruptionEndTellsTheInputWhenTheRestartIsRefused {
+  NSMutableArray<NSArray *> *notifications = [self attachInputRecordingNotifications];
+  self.audioEngine.state = AudioEngineStateInterrupted;
+  self.audioEngine.nextCreatedEngineStartError =
+      [NSError errorWithDomain:@"AudioEngineTests" code:5 userInfo:nil];
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeStillInterrupted);
+
+  XCTAssertEqualObjects(notifications.firstObject[0],
+                        @(AudioEngineInputNotificationHardwareChanged));
+  [self assertLastNotificationIn:notifications
+        isRecoveryFailedWithCode:AudioAPIErrorCodeEngineStartFailed];
+}
+
+- (void)testRestartAudioEngineTellsTheInputWhenTheRestartIsRefused {
+  NSMutableArray<NSArray *> *notifications = [self attachInputRecordingNotifications];
+  self.audioEngine.state = AudioEngineStateRunning;
+  self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
+  self.audioEngine.nextCreatedEngineStartError =
+      [NSError errorWithDomain:@"AudioEngineTests" code:6 userInfo:nil];
+
+  [self.audioEngine restartAudioEngine];
+
+  [self assertLastNotificationIn:notifications
+        isRecoveryFailedWithCode:AudioAPIErrorCodeEngineStartFailed];
+}
+
 - (void)testOnInterruptionEndWithFailedActivationStaysInterrupted {
   [self attachSourceNodeToAudioEngine];
 
@@ -1040,7 +1109,8 @@
       attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
                 voiceProcessingEnabled:NO
                    onInputNotification:^(
-                       __unused AudioEngineInputNotification notification) {
+                       __unused AudioEngineInputNotification notification,
+                       __unused NSError *error) {
                      callbackRan = YES;
                      formatSeenDuringRebuild =
                          [self.audioEngine getLiveInputFormat];

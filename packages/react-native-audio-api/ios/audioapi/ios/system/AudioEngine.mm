@@ -21,7 +21,7 @@
 
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
-@property (nonatomic, copy) void (^onInputNotification)(AudioEngineInputNotification);
+@property (nonatomic, copy) AudioEngineInputNotificationBlock onInputNotification;
 
 @end
 
@@ -59,11 +59,13 @@
 - (void)rebuildGraphForCurrentHardware;
 - (bool)startEngine:(NSError **)error;
 - (void)settleStateAfterFailedStart;
-- (void)resumeAfterRebuild;
-- (dispatch_block_t)inputNotificationBlock:(AudioEngineInputNotification)notification;
+- (void)resumeAfterRebuild:(NSError **)error;
+- (dispatch_block_t)inputNotificationBlock:(AudioEngineInputNotification)notification
+                                     error:(NSError *)error;
 - (AudioEngineInterruptionEndOutcome)rebuildAfterInterruption:(bool)shouldResume
-                                                 readyToStart:(BOOL *)readyToStart;
-- (AudioEngineInterruptionEndOutcome)startAfterInterruption;
+                                                 readyToStart:(BOOL *)readyToStart
+                                                        error:(NSError **)error;
+- (AudioEngineInterruptionEndOutcome)startAfterInterruption:(NSError **)error;
 
 @end
 
@@ -401,7 +403,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-                     onInputNotification:(void (^)(AudioEngineInputNotification))onInputNotification
+                     onInputNotification:(AudioEngineInputNotificationBlock)onInputNotification
 {
   std::scoped_lock lock(_engineLock);
   [self createAudioEngineIfNeeded];
@@ -543,14 +545,21 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 {
   AudioEngineInterruptionEndOutcome outcome;
   BOOL readyToStart = NO;
+  NSError *recoveryError = nil;
   dispatch_block_t notifyInput = nil;
 
   {
     std::scoped_lock lock(_engineLock);
-    outcome = [self rebuildAfterInterruption:shouldResume readyToStart:&readyToStart];
+    outcome = [self rebuildAfterInterruption:shouldResume
+                                readyToStart:&readyToStart
+                                       error:&recoveryError];
 
     if (outcome == AudioEngineInterruptionEndOutcomePaused || readyToStart) {
-      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
+      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged
+                                           error:nil];
+    } else if (recoveryError != nil) {
+      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationRecoveryFailed
+                                           error:recoveryError];
     }
   }
 
@@ -563,18 +572,34 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     return outcome;
   }
 
-  std::scoped_lock lock(_engineLock);
-  return [self startAfterInterruption];
+  dispatch_block_t notifyRecoveryFailed = nil;
+
+  {
+    std::scoped_lock lock(_engineLock);
+    outcome = [self startAfterInterruption:&recoveryError];
+
+    if (recoveryError != nil) {
+      notifyRecoveryFailed = [self inputNotificationBlock:AudioEngineInputNotificationRecoveryFailed
+                                                    error:recoveryError];
+    }
+  }
+
+  if (notifyRecoveryFailed != nil) {
+    notifyRecoveryFailed();
+  }
+
+  return outcome;
 }
 
 /// @brief Rebuilds an interrupted engine for resuming, or leaves it `Paused` when policy says
 /// not to. Lock held.
 /// @discussion Sets @p readyToStart when the rebuilt engine should be started; the returned
 /// outcome is final only when it is not set.
+/// Sets @p error when the engine stays `Interrupted` because the rebuild failed.
 - (AudioEngineInterruptionEndOutcome)rebuildAfterInterruption:(bool)shouldResume
                                                  readyToStart:(BOOL *)readyToStart
+                                                        error:(NSError **)error
 {
-  NSError *error = nil;
   *readyToStart = NO;
 
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
@@ -591,8 +616,9 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     return AudioEngineInterruptionEndOutcomePaused;
   }
 
-  if (![self.sessionManager ensureActive:true error:&error]) {
-    NSLog(@"Error while activating audio session after interruption: %@", [error debugDescription]);
+  NSError *activationError = nil;
+  if (![self.sessionManager ensureActive:true error:&activationError]) {
+    [AudioAPIError fail:error with:[AudioAPIError sessionActivationFailed:activationError]];
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
@@ -600,8 +626,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self rebuildAudioEngine];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
-    NSLog(
-        @"Error while materializing the audio input node after interruption: missing live input format");
+    [AudioAPIError fail:error with:[AudioAPIError inputFormatUnavailable]];
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
@@ -614,7 +639,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 /// @brief Starts the engine rebuilt by rebuildAfterInterruption:, unless it was stopped or
 /// started meanwhile. Lock held.
-- (AudioEngineInterruptionEndOutcome)startAfterInterruption
+- (AudioEngineInterruptionEndOutcome)startAfterInterruption:(NSError **)error
 {
   if (self.state == AudioEngineState::AudioEngineStateRunning && [self.audioEngine isRunning]) {
     return AudioEngineInterruptionEndOutcomeRunning;
@@ -624,14 +649,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     return AudioEngineInterruptionEndOutcomeNoOp;
   }
 
-  NSError *error = nil;
+  NSError *startError = nil;
   [self.audioEngine prepare];
-  [self.audioEngine startAndReturnError:&error];
 
-  if (error != nil) {
-    NSLog(
-        @"Error while restarting the audio engine after interruption: %@",
-        [error debugDescription]);
+  if (![self.audioEngine startAndReturnError:&startError]) {
+    [AudioAPIError fail:error with:[AudioAPIError engineStartFailed:startError]];
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
   }
 
@@ -644,14 +666,15 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 /// @discussion Run it only after releasing `_engineLock`: the handler calls back into the engine.
 // TODO: replace the returned blocks with explicit post-lock effects in the engine refactor.
 - (dispatch_block_t)inputNotificationBlock:(AudioEngineInputNotification)notification
+                                     error:(NSError *)error
 {
-  void (^handler)(AudioEngineInputNotification) = self.inputRegistration.onInputNotification;
+  AudioEngineInputNotificationBlock handler = self.inputRegistration.onInputNotification;
 
   if (handler == nil) {
     return nil;
   }
 
-  return ^{ handler(notification); };
+  return ^{ handler(notification, error); };
 }
 
 - (AudioEngineState)getState
@@ -679,14 +702,14 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 }
 
 /// @brief Starts the rebuilt engine, unless it was paused, stopped or started meanwhile. Lock held.
-- (void)resumeAfterRebuild
+- (void)resumeAfterRebuild:(NSError **)error
 {
   if (self.state != AudioEngineState::AudioEngineStateRunning || ![self hasTrackedGraph] ||
       [self.audioEngine isRunning]) {
     return;
   }
 
-  if (![self startEngine:nil]) {
+  if (![self startEngine:error]) {
     [self settleStateAfterFailedStart];
     [self notifyOutputRecoveryFailed];
   }
@@ -859,7 +882,8 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     [self rebuildGraphForCurrentHardware];
 
     if (shouldResume) {
-      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
+      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged
+                                           error:nil];
     }
   }
 
@@ -868,9 +892,25 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     notifyInput();
   }
 
-  if (shouldResume) {
+  if (!shouldResume) {
+    return;
+  }
+
+  NSError *recoveryError = nil;
+  dispatch_block_t notifyRecoveryFailed = nil;
+
+  {
     std::scoped_lock lock(_engineLock);
-    [self resumeAfterRebuild];
+    [self resumeAfterRebuild:&recoveryError];
+
+    if (recoveryError != nil) {
+      notifyRecoveryFailed = [self inputNotificationBlock:AudioEngineInputNotificationRecoveryFailed
+                                                    error:recoveryError];
+    }
+  }
+
+  if (notifyRecoveryFailed != nil) {
+    notifyRecoveryFailed();
   }
 }
 

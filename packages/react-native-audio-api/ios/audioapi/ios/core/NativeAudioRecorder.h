@@ -16,7 +16,7 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 /// Buffers per callback for resolvedInputFormat; a callback with another count is dropped.
 @property (atomic, assign) UInt32 expectedBufferCount;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
-@property (nonatomic, copy) void (^onInputNotification)(AudioEngineInputNotification);
+@property (nonatomic, copy) AudioEngineInputNotificationBlock onInputNotification;
 
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
                voiceProcessingEnabled:(BOOL)voiceProcessingEnabled;

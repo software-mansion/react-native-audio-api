@@ -2,6 +2,7 @@
 
 #import <audioapi/core/OfflineAudioContext.h>
 #import <audioapi/ios/core/IOSAudioRecorder.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
@@ -590,6 +591,29 @@ public:
   XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
   XCTAssertTrue(recorder->isPaused());
   XCTAssertEqual(registry->dispatched.size(), 0UL);
+
+  recorder->replaceNativeRecorder(original);
+  [original cleanup];
+}
+
+- (void)testRecoveryFailedNotificationReportsThroughRecorderError {
+  auto registry = std::make_shared<RecordingEventRegistry>();
+  auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
+  NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
+  recorder->setOnErrorCallback(42);
+  NSError *activationRefused = [AudioAPIError
+      sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
+                                                  code:560557684
+                                              userInfo:nil]];
+
+  original.onInputNotification(AudioEngineInputNotificationRecoveryFailed, activationRefused);
+
+  XCTAssertEqual(registry->dispatched.size(), 1UL);
+  XCTAssertEqual(registry->dispatched[0].event, AudioEvent::RECORDER_ERROR);
+  XCTAssertEqual(registry->dispatched[0].listenerId, 42ULL);
+  NSString *reason = NSStringFromStdString(registry->dispatched[0].reason);
+  XCTAssertTrue([reason containsString:@"failed to recover the input"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
 
   recorder->replaceNativeRecorder(original);
   [original cleanup];

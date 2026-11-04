@@ -98,7 +98,9 @@ IOSAudioRecorder::IOSAudioRecorder(
                                                 voiceProcessingEnabled:options.iosVoiceProcessing];
 
   nativeRecorder_.onInputNotification =
-      ^(AudioEngineInputNotification notification) { this->handleInputNotification(notification); };
+      ^(AudioEngineInputNotification notification, NSError *error) {
+        this->handleInputNotification(notification, error);
+      };
 }
 
 Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
@@ -120,11 +122,16 @@ Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
           .maxFramesPerBuffer = static_cast<size_t>(maxFramesPerBuffer)});
 }
 
-void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification notification)
+void IOSAudioRecorder::handleInputNotification(
+    AudioEngineInputNotification notification,
+    NSError *error)
 {
   switch (notification) {
     case AudioEngineInputNotificationHardwareChanged:
       handleHardwareChange();
+      return;
+    case AudioEngineInputNotificationRecoveryFailed:
+      reportError("iOS recorder error: failed to recover the input: " + describeNativeError(error));
       return;
   }
 }

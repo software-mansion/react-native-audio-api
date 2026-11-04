@@ -117,8 +117,7 @@
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-                     onInputNotification:
-                         (void (^)(AudioEngineInputNotification))onInputNotification
+                     onInputNotification:(AudioEngineInputNotificationBlock)onInputNotification
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];

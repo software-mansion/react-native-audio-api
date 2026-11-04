@@ -57,7 +57,7 @@ class IOSAudioRecorder : public AudioRecorder {
   /// Re-points the live outputs at the format the rebuilt engine input now delivers, with the
   /// input disarmed meanwhile so no buffer in either format slips through.
   Result<NoneType, std::string> reprepareForLiveInput();
-  void handleInputNotification(AudioEngineInputNotification notification);
+  void handleInputNotification(AudioEngineInputNotification notification, NSError *error);
   void handleHardwareChange();
 
   int32_t inputChannelCount_{0};

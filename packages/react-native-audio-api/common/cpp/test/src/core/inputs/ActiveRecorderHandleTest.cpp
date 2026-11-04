@@ -1,11 +1,13 @@
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <gtest/gtest.h>
+#include <test/src/MockAudioEventHandlerRegistry.h>
 #include <atomic>
 #include <memory>
 #include <optional>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using namespace audioapi;
@@ -28,7 +30,8 @@ namespace {
 
 class FakeAudioRecorder : public AudioRecorder {
  public:
-  FakeAudioRecorder() : AudioRecorder(nullptr) {}
+  explicit FakeAudioRecorder(std::shared_ptr<IAudioEventHandlerRegistry> registry = nullptr)
+      : AudioRecorder(std::move(registry)) {}
 
   std::vector<std::string> stopPaths{"file:///tmp/recording.m4a"};
   std::atomic<int> stopCount{0};
@@ -181,6 +184,25 @@ TEST(ActiveRecorderHandleTest, RefusedResumeKeepsSessionPausedAndReturnsTheReaso
   ASSERT_TRUE(result.is_err());
   EXPECT_EQ(result.unwrap_err(), "session activation refused");
   EXPECT_TRUE(recorder->isPaused());
+  EXPECT_EQ(handle.resume(), RecorderState::Paused);
+}
+
+TEST(ActiveRecorderHandleTest, NotificationResumeReportsRefusalThroughErrorCallback) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto registry = std::make_shared<testing::StrictMock<MockAudioEventHandlerRegistry>>();
+  auto recorder = std::make_shared<FakeAudioRecorder>(registry);
+  recorder->setOnErrorCallback(7);
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
+  handle.pause();
+  recorder->resumeError = "session activation refused";
+
+  EXPECT_CALL(*registry, dispatchEvent(AudioEvent::RECORDER_ERROR, 7U, testing::_))
+      .WillOnce([](AudioEvent, uint64_t, AudioEventPayload &&payload) {
+        EXPECT_EQ(std::get<StringPayload>(payload).reason, "session activation refused");
+        return true;
+      });
+
   EXPECT_EQ(handle.resume(), RecorderState::Paused);
 }
 

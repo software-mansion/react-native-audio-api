@@ -44,7 +44,7 @@ class ActiveRecorderHandle {
   RecorderState pause(const std::shared_ptr<AudioRecorder> &expected);
 
   /// @brief Resumes a paused session; a no-op in any other state. A refused resume leaves the
-  /// session paused; the returned state shows it.
+  /// session paused, which the returned state shows, and invokes onError.
   RecorderState resume();
 
   /// @brief Resumes @p expected when it is the paused occupant, like MediaRecorder.resume().
