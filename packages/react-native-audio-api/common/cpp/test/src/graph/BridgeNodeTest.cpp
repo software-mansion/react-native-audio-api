@@ -63,7 +63,7 @@ class BridgeGraphTest : public ::testing::Test {
 
   HostVertex *addMockNode() {
     auto obj = std::make_unique<MockNode>();
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
@@ -71,7 +71,7 @@ class BridgeGraphTest : public ::testing::Test {
 
   HostVertex *addBridgeNode(AudioParam *param = nullptr) {
     auto obj = std::make_unique<BridgeNode>(param);
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
@@ -123,9 +123,9 @@ TEST_F(BridgeGraphTest, BridgeCreatesThreeNodePath) {
   audioGraph.sortAndCompact();
 
   // Verify source comes before bridge comes before owner
-  auto srcIdx = source->handle->index;
-  auto bridgeIdx = bridge->handle->index;
-  auto ownerIdx = owner->handle->index;
+  auto srcIdx = audioGraph.indexOf(*source->handle);
+  auto bridgeIdx = audioGraph.indexOf(*bridge->handle);
+  auto ownerIdx = audioGraph.indexOf(*owner->handle);
   EXPECT_LT(srcIdx, bridgeIdx);
   EXPECT_LT(bridgeIdx, ownerIdx);
 }
@@ -170,7 +170,7 @@ class BridgeIterTest : public ::testing::Test {
   DisposerImpl<kPayloadSize> disposer_{64};
 
   HostVertex *addNode(std::unique_ptr<GraphObject> obj) {
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
