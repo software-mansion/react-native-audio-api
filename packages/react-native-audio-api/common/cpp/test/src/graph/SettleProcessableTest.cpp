@@ -41,7 +41,7 @@ class SettleProcessableTest : public ::testing::Test {
   DisposerImpl<kPayloadSize> disposer_{64};
 
   HostVertex *addNode(std::unique_ptr<GraphObject> obj) {
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;

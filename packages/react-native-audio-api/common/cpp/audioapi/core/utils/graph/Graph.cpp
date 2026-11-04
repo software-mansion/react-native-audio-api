@@ -82,7 +82,7 @@ void Graph::advanceUnpulledNodes(std::size_t currentSampleFrame) {
 Graph::HostVertex *Graph::addNode(std::unique_ptr<GraphObject> audioNode) {
   // collectDisposedNodes();
 
-  auto handle = std::make_shared<NodeHandle>(0, std::move(audioNode));
+  auto handle = std::make_shared<NodeHandle>(std::move(audioNode));
   auto [hostNode, event] = hostGraph.addNode(handle);
 
   sendNodeGrowIfNeeded();

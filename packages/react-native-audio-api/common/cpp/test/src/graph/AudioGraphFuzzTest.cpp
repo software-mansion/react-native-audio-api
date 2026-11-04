@@ -19,7 +19,7 @@ namespace audioapi::utils::graph {
 ///   1. No input index >= size (dangling index)
 ///   2. No duplicate inputs
 ///   3. No cycles (Kahn's algorithm)
-///   4. handle->index matches actual position
+///   4. graph.indexOf(*handle) matches actual position
 class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
  protected:
   using MNode = MockNode;
@@ -40,23 +40,23 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   std::shared_ptr<NodeHandle> doAddNode() {
     std::unique_ptr<GraphObject> obj = std::make_unique<MNode>();
-    auto h = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto h = std::make_shared<NodeHandle>(std::move(obj));
     graph.addNode(h);
-    graph[h->index].test_node_identifier__ = nextId++;
+    graph[*h].test_node_identifier__ = nextId++;
     handles.push_back(h);
     return h;
   }
 
   void doOrphanNode(size_t handleIdx) {
     auto &h = handles[handleIdx];
-    graph[h->index].orphaned = true;
+    graph[*h].orphaned = true;
     // Don't null the handle — AudioGraph still has the node.
     // pickLive() will skip it because it checks orphaned status.
   }
 
   void doAddEdge(std::shared_ptr<NodeHandle> &from, std::shared_ptr<NodeHandle> &to) {
-    auto fromIdx = from->index;
-    auto toIdx = to->index;
+    auto fromIdx = graph.indexOf(*from);
+    auto toIdx = graph.indexOf(*to);
     // Verify at point-of-add that this edge doesn't create a duplicate
     for (auto inp : graph.pool().view(graph[toIdx].input_head)) {
       if (inp == fromIdx) {
@@ -71,7 +71,7 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
 
   void doRemoveEdge(std::shared_ptr<NodeHandle> &from, std::shared_ptr<NodeHandle> &to) {
     // Same as what HostGraph's removeEdge event does
-    graph.pool().remove(graph[to->index].input_head, from->index);
+    graph.pool().remove(graph[*to].input_head, graph.indexOf(*from));
     graph.markDirty();
   }
 
@@ -109,13 +109,13 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
     return found;
   }
 
-  /// Check that handle->index matches actual position.
+  /// Check that graph.indexOf(*handle) matches actual position.
   void assertHandleIndicesCorrect() {
     auto n = static_cast<uint32_t>(graph.size());
     for (uint32_t i = 0; i < n; i++) {
-      ASSERT_EQ(graph[i].handle->index, i)
+      ASSERT_EQ(graph.indexOf(*graph[i].handle), i)
           << "Node[" << i << "] (id=" << graph[i].test_node_identifier__
-          << ") handle->index=" << graph[i].handle->index;
+          << ") graph.indexOf(*handle)=" << graph.indexOf(*graph[i].handle);
     }
   }
 
@@ -191,7 +191,7 @@ class AudioGraphFuzzTest : public ::testing::TestWithParam<uint64_t> {
   int pickLive() {
     std::vector<int> live;
     for (int i = 0; i < static_cast<int>(handles.size()); i++) {
-      if (handles[i] && handles[i]->index < graph.size() && !graph[handles[i]->index].orphaned)
+      if (handles[i] && graph.indexOf(*handles[i]) < graph.size() && !graph[*handles[i]].orphaned)
         live.push_back(i);
     }
     if (live.empty())
@@ -273,8 +273,8 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
       int a = pickLive();
       int b = pickLive();
       if (a >= 0 && b >= 0 && a != b) {
-        auto fromIdx = handles[a]->index;
-        auto toIdx = handles[b]->index;
+        auto fromIdx = graph.indexOf(*handles[a]);
+        auto toIdx = graph.indexOf(*handles[b]);
         if (!edgeExists(fromIdx, toIdx) && !wouldCreateCycle(fromIdx, toIdx)) {
           doAddEdge(handles[a], handles[b]);
         }
@@ -284,7 +284,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
       // Remove edge
       int b = pickLive();
       if (b >= 0) {
-        auto toIdx = handles[b]->index;
+        auto toIdx = graph.indexOf(*handles[b]);
         // Collect input values into a temporary vector for random selection
         std::vector<uint32_t> inputVals;
         for (auto inp : graph.pool().view(graph[toIdx].input_head)) {
@@ -296,7 +296,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
               inputVals[std::uniform_int_distribution<size_t>(0, inputVals.size() - 1)(rng)];
           // Find the handle with this index
           for (auto &h : handles) {
-            if (h && h->index == inputIdx) {
+            if (h && graph.indexOf(*h) == inputIdx) {
               doRemoveEdge(h, handles[b]);
               break;
             }
@@ -311,7 +311,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
 
       // Null out handles for nodes that were compacted away.
       for (auto &h : handles) {
-        if (h && (h->index >= graph.size() || graph[h->index].handle != h)) {
+        if (h && (graph.indexOf(*h) >= graph.size() || graph[*h].handle != h)) {
           h = nullptr;
         }
       }
@@ -335,7 +335,7 @@ TEST_P(AudioGraphFuzzTest, RandomOps) {
   // Final process
   graph.sortAndCompact();
   for (auto &h : handles) {
-    if (h && (h->index >= graph.size() || graph[h->index].handle != h)) {
+    if (h && (graph.indexOf(*h) >= graph.size() || graph[*h].handle != h)) {
       h = nullptr;
     }
   }
