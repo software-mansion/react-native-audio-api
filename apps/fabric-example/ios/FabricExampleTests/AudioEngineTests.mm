@@ -38,6 +38,8 @@
 
 @property(nonatomic, assign) BOOL fakeRunning;
 @property(nonatomic, strong) NSError *startError;
+/// `startAndReturnError:` may return NO without setting an error.
+@property(nonatomic, assign) BOOL startFailsWithoutError;
 @property(nonatomic, assign) NSInteger attachNodeCallCount;
 @property(nonatomic, assign) NSInteger detachNodeCallCount;
 @property(nonatomic, assign) NSInteger connectCallCount;
@@ -121,8 +123,8 @@
     *outError = self.startError;
   }
 
-  self.fakeRunning = self.startError == nil;
-  return self.startError == nil;
+  self.fakeRunning = self.startError == nil && !self.startFailsWithoutError;
+  return self.fakeRunning;
 }
 
 - (void)stop {
@@ -198,6 +200,7 @@
 @property(nonatomic, strong)
     NSMutableArray<FakeAudioEngine *> *createdFakeEngines;
 @property(nonatomic, strong) NSError *nextCreatedEngineStartError;
+@property(nonatomic, assign) BOOL nextCreatedEngineStartFailsWithoutError;
 @property(nonatomic, strong) AVAudioFormat *defaultCreatedEngineInputFormat;
 @property(nonatomic, strong) AVAudioFormat *nextCreatedEngineInputFormat;
 
@@ -234,6 +237,8 @@
       [[FakeAudioEngine alloc] initWithInputFormat:inputFormat];
   engine.startError = self.nextCreatedEngineStartError;
   self.nextCreatedEngineStartError = nil;
+  engine.startFailsWithoutError = self.nextCreatedEngineStartFailsWithoutError;
+  self.nextCreatedEngineStartFailsWithoutError = NO;
   [self.createdFakeEngines addObject:engine];
   self.audioEngine = engine;
 }
@@ -681,6 +686,18 @@
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
 }
 
+- (void)testOnInterruptionEndStaysInterruptedWhenStartFailsWithoutError {
+  [self attachSourceNodeToAudioEngine];
+  self.audioEngine.state = AudioEngineStateInterrupted;
+  self.audioEngine.nextCreatedEngineStartFailsWithoutError = YES;
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeStillInterrupted);
+
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
+}
+
 - (void)testOnInterruptionEndWithFailedActivationStaysInterrupted {
   [self attachSourceNodeToAudioEngine];
 
@@ -856,6 +873,16 @@
   XCTAssertFalse([self.audioEngine startIfNecessary]);
   XCTAssertEqual(fakeEngine.startCallCount, 1);
   XCTAssertNotEqual(self.audioEngine.state, AudioEngineStateRunning);
+}
+
+- (void)testStartIfNecessaryReturnsFalseWhenEngineStartFailsWithoutError {
+  [self attachSourceNodeToAudioEngine];
+  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
+  fakeEngine.startFailsWithoutError = YES;
+
+  XCTAssertFalse([self.audioEngine startIfNecessary]);
+  XCTAssertEqual(fakeEngine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
 }
 
 - (void)testPauseIfNecessaryNoOpsWhenAlreadyPaused {
