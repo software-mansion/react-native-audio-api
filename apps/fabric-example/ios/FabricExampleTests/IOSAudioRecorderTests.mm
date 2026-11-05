@@ -84,7 +84,7 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
       2, 512, 44100.0f, std::make_shared<NullAudioEventHandlerRegistry>());
   auto adapterNode = std::make_unique<RecorderAdapterNode>(fixture.context);
   fixture.handle =
-      std::make_shared<utils::graph::NodeHandle>(0, std::move(adapterNode));
+      std::make_shared<utils::graph::NodeHandle>(std::move(adapterNode));
   return fixture;
 }
 
@@ -504,7 +504,7 @@ public:
 }
 
 - (void)testConnectWhileIdleTracksIntentWithoutLiveConnection {
-  auto adapter = std::make_shared<utils::graph::NodeHandle>(0, nullptr);
+  auto adapter = std::make_shared<utils::graph::NodeHandle>(nullptr);
 
   _recorder->connect(adapter);
 
