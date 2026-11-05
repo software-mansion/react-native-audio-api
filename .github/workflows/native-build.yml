@@ -1,0 +1,184 @@
+name: Native build
+
+# Builds example app for Android and iOS.
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+    types:
+      - checks_requested
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    name: Install dependencies
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.key.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Compute cache key
+        id: key
+        run: >
+          echo "value=node-modules-xplat-$(node --version)-${{ hashFiles('yarn.lock', '.yarnrc.yml', '**/package.json', '!**/node_modules/**') }}"
+          >> "$GITHUB_OUTPUT"
+
+      - name: Check for cached node_modules
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          lookup-only: true
+          enableCrossOsArchive: true
+          key: ${{ steps.key.outputs.value }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            .yarn/install-state.gz
+
+      # The tree is unpacked on macOS too, so fetch the darwin variants also
+      - name: Install dependencies for linux and darwin
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          yarn config set supportedArchitectures --json '{"os":["current","linux","darwin"],"cpu":["current","x64","arm64"]}'
+          yarn install --immutable
+
+      - name: Save node_modules
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          enableCrossOsArchive: true
+          key: ${{ steps.key.outputs.value }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            .yarn/install-state.gz
+
+  android:
+    name: Build Android app
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+          key: ${{ needs.install.outputs.cache-key }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            .yarn/install-state.gz
+
+      - name: Cache prebuilt binaries
+        uses: actions/cache@v4
+        with:
+          key: prebuilt-android-${{ hashFiles('packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh') }}
+          path: |
+            packages/react-native-audio-api/common/cpp/audioapi/external/android
+            packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg
+            packages/react-native-audio-api/android/src/main/jniLibs
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Assemble debug APK
+        working-directory: apps/fabric-example/android
+        run: ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --build-cache
+
+  ios:
+    name: Build iOS app
+    needs: install
+    runs-on: macos-26
+    env:
+      USE_CCACHE: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/checkout-with-node
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+          key: ${{ needs.install.outputs.cache-key }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            .yarn/install-state.gz
+
+      - name: Cache prebuilt binaries
+        uses: actions/cache@v4
+        with:
+          key: prebuilt-ios-${{ hashFiles('packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh') }}
+          path: |
+            packages/react-native-audio-api/common/cpp/audioapi/external/xcframeworks
+            packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: apps/fabric-example
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ios-${{ github.job }}
+          max-size: 2G
+
+      - name: Cache Pods
+        uses: actions/cache@v4
+        with:
+          key: pods-${{ hashFiles('apps/fabric-example/ios/Podfile.lock', 'packages/react-native-audio-api/RNAudioAPI.podspec') }}
+          restore-keys: pods-
+          path: apps/fabric-example/ios/Pods
+
+      - name: Install Pods
+        working-directory: apps/fabric-example/ios
+        run: bundle exec pod install
+
+      - name: Build for simulator
+        working-directory: apps/fabric-example/ios
+        run: >
+          set -o pipefail &&
+          xcodebuild build
+          -workspace FabricExample.xcworkspace
+          -scheme FabricExample
+          -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build
+          CODE_SIGNING_ALLOWED=NO
+          -quiet

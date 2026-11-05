@@ -51,7 +51,7 @@ post_install do |installer|
     installer,
     RN_RELATIVE_PATH,
     :mac_catalyst_enabled => false,
-    # :ccache_enabled => true
+    :ccache_enabled => ENV['USE_CCACHE'] == '1'
   )
 
   # TODO: Remove this loop once a `react-native-svg` release includes
