@@ -1,4 +1,4 @@
-name: Native build
+name: Build example app
 
 # Builds example app for Android and iOS.
 
@@ -17,9 +17,57 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Pull requests build only the platforms their changes can affect
+  changes:
+    name: Detect native changes
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      android: ${{ github.event_name != 'pull_request' || steps.filter.outputs.common == 'true' || steps.filter.outputs.android == 'true' }}
+      ios: ${{ github.event_name != 'pull_request' || steps.filter.outputs.common == 'true' || steps.filter.outputs.ios == 'true' }}
+    steps:
+      - name: Path filter
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            common:
+              - 'packages/react-native-audio-api/common/**'
+              - 'packages/react-native-audio-api/src/specs/**'
+              - 'packages/react-native-audio-api/scripts/**'
+              - 'packages/react-native-audio-api/package.json'
+              - 'packages/react-native-audio-worklets/common/**'
+              - 'packages/react-native-audio-worklets/src/specs/**'
+              - 'packages/react-native-audio-worklets/package.json'
+              - 'apps/common-app/package.json'
+              - 'apps/fabric-example/package.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.nvmrc'
+              - '.github/workflows/native-build.yml'
+              - '.github/actions/checkout-with-node/**'
+            android:
+              - 'packages/react-native-audio-api/android/**'
+              - 'packages/react-native-audio-worklets/android/**'
+              - 'packages/react-native-audio-worklets/CMakeLists.txt'
+              - 'apps/fabric-example/android/**'
+            ios:
+              - 'packages/react-native-audio-api/ios/**'
+              - 'packages/react-native-audio-api/RNAudioAPI.podspec'
+              - 'packages/react-native-audio-worklets/ios/**'
+              - 'packages/react-native-audio-worklets/RNAudioWorklets.podspec'
+              - 'apps/fabric-example/ios/**'
+              - 'apps/fabric-example/Gemfile'
+              - 'apps/fabric-example/Gemfile.lock'
+
   install:
     name: Install dependencies
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: changes
+    if: needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true'
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.key.outputs.value }}
@@ -70,7 +118,8 @@ jobs:
 
   android:
     name: Build Android app
-    needs: install
+    needs: [changes, install]
+    if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -115,7 +164,8 @@ jobs:
 
   ios:
     name: Build iOS app
-    needs: install
+    needs: [changes, install]
+    if: needs.changes.outputs.ios == 'true'
     runs-on: macos-26
     env:
       USE_CCACHE: '1'
