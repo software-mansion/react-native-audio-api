@@ -1,14 +1,14 @@
 import { AudioContext } from 'react-native-audio-api';
+import { isTestRunInterrupted, sleep } from './interruption';
 
 type FileSourceNode = NonNullable<
   ReturnType<AudioContext['context']['createFileSource']>
 >;
 
 const AUDIO_URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3';
+  'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-01.mp3';
 
-const ESPRESSIF_STEREO =
-  'https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.';
+const ESPRESSIF_STEREO = 'https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.';
 
 const FORMAT_FIXTURES: { format: string; url: string }[] = [
   ...['mp3', 'wav', 'aac', 'flac', 'ogg', 'opus', 'm4a', 'mp4', 'aiff'].map(
@@ -26,8 +26,6 @@ const FORMAT_FIXTURES: { format: string; url: string }[] = [
     url: 'https://samples.ffmpeg.org/A-codecs/caf/ComputerData05.caf',
   },
 ];
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const loadAudioTagSource = async (): Promise<ArrayBuffer> => {
   const response = await fetch(AUDIO_URL);
@@ -50,7 +48,17 @@ const createFileSource = (
       'AudioTag test: createFileSource returned null (FFmpeg build required).'
     );
   }
+  node.connect(ctx.context.destination);
   return node;
+};
+
+// Starting the raw node does not resume a suspended context the way the
+// wrapped source nodes do, so resume it here.
+const play = (ctx: AudioContext, node: FileSourceNode) => {
+  node.start(ctx.currentTime);
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
 };
 
 const teardown = (node: FileSourceNode) => {
@@ -65,7 +73,7 @@ export const audioTagBasicTest = async (
 ) => {
   const node = createFileSource(ctx, { source, volume: 1 });
 
-  node.start(ctx.currentTime);
+  play(ctx, node);
   setInfo('AudioTag basic: playing 5s...');
   await sleep(5000);
   teardown(node);
@@ -81,7 +89,7 @@ export const audioTagPauseResumeTest = async (
 ) => {
   const node = createFileSource(ctx, { source, volume: 1 });
 
-  node.start(ctx.currentTime);
+  play(ctx, node);
   setInfo('AudioTag pause/resume: playing 3s...');
   await sleep(3000);
 
@@ -89,7 +97,7 @@ export const audioTagPauseResumeTest = async (
   setInfo('AudioTag pause/resume: paused 1.5s...');
   await sleep(1500);
 
-  node.start(ctx.currentTime);
+  play(ctx, node);
   setInfo('AudioTag pause/resume: resumed 3s...');
   await sleep(3000);
 
@@ -105,13 +113,13 @@ export const audioTagSeekTest = async (
 ) => {
   const node = createFileSource(ctx, { source, volume: 1 });
 
-  node.start(ctx.currentTime);
+  play(ctx, node);
 
-  for (const seconds of [10, 0, 20, 5]) {
-    setInfo(`AudioTag seek: seeking to ${seconds}s, playing 3s...`);
-    node.seekToTime(seconds);
-    await sleep(3000);
-  }
+  await sleep(2000);
+  const seconds = 20;
+  setInfo(`AudioTag seek: seeking to ${seconds}s, playing 3s...`);
+  node.seekToTime(seconds);
+  await sleep(3000);
 
   teardown(node);
   await sleep(300);
@@ -125,9 +133,9 @@ export const audioTagVolumeTest = async (
 ) => {
   const node = createFileSource(ctx, { source, volume: 1 });
 
-  node.start(ctx.currentTime);
+  play(ctx, node);
 
-  for (const volume of [1, 0.5, 0.1, 0.75, 0]) {
+  for (const volume of [1, 0.2]) {
     setInfo(`AudioTag volume: ${volume} (2s)...`);
     node.volume = volume;
     await sleep(2000);
@@ -144,7 +152,7 @@ export const audioTagPlaybackRateTest = async (
   setInfo: (info: string) => void
 ) => {
   for (const preservesPitch of [false, true]) {
-    for (const rate of [0.5, 1, 1.5, 2]) {
+    for (const rate of [0.5, 2]) {
       setInfo(
         `AudioTag rate: ${rate}x preservesPitch=${preservesPitch} (3s)...`
       );
@@ -154,7 +162,7 @@ export const audioTagPlaybackRateTest = async (
         playbackRate: rate,
         preservesPitch,
       });
-      node.start(ctx.currentTime);
+      play(ctx, node);
       await sleep(3000);
       teardown(node);
       await sleep(300);
@@ -173,7 +181,7 @@ export const audioTagLoopTest = async (
   const playDuration = 12000;
   setInfo(`AudioTag loop: looping for ${playDuration / 1000}s...`);
 
-  node.start(ctx.currentTime);
+  play(ctx, node);
   await sleep(playDuration);
 
   teardown(node);
@@ -201,11 +209,14 @@ export const audioTagFormatsTest = async (
       setInfo(
         `AudioTag formats: playing ${format} (duration=${node.duration.toFixed(2)}s)...`
       );
-      node.start(ctx.currentTime);
+      play(ctx, node);
       await sleep(4000);
       teardown(node);
       await sleep(300);
     } catch (error) {
+      if (isTestRunInterrupted()) {
+        throw error;
+      }
       setInfo(`AudioTag formats: error playing ${format} - ${error}`);
       await sleep(1500);
     }

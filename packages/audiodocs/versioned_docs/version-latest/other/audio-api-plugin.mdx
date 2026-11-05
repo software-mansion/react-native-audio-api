@@ -11,9 +11,6 @@ sidebar_position: 3
 The Audio API Expo plugin allows to set certain permissions and
 background audio related settings in developer friendly way.
 
-<details>
-<summary>Type definitions</summary>
-
 ```typescript
 interface Options {
   iosMicrophonePermission?: string;
@@ -22,10 +19,10 @@ interface Options {
   androidForegroundService: boolean;
   androidFSTypes: string[];
   androidFSStopWithTask: boolean;
+  enableFFmpeg?: boolean;
+  disableStaticExternalLibs?: boolean;
 }
 ```
-
-</details>
 
 ## How to use it?
 
@@ -86,19 +83,19 @@ export default {
 
 ## Options
 
-### iosBackgroundMode
+### `iosBackgroundMode`
 
 Defaults to `true`.
 
-Allows app to play audio in the background on iOS.
+Allows the app to play audio in the background on iOS. Corresponds to adding `audio` to [`UIBackgroundModes`](https://developer.apple.com/documentation/bundleresources/information-property-list/uibackgroundmodes).
 
-### iosMicrophonePermission
+### `iosMicrophonePermission`
 
 Defaults to `undefined`.
 
 Allows to specify a custom microphone permission message for iOS. If not specified it will be omitted in the `Info.plist`.
 
-### androidPermissions
+### `androidPermissions`
 
 Defaults to
 
@@ -111,50 +108,59 @@ Defaults to
 
 Allows to specify certain android app permissions to apply.
 
-##### Permissions:
+Permissions:
 
-- `android.permission.POST_NOTIFICATIONS` - Required by Foreground Services on Android 13+ to post notifications.
+- `android.permission.POST_NOTIFICATIONS` - required by Foreground Services on Android 13+ to post notifications.
+- `android.permission.FOREGROUND_SERVICE` - allows the app to run a Foreground Service.
+- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - allows the app to run a Foreground Service specifically for continuous audio or video playback.
+- `android.permission.FOREGROUND_SERVICE_MICROPHONE` - allows the app to run a Foreground Service specifically for continuous microphone capture from the background.
+- `android.permission.MODIFY_AUDIO_SETTINGS` - allows the app to modify global audio settings.
+- `android.permission.INTERNET` - allows applications to open network sockets.
+- `android.permission.RECORD_AUDIO` - allows an application to record audio.
 
-- `android.permission.FOREGROUND_SERVICE` - Allows an app to run a Foreground Service
+### `androidForegroundService`
 
-- `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` - Allows an app to run a Foreground Service specifically for continues audio or video playback.
+Defaults to `true`.
 
-- `android.permission.FOREGROUND_SERVICE_MICROPHONE` - Allows an app to run a Foreground Service specifically for continues microphone capture from the background.
+Allows the app to use Foreground Service options specified by the user. It permits the app to play audio in the background on Android.
 
-- `android.permission.MODIFY_AUDIO_SETTINGS` - Allows an app to modify global audio settings.
+### `androidFSTypes`
 
-- `android.permission.INTERNET` - Allows applications to open network sockets.
+Allows the user to specify the appropriate Foreground Service type.
 
-- `android.permission.RECORD_AUDIO` - Allows an application to record audio.
+Types description:
 
-### androidForegroundService
+- `mediaPlayback` - continue audio or video playback from the background.
+- `microphone` - continue microphone capture from the background, such as voice recorders or communication apps.
 
-Defaults to true
+Runtime prerequisites:
 
-Allows app to use Foreground Service options specified by user,
-it permits app to play audio in the background on Android.
+- Request and be granted the RECORD_AUDIO runtime permission.
 
-### androidFSTypes
+### `androidFSStopWithTask`
 
-Allows user to specify appropriate Foreground Service type.
-
-##### Types description
-
-- `mediaPlayback` - Continue audio or video playback from the background.
-
-- `microphone` - Continue microphone capture from the background, such as voice recorders or communication apps.
-
-  Runtime prerequisites:
-    - Request and be granted the RECORD_AUDIO runtime permission.
-
-### androidFSStopWithTask
-
-Defaults to true
+Defaults to `true`.
 
 Controls the `android:stopWithTask` attribute of the Foreground Service injected by the plugin. With the default value (`true`), the service stops when the user swipes the app away from the recents screen.
 
 Set it to `false` to emit `android:stopWithTask="false"` on the service entry — on task removal the service keeps running, which keeps the app process (and e.g. an in-progress recording) alive.
 
 :::info
-The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](/docs/inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
+The Foreground Service only exists while a library notification is shown, so this option has an effect only if a notification (e.g. via `RecordingNotificationManager.show()`) is displayed before the user closes the app. See [keeping the recording alive when the app is closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed) for the full set of requirements.
+:::
+
+### `enableFFmpeg`
+
+Defaults to `false`.
+
+Links the prebuilt FFmpeg libraries into the app, which enables remote URL streaming, HLS (`.m3u8`) playback and remote URL metadata. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx) for what FFmpeg adds and what it costs.
+
+### `disableStaticExternalLibs`
+
+Defaults to `false`.
+
+Removes the bundled Opus / Ogg / Vorbis static libraries. See [Prebuilt libraries support](./prebuilt-libraries-support.mdx#disabling-other-external-libraries).
+
+:::note
+`expo prebuild` writes `enableFFmpeg` and `disableStaticExternalLibs` into the `react-native-audio-api` section of the app's `package.json`, which every build (CocoaPods, Swift Package Manager, Gradle) reads. The one given here overwrites it on every prebuild, so keep each option in one place only.
 :::

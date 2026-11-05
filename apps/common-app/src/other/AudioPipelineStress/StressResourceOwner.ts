@@ -45,19 +45,13 @@ export default class StressResourceOwner {
       );
     }
 
-    const fileOutputResult = recorder.enableFileOutput({
+    recorder.enableFileOutput({
       channelCount: 1,
       directory: FileDirectory.Cache,
       fileName: 'audio-pipeline-stress',
       format: FileFormat.M4A,
       subDirectory: 'AudioPipelineStress',
     });
-
-    if (fileOutputResult.status === 'error') {
-      throw new Error(
-        `Failed to enable recorder file output: ${fileOutputResult.message}`
-      );
-    }
 
     recorder.onError((event) => {
       this.lastRecorderError = event.message;

@@ -126,7 +126,7 @@ TEST(AudioRecorderOutputStateTest, CallbackIsRequestedUntilAStreamPreparesIt) {
 
 TEST(AudioRecorderOutputStateTest, AConnectionWhoseAdapterNodeIsGoneFailsToPrepare) {
   IdleAudioRecorder recorder;
-  recorder.connect(std::make_shared<utils::graph::NodeHandle>(0, nullptr));
+  recorder.connect(std::make_shared<utils::graph::NodeHandle>(nullptr));
   ASSERT_TRUE(recorder.wantsConnection());
 
   auto result = recorder.prepareOutputsLocked(
