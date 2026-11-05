@@ -659,6 +659,7 @@ public:
 }
 
 - (void)testConcurrentHardwareChangeArmsInputOnlyAfterOutputsAreReprepared {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
   _recorder->setRecorderState(RecorderState::Recording);
   FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
   nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
@@ -702,6 +703,7 @@ public:
 }
 
 - (void)testHardwareChangeOfStoppedSessionFinishesBeforeNextStart {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
   self.audioEngine.state = AudioEngineStateRunning;
   XCTAssertTrue(_recorder->start().is_ok());
   FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;

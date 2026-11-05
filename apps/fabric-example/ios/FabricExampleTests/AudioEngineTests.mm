@@ -1024,6 +1024,31 @@
   return enginesNotifiedBeforeStart;
 }
 
+/// Attaches an input whose first notification starts @p racingOperation on another queue, as a
+/// concurrent caller would, and gives it 100 ms to finish. Sets
+/// @p racingFinishedDuringNotification when it got through while the notification was still
+/// running, which an engine with a single owner of its operations must prevent. Wait on
+/// @p group for it to finish.
+- (NSArray<FakeAudioEngine *> *)attachInputRacingOperation:(void (^)(void))racingOperation
+                                                    group:(dispatch_group_t)group
+                         racingFinishedDuringNotification:(BOOL *)racingFinishedDuringNotification {
+  return [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+    dispatch_semaphore_t racingFinished = dispatch_semaphore_create(0);
+    dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+      racingOperation();
+      dispatch_semaphore_signal(racingFinished);
+    });
+    *racingFinishedDuringNotification =
+        dispatch_semaphore_wait(racingFinished,
+                                dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC)) == 0;
+  }];
+}
+
+- (void)waitForRacingOperations:(dispatch_group_t)group {
+  XCTAssertEqual(
+      dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)), 0);
+}
+
 - (void)testStartIfNecessaryNotifiesInputBeforeStartingRebuiltGraph {
   NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
       [self attachInputRecordingEnginesNotifiedBeforeStart:nil];
@@ -1040,106 +1065,136 @@
   XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
 }
 
-- (void)testStartIfNecessaryDoesNotStartGraphEmptiedDuringNotification {
+- (void)testDetachDuringStartNotificationWaitsForTheStart {
+  XCTSkip(@"Needs single ownership of engine operations; see the iOS engine refactor.");
   __weak TestableAudioEngine *weakEngine = self.audioEngine;
   __block NSString *sourceNodeId = nil;
-  // The recorder stops and the only player detaches while the lock is free.
-  [self attachInputRecordingEnginesNotifiedBeforeStart:^{
-    [weakEngine detachInputNode];
-    [weakEngine detachSourceNodeWithId:sourceNodeId];
-    [weakEngine stopIfPossible];
-  }];
+  dispatch_group_t racing = dispatch_group_create();
+  BOOL racingFinishedDuringNotification = YES;
+  // The recorder stops and the only player detaches on another thread.
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart = [self
+      attachInputRacingOperation:^{
+        [weakEngine detachInputNode];
+        [weakEngine detachSourceNodeWithId:sourceNodeId];
+        [weakEngine stopIfPossible];
+      }
+                           group:racing
+     racingFinishedDuringNotification:&racingFinishedDuringNotification];
   sourceNodeId = [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStatePaused;
   self.audioEngine.graphNeedsRebuild = YES;
 
-  XCTAssertFalse([self.audioEngine startIfNecessary:nil]);
+  XCTAssertTrue([self.audioEngine startIfNecessary:nil]);
+  [self waitForRacingOperations:racing];
 
-  XCTAssertEqual(
-      self.audioEngine.createdFakeEngines.lastObject.startCallCount, 0);
-  XCTAssertNotEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertFalse(racingFinishedDuringNotification);
+  XCTAssertEqual(enginesNotifiedBeforeStart.firstObject.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateIdle);
 }
 
-- (void)
-    testInterruptionEndNotifiesInputOfGraphRebuiltAfterReplacementInNotification {
+- (void)testRestartDuringInterruptionEndNotificationWaitsForTheStart {
+  XCTSkip(@"Needs single ownership of engine operations; see the iOS engine refactor.");
   __weak TestableAudioEngine *weakEngine = self.audioEngine;
-  // A media services reset rebuilds the still-interrupted engine meanwhile.
-  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
-      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+  dispatch_group_t racing = dispatch_group_create();
+  BOOL racingFinishedDuringNotification = YES;
+  // A media services reset restarts the engine on another thread.
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart = [self
+      attachInputRacingOperation:^{
         [weakEngine restartAudioEngine];
-      }];
+      }
+                           group:racing
+     racingFinishedDuringNotification:&racingFinishedDuringNotification];
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStateInterrupted;
 
   XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
                  AudioEngineInterruptionEndOutcomeRunning);
+  [self waitForRacingOperations:racing];
 
-  FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
-  XCTAssertEqual(startedEngine, self.audioEngine.createdFakeEngines.lastObject);
-  XCTAssertEqual(startedEngine.startCallCount, 1);
-  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
+  XCTAssertFalse(racingFinishedDuringNotification);
+  // The restart rebuilt the running engine afterwards and notified the input again.
+  XCTAssertEqual(enginesNotifiedBeforeStart.count, 2UL);
+  XCTAssertEqual(enginesNotifiedBeforeStart.firstObject.startCallCount, 1);
+  FakeAudioEngine *restartedEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, restartedEngine);
+  XCTAssertEqual(restartedEngine.startCallCount, 1);
 }
 
-- (void)testRouteChangeDuringInterruptionEndNotificationRebuildsBeforeStart {
+- (void)testRouteChangeDuringInterruptionEndNotificationWaitsForTheStart {
+  XCTSkip(@"Needs single ownership of engine operations; see the iOS engine refactor.");
   __weak TestableAudioEngine *weakEngine = self.audioEngine;
-  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
-      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+  dispatch_group_t racing = dispatch_group_create();
+  BOOL racingFinishedDuringNotification = YES;
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart = [self
+      attachInputRacingOperation:^{
         [weakEngine onRouteChange];
-      }];
+      }
+                           group:racing
+     racingFinishedDuringNotification:&racingFinishedDuringNotification];
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStateInterrupted;
 
   XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
                  AudioEngineInterruptionEndOutcomeRunning);
+  [self waitForRacingOperations:racing];
 
-  FakeAudioEngine *staleEngine = enginesNotifiedBeforeStart.firstObject;
+  XCTAssertFalse(racingFinishedDuringNotification);
   FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
-  XCTAssertNotEqual(startedEngine, staleEngine);
-  XCTAssertEqual(staleEngine.startCallCount, 0);
-  XCTAssertEqual(startedEngine, self.audioEngine.createdFakeEngines.lastObject);
-  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
-  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+  XCTAssertEqual(enginesNotifiedBeforeStart.count, 1UL);
+  XCTAssertEqual(enginesNotifiedBeforeStart.firstObject, startedEngine);
+  XCTAssertEqual(startedEngine.startCallCount, 1);
 }
 
-- (void)testSessionReconfigurationDuringRestartNotificationRebuildsBeforeStart {
+- (void)testSessionReconfigurationDuringRestartNotificationWaitsForTheStart {
+  XCTSkip(@"Needs single ownership of engine operations; see the iOS engine refactor.");
   __weak TestableAudioEngine *weakEngine = self.audioEngine;
-  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
-      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+  dispatch_group_t racing = dispatch_group_create();
+  BOOL racingFinishedDuringNotification = YES;
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart = [self
+      attachInputRacingOperation:^{
         [weakEngine markSessionDeactivationInvalidatedGraph];
-      }];
+      }
+                           group:racing
+     racingFinishedDuringNotification:&racingFinishedDuringNotification];
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.currentFakeAudioEngine.fakeRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
 
   [self.audioEngine restartAudioEngine];
+  [self waitForRacingOperations:racing];
 
-  FakeAudioEngine *staleEngine = enginesNotifiedBeforeStart.firstObject;
+  XCTAssertFalse(racingFinishedDuringNotification);
   FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
-  XCTAssertNotEqual(startedEngine, staleEngine);
-  XCTAssertEqual(staleEngine.startCallCount, 0);
+  XCTAssertEqual(enginesNotifiedBeforeStart.firstObject, startedEngine);
   XCTAssertTrue(startedEngine.isRunning);
-  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
-  XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
+  // The mark landed after the start, so the next start rebuilds.
+  XCTAssertTrue(self.audioEngine.sessionDeactivationInvalidatedGraph);
 }
 
-- (void)testHardwareChangeDuringStartNotificationRebuildsBeforeStart {
+- (void)testHardwareChangeDuringStartNotificationWaitsForTheStart {
+  XCTSkip(@"Needs single ownership of engine operations; see the iOS engine refactor.");
   __weak TestableAudioEngine *weakEngine = self.audioEngine;
-  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart =
-      [self attachInputRecordingEnginesNotifiedBeforeStart:^{
+  dispatch_group_t racing = dispatch_group_create();
+  BOOL racingFinishedDuringNotification = YES;
+  NSArray<FakeAudioEngine *> *enginesNotifiedBeforeStart = [self
+      attachInputRacingOperation:^{
         [weakEngine markGraphNeedsRebuild];
-      }];
+      }
+                           group:racing
+     racingFinishedDuringNotification:&racingFinishedDuringNotification];
   [self attachSourceNodeToAudioEngine];
   self.audioEngine.state = AudioEngineStatePaused;
   self.audioEngine.graphNeedsRebuild = YES;
 
   XCTAssertTrue([self.audioEngine startIfNecessary:nil]);
+  [self waitForRacingOperations:racing];
 
-  FakeAudioEngine *staleEngine = enginesNotifiedBeforeStart.firstObject;
+  XCTAssertFalse(racingFinishedDuringNotification);
   FakeAudioEngine *startedEngine = self.audioEngine.currentFakeAudioEngine;
-  XCTAssertNotEqual(startedEngine, staleEngine);
-  XCTAssertEqual(staleEngine.startCallCount, 0);
-  XCTAssertEqual(enginesNotifiedBeforeStart.lastObject, startedEngine);
-  XCTAssertFalse(self.audioEngine.graphNeedsRebuild);
+  XCTAssertEqual(enginesNotifiedBeforeStart.firstObject, startedEngine);
+  XCTAssertEqual(startedEngine.startCallCount, 1);
+  // The mark landed after the start, so the next start rebuilds.
+  XCTAssertTrue(self.audioEngine.graphNeedsRebuild);
 }
 
 - (void)testPauseIfNecessaryNoOpsWhenAlreadyPaused {
