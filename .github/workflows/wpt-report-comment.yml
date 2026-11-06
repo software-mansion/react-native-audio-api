@@ -65,7 +65,13 @@ jobs:
               return;
             }
 
-            const report = readPayloadFile('report.md') ??
+            const reportFile = readPayloadFile('report.md');
+            if (reportFile === null && run.conclusion === 'success') {
+              core.info('WPT was skipped (no engine changes); skipping the WPT comment.');
+              return;
+            }
+
+            const report = reportFile ??
               '## WPT non-regression comparison\n\n**ERROR** — the run produced no report.';
 
             const body = [

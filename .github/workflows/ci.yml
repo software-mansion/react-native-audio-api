@@ -9,13 +9,51 @@ on:
       - checks_requested
 
 jobs:
+  changes:
+    name: Detect changes
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      audio-api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.audio-api == 'true' }}
+      worklets: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.audio-api == 'true' || steps.filter.outputs.worklets == 'true' }}
+    steps:
+      - name: Path filter
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - 'package.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.yarn/**'
+              - '.nvmrc'
+              - 'tsconfig.json'
+              - '.eslintrc.js'
+              - 'prettier.config.js'
+              - '.github/actions/**'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/ci-check.yml'
+            audio-api:
+              - 'packages/react-native-audio-api/**'
+            worklets:
+              - 'packages/react-native-audio-worklets/**'
+
   format-check:
+    needs: changes
+    if: needs.changes.outputs.audio-api == 'true' || needs.changes.outputs.worklets == 'true'
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Format check
       run: yarn format:check
 
   lint-audio-api:
+    needs: changes
+    if: needs.changes.outputs.audio-api == 'true'
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Lint and typecheck (react-native-audio-api)
@@ -24,6 +62,8 @@ jobs:
         yarn workspace react-native-audio-api run typecheck
 
   lint-worklets:
+    needs: changes
+    if: needs.changes.outputs.worklets == 'true'
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Lint and typecheck (react-native-audio-worklets)
@@ -33,18 +73,24 @@ jobs:
         yarn workspace react-native-audio-worklets run typecheck
 
   check-audio-enum-sync:
+    needs: changes
+    if: needs.changes.outputs.audio-api == 'true'
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Check enum sync
       run: yarn check-audio-enum-sync
 
   build-audio-api:
+    needs: changes
+    if: needs.changes.outputs.audio-api == 'true'
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Build (react-native-audio-api)
       run: yarn workspace react-native-audio-api build
 
   build-worklets:
+    needs: changes
+    if: needs.changes.outputs.worklets == 'true'
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Build (react-native-audio-worklets)
