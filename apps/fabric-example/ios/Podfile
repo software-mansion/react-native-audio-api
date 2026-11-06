@@ -13,10 +13,13 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-# Relative path from ios/ to the hoisted react-native package. Must stay relative:
-# react_native_post_install joins it as File.join("${PODS_ROOT}", "..", path), and an
-# absolute path there produces a broken REACT_NATIVE_PATH in the Pods project.
-RN_RELATIVE_PATH = '../../../node_modules/react-native'
+# Relative path from ios/ to the react-native package, resolved with node so it holds for
+# hoisted and isolated node_modules alike. Must stay relative: react_native_post_install
+# joins it as File.join("${PODS_ROOT}", "..", path), and an absolute path there produces a
+# broken REACT_NATIVE_PATH in the Pods project.
+RN_RELATIVE_PATH = Pathname.new(File.dirname(Pod::Executable.execute_command('node', ['-p',
+  'require.resolve("react-native/package.json", {paths: [process.argv[1]]})', __dir__]).strip))
+  .relative_path_from(Pathname.new(__dir__)).to_s
 
 target 'FabricExample' do
   config = use_native_modules!

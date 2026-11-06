@@ -138,7 +138,6 @@
         "typescript",
         {
           "project": "tsconfig.json",
-          "tsc": "../../node_modules/.bin/tsc",
           "esm": true,
           "commonjs": true
         }
