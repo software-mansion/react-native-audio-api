@@ -42,16 +42,15 @@ NSErrorDomain const AudioAPIErrorDomain = @"AudioAPIErrorDomain";
 
 + (NSString *)describe:(NSError *)error
 {
-  NSMutableArray<NSString *> *descriptions = [NSMutableArray array];
-
+  NSMutableString *description = [NSMutableString string];
   for (NSError *cause = error; cause != nil; cause = cause.underlyingErrors.firstObject) {
-    [descriptions addObject:[NSString stringWithFormat:@"%@ %@: %@",
-                                                       cause.domain,
-                                                       @(cause.code),
-                                                       cause.localizedDescription]];
+    if (description.length > 0) {
+      [description appendString:@" <- "];
+    }
+    [description
+        appendFormat:@"%@ %@: %@", cause.domain, @(cause.code), cause.localizedDescription];
   }
-
-  return [descriptions componentsJoinedByString:@" <- "];
+  return description;
 }
 
 + (NSError *)createErrorWithCode:(AudioAPIErrorCode)code systemError:(NSError *)systemError
