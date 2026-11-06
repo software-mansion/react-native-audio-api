@@ -1,38 +1,28 @@
+/** Proportions of the radial visualizer, as fractions of the square canvas. */
 export interface VisualizerLayout {
   cx: number;
   cy: number;
-  innerRadius: number;
-  outerRadius: number;
-  circleRadius: number;
+  /** Where the frequency bars start. */
+  barRadius: number;
+  /** Length of a bar at full magnitude. */
+  barMaxLength: number;
+  barWidth: number;
+  /** Rest radius of the time-domain ring. */
+  ringRadius: number;
+  /** How far the ring swings in or out at full-scale signal. */
+  ringAmplitude: number;
+  ringWidth: number;
 }
 
-export function getVisualizerLayout(width: number, height: number): VisualizerLayout {
-  const base = Math.min(width, height);
-  const innerRadius = base * 0.22;
-  const outerRadius = base * 0.36;
-  const circleRadius = base * 0.34;
-
+export function getVisualizerLayout(side: number): VisualizerLayout {
   return {
-    cx: width / 2,
-    cy: height / 2,
-    innerRadius,
-    outerRadius,
-    circleRadius,
+    cx: side / 2,
+    cy: side / 2,
+    barRadius: side * 0.28,
+    barMaxLength: side * 0.18,
+    barWidth: side * 0.0128,
+    ringRadius: side * 0.21,
+    ringAmplitude: side * 0.06,
+    ringWidth: side * 0.0064,
   };
-}
-
-export function sampleExp(value: number) {
-  'worklet';
-
-  return Math.exp(2.5 * value) / 4 - 0.2;
-}
-
-export function weightWithIndex(value: number, index: number, indexMax: number) {
-  'worklet';
-
-  if (index < indexMax / 2) {
-    return value * Math.max(index / (indexMax / 2), 0.5);
-  }
-
-  return value;
 }

@@ -1,10 +1,11 @@
-import { StackNavigationProp } from '@react-navigation/stack';
-import { icons } from 'lucide-react-native';
+import type { AppIconName } from '../components';
+import { colors } from '../styles';
 
 import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
 import ChannelCount from './ChannelCount';
 import DrumMachine from './DrumMachine';
+import DrumMachineControls from './DrumMachine/DrumMachineControls';
 import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
@@ -18,7 +19,7 @@ import ConvolverIR from './ConvolverIR';
 import ChannelMergerSplitter from './ChannelMergerSplitter';
 import EchoCancellation from './EchoCancellation';
 
-type NavigationParamList = {
+type ExampleRoutes = {
   Oscillator: undefined;
   PannerNode: undefined;
   Metronome: undefined;
@@ -43,116 +44,161 @@ type NavigationParamList = {
   EchoCancellation: undefined;
 };
 
-export type ExampleKey = keyof NavigationParamList;
+export type ExampleKey = keyof ExampleRoutes;
 
-interface SimplifiedIconProps {
-  color?: string;
-  size?: number;
-}
+/** Route of an example's controls sheet, see `Example.controls`. */
+export type ExampleControlsKey = `${ExampleKey}Controls`;
 
-export type MainStackProps = StackNavigationProp<NavigationParamList>;
 export interface Example {
   key: ExampleKey;
   title: string;
-  Icon: React.FC<SimplifiedIconProps>;
+  icon: AppIconName;
   screen: React.FC;
+  /**
+   * Optional content of an always-visible bottom sheet. It's registered as the
+   * `<key>Controls` route; the screen presents it with `useControlsSheet`.
+   */
+  controls?: React.FC;
 }
 
-export const Examples: Example[] = [
+export type ExampleCategoryKey =
+  | 'sources'
+  | 'instruments'
+  | 'effects'
+  | 'analysis'
+  | 'input';
+
+export interface ExampleCategory {
+  key: ExampleCategoryKey;
+  title: string;
+  color: string;
+}
+
+/** Sections of the Tests tab, in display order. */
+export const exampleCategories: ExampleCategory[] = [
+  { key: 'sources', title: 'Sources', color: colors.blue },
+  { key: 'instruments', title: 'Instruments & timing', color: colors.yellow },
+  { key: 'effects', title: 'Effects & routing', color: colors.purple },
+  { key: 'analysis', title: 'Analysis & processing', color: colors.green },
+  { key: 'input', title: 'Input', color: colors.accent },
+];
+
+export interface CategorizedExample extends Example {
+  category: ExampleCategoryKey;
+}
+
+export const Examples: CategorizedExample[] = [
   {
     key: 'DrumMachine',
+    category: 'instruments',
     title: 'Drum Machine',
-    Icon: icons.Drum,
+    icon: 'drum',
     screen: DrumMachine,
+    controls: DrumMachineControls,
   },
   {
     key: 'Piano',
-    Icon: icons.Piano,
+    category: 'instruments',
+    icon: 'piano',
     title: 'Simple Piano',
     screen: Piano,
   },
   {
     key: 'AudioFile',
+    category: 'sources',
     title: 'Audio File',
-    Icon: icons.Music,
+    icon: 'music',
     screen: AudioFile,
   },
   {
     key: 'PlaybackSpeed',
-    Icon: icons.VenetianMask,
+    category: 'sources',
+    icon: 'venetian-mask',
     title: 'Playback Speed',
     screen: PlaybackSpeed,
   },
   {
     key: 'Metronome',
+    category: 'instruments',
     title: 'Metronome',
-    Icon: icons.Thermometer,
+    icon: 'thermometer',
     screen: Metronome,
   },
   {
     key: 'Oscillator',
+    category: 'sources',
     title: 'Oscillator',
-    Icon: icons.Waves,
+    icon: 'waves',
     screen: Oscillator,
   },
   {
     key: 'PannerNode',
+    category: 'effects',
     title: 'PannerNode',
-    Icon: icons.Move3d,
+    icon: 'move-3d',
     screen: PannerNode,
   },
   {
     key: 'AudioVisualizer',
+    category: 'analysis',
     title: 'Audio Visualizer',
-    Icon: icons.Activity,
+    icon: 'activity',
     screen: AudioVisualizer,
   },
   {
     key: 'OfflineRendering',
+    category: 'analysis',
     title: 'Offline Rendering',
-    Icon: icons.HardDrive,
+    icon: 'hard-drive',
     screen: OfflineRendering,
   },
   {
     key: 'Record',
+    category: 'input',
     title: 'Record',
-    Icon: icons.Mic,
+    icon: 'mic',
     screen: Record,
   },
   {
     key: 'Worklets',
+    category: 'analysis',
     title: 'Worklets',
-    Icon: icons.Code,
+    icon: 'code',
     screen: Worklets,
   },
   {
     key: 'AudioTag',
+    category: 'sources',
     title: 'Audio Tag',
-    Icon: icons.Tag,
+    icon: 'tag',
     screen: AudioStream,
   },
   {
     key: 'ConvolverIR',
+    category: 'effects',
     title: 'Reverb Effect',
-    Icon: icons.AudioWaveform,
+    icon: 'audio-waveform',
     screen: ConvolverIR,
   },
   {
     key: 'ChannelMergerSplitter',
+    category: 'effects',
     title: 'Channel Merger / Splitter',
-    Icon: icons.Split,
+    icon: 'split',
     screen: ChannelMergerSplitter,
   },
   {
     key: 'ChannelCount',
+    category: 'effects',
     title: 'Channel Count',
-    Icon: icons.Columns3,
+    icon: 'columns-3',
     screen: ChannelCount,
   },
   {
     key: 'EchoCancellation',
+    category: 'input',
     title: 'AEC',
-    Icon: icons.AudioLines,
+    icon: 'audio-lines',
     screen: EchoCancellation,
   },
 ] as const;

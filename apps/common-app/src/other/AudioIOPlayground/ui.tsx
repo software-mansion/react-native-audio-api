@@ -62,7 +62,7 @@ export const CallButton: FC<CallButtonProps> = ({
       title={title}
       onPress={onPress}
       disabled={disabled}
-      width={BUTTON_WIDTH}
+      minWidth={BUTTON_WIDTH}
     />
     <View style={styles.fieldControl}>
       <Call text={call} />

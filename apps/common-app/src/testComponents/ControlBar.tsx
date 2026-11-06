@@ -17,7 +17,7 @@ const ControlBar: FC<ControlBarProps> = ({ actions }) => (
         title={action.title}
         onPress={action.onPress}
         disabled={action.disabled}
-        width={action.width}
+        minWidth={action.minWidth}
       />
     ))}
   </View>
