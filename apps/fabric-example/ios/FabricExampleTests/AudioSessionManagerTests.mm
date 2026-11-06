@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 
+#import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 @interface AudioSessionManager (TestingPrivate)
@@ -7,7 +8,6 @@
 - (AVAudioSessionCategory)categoryFromString:(NSString *)categorySTR;
 - (AVAudioSessionMode)modeFromString:(NSString *)modeSTR;
 - (AVAudioSessionCategoryOptions)optionsFromArray:(NSArray *)optionsArray;
-- (bool)activateSessionIfNeeded:(bool)force error:(NSError **)error;
 - (bool)areDesiredOptionsSet;
 - (id)microphoneUsageDescriptionValue;
 - (bool)usesAudioApplicationRecordPermissionAPI;
@@ -136,6 +136,11 @@
   return self.setActiveError == nil;
 }
 
+- (BOOL)setPreferredIOBufferDuration:(NSTimeInterval)duration error:(NSError **)error
+{
+  return YES;
+}
+
 - (BOOL)setPreferredInput:(FakeAudioPortDescription *)inPort error:(NSError **)error
 {
   self.setPreferredInputCallCount += 1;
@@ -231,6 +236,15 @@
   port.portType = type;
   port.UID = uid;
   return port;
+}
+
+- (void)applyPlayAndRecordOptions
+{
+  [self.manager setAudioSessionOptions:@"playAndRecord"
+                                  mode:@"default"
+                               options:@[ @"defaultToSpeaker" ]
+                          allowHaptics:NO
+            notifyOthersOnDeactivation:YES];
 }
 
 - (void)testConfigureAudioSessionNoOpsWhenSessionManagementDisabled
@@ -342,6 +356,39 @@
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 0);
 }
 
+- (void)testSetAudioSessionOptionsReappliesUnchangedRequestWhenLiveCategoryChangedElsewhere
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyPlayAndRecordOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+
+  // Another framework switched the shared session to playback.
+  self.fakeSession.category = AVAudioSessionCategoryPlayback;
+  [self applyPlayAndRecordOptions];
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
+  XCTAssertEqualObjects(self.fakeSession.category, AVAudioSessionCategoryPlayAndRecord);
+  XCTAssertTrue(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testSetAudioSessionOptionsLeavesMatchingLiveSessionAndGraphAlone
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyPlayAndRecordOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+
+  [self applyPlayAndRecordOptions];
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
+  XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
 - (void)testSetActiveTrueActivatesSession
 {
   NSError *error = nil;
@@ -400,26 +447,37 @@
   XCTAssertEqual(self.fakeSession.lastSetActiveOptions, (AVAudioSessionSetActiveOptions)0);
 }
 
-- (void)testActivateSessionIfNeededRespectsCachedActiveStateAndForce
+- (void)testSetActiveTrueActivatesSessionDeactivatedElsewhereDespiteCachedActiveFlag
 {
+  // Another app or the OS deactivated the session without this manager noticing.
   self.manager.isActive = true;
 
-  XCTAssertTrue([self.manager activateSessionIfNeeded:false error:nil]);
-  XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
-
-  XCTAssertTrue([self.manager activateSessionIfNeeded:true error:nil]);
+  XCTAssertTrue([self.manager setActive:true error:nil]);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+  XCTAssertTrue(self.fakeSession.lastSetActiveValue);
   XCTAssertTrue(self.manager.isActive);
 }
 
-- (void)testActivateSessionIfNeededReturnsFalseWhenConfigurationFails
+- (void)testSetActiveTrueReappliesCategoryChangedElsewhereDespiteCachedActiveFlag
+{
+  self.manager.isActive = true;
+  self.manager.desiredCategory = AVAudioSessionCategoryPlayAndRecord;
+  self.fakeSession.category = AVAudioSessionCategoryPlayback;
+
+  XCTAssertTrue([self.manager setActive:true error:nil]);
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
+  XCTAssertEqualObjects(self.fakeSession.category, AVAudioSessionCategoryPlayAndRecord);
+  XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+}
+
+- (void)testEnsureActiveReturnsFalseWhenConfigurationFails
 {
   self.manager.desiredCategory = AVAudioSessionCategoryRecord;
   self.fakeSession.setCategoryError =
       [NSError errorWithDomain:@"AudioSessionTests" code:102 userInfo:nil];
 
   NSError *error = nil;
-  XCTAssertFalse([self.manager activateSessionIfNeeded:false error:&error]);
+  XCTAssertFalse([self.manager ensureActiveWithError:&error]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
   XCTAssertFalse(self.manager.isActive);
@@ -434,7 +492,7 @@
 {
   self.manager.shouldManageSession = false;
 
-  XCTAssertTrue([self.manager ensureActive:false error:nil]);
+  XCTAssertTrue([self.manager ensureActiveWithError:nil]);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
 }
 

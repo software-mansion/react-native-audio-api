@@ -31,8 +31,11 @@
     notifyOthersOnDeactivation:(BOOL)notifyOthersOnDeactivation;
 
 - (bool)configureAudioSession:(NSError **)outError;
-/// Ensures the library-managed session is active. In external owner mode this is a no-op.
-- (bool)ensureActive:(bool)force error:(NSError **)error;
+/// Re-applies the requested configuration where the live session differs from it, then activates
+/// the session even when the cached `isActive` says it already is: something outside the library
+/// may have deactivated it, and activating an active session is harmless. In external owner mode
+/// this is a no-op.
+- (bool)ensureActiveWithError:(NSError **)error;
 - (bool)setActive:(bool)active error:(NSError **)error;
 /// Drops the cached active-state flag without reclaiming external ownership.
 - (void)markInactive;

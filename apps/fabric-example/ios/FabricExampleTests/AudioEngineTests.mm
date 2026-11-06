@@ -147,7 +147,6 @@
 @property(nonatomic, strong) NSError *ensureActiveFailure;
 @property(nonatomic, assign) NSInteger ensureActiveCallCount;
 @property(nonatomic, assign) NSInteger setActiveCallCount;
-@property(nonatomic, assign) BOOL lastEnsureActiveForce;
 @property(nonatomic, assign) BOOL lastSetActiveValue;
 
 @end
@@ -162,9 +161,8 @@
   return self;
 }
 
-- (bool)ensureActive:(bool)force error:(NSError **)error {
+- (bool)ensureActiveWithError:(NSError **)error {
   self.ensureActiveCallCount += 1;
-  self.lastEnsureActiveForce = force;
 
   if (!self.ensureActiveResult && error != nil) {
     *error = self.ensureActiveFailure;

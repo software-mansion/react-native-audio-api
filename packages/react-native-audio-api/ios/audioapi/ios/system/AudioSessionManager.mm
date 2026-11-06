@@ -90,6 +90,11 @@ static AudioSessionManager *_sharedInstance = nil;
   [self setPreferredIOBufferFrames:audioapi::RENDER_QUANTUM_SIZE];
 }
 
+/// The requested configuration is re-asserted whenever the live session differs from it, and
+/// activation always asks the system to activate. Other frameworks (a video player switching to
+/// playback), other apps and the OS change the shared AVAudioSession without telling this manager,
+/// so neither the last request nor the cached `isActive` flag says what the live session is.
+/// A live session that already matches the request is left alone, so re-asserting never churns.
 - (bool)configureAudioSession:(NSError **)outError
 {
   if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
@@ -146,17 +151,8 @@ static AudioSessionManager *_sharedInstance = nil;
   AVAudioSessionCategory category = [self categoryFromString:categoryStr];
   AVAudioSessionMode mode = [self modeFromString:modeStr];
   AVAudioSessionCategoryOptions options = [self optionsFromArray:optionsArray];
-  bool configChanged = false;
-
-  if (category != self.desiredCategory || mode != self.desiredMode ||
-      options != self.desiredOptions || allowHaptics != self.allowHapticsAndSounds) {
-    configChanged = true;
-  }
-
-  if (configChanged) {
-    AudioEngine *audioEngine = [AudioEngine sharedInstance];
-    [audioEngine markSessionDeactivationInvalidatedGraph];
-  }
+  bool requestChanged = category != self.desiredCategory || mode != self.desiredMode ||
+      options != self.desiredOptions || allowHaptics != self.allowHapticsAndSounds;
 
   self.desiredCategory = category;
   self.desiredMode = mode;
@@ -164,7 +160,17 @@ static AudioSessionManager *_sharedInstance = nil;
   self.allowHapticsAndSounds = allowHaptics;
   self.notifyOthersOnDeactivation = notifyOthersOnDeactivation;
 
-  if (configChanged && self.isActive) {
+  bool reassertsLiveSession =
+      self.shouldManageSession && self.isActive && ![self areDesiredOptionsSet];
+
+  // setCategory on an active session changes the engine's I/O configuration, so the graph built
+  // for the previous one cannot be reused.
+  if (requestChanged || reassertsLiveSession) {
+    AudioEngine *audioEngine = [AudioEngine sharedInstance];
+    [audioEngine markSessionDeactivationInvalidatedGraph];
+  }
+
+  if (reassertsLiveSession) {
     [self configureAudioSession:nil];
   }
 }
@@ -172,7 +178,7 @@ static AudioSessionManager *_sharedInstance = nil;
 - (bool)setActive:(bool)active error:(NSError **)error
 {
   if (active) {
-    return [self ensureActive:false error:error];
+    return [self ensureActiveWithError:error];
   }
 
   if (!self.shouldManageSession) {
@@ -196,18 +202,9 @@ static AudioSessionManager *_sharedInstance = nil;
   return success;
 }
 
-- (bool)ensureActive:(bool)force error:(NSError **)error
-{
-  return [self activateSessionIfNeeded:force error:error];
-}
-
-- (bool)activateSessionIfNeeded:(bool)force error:(NSError **)error
+- (bool)ensureActiveWithError:(NSError **)error
 {
   if (!self.shouldManageSession) {
-    return true;
-  }
-
-  if (self.isActive && !force) {
     return true;
   }
 
@@ -226,8 +223,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)markInactive
 {
-  // AVAudioSession does not expose a reliable active-state query, so drop our cached flag and
-  // force the next audio operation to re-assert activation.
+  // AVAudioSession does not expose a reliable active-state query, so the cached flag is only a
+  // best guess for its readers; activation never relies on it.
   self.isActive = false;
 }
 

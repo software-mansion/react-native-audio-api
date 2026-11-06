@@ -308,7 +308,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
     [sessionManager markInactive];
 
     if (wasSessionActive) {
-      [sessionManager ensureActive:true error:nil];
+      [sessionManager ensureActiveWithError:nil];
     }
 
     [audioEngine restartAudioEngine];
