@@ -11,9 +11,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect engine changes
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      wpt: ${{ github.event_name != 'pull_request' || steps.filter.outputs.wpt == 'true' }}
+    steps:
+      - name: Path filter
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            wpt:
+              - 'packages/react-native-audio-api/common/**'
+              - 'packages/react-native-audio-api/src/**'
+              - 'packages/react-native-audio-api/wpt_tests/**'
+              - 'packages/react-native-audio-api/scripts/build.sh'
+              - 'packages/react-native-audio-api/package.json'
+              - 'package.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.nvmrc'
+              - '.github/actions/**'
+              - '.github/workflows/wpt-tests.yml'
+
   wpt-run:
     name: WPT run (${{ matrix.side }})
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: changes
+    if: needs.changes.outputs.wpt == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -82,8 +112,8 @@ jobs:
     # Runs even when wpt-run failed, so the PR still gets a report comment explaining why.
     if: >
       !cancelled() &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
-    needs: wpt-run
+      needs.changes.outputs.wpt == 'true'
+    needs: [changes, wpt-run]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
