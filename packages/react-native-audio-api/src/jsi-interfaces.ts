@@ -365,7 +365,7 @@ export interface IAudioRecorder {
 
   // pause and resume methods for file recording
   pause: () => Promise<void>;
-  resume: () => Promise<void>;
+  resume: () => Promise<Result<{}>>;
 
   // Graph integration methods
   connect: (node: IRecorderAdapterNode) => void;

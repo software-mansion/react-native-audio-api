@@ -518,12 +518,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Resumes the recording if it was previously paused; otherwise does nothing. Returns a `Promise<void>` that resolves when the input stream is running again.
+          Resumes a paused recording. Returns a `Promise<Result<{}>>` that resolves when the input stream is running again. Resuming a recording that is already running succeeds without changing anything. The result has an error status when the recorder was not started, or when the system refused to resume, in which case the recording stays paused.
         </div>
         ```tsx
-        await audioRecorder.resume();
+        const result = await audioRecorder.resume();
 
-        console.log(audioRecorder.isRecording());
+        if (result.status === 'error') {
+          console.warn(result.message);
+        }
         ```
       </td>
     </tr>

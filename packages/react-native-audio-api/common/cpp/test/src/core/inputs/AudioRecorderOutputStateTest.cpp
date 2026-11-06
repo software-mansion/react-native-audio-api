@@ -38,7 +38,9 @@ class IdleAudioRecorder : public AudioRecorder {
     return Err(std::string("not supported"));
   }
   void pause() override {}
-  void resume() override {}
+  Result<NoneType, std::string> resume() override {
+    return Ok(None);
+  }
   Result<NoneType, std::string> rerouteInput() override {
     return Ok(None);
   }

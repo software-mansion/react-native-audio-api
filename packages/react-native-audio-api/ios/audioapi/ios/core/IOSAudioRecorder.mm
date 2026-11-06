@@ -1,5 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 #include <algorithm>
@@ -92,7 +93,9 @@ IOSAudioRecorder::IOSAudioRecorder(
                                                 voiceProcessingEnabled:options.iosVoiceProcessing];
 
   nativeRecorder_.onInputNotification =
-      ^(AudioEngineInputNotification notification) { this->handleInputNotification(notification); };
+      ^(AudioEngineInputNotification notification, NSError *error) {
+        this->handleInputNotification(notification, error);
+      };
 }
 
 Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
@@ -114,11 +117,18 @@ Result<StreamFormat, std::string> IOSAudioRecorder::resolveStreamFormat() const
           .maxFramesPerBuffer = static_cast<size_t>(maxFramesPerBuffer)});
 }
 
-void IOSAudioRecorder::handleInputNotification(AudioEngineInputNotification notification)
+void IOSAudioRecorder::handleInputNotification(
+    AudioEngineInputNotification notification,
+    NSError *error)
 {
   switch (notification) {
     case AudioEngineInputNotificationHardwareChanged:
       handleHardwareChange();
+      return;
+    case AudioEngineInputNotificationRecoveryFailed:
+      reportError(
+          std::string("iOS recorder error: failed to recover the input: ") +
+          [[AudioAPIError describe:error] UTF8String]);
       return;
   }
 }
@@ -240,13 +250,8 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   if (!didStartNativeRecorder) {
-    std::string message = "Failed to start native recorder";
-
-    if (nativeStartError != nil) {
-      message += ": ";
-      message += [[nativeStartError debugDescription] UTF8String];
-    }
-
+    auto message = std::string("Failed to start native recorder: ") +
+        [[AudioAPIError describe:nativeStartError] UTF8String];
     message += "; ";
     message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
 
@@ -359,18 +364,22 @@ Result<NoneType, std::string> IOSAudioRecorder::rerouteInput()
   return Result<NoneType, std::string>::Ok(None);
 }
 
-void IOSAudioRecorder::resume()
+Result<NoneType, std::string> IOSAudioRecorder::resume()
 {
   if (!isPaused()) {
-    return;
+    return Ok(None);
   }
 
-  if (![nativeRecorder_ resume]) {
-    return;
+  NSError *resumeError = nil;
+  if (![nativeRecorder_ resume:&resumeError]) {
+    return Err(
+        std::string("Failed to resume native recorder: ") +
+        [[AudioAPIError describe:resumeError] UTF8String]);
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
   handleHardwareChange();
+  return Ok(None);
 }
 
 /// Any thread. Also requires the audio engine to be running, so a recorder whose session was

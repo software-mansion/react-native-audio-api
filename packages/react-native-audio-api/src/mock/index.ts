@@ -1054,9 +1054,9 @@ class AudioRecorderMock {
     return Promise.resolve();
   }
 
-  resume(): Promise<void> {
+  resume(): Promise<Result<{}>> {
     this._isPaused = false;
-    return Promise.resolve();
+    return Promise.resolve({ status: 'success' });
   }
 
   connect(_node: RecorderAdapterNodeMock): void {
