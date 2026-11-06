@@ -770,21 +770,23 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   NSError *activationError = nil;
   if (![self.sessionManager ensureActive:true error:&activationError]) {
-    return [AudioAPIError fail:outError
-                          with:[AudioAPIError sessionActivationFailed:activationError]];
+    [AudioAPIError fail:outError with:[AudioAPIError sessionActivationFailed:activationError]];
+    return false;
   }
 
   // Never rebuilds; callers check `mustRebuildBeforeStart` first.
   [self materializeTrackedNodesIfNeeded];
 
   if (self.inputRegistration != nil && self.inputNode == nil) {
-    return [AudioAPIError fail:outError with:[AudioAPIError inputFormatUnavailable]];
+    [AudioAPIError fail:outError with:[AudioAPIError inputFormatUnavailable]];
+    return false;
   }
 
   [self.audioEngine prepare];
   NSError *startError = nil;
   if (![self.audioEngine startAndReturnError:&startError]) {
-    return [AudioAPIError fail:outError with:[AudioAPIError engineStartFailed:startError]];
+    [AudioAPIError fail:outError with:[AudioAPIError engineStartFailed:startError]];
+    return false;
   }
 
   self.state = AudioEngineState::AudioEngineStateRunning;
@@ -815,7 +817,8 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   if (![self hasTrackedGraph]) {
-    return [AudioAPIError fail:error with:[AudioAPIError engineHasNoGraph]];
+    [AudioAPIError fail:error with:[AudioAPIError engineHasNoGraph]];
+    return false;
   }
 
   if ([self mustRebuildBeforeStart]) {

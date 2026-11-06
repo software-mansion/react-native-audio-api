@@ -89,7 +89,8 @@
   NSError *activationError = nil;
   if (![sessionManager ensureActive:false error:&activationError]) {
     [sessionManager resetPreferredIOBufferFrames];
-    return [AudioAPIError fail:nil with:[AudioAPIError sessionActivationFailed:activationError]];
+    [AudioAPIError fail:nil with:[AudioAPIError sessionActivationFailed:activationError]];
+    return false;
   }
 
   // AudioEngine allows us to attach and connect nodes at runtime but with few

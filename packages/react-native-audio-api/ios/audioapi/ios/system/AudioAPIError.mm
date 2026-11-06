@@ -31,15 +31,13 @@ NSErrorDomain const AudioAPIErrorDomain = @"AudioAPIErrorDomain";
   return [self createErrorWithCode:AudioAPIErrorCodeEngineStartFailed systemError:systemError];
 }
 
-+ (BOOL)fail:(NSError **)outError with:(NSError *)failure
++ (void)fail:(NSError **)outError with:(NSError *)failure
 {
   NSLog(@"%@", [self describe:failure]);
 
   if (outError != nil) {
     *outError = failure;
   }
-
-  return NO;
 }
 
 + (NSString *)describe:(NSError *)error
