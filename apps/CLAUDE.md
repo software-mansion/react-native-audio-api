@@ -22,6 +22,7 @@ apps/
         ├── components/       # Shared UI: Container, Button, Slider, Spacer, Switch, Select
         ├── utils/
         │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap)
+        │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
         │   └── usePlayer.tsx # Hook for pattern-based scheduled playback
         ├── singletons/       # Global audioContext and audioRecorder instances
         └── styles.ts         # Shared colors and layout constants
@@ -305,12 +306,23 @@ All in `apps/common-app/src/components/`:
 | Component | Props |
 |---|---|
 | `Container` | `centered?: boolean` — wraps screen in `SafeAreaView` |
-| `Button` | `title`, `onPress`, `disabled?` |
+| `Button` | `title`, `onPress`, `disabled?`, `width?`, `testID?` |
 | `Slider` | `label`, `min`, `max`, `step`, `value`, `onValueChange` |
 | `VerticalSlider` | same as Slider, vertical orientation |
 | `Spacer.Vertical` | `size` |
-| `Switch` | `label`, `value`, `onValueChange` |
-| `Select` | `label`, `options`, `value`, `onValueChange` |
+| `Switch` | `value`, `onValueChange`, `testID?` (no label; render one beside it) |
+| `Select` | `options`, `value`, `onChange`, `testID?` (single choice, no label; each option gets `<testID>-option-<value>`) |
+
+`testID` is what E2E tools query: the accessibility identifier on iOS, the view tag on Android. The Audio I/O Playground (`other/AudioIOPlayground/`) sets one on every control.
+
+## Type Checking
+
+`common-app` resolves `react-native-audio-api` types from the library's built `lib/typescript`, not from `src`. After switching branches, rebuild before checking the app, or `tsc` checks against another branch's API:
+
+```bash
+yarn workspace react-native-audio-api build
+npx tsc --noEmit -p apps/common-app
+```
 
 ## Metro Config Notes
 

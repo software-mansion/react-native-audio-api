@@ -70,10 +70,7 @@ RecorderState ActiveRecorderHandle::resume() {
   std::scoped_lock lock(mutex_);
   const std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
   if (recorder) {
-    auto result = recorder->resume();
-    if (result.is_err()) {
-      recorder->reportError(result.unwrap_err());
-    }
+    recorder->resume();
   }
   return stateOf(recorder);
 }

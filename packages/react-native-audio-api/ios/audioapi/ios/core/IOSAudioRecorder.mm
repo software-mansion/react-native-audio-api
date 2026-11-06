@@ -38,11 +38,6 @@ static std::string describeRecorderFormat(AVAudioFormat *format)
       ", interleaved=" + (format.interleaved ? "true" : "false") + "}";
 }
 
-static std::string describeNativeError(NSError *error)
-{
-  return [[AudioAPIError describe:error] UTF8String];
-}
-
 /// Returns false — dropping the buffer — when the layout no longer
 /// matches what we were configured with, which happens if the input node is rebuilt on a route
 /// change while a recording is in flight.
@@ -131,7 +126,9 @@ void IOSAudioRecorder::handleInputNotification(
       handleHardwareChange();
       return;
     case AudioEngineInputNotificationRecoveryFailed:
-      reportError("iOS recorder error: failed to recover the input: " + describeNativeError(error));
+      reportError(
+          std::string("iOS recorder error: failed to recover the input: ") +
+          [[AudioAPIError describe:error] UTF8String]);
       return;
   }
 }
@@ -253,8 +250,8 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   if (!didStartNativeRecorder) {
-    std::string message =
-        "Failed to start native recorder: " + describeNativeError(nativeStartError);
+    auto message = std::string("Failed to start native recorder: ") +
+        [[AudioAPIError describe:nativeStartError] UTF8String];
     message += "; ";
     message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
 
@@ -375,7 +372,9 @@ Result<NoneType, std::string> IOSAudioRecorder::resume()
 
   NSError *resumeError = nil;
   if (![nativeRecorder_ resume:&resumeError]) {
-    return Err("Failed to resume native recorder: " + describeNativeError(resumeError));
+    return Err(
+        std::string("Failed to resume native recorder: ") +
+        [[AudioAPIError describe:resumeError] UTF8String]);
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);

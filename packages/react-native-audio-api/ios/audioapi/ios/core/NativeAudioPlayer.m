@@ -32,12 +32,12 @@
                                             onOutputRecoveryFailed:self.onStreamFail];
 }
 
-- (bool)startPlaybackGraph:(AudioEngine *)audioEngine error:(NSError **)error
+- (bool)startPlaybackGraph:(AudioEngine *)audioEngine
 {
   [audioEngine stopIfNecessary];
   [self attachSourceNodeIfNeeded:audioEngine];
 
-  if (![audioEngine startIfNecessary:error]) {
+  if (![audioEngine startIfNecessary:nil]) {
     [self detachSourceNodeIfAttached:audioEngine];
     [audioEngine stopIfPossible];
     return false;
@@ -77,7 +77,7 @@
   return self;
 }
 
-- (bool)start:(NSError **)error
+- (bool)start
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
@@ -89,7 +89,8 @@
   NSError *activationError = nil;
   if (![sessionManager ensureActive:false error:&activationError]) {
     [sessionManager resetPreferredIOBufferFrames];
-    return [AudioAPIError fail:error with:[AudioAPIError sessionActivationFailed:activationError]];
+    [AudioAPIError fail:nil with:[AudioAPIError sessionActivationFailed:activationError]];
+    return false;
   }
 
   // AudioEngine allows us to attach and connect nodes at runtime but with few
@@ -100,7 +101,7 @@
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
-  if (![self startPlaybackGraph:audioEngine error:error]) {
+  if (![self startPlaybackGraph:audioEngine]) {
     [sessionManager resetPreferredIOBufferFrames];
     return false;
   }
@@ -119,9 +120,9 @@
   }
 }
 
-- (bool)resume:(NSError **)error
+- (bool)resume
 {
-  return [self start:error];
+  return [self start];
 }
 
 - (void)suspend

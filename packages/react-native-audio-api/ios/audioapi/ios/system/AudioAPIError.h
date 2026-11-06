@@ -31,14 +31,12 @@ typedef NS_ERROR_ENUM(AudioAPIErrorDomain, AudioAPIErrorCode){
 /// @param systemError The error AVAudioEngine returned from `startAndReturnError:`.
 + (NSError *)engineStartFailed:(NSError *)systemError;
 
-/// @brief Logs `failure` and hands it to the caller, so a method reports a failure in one line:
-/// `return [AudioAPIError fail:outError with:...];`.
+/// @brief Logs `failure` and hands it to the caller.
 /// @param outError Receives `failure`; may be nil when the caller does not want the error.
 /// @param failure The error to log and report.
-/// @return Always NO.
 /// @note Call this where the failure happens. A method relaying a callee's error passes its own
 /// `outError` to the callee instead, so each error is logged once.
-+ (BOOL)fail:(NSError **)outError with:(NSError *)failure;
++ (void)fail:(NSError **)outError with:(NSError *)failure;
 
 /// @brief Formats `error` and each error under it as `domain code: description`, outermost first,
 /// joined by ` <- `.
