@@ -1,0 +1,16 @@
+executionPrerequisite: FabricExample is running in the foreground on the target device
+steps:
+  - run: ../shared/open-audio-io-playground.yaml
+  - echo: Apply and activate the default Record demo session preset
+  - scroll-to:
+      target: { id: system-apply }
+      direction: up
+      within: { role: ScrollView, next: { text: Audio I/O Playground } }
+  - tap: { id: system-apply }
+  - tap: { id: system-activate }
+  - echo: Start recording in Audio I/O Playground
+  - scroll-to:
+      target: { id: recorder-start }
+      within: { role: ScrollView, next: { text: Audio I/O Playground } }
+  - tap: { id: recorder-start }
+  - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }

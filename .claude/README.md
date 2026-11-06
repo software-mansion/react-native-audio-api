@@ -48,6 +48,9 @@ This directory contains project-specific configuration for [Claude Code](https:/
 │   ├── flow/
 │   │   ├── SKILL.md           # End-to-end feature flow
 │   │   └── maintenance.md
+│   ├── semi-automated-tests/
+│   │   ├── SKILL.md           # Semi-automated E2E tests (Argent + prompts + logs)
+│   │   └── maintenance.md
 │   ├── expressive-code/
 │   │   ├── SKILL.md           # Naming and comment style guidelines
 │   │   └── maintenance.md
@@ -62,6 +65,7 @@ This directory contains project-specific configuration for [Claude Code](https:/
 Skill files are a reference library for Claude. Each skill lives in its own directory (`.claude/skills/<name>/SKILL.md`) and is **auto-loaded** by Claude Code based on the YAML frontmatter `name` and `description` fields. The description contains trigger phrases — when the conversation context matches, the skill is surfaced automatically.
 
 Skills use a **three-level progressive disclosure model**:
+
 1. **Frontmatter** — always loaded; name + description with trigger phrases
 2. **`SKILL.md` body** — loaded when the skill is triggered; concise patterns and APIs
 3. **Supporting `.md` files** (e.g. `gainnode-example.md`, `build-details.md`) — linked from `SKILL.md`; loaded explicitly when deep reference is needed
@@ -85,8 +89,8 @@ Every skill directory has a `maintenance.md` file. It maps source file path patt
 
 > Used by /pre-push-update only — not loaded during skill usage.
 
-| Path | What to check |
-|---|---|
+| Path             | What to check                          |
+| ---------------- | -------------------------------------- |
 | `path/to/file.*` | What in this skill to review or update |
 ```
 
@@ -122,14 +126,14 @@ Run it before pushing a branch, after merging a PR, or whenever you feel the ski
 
 ### What it updates
 
-| Change type | Action |
-|---|---|
-| New audio node class | Add entry to `audio-nodes/SKILL.md` |
-| New HostObject pattern | Add entry to `host-objects/SKILL.md` |
-| New utility helper | Add entry to `utilities/SKILL.md` |
-| Renamed/moved class referenced in a skill | Correct the reference |
-| New thread-safety invariant | Add to `thread-safety-itc/SKILL.md` |
-| Pure formatting / test-only / CI changes | Skipped |
+| Change type                               | Action                               |
+| ----------------------------------------- | ------------------------------------ |
+| New audio node class                      | Add entry to `audio-nodes/SKILL.md`  |
+| New HostObject pattern                    | Add entry to `host-objects/SKILL.md` |
+| New utility helper                        | Add entry to `utilities/SKILL.md`    |
+| Renamed/moved class referenced in a skill | Correct the reference                |
+| New thread-safety invariant               | Add to `thread-safety-itc/SKILL.md`  |
+| Pure formatting / test-only / CI changes  | Skipped                              |
 
 ### What it does NOT do
 
@@ -163,5 +167,6 @@ Defines tool permissions for Claude Code:
 - **Always deny**: force push, `rm -rf`, `sudo`, reading build artifacts and binary files
 
 Also configures MCP servers:
+
 - `filesystem` — `@modelcontextprotocol/server-filesystem` pointed at the repo root
 - `lsp` — `mcp-language-server` using `typescript-language-server` for TS/JS code intelligence

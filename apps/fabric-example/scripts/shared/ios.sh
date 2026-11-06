@@ -127,11 +127,22 @@ ios_sdk() {
 # Locates Xcode's DerivedData/FabricExample-<hash> folder for this checkout's workspace.
 # Each folder has an info.plist with WorkspacePath; reading it avoids a 3s xcodebuild call.
 ios_derived_data_dir() {
-  local candidate workspace_path
+  local candidate workspace_path resolved_candidate_workspace
   for candidate in "$XCODE_DERIVED_DATA_ROOT"/FabricExample-*; do
     [[ -f "$candidate/info.plist" ]] || continue
     workspace_path="$(/usr/libexec/PlistBuddy -c 'Print :WorkspacePath' "$candidate/info.plist" 2>/dev/null || true)"
     if [[ "$workspace_path" == "$WORKSPACE" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  for candidate in "$XCODE_DERIVED_DATA_ROOT"/FabricExample-*; do
+    [[ -f "$candidate/info.plist" ]] || continue
+    workspace_path="$(/usr/libexec/PlistBuddy -c 'Print :WorkspacePath' "$candidate/info.plist" 2>/dev/null || true)"
+    [[ -n "$workspace_path" && -d "$(dirname "$workspace_path")" ]] || continue
+    resolved_candidate_workspace="$(cd -P "$(dirname "$workspace_path")" && pwd -P)/$(basename "$workspace_path")"
+    if [[ "$resolved_candidate_workspace" == "$WORKSPACE" ]]; then
       echo "$candidate"
       return 0
     fi
@@ -159,4 +170,19 @@ ios_app_path() {
     return 0
   fi
   echo "$derived_data_dir/Build/Products/$xcode_configuration-$(ios_sdk)/FabricExample.app"
+}
+
+ios_bundle_id() {
+  local configuration="${1:-debug}"
+  local project_bundle_id app_path
+  project_bundle_id="$(awk -F' = ' '/PRODUCT_BUNDLE_IDENTIFIER/ { gsub(/;|"/, "", $2); print $2; exit }' \
+    "$IOS_DIR/FabricExample.xcodeproj/project.pbxproj")"
+  if [[ -n "$project_bundle_id" && "$project_bundle_id" != *'$('* ]]; then
+    echo "$project_bundle_id"
+    return 0
+  fi
+  app_path="$(ios_app_path "$configuration")"
+  if [[ -f "$app_path/Info.plist" ]]; then
+    /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app_path/Info.plist"
+  fi
 }
