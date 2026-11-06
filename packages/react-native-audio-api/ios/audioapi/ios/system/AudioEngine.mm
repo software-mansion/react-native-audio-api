@@ -820,8 +820,8 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if ([self mustRebuildBeforeStart]) {
     [self rebuildGraphForCurrentHardware];
-    dispatch_block_t notifyInput =
-        [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged error:nil];
+    auto notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged
+                                              error:nil];
     // TODO: refactor lock-aware operations and communication between engine-recorder-player-manager
     if (notifyInput != nil) {
       lock.unlock();
