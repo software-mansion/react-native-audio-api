@@ -23,6 +23,26 @@ static const AVAudioSessionCategoryOptions
     RNAudioSessionCategoryOptionBluetoothHighQualityRecordingMask = 1 << 19;
 static const AVAudioSessionCategoryOptions RNAudioSessionCategoryOptionFarFieldInputMask = 1 << 18;
 
+static bool sessionStringsEqual(NSString *live, NSString *requested)
+{
+  return live == requested || [live isEqualToString:requested];
+}
+
+/// The options the session reports once @p requested is set: iOS documents that duckOthers and
+/// interruptSpokenAudioAndMixWithOthers also turn on mixWithOthers.
+static AVAudioSessionCategoryOptions expectedLiveOptions(AVAudioSessionCategoryOptions requested)
+{
+  const AVAudioSessionCategoryOptions optionsImplyingMixing =
+      AVAudioSessionCategoryOptionDuckOthers |
+      AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
+
+  if ((requested & optionsImplyingMixing) != 0) {
+    return requested | AVAudioSessionCategoryOptionMixWithOthers;
+  }
+
+  return requested;
+}
+
 @implementation AudioSessionManager
 
 static AudioSessionManager *_sharedInstance = nil;
@@ -62,9 +82,9 @@ static AudioSessionManager *_sharedInstance = nil;
 - (bool)areDesiredOptionsSet
 {
   return (
-      self.audioSession.category == self.desiredCategory &&
-      self.audioSession.mode == self.desiredMode &&
-      self.audioSession.categoryOptions == self.desiredOptions &&
+      sessionStringsEqual(self.audioSession.category, self.desiredCategory) &&
+      sessionStringsEqual(self.audioSession.mode, self.desiredMode) &&
+      self.audioSession.categoryOptions == expectedLiveOptions(self.desiredOptions) &&
       self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
 }
 
@@ -95,7 +115,10 @@ static AudioSessionManager *_sharedInstance = nil;
 /// to playback), other apps and the OS change the shared AVAudioSession without telling this
 /// manager, so neither the last request nor the cached `isActive` flag says what the live session
 /// is: the flag is only a best guess for its readers. A live session that already matches the
-/// request is left alone, so re-asserting never churns.
+/// request is left alone, so re-asserting never churns. It matches when its category and mode are
+/// equal strings (the session hands back its own string objects) and its options are exactly the
+/// requested ones plus the bits iOS adds for them (`expectedLiveOptions`); options added by anyone
+/// else count as a difference.
 - (bool)configureAudioSession:(NSError **)outError
 {
   if (!self.shouldManageSession || [self areDesiredOptionsSet]) {

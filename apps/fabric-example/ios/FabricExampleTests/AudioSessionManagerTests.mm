@@ -100,9 +100,16 @@
     return NO;
   }
 
-  self.category = category;
-  self.mode = mode;
-  self.categoryOptions = options;
+  // Like the real session: it hands back its own string objects, and duckOthers and
+  // interruptSpokenAudioAndMixWithOthers also turn on mixWithOthers (documented by Apple).
+  self.category = [NSString stringWithFormat:@"%@", category];
+  self.mode = [NSString stringWithFormat:@"%@", mode];
+  const AVAudioSessionCategoryOptions optionsImplyingMixing =
+      AVAudioSessionCategoryOptionDuckOthers |
+      AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
+  self.categoryOptions = (options & optionsImplyingMixing) != 0
+      ? options | AVAudioSessionCategoryOptionMixWithOthers
+      : options;
   return YES;
 }
 
@@ -247,6 +254,24 @@
             notifyOthersOnDeactivation:YES];
 }
 
+- (void)applyDualRouteOptions
+{
+  [self.manager setAudioSessionOptions:@"playAndRecord"
+                                  mode:@"dualRoute"
+                               options:@[]
+                          allowHaptics:NO
+            notifyOthersOnDeactivation:YES];
+}
+
+- (void)applyDuckingOptions
+{
+  [self.manager setAudioSessionOptions:@"playback"
+                                  mode:@"default"
+                               options:@[ @"duckOthers" ]
+                          allowHaptics:NO
+            notifyOthersOnDeactivation:YES];
+}
+
 - (void)testConfigureAudioSessionNoOpsWhenSessionManagementDisabled
 {
   self.manager.shouldManageSession = false;
@@ -284,7 +309,8 @@
   XCTAssertEqualObjects(self.fakeSession.mode, AVAudioSessionModeVoiceChat);
   XCTAssertEqual(
       self.fakeSession.categoryOptions,
-      AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionDefaultToSpeaker);
+      AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionDefaultToSpeaker |
+          AVAudioSessionCategoryOptionMixWithOthers);
   XCTAssertTrue(self.fakeSession.allowHapticsAndSystemSoundsDuringRecording);
 }
 
@@ -387,6 +413,53 @@
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
   XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
   [audioEngine cleanup];
+}
+
+- (void)testSetAudioSessionOptionsTreatsEqualModeStringsAsMatching
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyDualRouteOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+  XCTAssertNotEqual(
+      (__bridge void *)self.fakeSession.mode, (__bridge void *)self.manager.desiredMode);
+
+  [self applyDualRouteOptions];
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
+  XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testOptionsWithBitsIOSAddsMatchTheLiveSession
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyDuckingOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+
+  [self applyDuckingOptions];
+  XCTAssertTrue([self.manager setActive:true error:nil]);
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
+  XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testSetActiveTrueReappliesOptionsAddedElsewhere
+{
+  self.manager.isActive = true;
+  [self applyPlayAndRecordOptions];
+  self.fakeSession.setCategoryCallCount = 0;
+
+  // Another framework made the session mix with other apps.
+  self.fakeSession.categoryOptions |= AVAudioSessionCategoryOptionMixWithOthers;
+
+  XCTAssertTrue([self.manager setActive:true error:nil]);
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
+  XCTAssertEqual(self.fakeSession.categoryOptions, AVAudioSessionCategoryOptionDefaultToSpeaker);
 }
 
 - (void)testSetActiveTrueActivatesSession

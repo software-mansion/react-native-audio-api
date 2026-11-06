@@ -178,11 +178,12 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
       (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
 }
 
-- (void)testSetAudioSessionActivityFalseHandlesDeactivationDespiteCachedInactiveFlag
+- (void)testSetAudioSessionActivityFalsePausesInterruptedEngineDespiteCachedInactiveFlag
 {
-  // The cached flag was dropped while the session stayed active, so deactivation is real.
+  // An interruption dropped the cached flag. The app turning the session off must also keep the
+  // engine from coming back on its own: Paused is not resumed by interruption-end recovery.
   self.fakeSessionManager.isActive = NO;
-  self.fakeAudioEngine.state = AudioEngineStateRunning;
+  self.fakeAudioEngine.state = AudioEngineStateInterrupted;
 
   NSString *rejectionCode = nil;
   NSArray<NSString *> *eventsAtResolve =
