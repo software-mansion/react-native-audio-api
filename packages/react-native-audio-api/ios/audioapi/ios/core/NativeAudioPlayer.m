@@ -86,7 +86,7 @@
   [sessionManager setPreferredIOBufferFrames:_preferredIOBufferFrames];
 
   NSError *error = nil;
-  if (![sessionManager ensureActive:false error:&error]) {
+  if (![sessionManager ensureActiveWithError:&error]) {
     NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
     [sessionManager resetPreferredIOBufferFrames];
     return false;

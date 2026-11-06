@@ -131,8 +131,7 @@ RCT_EXPORT_METHOD(
     }
 
     NSError *error = nil;
-    const BOOL managedSessionWasActive =
-        self.audioSessionManager.shouldManageSession && self.audioSessionManager.isActive;
+    const BOOL sessionIsManaged = self.audioSessionManager.shouldManageSession;
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
     if (!success) {
@@ -154,7 +153,7 @@ RCT_EXPORT_METHOD(
       return;
     }
 
-    if (!enabled && managedSessionWasActive) {
+    if (!enabled && sessionIsManaged) {
       if ([NSThread isMainThread]) {
         [self handleSessionDeactivation];
       } else {

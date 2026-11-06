@@ -76,10 +76,6 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
     return true;
   }
 
-  if (!active && !self.isActive) {
-    return true;
-  }
-
   self.isActive = active;
   return true;
 }
@@ -182,8 +178,10 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
       (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
 }
 
-- (void)testSetAudioSessionActivityFalseDoesNotPauseWhenAlreadyInactive
+- (void)testSetAudioSessionActivityFalsePausesInterruptedEngineDespiteCachedInactiveFlag
 {
+  // An interruption dropped the cached flag. The app turning the session off must also keep the
+  // engine from coming back on its own: Paused is not resumed by interruption-end recovery.
   self.fakeSessionManager.isActive = NO;
   self.fakeAudioEngine.state = AudioEngineStateInterrupted;
 
@@ -194,11 +192,12 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   XCTAssertNil(rejectionCode);
   XCTAssertEqual(self.fakeSessionManager.setActiveCallCount, 1);
   XCTAssertFalse(self.fakeSessionManager.lastSetActiveValue);
-  XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 0);
-  XCTAssertEqual(self.fakeAudioEngine.onSessionDeactivatedCallCount, 0);
-  XCTAssertEqual(self.fakeAudioEngine.state, AudioEngineStateInterrupted);
-  XCTAssertFalse(self.fakeSessionManager.isActive);
-  XCTAssertEqualObjects(eventsAtResolve, (@[ @"setActive", @"resolve" ]));
+  XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
+  XCTAssertEqual(self.fakeAudioEngine.onSessionDeactivatedCallCount, 1);
+  XCTAssertEqual(self.fakeAudioEngine.state, AudioEngineStatePaused);
+  XCTAssertEqualObjects(
+      eventsAtResolve,
+      (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
 }
 
 - (void)testSetAudioSessionActivityFalseDoesNotPauseWhenNotManagingSession

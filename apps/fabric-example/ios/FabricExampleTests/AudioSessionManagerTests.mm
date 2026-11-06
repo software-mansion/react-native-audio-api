@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 
+#import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 @interface AudioSessionManager (TestingPrivate)
@@ -7,7 +8,6 @@
 - (AVAudioSessionCategory)categoryFromString:(NSString *)categorySTR;
 - (AVAudioSessionMode)modeFromString:(NSString *)modeSTR;
 - (AVAudioSessionCategoryOptions)optionsFromArray:(NSArray *)optionsArray;
-- (bool)activateSessionIfNeeded:(bool)force error:(NSError **)error;
 - (bool)areDesiredOptionsSet;
 - (id)microphoneUsageDescriptionValue;
 - (bool)usesAudioApplicationRecordPermissionAPI;
@@ -100,9 +100,16 @@
     return NO;
   }
 
-  self.category = category;
-  self.mode = mode;
-  self.categoryOptions = options;
+  // Like the real session: it hands back its own string objects, and duckOthers and
+  // interruptSpokenAudioAndMixWithOthers also turn on mixWithOthers (documented by Apple).
+  self.category = [NSString stringWithFormat:@"%@", category];
+  self.mode = [NSString stringWithFormat:@"%@", mode];
+  const AVAudioSessionCategoryOptions optionsImplyingMixing =
+      AVAudioSessionCategoryOptionDuckOthers |
+      AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
+  self.categoryOptions = (options & optionsImplyingMixing) != 0
+      ? options | AVAudioSessionCategoryOptionMixWithOthers
+      : options;
   return YES;
 }
 
@@ -134,6 +141,11 @@
   }
 
   return self.setActiveError == nil;
+}
+
+- (BOOL)setPreferredIOBufferDuration:(NSTimeInterval)duration error:(NSError **)error
+{
+  return YES;
 }
 
 - (BOOL)setPreferredInput:(FakeAudioPortDescription *)inPort error:(NSError **)error
@@ -233,6 +245,33 @@
   return port;
 }
 
+- (void)applyPlayAndRecordOptions
+{
+  [self.manager setAudioSessionOptions:@"playAndRecord"
+                                  mode:@"default"
+                               options:@[ @"defaultToSpeaker" ]
+                          allowHaptics:NO
+            notifyOthersOnDeactivation:YES];
+}
+
+- (void)applyDualRouteOptions
+{
+  [self.manager setAudioSessionOptions:@"playAndRecord"
+                                  mode:@"dualRoute"
+                               options:@[]
+                          allowHaptics:NO
+            notifyOthersOnDeactivation:YES];
+}
+
+- (void)applyDuckingOptions
+{
+  [self.manager setAudioSessionOptions:@"playback"
+                                  mode:@"default"
+                               options:@[ @"duckOthers" ]
+                          allowHaptics:NO
+            notifyOthersOnDeactivation:YES];
+}
+
 - (void)testConfigureAudioSessionNoOpsWhenSessionManagementDisabled
 {
   self.manager.shouldManageSession = false;
@@ -270,7 +309,8 @@
   XCTAssertEqualObjects(self.fakeSession.mode, AVAudioSessionModeVoiceChat);
   XCTAssertEqual(
       self.fakeSession.categoryOptions,
-      AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionDefaultToSpeaker);
+      AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionDefaultToSpeaker |
+          AVAudioSessionCategoryOptionMixWithOthers);
   XCTAssertTrue(self.fakeSession.allowHapticsAndSystemSoundsDuringRecording);
 }
 
@@ -342,6 +382,86 @@
   XCTAssertEqual(self.fakeSession.setAllowHapticsCallCount, 0);
 }
 
+- (void)testSetAudioSessionOptionsReappliesUnchangedRequestWhenLiveCategoryChangedElsewhere
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyPlayAndRecordOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+
+  // Another framework switched the shared session to playback.
+  self.fakeSession.category = AVAudioSessionCategoryPlayback;
+  [self applyPlayAndRecordOptions];
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
+  XCTAssertEqualObjects(self.fakeSession.category, AVAudioSessionCategoryPlayAndRecord);
+  XCTAssertTrue(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testSetAudioSessionOptionsLeavesMatchingLiveSessionAndGraphAlone
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyPlayAndRecordOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+
+  [self applyPlayAndRecordOptions];
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
+  XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testSetAudioSessionOptionsTreatsEqualModeStringsAsMatching
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyDualRouteOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+  XCTAssertNotEqual(
+      (__bridge void *)self.fakeSession.mode, (__bridge void *)self.manager.desiredMode);
+
+  [self applyDualRouteOptions];
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
+  XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testOptionsWithBitsIOSAddsMatchTheLiveSession
+{
+  AudioEngine *audioEngine = [[AudioEngine alloc] init];
+  self.manager.isActive = true;
+  [self applyDuckingOptions];
+  audioEngine.sessionDeactivationInvalidatedGraph = NO;
+  self.fakeSession.setCategoryCallCount = 0;
+
+  [self applyDuckingOptions];
+  XCTAssertTrue([self.manager setActive:true error:nil]);
+
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 0);
+  XCTAssertFalse(audioEngine.sessionDeactivationInvalidatedGraph);
+  [audioEngine cleanup];
+}
+
+- (void)testSetActiveTrueReappliesOptionsAddedElsewhere
+{
+  self.manager.isActive = true;
+  [self applyPlayAndRecordOptions];
+  self.fakeSession.setCategoryCallCount = 0;
+
+  // Another framework made the session mix with other apps.
+  self.fakeSession.categoryOptions |= AVAudioSessionCategoryOptionMixWithOthers;
+
+  XCTAssertTrue([self.manager setActive:true error:nil]);
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
+  XCTAssertEqual(self.fakeSession.categoryOptions, AVAudioSessionCategoryOptionDefaultToSpeaker);
+}
+
 - (void)testSetActiveTrueActivatesSession
 {
   NSError *error = nil;
@@ -366,14 +486,44 @@
   XCTAssertTrue(self.manager.isActive);
 }
 
-- (void)testSetActiveFalseNoOpsWhenSessionIsAlreadyInactive
+- (void)testSetActiveFalseDeactivatesSessionDespiteCachedInactiveFlag
 {
+  // The cached flag was dropped (an engine configuration change) while the session stayed active.
+  self.manager.isActive = true;
+  [self.manager markInactive];
   NSError *error = nil;
 
   XCTAssertTrue([self.manager setActive:false error:&error]);
   XCTAssertNil(error);
-  XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
+  XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+  XCTAssertFalse(self.fakeSession.lastSetActiveValue);
   XCTAssertFalse(self.manager.isActive);
+}
+
+- (void)testSetActiveFalseTreatsSessionNotActiveErrorAsSuccess
+{
+  self.fakeSession.setActiveError = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                                        code:AVAudioSessionErrorCodeSessionNotActive
+                                                    userInfo:nil];
+  NSError *error = nil;
+
+  XCTAssertTrue([self.manager setActive:false error:&error]);
+  XCTAssertNil(error);
+  XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+  XCTAssertFalse(self.manager.isActive);
+}
+
+- (void)testSetActiveFalseReturnsOtherDeactivationErrors
+{
+  self.manager.isActive = true;
+  self.fakeSession.setActiveError = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                                        code:AVAudioSessionErrorCodeUnspecified
+                                                    userInfo:nil];
+  NSError *error = nil;
+
+  XCTAssertFalse([self.manager setActive:false error:&error]);
+  XCTAssertEqual(error.code, AVAudioSessionErrorCodeUnspecified);
+  XCTAssertTrue(self.manager.isActive);
 }
 
 - (void)testSetActiveFalseUsesNotifyOthersOnDeactivationWhenEnabled
@@ -400,26 +550,37 @@
   XCTAssertEqual(self.fakeSession.lastSetActiveOptions, (AVAudioSessionSetActiveOptions)0);
 }
 
-- (void)testActivateSessionIfNeededRespectsCachedActiveStateAndForce
+- (void)testSetActiveTrueActivatesSessionDeactivatedElsewhereDespiteCachedActiveFlag
 {
+  // Another app or the OS deactivated the session without this manager noticing.
   self.manager.isActive = true;
 
-  XCTAssertTrue([self.manager activateSessionIfNeeded:false error:nil]);
-  XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
-
-  XCTAssertTrue([self.manager activateSessionIfNeeded:true error:nil]);
+  XCTAssertTrue([self.manager setActive:true error:nil]);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+  XCTAssertTrue(self.fakeSession.lastSetActiveValue);
   XCTAssertTrue(self.manager.isActive);
 }
 
-- (void)testActivateSessionIfNeededReturnsFalseWhenConfigurationFails
+- (void)testSetActiveTrueReappliesCategoryChangedElsewhereDespiteCachedActiveFlag
+{
+  self.manager.isActive = true;
+  self.manager.desiredCategory = AVAudioSessionCategoryPlayAndRecord;
+  self.fakeSession.category = AVAudioSessionCategoryPlayback;
+
+  XCTAssertTrue([self.manager setActive:true error:nil]);
+  XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
+  XCTAssertEqualObjects(self.fakeSession.category, AVAudioSessionCategoryPlayAndRecord);
+  XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+}
+
+- (void)testEnsureActiveReturnsFalseWhenConfigurationFails
 {
   self.manager.desiredCategory = AVAudioSessionCategoryRecord;
   self.fakeSession.setCategoryError =
       [NSError errorWithDomain:@"AudioSessionTests" code:102 userInfo:nil];
 
   NSError *error = nil;
-  XCTAssertFalse([self.manager activateSessionIfNeeded:false error:&error]);
+  XCTAssertFalse([self.manager ensureActiveWithError:&error]);
   XCTAssertEqual(self.fakeSession.setCategoryCallCount, 1);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
   XCTAssertFalse(self.manager.isActive);
@@ -434,7 +595,7 @@
 {
   self.manager.shouldManageSession = false;
 
-  XCTAssertTrue([self.manager ensureActive:false error:nil]);
+  XCTAssertTrue([self.manager ensureActiveWithError:nil]);
   XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
 }
 

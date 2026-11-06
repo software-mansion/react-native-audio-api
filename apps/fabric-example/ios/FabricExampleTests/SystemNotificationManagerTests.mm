@@ -161,7 +161,6 @@
 
 @property(nonatomic, assign) NSInteger markInactiveCallCount;
 @property(nonatomic, assign) NSInteger ensureActiveCallCount;
-@property(nonatomic, assign) BOOL lastEnsureActiveForce;
 
 @end
 
@@ -173,10 +172,9 @@
   self.isActive = false;
 }
 
-- (bool)ensureActive:(bool)force error:(NSError **)error
+- (bool)ensureActiveWithError:(NSError **)error
 {
   self.ensureActiveCallCount += 1;
-  self.lastEnsureActiveForce = force;
 
   if (error != nil) {
     *error = nil;
@@ -736,7 +734,6 @@ static void ClearFakeSharedAudioSession(void)
 
   XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
   XCTAssertEqual(self.fakeSessionManager.ensureActiveCallCount, 1);
-  XCTAssertTrue(self.fakeSessionManager.lastEnsureActiveForce);
   XCTAssertEqual(self.fakeAudioEngine.restartAudioEngineCallCount, 1);
 }
 
