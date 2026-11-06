@@ -61,12 +61,17 @@ class AndroidAudioPlayer : public AudioPlayer,
   /// Updated on the audio thread from each Oboe callback `numFrames`.
   std::atomic<int32_t> lastCallbackFrameCount_{0};
   AndroidOutputProfile outputProfile_;
+  /// Audio thread only. Counts down to the next check that the callback thread is still pinned.
+  uint32_t callbacksUntilAffinityCheck_{0};
 
   bool openAudioStreamLocked();
   bool rebuildStreamLocked();
   bool startStreamLocked();
   void cleanupLocked();
   [[nodiscard]] bool isRunningLocked() const;
+
+  /// Pins the audio thread to the core it runs on
+  void keepAudioThreadOnOneCore();
 };
 
 } // namespace audioapi
