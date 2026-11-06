@@ -3,10 +3,17 @@ import { TestScreen } from '../../../../packages/test-app-screen';
 
 import AudioParamPipeline from './AudioParamPipeline';
 import AudioPipelineStress from './AudioPipelineStress';
+import AudioIOPlayground from './AudioIOPlayground';
 import LatencyValidation from './LatencyValidation';
 
 /** Screens shown under the 'Other' bottom tab (stress tests, internal tooling). */
 export const otherScreens: Example[] = [
+  {
+    key: 'AudioIOPlayground',
+    title: 'Audio I/O Playground',
+    icon: 'arrow-left-right',
+    screen: AudioIOPlayground,
+  },
   {
     key: 'AudioPipelineStress',
     title: 'Audio Pipeline Stress',

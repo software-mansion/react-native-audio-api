@@ -98,19 +98,6 @@ yarn validate:full      # --fast + C++ extended + --android + --ios
 
 Autolinking registers workspace packages under their real `packages/` path (`apps/common-app/scripts/dependencies.js` follows the `node_modules` symlink), so Gradle and CocoaPods build local edits in `packages/react-native-audio-api/` directly.
 
-### iOS native unit tests (when `ios/` Objective-C++ changes)
-
-XCTests for the iOS layer (recorder, encoder, session, engine) live in `apps/fabric-example/ios/FabricExampleTests/` and run in the `FabricExampleTests` scheme against a simulator. Neither `validate.sh` nor `yarn test` runs them:
-
-```bash
-cd apps/fabric-example/ios
-xcodebuild test -workspace FabricExample.xcworkspace -scheme FabricExampleTests \
-  -destination id=<simulator udid> \
-  -only-testing:FabricExampleTests/IOSEncoderMultichannelInputTests   # optional filter
-```
-
-A test that crashes the host shows up as "Restarting after unexpected exit" plus a `Failing tests:` entry with no assertion message. As of 2026-11-03, `IOSAudioRecorderTests testConnectWhileActiveInitializesAdapterAndDisconnectClearsIt` and `testStopClearsConfiguredStateButPreservesConfiguredIntent` crash this way on a simulator, independent of the encoder code.
-
 ### Extended graph (when graph / audio-thread code changes)
 
 ```bash

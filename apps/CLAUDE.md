@@ -24,6 +24,7 @@ apps/
     │   ├── components/       # Shared UI: AppIcon, Container, Button, Slider, Spacer, Switch, Select
     │   ├── utils/
     │   │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap)
+    │   │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
     │   │   └── usePlayer.tsx # Hook for pattern-based scheduled playback
     │   ├── singletons/       # Global audioContext and audioRecorder instances
     │   └── styles.ts         # Shared colors and layout constants
@@ -361,17 +362,19 @@ All in `apps/common-app/src/components/`:
 |---|---|
 | `AppIcon` | `name` (typed SVG name), `size`, `color` |
 | `Container` | `centered?`, `disablePadding?` — stack-screen root; content starts below the measured (transparent) header via `useHeaderHeight` |
-| `Button` | `title`, `onPress`, `disabled?`, `minWidth?` (default 100) — liquid glass capsule sized to its title; plain `surface` capsule before iOS 26 |
+| `Button` | `title`, `onPress`, `disabled?`, `minWidth?` (default 100), `testID?` — liquid glass capsule sized to its title; plain `surface` capsule before iOS 26 |
 | `Slider` | `label?`, `min`, `max`, `step`, `value`, `scale?` (`'linear'` \| `'logarithmic'`, needs `min > 0`), `onValueChange` (called on release, rounded to `step`) — system slider (`@react-native-community/slider`, UISlider with the glass thumb on iOS 26) under a label / live value row; stretches to the parent width, so place it in a column |
 | `VerticalSlider` | `label`, `value` (0–1), `onValueChange`, `labelColor?`, `valueColor?`, `possibleValues?` (snap points, drawn as ticks) — hardware-style fader (thin slot, square cap); only the cap is draggable. Currently unused (the Pedal Board moved to `Knob`) |
 | `Knob` | `label`, `value` (0–1), `onValueChange`, `color?`, `size?` (default 64), `formatValue?` (worklet) — Skia rotary control turned by a vertical pan (160 px = full range); the readout is an animated `TextInput` so dragging does not re-render. Reference: Pedal Board pedals |
 | `RoundButton` | `icon` (`AppIconName` or `'stop'`, a filled square the font lacks), `onPress`, `label?`, `size?` (default 64), `color?`, `variant?` (`'solid'` fill \| `'outline'` surface circle with tinted glyph), `disabled?` — circular transport button with a glow in its colour. Reference: Pedal Board transport row |
 | `Spacer.Vertical` | `size` |
-| `Switch` | `value`, `onValueChange` — native switch tinted with the accent |
-| `Select` | `options`, `value`, `onChange` — native pull-down menu (`@react-native-menu/menu`; glass UIMenu on iOS 26) |
+| `Switch` | `value`, `onValueChange`, `testID?` (no label; render one beside it) — native switch tinted with the accent |
+| `Select` | `options`, `value`, `onChange`, `testID?` (single choice, no label; the id goes on the trigger, menu items are found by their title) — native pull-down menu (`@react-native-menu/menu`; glass UIMenu on iOS 26) |
 | `SegmentedControl` | `options` (`{ value, label }[]`), `value`, `onChange` — capsule row for 2–5 options |
 | `BottomAccessory` | children — liquid-glass capsule above the home indicator, shaped like the iOS 26 tab bar accessory (the system accessory only exists on bottom-tab screens, and examples are pushed on the root stack). Pad content with `useBottomAccessorySpace()`. Reference: Audio Visualizer |
 | `ListSection` / `ListRow` / `IconBadge` | inset grouped list primitives used by the tabs; section header is inset by `layout.cardRadius` |
+
+`testID` is what E2E tools query: the accessibility identifier on iOS, the view tag on Android. The Audio I/O Playground (`other/AudioIOPlayground/`) sets one on every control.
 
 Colours come from the audiodocs dark palette in `styles.ts` (`surface`, `textPrimary`/`textSecondary`/`textMuted`, `accent` + `onAccent`, `track`, hues `blue`/`green`/`purple`/`yellow`). Content drawn on an `accent` fill uses `onAccent` (navy) for contrast.
 
@@ -382,6 +385,15 @@ The icon font has no `power` glyph; `PedalShell` draws Lucide's power symbol inl
 Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents; animate transforms, not opacity, on wrappers.
 
 `@react-native-menu/menu` 2.0.0 is patched (`.yarn/patches/`) to import `<React/RCTBridge.h>` instead of the quoted `"RCTBridge.h"`, which RN 0.88's header layout no longer resolves.
+
+## Type Checking
+
+`common-app` resolves `react-native-audio-api` types from the library's built `lib/typescript`, not from `src`. After switching branches, rebuild before checking the app, or `tsc` checks against another branch's API:
+
+```bash
+yarn workspace react-native-audio-api build
+npx tsc --noEmit -p apps/common-app
+```
 
 ## Metro Config Notes
 

@@ -16,6 +16,18 @@ auto AudioGraph::operator[](std::uint32_t index) const -> const Vertex & {
   return nodes[index];
 }
 
+auto AudioGraph::operator[](const NodeHandle &handle) -> Vertex & {
+  return nodes[handle.index_];
+}
+
+auto AudioGraph::operator[](const NodeHandle &handle) const -> const Vertex & {
+  return nodes[handle.index_];
+}
+
+std::uint32_t AudioGraph::indexOf(const NodeHandle &handle) const {
+  return handle.index_;
+}
+
 size_t AudioGraph::size() const {
   return nodes.size();
 }
@@ -43,7 +55,7 @@ void AudioGraph::markDirty() {
 }
 
 void AudioGraph::addNode(std::shared_ptr<NodeHandle> handle) {
-  handle->index = static_cast<std::uint32_t>(nodes.size());
+  handle->index_ = static_cast<std::uint32_t>(nodes.size());
   nodes.emplace_back(std::move(handle));
 }
 
@@ -120,7 +132,7 @@ void AudioGraph::sortAndCompact() {
     if (b != e) {
       nodes[b] = std::move(nodes[e]);
     }
-    nodes[b].handle->index = b;
+    nodes[b].handle->index_ = b;
     b++;
   }
 
@@ -242,7 +254,7 @@ void AudioGraph::kahn_toposort() {
   // Phase 5: update handle indices & reset scratch
   for (std::uint32_t i = 0; i < n; i++) {
     if (nodes[i].handle) {
-      nodes[i].handle->index = i;
+      nodes[i].handle->index_ = i;
     }
     nodes[i].target_place = -1;
   }

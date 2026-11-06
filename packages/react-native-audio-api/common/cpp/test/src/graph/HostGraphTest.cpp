@@ -78,7 +78,7 @@ TEST_F(HostGraphTest, AddNode) {
   });
 
   // Create a new handle and add it via HostGraph
-  auto handle = std::make_shared<NodeHandle>(0, nullptr);
+  auto handle = std::make_shared<NodeHandle>(nullptr);
   auto [hostNode, event] = hostGraph.addNode(handle);
 
   EXPECT_EQ(hostNode->handle, handle);
@@ -91,7 +91,7 @@ TEST_F(HostGraphTest, AddNode) {
 
   // After event: node added to AudioGraph
   EXPECT_EQ(audioGraph.size(), 4u);
-  audioGraph[handle->index].test_node_identifier__ = 3;
+  audioGraph[*handle].test_node_identifier__ = 3;
 
   auto adj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
   EXPECT_EQ(adj.size(), 4u);
@@ -322,13 +322,8 @@ TEST_F(HostGraphTest, RemoveNode_GhostNodeMustNotAllowCycle) {
   EXPECT_EQ(addResult.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
 }
 
-// The audio thread may compact AudioGraph between the moment removeAllEdges
-// builds its event and the moment the event runs. Compaction moves the
-// surviving vertices, so the event has to resolve vertex positions when it
-// runs, not when it is built: positions captured earlier name other nodes
-// (or lie past the end of the vector) once a lower vertex is gone.
-TEST_F(HostGraphTest, RemoveAllEdges_ResolvesIndicesAfterCompaction) {
-  // 0 (alone), 1 → 2 → 3
+TEST_F(HostGraphTest, RemoveAllEdges_SurvivesCompactionBeforeEventRuns) {
+  // 0 (isolated, about to be removed)   1 -> 2 -> 3
   auto [audioGraph, hostGraph] = TestGraphUtils::createTestGraph({
       {},  // 0
       {2}, // 1 -> 2
@@ -336,28 +331,24 @@ TEST_F(HostGraphTest, RemoveAllEdges_ResolvesIndicesAfterCompaction) {
       {}   // 3
   });
 
-  HostGraph::HostVertex *node0 = findNode(hostGraph, 0);
-  HostGraph::HostVertex *node1 = findNode(hostGraph, 1);
-  ASSERT_NE(node0, nullptr);
-  ASSERT_NE(node1, nullptr);
-
-  // Node 0 goes away: once compaction runs, every vertex above it shifts down.
-  auto removeNodeEvent = hostGraph.removeNode(node0).unwrap();
+  auto removeNodeEvent = std::move(hostGraph.removeNode(findNode(hostGraph, 0))).unwrap();
   removeNodeEvent(audioGraph, disposer_);
 
-  // Built while node 1 → node 2 still sit at positions 1 and 2.
-  auto removeAllEdgesEvent = hostGraph.removeAllEdges(node1).unwrap();
-
+  // The audio thread compacts node 0 out only after the JS thread has built the
+  // disconnect event, so every audio-graph position the event saw shifts by one.
+  auto disconnectEvent = std::move(hostGraph.removeAllEdges(findNode(hostGraph, 1))).unwrap();
   audioGraph.sortAndCompact();
-  ASSERT_EQ(audioGraph.size(), 3u) << "node 0 should have been compacted away";
+  ASSERT_EQ(audioGraph.size(), 3u);
+  disconnectEvent(audioGraph, disposer_);
 
-  removeAllEdgesEvent(audioGraph, disposer_);
-
-  // Only 1 → 2 is gone; 2 → 3 must survive. Rows are indexed by the nodes'
-  // test identifiers, so node 0's row is absent after compaction.
-  auto audioAdj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
-  auto hostAdj = TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph);
-  EXPECT_EQ(audioAdj, hostAdj) << "AudioGraph and HostGraph disagree after removeAllEdges";
+  std::vector<std::vector<size_t>> expected = {
+      {},  // 0 (removed)
+      {},  // 1
+      {3}, // 2 -> 3
+      {}   // 3
+  };
+  EXPECT_EQ(TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph), expected);
+  EXPECT_EQ(TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph), expected);
 }
 
 } // namespace audioapi::utils::graph

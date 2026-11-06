@@ -298,8 +298,7 @@ auto HostGraph::removeNode(HostVertex *node) -> Result<AGEvent, GraphError> {
 
   node->ghost = true;
 
-  return Ok(
-      [h = node->handle](AudioGraph &graph, auto &) mutable { graph[h->index].orphaned = true; });
+  return Ok([h = node->handle](AudioGraph &graph, auto &) mutable { graph[*h].orphaned = true; });
 }
 
 auto HostGraph::addEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, GraphError> {
@@ -355,7 +354,7 @@ auto HostGraph::addEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, Gra
         disposer.dispose(toNode->exchangeInputScratch(std::move(*reservedInputs)));
         // dispose the unique_ptr
         disposer.dispose(std::move(reservedInputs));
-        graph.pool().push(graph[hTo->index].input_head, hFrom->index);
+        graph.pool().push(graph[*hTo].input_head, graph.indexOf(*hFrom));
         graph.markDirty();
       });
 }
@@ -395,7 +394,7 @@ auto HostGraph::removeEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, 
                 AudioGraph &graph, auto &disposer) mutable {
     applyChannelNegotiations(*negotiations, disposer);
     disposer.dispose(std::move(negotiations));
-    graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
+    graph.pool().remove(graph[*hTo].input_head, graph.indexOf(*hFrom));
     graph.markDirty();
   });
 }
@@ -406,10 +405,6 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
     return Err(GraphError::NODE_NOT_FOUND);
   }
 
-  // Handles, not indices: the audio thread may compact AudioGraph before this
-  // event runs, which moves vertices and rewrites each handle's index.
-  auto formerOutputHandles = std::vector<std::shared_ptr<NodeHandle>>();
-  formerOutputHandles.reserve(from->outputs.size());
   auto formerOutputs = std::vector<HostVertex *>();
   formerOutputs.reserve(from->outputs.size());
 
@@ -419,7 +414,6 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
       to->inputs.erase(itIn);
     }
     edgeCount_--;
-    formerOutputHandles.push_back(to->handle);
     formerOutputs.push_back(to);
   }
   from->outputs.clear();
@@ -434,15 +428,22 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
   // that lost this input re-derives its layout.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, formerOutputs);
 
+  auto formerOutputHandles = std::vector<std::shared_ptr<NodeHandle>>();
+  formerOutputHandles.reserve(from->outputs.size());
+  std::ranges::for_each(formerOutputs, [&formerOutputHandles](const auto *to) {
+    formerOutputHandles.push_back(to->handle);
+  });
+
   return Ok([hFrom = from->handle,
              formerOutputHandles = std::move(formerOutputHandles),
              negotiations = std::move(negotiations)](AudioGraph &graph, auto &disposer) mutable {
     applyChannelNegotiations(*negotiations, disposer);
     disposer.dispose(std::move(negotiations));
     for (const auto &hTo : formerOutputHandles) {
-      graph.pool().remove(graph[hTo->index].input_head, hFrom->index);
+      graph.pool().remove(graph[*hTo].input_head, graph.indexOf(*hFrom));
     }
     graph.markDirty();
+    // Off the audio thread, so these handle releases never run here.
     disposer.dispose(std::move(formerOutputHandles));
   });
 }
@@ -513,7 +514,7 @@ std::optional<HostGraph::AGEvent> HostGraph::linkNodes(HostVertex *from, HostVer
   linkCount_++;
 
   return AGEvent([hFrom = from->handle, hTo = to->handle](AudioGraph &graph, auto &) mutable {
-    graph.pool().push(graph[hFrom->index].link_head, hTo->index);
+    graph.pool().push(graph[*hFrom].link_head, graph.indexOf(*hTo));
     graph.markDirty();
   });
 }

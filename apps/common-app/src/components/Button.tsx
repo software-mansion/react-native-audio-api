@@ -13,6 +13,7 @@ interface ButtonProps {
   disabled?: boolean;
   /** The button grows past this to fit its title. */
   minWidth?: number;
+  testID?: string;
 }
 
 const height = 44;
@@ -26,9 +27,11 @@ const Button: FC<ButtonProps> = ({
   onPress,
   disabled = false,
   minWidth = 100,
+  testID,
 }) => {
   return (
     <Pressable
+      testID={testID}
       disabled={disabled}
       onPress={onPress}
       accessibilityRole="button"

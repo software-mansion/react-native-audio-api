@@ -284,39 +284,20 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
             static_cast<size_t>(inputLayout.channelCount) * sizeof(::AudioBuffer),
         0);
 
-    // AVAudioFormat only builds formats wider than stereo from a channel layout. Inputs such as
-    // multichannel interfaces carry no channel roles, so their channels are taken as discrete.
-    const auto inputChannelCount = static_cast<AVAudioChannelCount>(inputLayout.channelCount);
-    if (inputChannelCount > 2) {
-      AVAudioChannelLayout *discreteLayout = [AVAudioChannelLayout
-          layoutWithLayoutTag:kAudioChannelLayoutTag_DiscreteInOrder | inputChannelCount];
-      state_->inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                                             sampleRate:inputLayout.sampleRate
-                                                            interleaved:NO
-                                                          channelLayout:discreteLayout];
-    } else {
-      state_->inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                                             sampleRate:inputLayout.sampleRate
-                                                               channels:inputChannelCount
-                                                            interleaved:NO];
-    }
+    state_->inputFormat =
+        [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                         sampleRate:inputLayout.sampleRate
+                                           channels:(AVAudioChannelCount)inputLayout.channelCount
+                                        interleaved:NO];
     if (state_->inputFormat == nil) {
       return Err("Failed to build input AVAudioFormat");
     }
 
-    AVAudioFormat *outputFormat = [state_->audioFile processingFormat];
-    state_->converter = [[AVAudioConverter alloc] initFromFormat:state_->inputFormat
-                                                        toFormat:outputFormat];
+    state_->converter =
+        [[AVAudioConverter alloc] initFromFormat:state_->inputFormat
+                                        toFormat:[state_->audioFile processingFormat]];
     if (state_->converter == nil) {
       return Err("Failed to create AVAudioConverter");
-    }
-    if (inputChannelCount > outputFormat.channelCount) {
-      // Discrete channels cannot be downmixed by role; the file keeps the first input channels.
-      NSMutableArray<NSNumber *> *channelMap = [NSMutableArray array];
-      for (AVAudioChannelCount channel = 0; channel < outputFormat.channelCount; ++channel) {
-        [channelMap addObject:@(channel)];
-      }
-      state_->converter.channelMap = channelMap;
     }
     state_->converter.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     state_->converter.sampleRateConverterQuality = AVAudioQualityMax;

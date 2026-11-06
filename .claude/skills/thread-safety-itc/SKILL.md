@@ -119,8 +119,6 @@ Per-quantum processable state (`ALWAYS_`/`CONDITIONAL_`/`NOT_PROCESSABLE`) is de
 
 **Pitfall (fixed):** earlier, `HostGraph` AGEvents (`addEdge`/`removeEdge`/`removeAllEdges`) walked `HostGraph::HostVertex::{inputs,outputs,linkedNodes}` on the audio thread to mark processable state incrementally. Those vectors mutate on the JS thread under `nodesMutex_` — a cross-thread race. AGEvents must never read HostGraph adjacency for processable state; they only mirror structural edges/links onto the audio graph. The host-side `linkedNodes` list is now kept solely so links can be scrubbed when a linked node is disposed.
 
-**Pitfall (fixed):** an AGEvent must capture `NodeHandle`s and read `handle->index` when it runs on the audio thread, never copy indices when it is built. `AudioGraph::sortAndCompact()` can run between the two and moves every vertex above a deleted one, rewriting the handles' indices. `removeAllEdges` once captured raw indices: they then named the wrong vertices (silently removing other edges) or ran past the end of the vertex vector (a libc++ bounds abort on `AURemoteIO::IOThread`). Hit by Simple Piano's long score, which disconnects hundreds of finished voices while others are compacted away. Regression test: `HostGraphTest.RemoveAllEdges_ResolvesIndicesAfterCompaction`.
-
 ---
 
 ## Decision Table

@@ -9,6 +9,8 @@ interface SelectProps<T extends string> {
   value: T;
   options: T[];
   onChange: (value: T) => void;
+  /** Set on the trigger; menu items are found by their title. */
+  testID?: string;
 }
 
 const height = 44;
@@ -19,7 +21,7 @@ const height = 44;
  * option is checkmarked on iOS.
  */
 function Select<T extends string>(props: SelectProps<T>) {
-  const { options, value, onChange } = props;
+  const { options, value, onChange, testID } = props;
 
   const actions = options.map((option) => ({
     id: option,
@@ -37,6 +39,7 @@ function Select<T extends string>(props: SelectProps<T>) {
   return (
     <MenuView actions={actions} onPressAction={onPressAction}>
       <View
+        testID={testID}
         style={styles.trigger}
         accessible
         accessibilityRole="button"

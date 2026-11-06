@@ -3,10 +3,16 @@ sidebar_position: 8
 ---
 
 import { Optional } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { usePeriodicWavePlayground } from '@site/src/components/InteractivePlayground/PeriodicWaveExample/usePeriodicWavePlayground';
 
 # PeriodicWave
 
 The `PeriodicWave` interface defines a periodic waveform that can be used to shape the output of an [OscillatorNode](../sources/oscillator-node.mdx).
+
+Press play, then pick a preset or shape the wave yourself: each slider sets the sine term of one harmonic, a multiple of the oscillator frequency. The upper plot shows the shape of the wave as the harmonics add up, before you play it; the lower one shows the live output.
+
+<InteractivePlayground tag="PeriodicWave" usePlayground={usePeriodicWavePlayground} />
 
 ## Constructor
 

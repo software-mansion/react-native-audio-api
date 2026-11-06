@@ -28,6 +28,7 @@ type ExampleRoutes = {
   TextToSpeech: undefined;
   AudioFile: undefined;
   AudioPipelineStress: undefined;
+  AudioIOPlayground: undefined;
   PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;

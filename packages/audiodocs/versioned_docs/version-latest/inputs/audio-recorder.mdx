@@ -6,20 +6,19 @@ toc_max_heading_level: 5
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
-import { Optional, ReadOnly, MobileOnly, Android } from '@site/src/components/Badges';
+import { Optional, IOS, Android } from '@site/src/components/Badges';
 
 # AudioRecorder
 
-AudioRecorder is a primary interface for capturing audio. It supports three main modes of operations:
+`AudioRecorder` is a primary interface for capturing audio. It supports three main modes of operations:
 
 - **File recording:** Writing audio data directly to the filesystem.
 - **Data callback:** Emitting raw audio buffers, that can be used in either further processing or streamed.
-- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
+- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing.
 
 ## Configuration
 
-To access microphone you need to make sure your app has required permission configuration - check [getting started permission section](/docs/fundamentals/getting-started#special-permissions) for more information.
+To access microphone you need to make sure your app has required permission configuration - check [getting started permission section](../fundamentals/getting-started.mdx#special-permissions) for more information.
 
 Additionally to be able to record audio while application is in the background, you need to enable background mode on iOS and configure foreground service on android.
 
@@ -48,15 +47,15 @@ Additionally to be able to record audio while application is in the background, 
     }
     ```
 
-    For more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
+    For more configuration options, check out the [Expo plugin section](../other/audio-api-plugin.mdx).
 
   </TabItem>
   <TabItem value="iOS" label="iOS">
-    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
+    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode.
 
     ![background mode configuration example](/docs/recorder/signing-and-capabilities.png)
 
-    Microphone permission can be created or modified through the `Info.plist` file
+    Microphone permission can be created or modified through the `Info.plist` file.
 
     ![Info plist example](/docs/recorder/info-plist.png)
 
@@ -73,7 +72,7 @@ Additionally to be able to record audio while application is in the background, 
 
   </TabItem>
   <TabItem value="android" label="Android">
-    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file
+    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file.
 
     ```xml
     <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -100,7 +99,7 @@ By default the foreground service stops when the user swipes the app away from t
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    Set the `androidFSStopWithTask` option of the [expo plugin](/docs/other/audio-api-plugin#androidfsstopwithtask) to `false`:
+    Set the `androidFSStopWithTask` option of the [expo plugin](../other/audio-api-plugin.mdx#androidfsstopwithtask) to `false`:
 
     ```json
     {
@@ -128,7 +127,7 @@ By default the foreground service stops when the user swipes the app away from t
 
 For the recording to actually survive, all of the following must hold:
 
-- The foreground service only exists while a library notification is shown. Call [`RecordingNotificationManager.show()`](/docs/system/recording-notification-manager#show) while the app is still in the foreground — before the user leaves the app — otherwise there is no service to keep alive.
+- The foreground service only exists while a library notification is shown. Call [`RecordingNotificationManager.show()`](../system/recording-notification-manager.mdx#show) while the app is still in the foreground — before the user leaves the app — otherwise there is no service to keep alive.
 - `androidFSTypes` must include `"microphone"` (manifest `foregroundServiceType="microphone"`), and on Android 14+ (API 34) the app needs the `android.permission.FOREGROUND_SERVICE_MICROPHONE` permission.
 - Android's while-in-use rule applies: microphone access must begin while the app is in the foreground. Starting a recording from the background is not possible.
 
@@ -136,7 +135,7 @@ For the recording to actually survive, all of the following must hold:
 Even with `stopWithTask="false"`, the system can still kill the process (memory pressure, OEM battery managers). Recording cannot self-restart from the background — the user has to reopen the app. To limit data loss in that case, tune the file-output options [`androidFlushIntervalMs`](#audiorecorderfileoptions) and [`rotateIntervalBytes`](#audiorecorderfileoptions).
 :::
 
-A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](/docs/system/recording-notification-manager#native-action-handling) (`showStopAction: true`) or let them [swipe the notification away](/docs/system/recording-notification-manager#swiping-the-notification-away) (`dismissible: true`). Both stop the recording natively even when no JS is reachable.
+A recording that survives task removal can only be controlled from the notification, so give the user a way out: enable the notification's [stop action](../system/recording-notification-manager.mdx#native-action-handling) (`showStopAction: true`) or let them [swipe the notification away](../system/recording-notification-manager.mdx#swiping-the-notification-away) (`dismissible: true`). Both stop the recording natively even when no JS is reachable.
 
 When the app is opened again, reconcile the UI with what happened while it was away:
 
@@ -151,7 +150,7 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
-## Usage
+## Examples
 
 <Tabs group="usage">
   <TabItem value="record-to-file" label="Record to File">
@@ -161,10 +160,12 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'record',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'record',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -237,10 +238,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'record',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'record',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -327,10 +330,12 @@ import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'playAndRecord',
-  iosMode: 'default',
-  iosOptions: [],
+AudioManager.setSystemOptions({
+  ios: {
+    category: 'playAndRecord',
+    mode: 'default',
+    options: [],
+  },
 });
 
 const audioRecorder = new AudioRecorder();
@@ -360,9 +365,7 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const adapter = audioContext.createRecorderAdapter();
-    adapter.connect(audioContext.destination);
-    audioRecorder.connect(adapter);
+    audioRecorder.connect(audioContext, audioContext.destination);
 
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
@@ -417,15 +420,30 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-        Creates new instance of AudioRecorder. It is preferred to create only a single instance of the AudioRecorder class for the best performance, memory and battery consumption reasons. While the idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have a noticeable impact on the device.
+          Creates a new `AudioRecorder` instance, optionally configuring the platform capture chain - see [AudioRecorderOptions](#audiorecorderoptions). It is preferred to create only a single instance of `AudioRecorder` for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
         </div>
         ```tsx
         import { AudioRecorder } from 'react-native-audio-api';
 
         const audioRecorder = new AudioRecorder();
         ```
+        <div class="text-content">
+          Full-duplex voice apps (playing audio while recording) need platform echo cancellation on both platforms, otherwise the speaker output leaks back into the microphone:
+        </div>
+        ```tsx
+        const audioRecorder = new AudioRecorder({
+          androidInputPreset: 'voiceCommunication',
+          iosVoiceProcessing: true,
+        });
+        ```
+        <div class="text-content">
+          For a complete example with microphone streaming, assistant playback, barge-in, and session cleanup, see the [FabricExample Voice Chat demo](https://github.com/software-mansion/react-native-audio-api/tree/main/apps/common-app/src/demos/VoiceChat) and its [setup instructions](https://github.com/software-mansion/react-native-audio-api/tree/main/apps/fabric-example#voice-chat-demo). It uses platform voice processing together with the communication session configuration in [AudioManager](../system/audio-manager.mdx).
+        </div>
       </td>
     </tr>
+
+<!-- -->
+
     <tr>
       <td><div class="text-content">
         ##### start
@@ -434,13 +452,10 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from system audio input device. Returns a `Promise` that resolves when recording has started.
-          You can pass optional object with `fileNameOverride` string, to provide your own fileName generation.
+          Starts the stream from the system audio input device. Returns a `Promise<Result<{}>>` that resolves when recording has started.
         </div>
         ```tsx
-        const result = await audioRecorder.start({
-          fileNameOverride: `my_audio_${mySessionId}`
-        });
+        const result = await audioRecorder.start();
 
         console.log(result.status);
         ```
@@ -457,9 +472,9 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-        Stops the input stream and cleans up each input access method. Returns a `Promise` that resolves when recording has stopped.
+          Stops the input stream and cleans up each input access method. Returns a `Promise<Result<FileInfo>>` that resolves when recording has stopped.
 
-        For details on the returned file information check: [FileInfo](#fileinfo)
+          For details on the returned file information, see [FileInfo](#fileinfo).
         </div>
         ```tsx
         const result = await audioRecorder.stop();
@@ -478,13 +493,17 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### pause
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Pauses the recording. This is useful when recording to file is active, but you don't want to finalize the file.
+          Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file. Returns a `Promise<void>` that resolves when the input stream has paused.
         </div>
         ```tsx
-          audioRecorder.pause();
+        await audioRecorder.pause();
+
+        console.log(audioRecorder.isPaused());
         ```
       </td>
     </tr>
@@ -494,13 +513,17 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### resume
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Resumes the recording if it was previously paused, otherwise does nothing.
+          Resumes the recording if it was previously paused; otherwise does nothing. Returns a `Promise<void>` that resolves when the input stream is running again.
         </div>
         ```tsx
-          audioRecorder.resume();
+        await audioRecorder.resume();
+
+        console.log(audioRecorder.isRecording());
         ```
       </td>
     </tr>
@@ -513,7 +536,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns `true` if the recorder is in active/recording state
+          Returns `true` if the recorder is in an active recording state.
         </div>
         ```tsx
           const isRecording = audioRecorder.isRecording();
@@ -529,7 +552,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns `true` if the recorder is in paused state.
+          Returns `true` if the recorder is in a paused state.
         </div>
         ```tsx
           const isPaused = audioRecorder.isPaused();
@@ -567,7 +590,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns the [FileInfo](#fileinfo) stashed by the last successful stop that produced output files, or `null` if there is none. That includes JS [stop](#stop), the Android [recording notification](/docs/system/recording-notification-manager#native-action-handling), and [deactivating the iOS audio session](/docs/system/audio-manager#setaudiosessionactivity) mid-recording. Consume-once: the stash is cleared on read, so a second call returns `null`.
+          Returns the [FileInfo](#fileinfo) stashed by the last successful stop that produced output files, or `null` if there is none. That includes JS [stop](#stop), the Android [recording notification](../system/recording-notification-manager.mdx#native-action-handling), and [deactivating the iOS audio session](../system/audio-manager.mdx#setaudiosessionactivity) mid-recording. Consume-once: the stash is cleared on read, so a second call returns `null`.
 
           If the recording was already finalized natively, calling [stop](#stop) on an `AudioRecorder` instance does not return those files — it reports that the recorder is not recording. Read the stashed [FileInfo](#fileinfo) from this method instead.
         </div>
@@ -588,9 +611,9 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Sets an error callback for any possible internal error that might happen during file writing, callback invocation or adapter access.
+          Sets an error callback for internal errors that might happen during file writing, callback invocation, or adapter access.
 
-          For details check: [OnRecorderErrorEventType](#onrecordererroreventtype)
+          For details, see [OnRecorderErrorEventType](#onrecordererroreventtype).
         </div>
         ```tsx
           audioRecorder.onError((error: OnRecorderErrorEventType) => {
@@ -619,6 +642,44 @@ export default MyRecorder;
   </tbody>
 </table>
 
+### Properties
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Property</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### options
+      </div></td>
+      <td>
+        <div class="text-content">
+          `AudioRecorderFileOptions | null` - the active file-output configuration after [enableFileOutput()](#enablefileoutput), or `null` when file output is disabled. See [AudioRecorderFileOptions](#audiorecorderfileoptions).
+        </div>
+        ```tsx
+          const fileOptions = audioRecorder.options;
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### inputLatency
+      </div></td>
+      <td>
+        <div class="text-content">
+          `number` - the estimated **full** input latency in seconds (from analog input to app delivery). Mirrors [AudioContext.outputLatency](../core/audio-context.mdx#properties) semantics. Calculated using underlying platform properties (`AVAudioSession` on iOS; Oboe timestamps/burst sizes on Android). Value may change when the audio route changes. Returns `0` when idle.
+        </div>
+        ```tsx
+          const latency = audioRecorder.inputLatency;
+        ```
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ### Recording to file
 
 <table className="table-vertical-top">
@@ -633,14 +694,23 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Configures and enables the file output with defined options and stream properties. Options property allows for configuration of the output file structure and quality. By default the recorder writes to cache directory using high-quality `M4A` file.
+          Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
-          Must be called while the recorder is idle: the file is created by the next [start](#start). During an active (recording or paused) session the call returns an error result and the session keeps the output it started with.
+          Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's encoders at this call, so an unsupported format fails here.
 
-          For further information check: [AudioRecorderFileOptions](#audiorecorderfileoptions)
+          The file sample rate (`preset.sampleRate`) must be at most 48000 Hz, the highest rate the iOS and Android system encoders accept.
+
+          Throws `NotSupportedError` when the format cannot be encoded on this platform, the options are invalid (including a sample rate above 48000 Hz), or a recording (or paused) session is active. In every case the previous file-output configuration stays in effect.
+
+          For further information, see [AudioRecorderFileOptions](#audiorecorderfileoptions) and the per-platform format table in [FileFormat](#fileformat).
         </div>
         ```tsx
-          audioRecorder.enableFileOutput();
+        try {
+          audioRecorder.enableFileOutput({ format: FileFormat.FLAC });
+        } catch (error) {
+          // NotSupportedError: the platform cannot encode the requested format
+          console.warn(error.message);
+        }
         ```
       </td>
     </tr>
@@ -648,13 +718,15 @@ export default MyRecorder;
     <tr>
       <td><div class="text-content">
         ##### disableFileOutput
+        <br />
+        (asynchronous)
       </div></td>
       <td>
         <div class="text-content">
-          Disables the file output and finalizes the currently recorded file if the recorder is active.
+          Disables file output and finalizes the currently recorded file if the recorder is active. Returns a `Promise<void>` that resolves when the file has been closed.
         </div>
         ```tsx
-          audioRecorder.disableFileOutput();
+        await audioRecorder.disableFileOutput();
         ```
       </td>
     </tr>
@@ -665,7 +737,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns current recording duration if recording to file is enabled.
+          Returns the current recording duration (`number`) when file output is enabled.
         </div>
         ```tsx
           const duration = audioRecorder.getCurrentDuration();
@@ -690,12 +762,11 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters (sample rate, buffer length, and channel count) guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
-          <br />
+          Registers a callback that receives raw audio buffers during an active recording session. Returns `Result<void>`.
 
-          For further information check:
-            - [AudioRecorderCallbackOptions](#audiorecordercallbackoptions)
-            - [OnAudioReadyEventType](#onaudioreadyeventtype)
+          The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
+
+          For further information, see [AudioRecorderCallbackOptions](#audiorecordercallbackoptions) and [OnAudioReadyEventType](#onaudioreadyeventtype).
         </div>
         ```tsx
           const sampleRate = 16000;
@@ -708,7 +779,8 @@ export default MyRecorder;
             },
             ({ buffer, numFrames, when }) => {
               // do something with the data
-            });
+            }
+          );
         ```
       </td>
     </tr>
@@ -719,18 +791,17 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Disables and flushes the remaining audio data through `onAudioReady` callback as explained above.
+          Removes the audio data callback and flushes any remaining buffered data through `onAudioReady`.
         </div>
         ```tsx
           audioRecorder.clearOnAudioReady();
         ```
       </td>
     </tr>
-
   </tbody>
 </table>
 
-#### Graph processing
+### Graph processing
 
 <table className="table-vertical-top">
   <thead>
@@ -744,11 +815,10 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Connects AudioRecorder with [RecorderAdapterNode](/docs/sources/recorder-adapter-node) instance that can be used for further audio processing.
+          Routes captured audio into an audio graph by creating a recorder adapter with [BaseAudioContext.createRecorderAdapter()](../core/base-audio-context.mdx#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) used to create the recorder adapter and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
         </div>
         ```tsx
-          const adapter = audioContext.createRecorderAdapter();
-          audioRecorder.connect(adapter);
+          audioRecorder.connect(audioContext, audioContext.destination);
         ```
       </td>
     </tr>
@@ -759,7 +829,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Disconnects AudioRecorder from the audio graph.
+          Disconnects `AudioRecorder` from the audio graph.
         </div>
         ```tsx
           audioRecorder.disconnect();
@@ -770,6 +840,40 @@ export default MyRecorder;
 </table>
 
 ## Types
+
+#### `AudioRecorderOptions`
+
+```tsx
+interface AudioRecorderOptions {
+  androidInputPreset?: AndroidInputPreset;
+  iosVoiceProcessing?: boolean;
+}
+```
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :---: | :---- |
+| `androidInputPreset` <Optional /> <Android /> | [`AndroidInputPreset`](#androidinputpreset) | `'voiceRecognition'` | Preprocessing chain applied to the capture stream. The platform default, `voiceRecognition`, applies **no** acoustic echo cancellation - use `voiceCommunication` to engage the platform AEC/NS chain. |
+| `iosVoiceProcessing` <Optional /> <IOS /> | `boolean` | `false` | Runs the capture chain through Apple's voice-processing I/O: acoustic echo cancellation, noise suppression and automatic gain control. |
+
+Both options are applied when the capture stream is created and cannot be changed afterwards - create a new recorder to switch configuration. Each option is ignored on the other platform.
+
+:::caution
+Voice processing changes the hardware input format and engages a shared platform processing unit, so the resolved sample rate and channel count of the recorded audio may differ from the raw microphone format.
+:::
+
+#### `AndroidInputPreset`
+
+```tsx
+type AndroidInputPreset =
+  | 'generic'
+  | 'camcorder'
+  | 'voiceRecognition'
+  | 'voiceCommunication'
+  | 'unprocessed'
+  | 'voicePerformance';
+```
+
+Names of Oboe's [`InputPreset`](https://github.com/google/oboe/blob/0da326e4ef878eac0c032e11ea84ca0a6811aafd/include/oboe/Definitions.h#L470) values, which select the preprocessing chain the capture stream is opened with.
 
 #### AudioRecorderCallbackOptions
 
@@ -782,12 +886,17 @@ interface AudioRecorderCallbackOptions {
 ```
 
 - `sampleRate` - The desired sample rate (in Hz) for audio buffers delivered to the
-  recording callback. Common values include 44100 or 48000 Hz. The actual
+  recording callback. Common values include `44100` or `48000` Hz. The actual
   sample rate may differ depending on hardware and system capabilities.
 
 - `bufferLength` - The preferred size of each audio buffer, expressed as the number of samples per channel. Smaller buffers reduce latency but increase CPU load, while larger buffers improve efficiency at the cost of higher latency.
 
-- `channelCount` - The desired number of audio channels per buffer. Typically 1 for mono or 2 for stereo recordings.
+- `channelCount` - The desired number of audio channels per buffer. Typically `1` for mono or `2` for stereo recordings.
+
+:::caution
+Incoming audio is collected in an internal buffer until a full `bufferLength` chunk can be emitted. That buffer can overflow when a single batch of microphone data is larger than it can hold, which happens when the requested `sampleRate` is much higher than the hardware rate (the data is upsampled before buffering) or when the system delivers input in large batches, for example under a high I/O buffer duration.
+When this happens the frames from that batch are dropped and `onError` is called instead of `onAudioReady`. If you see such errors, lower `sampleRate` towards the hardware rate, adjust `bufferLength` or lower system latency in [AudioContext](../core/audio-context#audiocontextoptions).
+:::
 
 #### OnRecorderErrorEventType
 
@@ -809,7 +918,7 @@ interface OnAudioReadyEventType {
 }
 ```
 
-- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of -1.0 to 1.0.
+- `buffer` - The audio buffer containing the recorded PCM data. This buffer includes one or more channels of floating-point samples in the range of `-1.0` to `1.0`.
 - `numFrames` - The number of audio frames contained in this buffer. A frame represents a single sample across all channels.
 - `when` - The timestamp (in seconds) indicating when this buffer was captured, relative to the start of the recording session.
 
@@ -827,21 +936,62 @@ interface AudioRecorderFileOptions {
 
   directory?: FileDirectory;
   subDirectory?: string;
-  fileNamePrefix?: string;
+  fileName?: string;
   androidFlushIntervalMs?: number;
 }
 ```
 
-- `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
-- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to 0 (default), file output rotation is disabled. When active, new files are named with the original prefix appended with a timestamp. You can join the rotated files after recording with [`concatAudioFiles`](/docs/utils/file-concatenation#concataudiofiles).
+- `channelCount` - The channel count of the resulting file: `1` (mono) or `2` (stereo).
+- `rotateIntervalBytes` - The threshold size (in bytes) at which the recorder will start writing to a new file. If set to `0` (default), file output rotation is disabled. When active, each segment carries a three-digit index (`_001`, `_002`, …) — see [File naming](#file-naming). You can join the rotated files after recording with [`concatAudioFiles`](../utils/file-concatenation.mdx#concataudiofiles).
+  - Use a large enough value for your format. Very small thresholds rotate often, which increases the chance of audible gaps or muffled joins after concatenation — especially for **M4A**, where each segment is a separate AAC encode.
+  - Practical starting points: **≥ 1 MB** for WAV, **≥ 200 KB** for M4A (adjust upward if you still hear artifacts at segment boundaries).
+  - This option controls segment file size, not RAM usage. For crash-resilience tuning on Android, use `androidFlushIntervalMs` instead.
 - `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
 - `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
-- `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording`).
+- `fileName` - Names the output file outright. Left unset, the library generates `recording_<timestamp>`. See [File naming](#file-naming) below.
 - `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
-  - Higher values are more battery- and storage-efficient.
+  - Higher values are more battery - and storage-efficient.
+
+#### File naming
+
+`fileName` names the output file outright. Left unset, the library generates a name from the
+start time, and keeps it clear of existing files. Rotation appends a segment index either way,
+because one recording then spans several files.
+
+| `fileName` | `rotateIntervalBytes` | Resulting file(s) |
+| :--- | :--- | :--- |
+| — | `0` | `recording_20260909_101500.wav` |
+| `session-42` | `0` | `session-42.wav` |
+| — | `> 0` | `recording_20260909_101500_001.wav`, `_002`, … |
+| `session-42` | `> 0` | `session-42_001.wav`, `session-42_002.wav`, … |
+
+The generated timestamp is taken once per recording, in local time, so every segment of one
+rotated recording shares it and only the index differs.
+
+`fileName` has to be a bare name: no extension (it follows from `format`), no path
+separators and no `..`.
+
+The segment index is padded to three digits and keeps counting beyond that (`_999`,
+`_1000`, …). Names stay unique; only their lexicographic order breaks past 999 segments —
+`stop()` still returns `paths` in recording order.
+
+An audio route change mid-session (headphones connecting, say) alters the input format on
+iOS, but the recording carries on in the same file: only the conversion from the input to
+the file's format is rebuilt. A recording without rotation is always a single file.
+
+A generated name never overwrites: when two recordings start within the same second and
+would share a timestamp, the later one gets a counter appended
+(`recording_20260909_101500_1.wav`, `_2`, …).
+
+:::caution
+`fileName` puts you in charge of telling recordings apart. An existing file of the same name
+is **overwritten**, with a warning in the native log, and two recordings started under the
+same `fileName` overwrite each other — with rotation, segment by segment, since numbering
+restarts at `_001` every time. Make the name unique per recording yourself.
+:::
 
 #### FileFormat
 
@@ -852,12 +1002,50 @@ enum FileFormat {
   Wav,
   Caf,
   M4A,
+  Adts,
   Flac,
+  Aiff,
+  Alac,
+  OpusOgg,
+  OpusWebm,
+  VorbisWebm,
+  Ulaw,
+  Alaw,
 }
 ```
 
-:::caution Android + FFmpeg
-On Android, encoded file output for `M4A`, `FLAC`, and `CAF` uses FFmpeg. When FFmpeg is disabled in the build, only **WAV** recording to file is supported. iOS uses system AVFoundation for all listed formats. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used).
+Each platform exposes a different set of encoders, making format support platform-specific. The table below lists which formats each platform can encode:
+
+| `FileFormat` | Container / codec | iOS | Android |
+| :--- | :--- | :---: | :---: |
+| `Wav` | WAV / PCM | ✅ | ✅ |
+| `M4A` | M4A / AAC-LC | ✅ | ✅ |
+| `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `OpusOgg` | OGG / Opus | ✅ | ✅ |
+| `Adts` | ADTS / AAC-LC | ✅ | ✅ |
+| `Caf` | CAF / PCM | ✅ | ❌ |
+| `Aiff` | AIFF / PCM | ✅ | ❌ |
+| `Alac` | M4A / Apple Lossless | ✅ | ❌ |
+| `Ulaw` | WAV / µ-law | ✅ | ❌ |
+| `Alaw` | WAV / a-law | ✅ | ❌ |
+| `OpusWebm` | WebM / Opus | ❌ | ✅ |
+| `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
+
+:::tip
+Both `Adts` and `Flac` files stay decodable after an app crash, but only the former is lossy.
+`Adts` accepts only the sample rates the device's AAC encoder supports: 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100 and 48000 Hz with the iOS and Android system encoders.
+:::
+
+:::note Sample rate limit
+Every format is encoded at no more than 48000 Hz, because that is the highest rate the iOS and Android system encoders accept. [`enableFileOutput`](#enablefileoutput) rejects a higher `sampleRate`.
+:::
+
+:::caution Platform support
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusWebm` on iOS) fails when file output is enabled, with a descriptive error. If a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac`, `Adts`, or `OpusOgg` for the widest cross-platform support.
+:::
+
+:::note Opus
+Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
 :::
 
 #### FileInfo
@@ -876,13 +1064,13 @@ interface FileInfo {
 
 #### FilePresetType
 
-Describes audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
+Describes the audio format that is used during writing to file as well as encoded final file properties. You can use one of predefined presets, or fully customize the result file, but be aware that the properties aren't limited to only valid configurations, you may find property pairs that will result in error result during recording start (or when enabling the file output during active input session)!
 
 ##### Built-in file presets
 
-For convenience we have provided set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
+For convenience we have provided a set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
 
-###### Usage
+##### Usage
 
 ```tsx
 import { AudioRecorder, FileFormat, FilePreset } from 'react-native-audio-api';
@@ -911,7 +1099,7 @@ audioRecorder.enableFileOutput({
         </div>
         ```tsx
         audioRecorder.enableFileOutput({
-          format: FileFormat.CAF,
+          format: FileFormat.Caf,
           preset: FilePreset.Lossless,
         });
         ```
@@ -1000,12 +1188,12 @@ export interface FilePresetType {
         <div class="table-vertical-top-table">
         | Use case | Bitrate (bps) | Notes |
         | :- | - | :- |
-        | Very low quality / telemetry |	32000 |	Bare minimum for speech intelligibility |
-        | Low quality voice notes |	48000 |	Optimized for small files and fast encoding |
-        | Standard speech / podcasts |	64000 – 96000 |	Good balance of clarity and size |
-        | Medium quality general audio |	128000 |	Common default for consumer audio |
-        | High quality music / voice |	160000 – 192000 |	Near-transparent for most listeners |
-        | Very high quality |	256000 – 320000 |	Large files, minimal perceptual loss |
+        | Very low quality / telemetry | `32000` | Bare minimum for speech intelligibility |
+        | Low quality voice notes | `48000` | Optimized for small files and fast encoding |
+        | Standard speech / podcasts | `64000` – `96000` | Good balance of clarity and size |
+        | Medium quality general audio | `128000` | Common default for consumer audio |
+        | High quality music / voice | `160000` – `192000` | Near-transparent for most listeners |
+        | Very high quality | `256000` – `320000` | Large files, minimal perceptual loss |
         </div>
       </td>
     </tr>
@@ -1016,7 +1204,7 @@ export interface FilePresetType {
       </div></td>
       <td>
         <div class="text-content">
-            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements.
+            Specifies the sampling frequency used during recording. Higher sample rates capture a wider frequency range but increase processing and storage requirements. The maximum is 48000 Hz for every format; [`enableFileOutput`](#enablefileoutput) rejects higher values. AAC output in the `Adts` format is limited to the standard AAC rates listed under [`FileFormat`](#fileformat).
         </div>
       </td>
     </tr>
@@ -1075,4 +1263,18 @@ export interface FilePresetType {
   </tbody>
 </table>
 
-## Remarks & known issues
+## Remarks
+
+#### Asynchronous methods
+
+`start`, `stop`, `pause`, `resume` and `disableFileOutput` return promises, but a recorder runs them one at a time, in the order they were called. A later call never overtakes an earlier one, so you can fire several in a row without awaiting each:
+
+```tsx
+audioRecorder.start();
+audioRecorder.pause();
+await audioRecorder.resume(); // start and pause have already completed here
+```
+
+Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`.
+
+[`AudioContext`](../core/audio-context.mdx#remarks) and [`OfflineAudioContext`](../core/offline-audio-context.mdx) order their `suspend`, `resume`, `close` and `startRendering` promises the same way.
