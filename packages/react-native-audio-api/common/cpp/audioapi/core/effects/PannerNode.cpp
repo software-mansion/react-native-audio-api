@@ -48,7 +48,7 @@ PannerNode::PannerNode(
       coneOuterGain_(options.coneOuterGain),
       outputBuffer_(
           std::make_shared<DSPAudioBuffer>(
-              RENDER_QUANTUM_SIZE,
+              context->getRenderQuantumSize(),
               kOutputChannelNumber,
               context->getSampleRate())) {}
 

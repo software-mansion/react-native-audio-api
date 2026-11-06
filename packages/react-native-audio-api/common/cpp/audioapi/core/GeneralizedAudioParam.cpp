@@ -15,7 +15,10 @@ GeneralizedAudioParam::GeneralizedAudioParam(
       minValue_(minValue),
       maxValue_(maxValue),
       outputBuffer_(
-          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {}
+          std::make_shared<DSPAudioBuffer>(
+              context->getRenderQuantumSize(),
+              1,
+              context->getSampleRate())) {}
 
 void GeneralizedAudioParam::finalizeARate(int framesToProcess, double time) {
   auto outputData = outputBuffer_->getChannel(0)->span();

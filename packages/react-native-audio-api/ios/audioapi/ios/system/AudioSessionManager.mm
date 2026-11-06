@@ -241,6 +241,11 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
+- (NSNumber *)getDeviceBufferDuration
+{
+  return [NSNumber numberWithDouble:[self.audioSession IOBufferDuration]];
+}
+
 - (NSNumber *)getSystemVolume
 {
   return [NSNumber numberWithFloat:[self.audioSession outputVolume]];

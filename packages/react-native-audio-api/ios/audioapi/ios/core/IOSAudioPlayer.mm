@@ -133,20 +133,20 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       continue;
     }
 
-    renderNormalizedQuantum(RENDER_QUANTUM_SIZE);
+    renderNormalizedQuantum(renderQuantumSize_);
 
-    // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
+    // normal rendering - take renderQuantumSize_ frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;
-    if (stillNeed >= RENDER_QUANTUM_SIZE) {
+    if (stillNeed >= renderQuantumSize_) {
       for (int ch = 0; ch < channelCount_; ++ch) {
         auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
-        std::memcpy(dst, src, RENDER_QUANTUM_SIZE * sizeof(float));
+        std::memcpy(dst, src, renderQuantumSize_ * sizeof(float));
       }
-      outPos += RENDER_QUANTUM_SIZE;
+      outPos += renderQuantumSize_;
     } else {
       // when output will be sliced, copy the remaining frames to pendingSaved
-      const int tail = RENDER_QUANTUM_SIZE - stillNeed;
+      const int tail = renderQuantumSize_ - stillNeed;
       for (int ch = 0; ch < channelCount_; ++ch) {
         auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
@@ -220,7 +220,7 @@ double IOSAudioPlayer::getBaseLatency() const
     return 0.0;
   }
 
-  return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
+  return static_cast<double>(renderQuantumSize_) / static_cast<double>(sampleRate_);
 }
 
 double IOSAudioPlayer::getOutputLatency() const
@@ -237,6 +237,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
+    int renderQuantumSize,
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
@@ -247,6 +248,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
       renderAudio,
       sampleRate,
       channelCount,
+      renderQuantumSize,
       currentRenders,
       std::move(context),
       driverMutex,

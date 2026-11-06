@@ -93,6 +93,11 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)
   return [self.audioSessionManager getDevicePreferredSampleRate];
 }
 
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDeviceBufferDuration)
+{
+  return [self.audioSessionManager getDeviceBufferDuration];
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getSystemVolume)
 {
   return [self.audioSessionManager getSystemVolume];

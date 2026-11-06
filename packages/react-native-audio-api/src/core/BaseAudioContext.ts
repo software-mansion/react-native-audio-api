@@ -32,6 +32,8 @@ export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
   readonly sampleRate: number;
+  /** Frames rendered per quantum; set by the context's `renderSizeHint`. */
+  readonly renderQuantumSize: number;
   readonly context: IBaseAudioContext;
 
   constructor(context: IBaseAudioContext) {
@@ -39,6 +41,7 @@ export default class BaseAudioContext {
     this.destination = new AudioDestinationNode(this, context.destination);
     this.listener = new AudioListener(this, context.listener);
     this.sampleRate = context.sampleRate;
+    this.renderQuantumSize = context.renderQuantumSize;
 
     this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
       'stateChange',

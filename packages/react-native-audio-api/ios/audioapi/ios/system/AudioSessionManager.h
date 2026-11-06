@@ -47,6 +47,8 @@
 - (void)resetPreferredIOBufferFrames;
 
 - (NSNumber *)getDevicePreferredSampleRate;
+/// The session's current IO buffer duration in seconds.
+- (NSNumber *)getDeviceBufferDuration;
 - (NSNumber *)getSystemVolume;
 - (NSString *)inputDiagnosticsSnapshot;
 

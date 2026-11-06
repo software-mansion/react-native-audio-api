@@ -16,7 +16,9 @@ WaveShaperNode::WaveShaperNode(
 
   waveShapers_.reserve(6);
   for (int i = 0; i < channelCount_; i++) {
-    waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr, context->getSampleRate()));
+    waveShapers_.emplace_back(
+        std::make_unique<WaveShaper>(
+            nullptr, context->getSampleRate(), context->getRenderQuantumSize()));
   }
   setCurve(options.curve);
 }

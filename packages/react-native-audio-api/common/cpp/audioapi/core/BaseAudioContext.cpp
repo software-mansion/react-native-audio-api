@@ -15,9 +15,11 @@ namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
     float sampleRate,
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    int renderQuantumSize)
     : state_(ContextState::SUSPENDED),
       sampleRate_(sampleRate),
+      renderQuantumSize_(renderQuantumSize),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
       audioEventProducer_(audioEventHandlerRegistry->createAudioEventProducer()),
       stateChangeEvent_(audioEventHandlerRegistry),

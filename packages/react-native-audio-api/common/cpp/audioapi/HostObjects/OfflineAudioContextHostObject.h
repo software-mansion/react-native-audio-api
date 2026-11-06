@@ -19,7 +19,8 @@ class OfflineAudioContextHostObject : public BaseAudioContextHostObject {
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
-      const std::shared_ptr<react::CallInvoker> &callInvoker);
+      const std::shared_ptr<react::CallInvoker> &callInvoker,
+      int renderQuantumSize);
 
   JSI_HOST_FUNCTION_DECL(resume);
   JSI_HOST_FUNCTION_DECL(suspend);

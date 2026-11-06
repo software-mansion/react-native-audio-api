@@ -212,7 +212,7 @@ protected:
 ```
 
 - `processingBuffer` — already contains the mixed input from all connected input nodes. Modify in-place and return it.
-- `framesToProcess` — number of samples per channel to process, typically 128 (RENDER_QUANTUM_SIZE).
+- `framesToProcess` — number of samples per channel to process. At most the context's render quantum (`BaseAudioContext::getRenderQuantumSize()`, set by `renderSizeHint`, 128 by default, any integer up to `6 × sampleRate` per Web Audio §2.5, validated in TS `resolveRenderQuantumSize`, so buffers can be megabytes), and it may be smaller and vary between calls (the offline tail, the Android callback remainder). Size per-quantum buffers with `context->getRenderQuantumSize()` / `getContextRenderQuantumSize()`, never `RENDER_QUANTUM_SIZE`, and never assume a power of two. Block-based DSP (FFT, partitioned convolution) must buffer internally — see `dsp/Convolver.cpp`, which accepts any chunk size with zero added latency.
 - Called by `AudioNode::processAudio()` which handles input mixing, channel count modes, and deduplication (via `lastRenderedFrame_`).
 
 ---

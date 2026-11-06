@@ -17,7 +17,7 @@ StereoPannerNode::StereoPannerNode(
       panParam_(std::make_shared<AudioParam>(options.pan, -1.0f, 1.0f, context)),
       outputBuffer_(
           std::make_shared<DSPAudioBuffer>(
-              RENDER_QUANTUM_SIZE,
+              context->getRenderQuantumSize(),
               kOutputChannelNumber,
               context->getSampleRate())) {}
 
