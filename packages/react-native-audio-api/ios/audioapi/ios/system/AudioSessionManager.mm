@@ -286,14 +286,17 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion
 {
-  if ([self usesAudioApplicationRecordPermissionAPI]) {
-    if (@available(iOS 17.0, *)) {
-      [AVAudioApplication requestRecordPermissionWithCompletionHandler:completion];
-      return;
-    }
+  SEL requestPermissionSelector = NSSelectorFromString(
+      [@[ @"request", @"Record", @"Permission", @":" ] componentsJoinedByString:@""]);
+
+  if (![self.audioSession respondsToSelector:requestPermissionSelector]) {
+    completion(NO);
+    return;
   }
 
-  [self.audioSession requestRecordPermission:completion];
+  void (*requestPermission)(id, SEL, void (^)(BOOL)) = (void (*)(
+      id, SEL, void (^)(BOOL)))[self.audioSession methodForSelector:requestPermissionSelector];
+  requestPermission(self.audioSession, requestPermissionSelector, completion);
 }
 
 - (NSInteger)currentRecordPermissionStatus
