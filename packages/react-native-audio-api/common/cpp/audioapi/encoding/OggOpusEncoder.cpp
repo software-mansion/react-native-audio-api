@@ -4,6 +4,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
+#include <audioapi/encoding/ChannelRemixer.h>
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/encoding/OggStreamWriter.h>
 #include <audioapi/external/include/opus/opus.h>
@@ -80,9 +81,7 @@ struct EncoderState {
   // Conversion to the file layout, rebuilt per input format.
   size_t maxInputFrames = 0;
   float inputSampleRate = 0.0F;
-  /// Channel mapping only: the input is staged in inputPlanar and remixed into mappedPlanar.
-  std::unique_ptr<AudioBuffer> inputPlanar;
-  std::unique_ptr<AudioBuffer> mappedPlanar;
+  ChannelRemixer remixer;
   /// Rate conversion only.
   std::unique_ptr<r8b::MultiChannelResampler> resampler;
   std::unique_ptr<AudioBuffer> resampledPlanar;
@@ -99,8 +98,7 @@ struct EncoderState {
       opus = nullptr;
     }
     ogg.close();
-    inputPlanar.reset();
-    mappedPlanar.reset();
+    remixer = ChannelRemixer();
     resampler.reset();
     resampledPlanar.reset();
   }
@@ -403,8 +401,6 @@ Result<NoneType, std::string> OggOpusEncoder::prepareConversion(const StreamForm
   }
 
   EncoderState &state = *state_;
-  state.inputPlanar.reset();
-  state.mappedPlanar.reset();
   state.resampler.reset();
   state.resampledPlanar.reset();
   state.maxInputFrames = std::max<size_t>(inputFormat.maxFramesPerBuffer, 1);
@@ -412,12 +408,8 @@ Result<NoneType, std::string> OggOpusEncoder::prepareConversion(const StreamForm
   state.resamplerInputFrames = 0;
   state.resamplerOutputFrames = 0;
 
-  if (inputLayout.channelCount != state.channelCount) {
-    state.inputPlanar = std::make_unique<AudioBuffer>(
-        state.maxInputFrames, inputLayout.channelCount, inputLayout.sampleRate);
-    state.mappedPlanar = std::make_unique<AudioBuffer>(
-        state.maxInputFrames, state.channelCount, inputLayout.sampleRate);
-  }
+  state.remixer = ChannelRemixer(
+      inputLayout.channelCount, state.channelCount, state.maxInputFrames, inputLayout.sampleRate);
   if (inputLayout.sampleRate != static_cast<float>(OPUS_SAMPLE_RATE)) {
     state.resampler = std::make_unique<r8b::MultiChannelResampler>(
         inputLayout.sampleRate, OPUS_SAMPLE_RATE, state.channelCount, RESAMPLE_MAX_IN_FRAMES);
@@ -437,23 +429,7 @@ Result<NoneType, std::string> OggOpusEncoder::convertAndQueue(
   EncoderState &state = *state_;
   const auto frames = static_cast<size_t>(numFrames);
 
-  std::array<const float *, MAX_CHANNEL_COUNT> planar{};
-  if (state.mappedPlanar != nullptr) {
-    for (int channel = 0; channel < inputFormat_.layout.channelCount; ++channel) {
-      std::memcpy(
-          state.inputPlanar->getChannel(channel)->begin(),
-          channels[channel],
-          frames * sizeof(float));
-    }
-    state.mappedPlanar->copy(*state.inputPlanar, 0, 0, frames);
-    for (int channel = 0; channel < state.channelCount; ++channel) {
-      planar[channel] = state.mappedPlanar->getChannel(channel)->begin();
-    }
-  } else {
-    for (int channel = 0; channel < state.channelCount; ++channel) {
-      planar[channel] = channels[channel];
-    }
-  }
+  const auto planar = state.remixer.remix(channels, frames);
 
   if (state.resampler == nullptr) {
     return queueFrames(state, planar.data(), numFrames);

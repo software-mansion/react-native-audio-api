@@ -177,6 +177,10 @@ audioapi::GB_IN_BYTES   // 1024^3.0
 
 ---
 
+### `encoding/ChannelRemixer.h` — encoder input → file channel count
+
+Every encoder (iOS `IOSEncoder`, Android `AndroidEncoder`, common `OggOpusEncoder`) brings its input to the file's channel count through this, before any resampling: `ChannelRemixer(inputChannels, fileChannels, maxFrames, sampleRate)`, then `remix(channels, frames)` returns the file's channel pointers (the caller's own when the counts match). It applies `AudioBuffer::copy` speaker rules (quad and 5.1 mixed, LFE dropped, other counts discrete in order), so all file formats on both platforms get the same channels. Don't hand channel mapping to a platform converter (`AVAudioConverter.channelMap`, discrete layouts): it differs per platform and dropped the right channel on stereo → mono.
+
 ## `common/cpp/audioapi/core/utils/` — Node and context utilities
 
 ### `Constants.h` — global audio constants
