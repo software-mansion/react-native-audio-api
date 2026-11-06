@@ -109,6 +109,12 @@ export interface RecordingNotificationInfo {
   deepLinkUri?: string;
   /** Shows the elapsed recording time in the notification. Default: false. */
   usesChronometer?: boolean;
+  /**
+   * Pause and resume act on the recorder natively. When false, they only emit
+   * their events: the app pauses or resumes the recorder and updates `paused`
+   * itself, and the buttons do nothing while JS is unreachable. Default: true.
+   */
+  nativePauseControl?: boolean;
 }
 
 export interface RecordingNotificationEvent {
