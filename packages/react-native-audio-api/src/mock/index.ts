@@ -1031,18 +1031,17 @@ class AudioRecorderMock {
     return Promise.resolve();
   }
 
-  start(): Promise<Result<{ path: string }>> {
+  start(): Promise<void> {
     this._isRecording = true;
     this._isPaused = false;
-    return Promise.resolve({ status: 'success', path: 'recording.m4a' });
+    return Promise.resolve();
   }
 
-  stop(): Promise<Result<FileInfo>> {
+  stop(): Promise<FileInfo> {
     this._isRecording = false;
     this._isPaused = false;
     this._currentDuration = 0;
     return Promise.resolve({
-      status: 'success',
       paths: ['/mock/path/recording.m4a'],
       size: 12345,
       duration: 5.0,
@@ -1054,9 +1053,9 @@ class AudioRecorderMock {
     return Promise.resolve();
   }
 
-  resume(): Promise<Result<{}>> {
+  resume(): Promise<void> {
     this._isPaused = false;
-    return Promise.resolve({ status: 'success' });
+    return Promise.resolve();
   }
 
   connect(_node: RecorderAdapterNodeMock): void {
