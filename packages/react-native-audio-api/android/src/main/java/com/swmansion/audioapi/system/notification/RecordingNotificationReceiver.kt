@@ -13,8 +13,8 @@ import java.util.concurrent.Executors
 
 class RecordingNotificationReceiver(
   private val module: AudioAPIModule,
-  /** Reads [RecordingNotificationState.appHandlesPauseResume] live. */
-  private val appHandlesPauseResume: () -> Boolean,
+  /** Whether the pause and resume actions act on the recorder, or only notify JS and leave it to the app. */
+  private val nativePauseControl: () -> Boolean,
 ) : BroadcastReceiver() {
   companion object {
     const val ACTION_PAUSE = "com.swmansion.audioapi.RECORDING_NOTIFICATION_PAUSE"
@@ -39,26 +39,26 @@ class RecordingNotificationReceiver(
     }
     when (intent.action) {
       ACTION_PAUSE -> {
-        if (appHandlesPauseResume()) {
-          dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_PAUSE)
-        } else {
+        if (nativePauseControl()) {
           applyToRecorder(
             action = NativeRecorderControl::pause,
             intendedState = RecorderState.PAUSED,
             event = AudioEvent.RECORDING_NOTIFICATION_PAUSE,
           )
+        } else {
+          dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_PAUSE)
         }
       }
 
       ACTION_RESUME -> {
-        if (appHandlesPauseResume()) {
-          dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_RESUME)
-        } else {
+        if (nativePauseControl()) {
           applyToRecorder(
             action = NativeRecorderControl::resume,
             intendedState = RecorderState.RECORDING,
             event = AudioEvent.RECORDING_NOTIFICATION_RESUME,
           )
+        } else {
+          dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_RESUME)
         }
       }
 
@@ -109,7 +109,7 @@ class RecordingNotificationReceiver(
   }
 
   /**
-   * Unless the app handles pause and resume, every action acts on the recorder natively so
+   * Unless native pause control is off, every action acts on the recorder natively so
    * the notification keeps working after the app task was removed, when no JS listener is
    * reachable.
    *

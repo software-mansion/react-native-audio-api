@@ -25,8 +25,8 @@ class RecordingNotificationState(
   var stopActionTitle: String? = null,
   var deepLinkUri: String? = null,
   var usesChronometer: Boolean = false,
-  /** Whether the pause and resume actions only notify JS, leaving the recorder to the app. */
-  @Volatile var appHandlesPauseResume: Boolean = false,
+  /** Whether the pause and resume actions act on the recorder, or only notify JS and leave it to the app. */
+  @Volatile var nativePauseControl: Boolean = true,
   var startedAtMs: Long? = null,
   var pausedAtMs: Long? = null,
 )

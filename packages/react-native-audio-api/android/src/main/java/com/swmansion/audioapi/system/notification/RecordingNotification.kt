@@ -45,7 +45,7 @@ class RecordingNotification(
     }
 
     createNotificationChannel(context)
-    state.receiver = RecordingNotificationReceiver(audioAPIModule.get()!!) { state.appHandlesPauseResume }
+    state.receiver = RecordingNotificationReceiver(audioAPIModule.get()!!) { state.nativePauseControl }
     val filter =
       IntentFilter().apply {
         addAction(RecordingNotificationReceiver.ACTION_PAUSE)
@@ -243,7 +243,7 @@ class RecordingNotification(
     state.stopActionTitle = options.stringOr("stopActionTitle", state.stopActionTitle)
     state.deepLinkUri = options.stringOr("deepLinkUri", state.deepLinkUri)
     state.usesChronometer = options.boolOr("usesChronometer", state.usesChronometer)
-    state.appHandlesPauseResume = options.boolOr("appHandlesPauseResume", state.appHandlesPauseResume)
+    state.nativePauseControl = options.boolOr("nativePauseControl", state.nativePauseControl)
     state.paused = options.boolOr("paused", state.paused)
   }
 
@@ -304,7 +304,7 @@ class RecordingNotification(
       state.stopActionTitle = null
       state.deepLinkUri = null
       state.usesChronometer = false
-      state.appHandlesPauseResume = false
+      state.nativePauseControl = true
       state.startedAtMs = null
       state.pausedAtMs = null
       state.paused = false

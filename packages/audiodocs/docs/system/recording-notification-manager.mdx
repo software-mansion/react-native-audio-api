@@ -54,9 +54,9 @@ By default, all notification actions act on the recorder **natively**, without a
 
 ### Letting the app handle pause and resume
 
-Set `appHandlesPauseResume: true` when your app's own state must be the only owner of the recorder's pause state — for example, it refuses to resume during a phone call. Pause and resume then only emit `recordingNotificationPause` / `recordingNotificationResume`: your listeners call `AudioRecorder.pause()` / `resume()` themselves and update the button with `show({ paused })`. Stop and swipe-dismiss still act natively.
+Set `nativePauseControl: false` when your app's own state must be the only owner of the recorder's pause state — for example, it refuses to resume during a phone call. Pause and resume then only emit `recordingNotificationPause` / `recordingNotificationResume`: your listeners call `AudioRecorder.pause()` / `resume()` themselves and update the button with `show({ paused })`. Stop and swipe-dismiss still act natively.
 
-The trade-off: with the option on, the pause and resume buttons do nothing while no JS listener is reachable, e.g. after the app task was removed while the foreground service kept running. Stop keeps working.
+The trade-off: with native pause control off, the pause and resume buttons do nothing while no JS listener is reachable, e.g. after the app task was removed while the foreground service kept running. Stop keeps working.
 
 ## Swiping the notification away
 
@@ -146,7 +146,7 @@ interface RecordingNotificationInfo {
   stopActionTitle?: string; // default: 'Stop'
   deepLinkUri?: string; // URI attached to the notification tap intent
   usesChronometer?: boolean; // shows the elapsed recording time, default: false
-  appHandlesPauseResume?: boolean; // pause/resume only emit their events, default: false
+  nativePauseControl?: boolean; // pause/resume act on the recorder natively, default: true
 }
 ```
 </details>

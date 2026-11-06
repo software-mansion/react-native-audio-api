@@ -110,17 +110,11 @@ export interface RecordingNotificationInfo {
   /** Shows the elapsed recording time in the notification. Default: false. */
   usesChronometer?: boolean;
   /**
-   * Leaves the recorder's pause state to the app. When true, the pause and
-   * resume actions only fire `recordingNotificationPause` and
-   * `recordingNotificationResume`: the app pauses or resumes the recorder
-   * itself and updates the notification with `paused`. Use it when the app's
-   * own state must stay the only owner of that state, e.g. it refuses a resume
-   * during a call. The buttons then do nothing while JS is unreachable (the
-   * app's task removed with the foreground service kept running). When false,
-   * the actions act on the recorder natively before their events fire. Stop and
-   * dismiss always act natively. Default: false.
+   * Pause and resume act on the recorder natively. When false, they only emit
+   * their events: the app pauses or resumes the recorder and updates `paused`
+   * itself, and the buttons do nothing while JS is unreachable. Default: true.
    */
-  appHandlesPauseResume?: boolean;
+  nativePauseControl?: boolean;
 }
 
 export interface RecordingNotificationEvent {

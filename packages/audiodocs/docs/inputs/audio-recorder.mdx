@@ -498,7 +498,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file. Returns a `Promise<void>` that resolves when the recorder has paused. On Android the microphone stays open while paused: the input stream can't be paused, so captured audio is discarded until `resume()`, and the system's microphone indicator stays on.
+          Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file. Returns a `Promise<void>` that resolves when the input stream has paused.
         </div>
         ```tsx
         await audioRecorder.pause();
