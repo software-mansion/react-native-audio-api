@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/encoding/AdtsHeader.h>
+#include <audioapi/encoding/ChannelRemixer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
@@ -779,13 +780,8 @@ class AdtsBackend : public MediaCodecBackend {
 
 struct AndroidEncoder::ConversionState {
   ConversionState(const AudioLayout &input, const AudioLayout &output, size_t maxInputFrames)
-      : maxInputFrames(maxInputFrames) {
-    if (input.channelCount != output.channelCount) {
-      inputPlanar =
-          std::make_unique<AudioBuffer>(maxInputFrames, input.channelCount, input.sampleRate);
-      mappedPlanar =
-          std::make_unique<AudioBuffer>(maxInputFrames, output.channelCount, input.sampleRate);
-    }
+      : maxInputFrames(maxInputFrames),
+        remixer(input.channelCount, output.channelCount, maxInputFrames, input.sampleRate) {
     if (input.sampleRate != output.sampleRate) {
       resampler = std::make_unique<r8b::MultiChannelResampler>(
           input.sampleRate, output.sampleRate, output.channelCount, RESAMPLE_MAX_IN_FRAMES);
@@ -797,9 +793,7 @@ struct AndroidEncoder::ConversionState {
   }
 
   size_t maxInputFrames;
-  // Channel mapping only: the input is staged in inputPlanar and remixed into mappedPlanar.
-  std::unique_ptr<AudioBuffer> inputPlanar;
-  std::unique_ptr<AudioBuffer> mappedPlanar;
+  ChannelRemixer remixer;
   // Rate conversion only.
   std::unique_ptr<r8b::MultiChannelResampler> resampler;
   std::unique_ptr<AudioBuffer> resampledPlanar;
@@ -913,23 +907,7 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
     return "Encode input exceeds the buffer size declared at open()";
   }
 
-  std::array<const float *, MAX_CHANNEL_COUNT> planar{};
-  if (state.mappedPlanar != nullptr) {
-    for (int channel = 0; channel < inputFormat_.layout.channelCount; ++channel) {
-      std::memcpy(
-          state.inputPlanar->getChannel(channel)->begin(),
-          channels[channel],
-          frames * sizeof(float));
-    }
-    state.mappedPlanar->copy(*state.inputPlanar, 0, 0, frames);
-    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
-      planar[channel] = state.mappedPlanar->getChannel(channel)->begin();
-    }
-  } else {
-    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
-      planar[channel] = channels[channel];
-    }
-  }
+  const auto planar = state.remixer.remix(channels, frames);
 
   if (state.resampler == nullptr) {
     return backend_->encodePlanar(planar.data(), numFrames);

@@ -17,6 +17,7 @@
 #import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -712,6 +713,139 @@ public:
   XCTAssertGreaterThan(frames, 0u);
 
   [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+}
+
+@end
+
+/// Input and file channel counts that differ are remixed with the Web Audio speaker rules
+/// (AudioBuffer::copy), as on Android. Each input channel carries its own constant level into a
+/// float WAV at the input's rate, so every file channel must hold exactly the rule's weighted sum.
+@interface IOSEncoderChannelMixTests : XCTestCase
+@end
+
+static const float kSqrtHalf = std::sqrt(0.5f);
+static const float kTolerance = 1e-5f;
+
+@implementation IOSEncoderChannelMixTests
+
+- (std::vector<float>)levelsAfterEncoding:(const std::vector<float> &)inputLevels
+                       intoFileChannels:(int)fileChannelCount {
+  NSString *path = [NSTemporaryDirectory()
+      stringByAppendingPathComponent:@"ios-encoder-channel-mix-test.wav"];
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+
+  constexpr float sampleRate = 48000;
+  constexpr int framesPerBlock = 512;
+  const int inputChannelCount = static_cast<int>(inputLevels.size());
+
+  ios::encoder::IOSEncoder encoder(EncoderSettings{
+      .fileLayout = {.sampleRate = sampleRate, .channelCount = fileChannelCount},
+      .encoding =
+          AudioFileProperties::EncodingConfig{
+              .format = AudioFileProperties::FileFormat::WAV,
+              .bitRate = 0,
+              .bitDepth = AudioFileProperties::BitDepth::Bit32,
+              .flacCompressionLevel = 0,
+              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+          },
+  });
+  auto openResult = encoder.open(
+      StreamFormat{
+          .layout = {.sampleRate = sampleRate, .channelCount = inputChannelCount},
+          .maxFramesPerBuffer = framesPerBlock},
+      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::WAV),
+      path.UTF8String);
+  XCTAssertTrue(openResult.is_ok(), @"%s",
+                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+
+  std::vector<std::vector<float>> planar;
+  std::vector<const float *> channels;
+  for (float level : inputLevels) {
+    planar.emplace_back(framesPerBlock, level);
+  }
+  for (const auto &channel : planar) {
+    channels.push_back(channel.data());
+  }
+  for (int block = 0; block < 8; ++block) {
+    XCTAssertTrue(encoder.encode(channels.data(), framesPerBlock).is_ok());
+  }
+  XCTAssertTrue(encoder.close().is_ok());
+
+  NSError *error = nil;
+  AVAudioFile *file = [[AVAudioFile alloc] initForReading:[NSURL fileURLWithPath:path]
+                                             commonFormat:AVAudioPCMFormatFloat32
+                                              interleaved:NO
+                                                    error:&error];
+  XCTAssertNil(error);
+  XCTAssertEqual(file.processingFormat.channelCount, static_cast<AVAudioChannelCount>(fileChannelCount));
+  AVAudioPCMBuffer *buffer =
+      [[AVAudioPCMBuffer alloc] initWithPCMFormat:file.processingFormat
+                                    frameCapacity:static_cast<AVAudioFrameCount>(file.length)];
+  XCTAssertTrue([file readIntoBuffer:buffer error:&error]);
+  XCTAssertGreaterThan(buffer.frameLength, 0u);
+
+  std::vector<float> levels;
+  const AVAudioFrameCount middle = buffer.frameLength / 2;
+  for (int channel = 0; channel < fileChannelCount; ++channel) {
+    levels.push_back(buffer.floatChannelData[channel][middle]);
+  }
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+  return levels;
+}
+
+
+- (void)testFiveOneToStereoMixesCenterAndSurroundsIntoBothSides {
+  const float left = 0.1f, right = 0.2f, center = 0.3f, lfe = 0.4f;
+  const float surroundLeft = 0.05f, surroundRight = 0.06f;
+  auto levels =
+      [self levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight} intoFileChannels:2];
+
+  XCTAssertEqualWithAccuracy(levels[0], left + kSqrtHalf * (center + surroundLeft), kTolerance);
+  XCTAssertEqualWithAccuracy(levels[1], right + kSqrtHalf * (center + surroundRight), kTolerance);
+}
+
+- (void)testFiveOneToMonoIncludesEveryChannelButLfe {
+  const float left = 0.1f, right = 0.2f, center = 0.3f, lfe = 0.4f;
+  const float surroundLeft = 0.05f, surroundRight = 0.06f;
+  auto levels =
+      [self levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight} intoFileChannels:1];
+
+  XCTAssertEqualWithAccuracy(
+      levels[0],
+      kSqrtHalf * (left + right) + center + 0.5f * (surroundLeft + surroundRight),
+      kTolerance);
+}
+
+- (void)testQuadToStereoAveragesFrontAndSurroundPerSide {
+  const float left = 0.1f, right = 0.2f, surroundLeft = 0.3f, surroundRight = 0.4f;
+  auto levels = [self levelsAfterEncoding:std::vector<float>{left, right, surroundLeft, surroundRight} intoFileChannels:2];
+
+  XCTAssertEqualWithAccuracy(levels[0], 0.5f * (left + surroundLeft), kTolerance);
+  XCTAssertEqualWithAccuracy(levels[1], 0.5f * (right + surroundRight), kTolerance);
+}
+
+- (void)testStereoToMonoAveragesBothSides {
+  auto levels = [self levelsAfterEncoding:std::vector<float>{0.2f, 0.6f} intoFileChannels:1];
+
+  XCTAssertEqualWithAccuracy(levels[0], 0.4f, kTolerance);
+}
+
+- (void)testCountWithoutSpeakerRuleKeepsLeadingChannelsInOrder {
+  std::vector<float> inputLevels;
+  for (int channel = 0; channel < 16; ++channel) {
+    inputLevels.push_back(0.01f * static_cast<float>(channel + 1));
+  }
+  auto levels = [self levelsAfterEncoding:inputLevels intoFileChannels:2];
+
+  XCTAssertEqualWithAccuracy(levels[0], 0.01f, kTolerance);
+  XCTAssertEqualWithAccuracy(levels[1], 0.02f, kTolerance);
+}
+
+- (void)testMonoToStereoCopiesIntoBothSides {
+  auto levels = [self levelsAfterEncoding:std::vector<float>{0.3f} intoFileChannels:2];
+
+  XCTAssertEqualWithAccuracy(levels[0], 0.3f, kTolerance);
+  XCTAssertEqualWithAccuracy(levels[1], 0.3f, kTolerance);
 }
 
 @end
