@@ -6,38 +6,29 @@ NSErrorDomain const AudioAPIErrorDomain = @"AudioAPIErrorDomain";
 
 + (NSError *)engineHasNoGraph
 {
-  return [self createErrorWithCode:AudioAPIErrorCodeEngineHasNoGraph
-                       description:@"Audio engine has no nodes to start"
-                       systemError:nil];
+  return [self createErrorWithCode:AudioAPIErrorCodeEngineHasNoGraph systemError:nil];
 }
 
 + (NSError *)sessionActivationFailed:(NSError *)systemError
 {
   return [self createErrorWithCode:AudioAPIErrorCodeSessionActivationFailed
-                       description:@"Audio session could not be activated"
                        systemError:systemError];
 }
 
 + (NSError *)sessionActivityChangeFailed:(NSError *)systemError
 {
   return [self createErrorWithCode:AudioAPIErrorCodeSessionActivityChangeFailed
-                       description:@"Failed to set audio session active state"
                        systemError:systemError];
 }
 
 + (NSError *)inputFormatUnavailable
 {
-  return [self
-      createErrorWithCode:AudioAPIErrorCodeInputFormatUnavailable
-              description:@"Audio input node could not be materialized: missing live input format"
-              systemError:nil];
+  return [self createErrorWithCode:AudioAPIErrorCodeInputFormatUnavailable systemError:nil];
 }
 
 + (NSError *)engineStartFailed:(NSError *)systemError
 {
-  return [self createErrorWithCode:AudioAPIErrorCodeEngineStartFailed
-                       description:@"Audio engine could not be started"
-                       systemError:systemError];
+  return [self createErrorWithCode:AudioAPIErrorCodeEngineStartFailed systemError:systemError];
 }
 
 + (BOOL)fail:(NSError **)outError with:(NSError *)failure
@@ -65,11 +56,10 @@ NSErrorDomain const AudioAPIErrorDomain = @"AudioAPIErrorDomain";
   return [descriptions componentsJoinedByString:@" <- "];
 }
 
-+ (NSError *)createErrorWithCode:(AudioAPIErrorCode)code
-                     description:(NSString *)description
-                     systemError:(NSError *)systemError
++ (NSError *)createErrorWithCode:(AudioAPIErrorCode)code systemError:(NSError *)systemError
 {
-  NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey : description} mutableCopy];
+  NSMutableDictionary *userInfo =
+      [@{NSLocalizedDescriptionKey : [self getDescriptionOf:code]} mutableCopy];
 
   if (systemError != nil) {
     userInfo[NSUnderlyingErrorKey] = systemError;
@@ -77,6 +67,22 @@ NSErrorDomain const AudioAPIErrorDomain = @"AudioAPIErrorDomain";
   }
 
   return [NSError errorWithDomain:AudioAPIErrorDomain code:code userInfo:userInfo];
+}
+
++ (NSString *)getDescriptionOf:(AudioAPIErrorCode)code
+{
+  switch (code) {
+    case AudioAPIErrorCodeEngineHasNoGraph:
+      return @"Audio engine has no nodes to start";
+    case AudioAPIErrorCodeSessionActivationFailed:
+      return @"Audio session could not be activated";
+    case AudioAPIErrorCodeSessionActivityChangeFailed:
+      return @"Failed to set audio session active state";
+    case AudioAPIErrorCodeInputFormatUnavailable:
+      return @"Audio input node could not be materialized: missing live input format";
+    case AudioAPIErrorCodeEngineStartFailed:
+      return @"Audio engine could not be started";
+  }
 }
 
 // parseNativeError in src/system/errors.ts reads these keys.
