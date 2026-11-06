@@ -91,10 +91,11 @@ static AudioSessionManager *_sharedInstance = nil;
 }
 
 /// The requested configuration is re-asserted whenever the live session differs from it, and
-/// activation always asks the system to activate. Other frameworks (a video player switching to
-/// playback), other apps and the OS change the shared AVAudioSession without telling this manager,
-/// so neither the last request nor the cached `isActive` flag says what the live session is.
-/// A live session that already matches the request is left alone, so re-asserting never churns.
+/// activation and deactivation always ask the system. Other frameworks (a video player switching
+/// to playback), other apps and the OS change the shared AVAudioSession without telling this
+/// manager, so neither the last request nor the cached `isActive` flag says what the live session
+/// is: the flag is only a best guess for its readers. A live session that already matches the
+/// request is left alone, so re-asserting never churns.
 - (bool)configureAudioSession:(NSError **)outError
 {
   if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
@@ -185,18 +186,20 @@ static AudioSessionManager *_sharedInstance = nil;
     return true;
   }
 
-  if (!self.isActive) {
-    return true;
+  AVAudioSessionSetActiveOptions options =
+      self.notifyOthersOnDeactivation ? AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation : 0;
+  NSError *deactivationError = nil;
+  bool success = [self.audioSession setActive:false withOptions:options error:&deactivationError];
+
+  // Deactivating a session that is already inactive reaches the goal.
+  if (!success && deactivationError.code == AVAudioSessionErrorCodeSessionNotActive) {
+    success = true;
   }
 
-  AVAudioSessionSetActiveOptions options = active
-      ? 0
-      : (self.notifyOthersOnDeactivation ? AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation
-                                         : 0);
-  bool success = [self.audioSession setActive:active withOptions:options error:error];
-
   if (success) {
-    self.isActive = active;
+    self.isActive = false;
+  } else if (error != nil) {
+    *error = deactivationError;
   }
 
   return success;

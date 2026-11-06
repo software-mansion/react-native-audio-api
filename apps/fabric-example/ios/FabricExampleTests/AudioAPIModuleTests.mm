@@ -76,10 +76,6 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
     return true;
   }
 
-  if (!active && !self.isActive) {
-    return true;
-  }
-
   self.isActive = active;
   return true;
 }
@@ -182,10 +178,11 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
       (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
 }
 
-- (void)testSetAudioSessionActivityFalseDoesNotPauseWhenAlreadyInactive
+- (void)testSetAudioSessionActivityFalseHandlesDeactivationDespiteCachedInactiveFlag
 {
+  // The cached flag was dropped while the session stayed active, so deactivation is real.
   self.fakeSessionManager.isActive = NO;
-  self.fakeAudioEngine.state = AudioEngineStateInterrupted;
+  self.fakeAudioEngine.state = AudioEngineStateRunning;
 
   NSString *rejectionCode = nil;
   NSArray<NSString *> *eventsAtResolve =
@@ -194,11 +191,12 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   XCTAssertNil(rejectionCode);
   XCTAssertEqual(self.fakeSessionManager.setActiveCallCount, 1);
   XCTAssertFalse(self.fakeSessionManager.lastSetActiveValue);
-  XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 0);
-  XCTAssertEqual(self.fakeAudioEngine.onSessionDeactivatedCallCount, 0);
-  XCTAssertEqual(self.fakeAudioEngine.state, AudioEngineStateInterrupted);
-  XCTAssertFalse(self.fakeSessionManager.isActive);
-  XCTAssertEqualObjects(eventsAtResolve, (@[ @"setActive", @"resolve" ]));
+  XCTAssertEqual(self.fakeSessionManager.markInactiveCallCount, 1);
+  XCTAssertEqual(self.fakeAudioEngine.onSessionDeactivatedCallCount, 1);
+  XCTAssertEqual(self.fakeAudioEngine.state, AudioEngineStatePaused);
+  XCTAssertEqualObjects(
+      eventsAtResolve,
+      (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
 }
 
 - (void)testSetAudioSessionActivityFalseDoesNotPauseWhenNotManagingSession

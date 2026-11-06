@@ -413,14 +413,44 @@
   XCTAssertTrue(self.manager.isActive);
 }
 
-- (void)testSetActiveFalseNoOpsWhenSessionIsAlreadyInactive
+- (void)testSetActiveFalseDeactivatesSessionDespiteCachedInactiveFlag
 {
+  // The cached flag was dropped (an engine configuration change) while the session stayed active.
+  self.manager.isActive = true;
+  [self.manager markInactive];
   NSError *error = nil;
 
   XCTAssertTrue([self.manager setActive:false error:&error]);
   XCTAssertNil(error);
-  XCTAssertEqual(self.fakeSession.setActiveCallCount, 0);
+  XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+  XCTAssertFalse(self.fakeSession.lastSetActiveValue);
   XCTAssertFalse(self.manager.isActive);
+}
+
+- (void)testSetActiveFalseTreatsSessionNotActiveErrorAsSuccess
+{
+  self.fakeSession.setActiveError = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                                        code:AVAudioSessionErrorCodeSessionNotActive
+                                                    userInfo:nil];
+  NSError *error = nil;
+
+  XCTAssertTrue([self.manager setActive:false error:&error]);
+  XCTAssertNil(error);
+  XCTAssertEqual(self.fakeSession.setActiveCallCount, 1);
+  XCTAssertFalse(self.manager.isActive);
+}
+
+- (void)testSetActiveFalseReturnsOtherDeactivationErrors
+{
+  self.manager.isActive = true;
+  self.fakeSession.setActiveError = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                                        code:AVAudioSessionErrorCodeUnspecified
+                                                    userInfo:nil];
+  NSError *error = nil;
+
+  XCTAssertFalse([self.manager setActive:false error:&error]);
+  XCTAssertEqual(error.code, AVAudioSessionErrorCodeUnspecified);
+  XCTAssertTrue(self.manager.isActive);
 }
 
 - (void)testSetActiveFalseUsesNotifyOthersOnDeactivationWhenEnabled
