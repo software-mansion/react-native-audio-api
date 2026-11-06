@@ -1,6 +1,8 @@
 #import <AVFAudio/AVFAudio.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#define LOG_MODULE AudioSessionManager
+#import <audioapi/ios/utils/Log.h>
 
 #include <audioapi/core/utils/Constants.h>
 
@@ -78,8 +80,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
   NSError *error = nil;
   if (![self.audioSession setPreferredIOBufferDuration:duration error:&error]) {
-    NSLog(
-        @"[AudioSessionManager] Error while requesting IO buffer duration %f s: %@",
+    AUDIO_LOG_ERROR(
+        "Error while requesting IO buffer duration %f s: %{public}@",
         duration,
         [error debugDescription]);
   }
@@ -103,14 +105,15 @@ static AudioSessionManager *_sharedInstance = nil;
                            error:&categoryError];
 
   if (categoryError != nil) {
-    NSLog(@"Error while configuring audio session: %@", [categoryError debugDescription]);
+    AUDIO_LOG_ERROR(
+        "Error while configuring audio session: %{public}@", [categoryError debugDescription]);
     if (outError != nil) {
       *outError = categoryError;
     }
     return false;
   }
-  NSLog(
-      @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
+  AUDIO_LOG_DEBUG(
+      "Configured audio session: category=%{public}@, mode=%{public}@, options=%lu",
       self.audioSession.category,
       self.audioSession.mode,
       (unsigned long)self.audioSession.categoryOptions);
@@ -123,8 +126,8 @@ static AudioSessionManager *_sharedInstance = nil;
                                                                  error:&hapticsError];
 
       if (hapticsError != nil) {
-        NSLog(
-            @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+        AUDIO_LOG_ERROR(
+            "Error while setting allowHapticsAndSystemSoundsDuringRecording: %{public}@",
             [hapticsError debugDescription]);
         if (outError != nil) {
           *outError = hapticsError;
