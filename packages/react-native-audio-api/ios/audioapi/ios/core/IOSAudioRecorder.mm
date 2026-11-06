@@ -4,7 +4,6 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 #include <algorithm>
-#include <format>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -128,9 +127,8 @@ void IOSAudioRecorder::handleInputNotification(
       return;
     case AudioEngineInputNotificationRecoveryFailed:
       reportError(
-          std::format(
-              "iOS recorder error: failed to recover the input: {}",
-              [[AudioAPIError describe:error] UTF8String]));
+          std::string("iOS recorder error: failed to recover the input: ") +
+          [[AudioAPIError describe:error] UTF8String]);
       return;
   }
 }
@@ -252,9 +250,8 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   if (!didStartNativeRecorder) {
-    auto message = std::format(
-        "Failed to start native recorder: {}",
-        [[AudioAPIError describe:nativeStartError] UTF8String]);
+    auto message = std::string("Failed to start native recorder: ") +
+        [[AudioAPIError describe:nativeStartError] UTF8String];
     message += "; ";
     message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
 
@@ -376,9 +373,8 @@ Result<NoneType, std::string> IOSAudioRecorder::resume()
   NSError *resumeError = nil;
   if (![nativeRecorder_ resume:&resumeError]) {
     return Err(
-        std::format(
-            "Failed to resume native recorder: {}",
-            [[AudioAPIError describe:resumeError] UTF8String]));
+        std::string("Failed to resume native recorder: ") +
+        [[AudioAPIError describe:resumeError] UTF8String]);
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
