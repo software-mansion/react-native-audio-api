@@ -4,6 +4,7 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 #include <algorithm>
+#include <format>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -36,11 +37,6 @@ static std::string describeRecorderFormat(AVAudioFormat *format)
   return "engineFormat={sampleRate=" + std::to_string(format.sampleRate) +
       ", channelCount=" + std::to_string(format.channelCount) +
       ", interleaved=" + (format.interleaved ? "true" : "false") + "}";
-}
-
-static std::string describeNativeError(NSError *error)
-{
-  return [[AudioAPIError describe:error] UTF8String];
 }
 
 /// Returns false — dropping the buffer — when the layout no longer
@@ -131,7 +127,10 @@ void IOSAudioRecorder::handleInputNotification(
       handleHardwareChange();
       return;
     case AudioEngineInputNotificationRecoveryFailed:
-      reportError("iOS recorder error: failed to recover the input: " + describeNativeError(error));
+      reportError(
+          std::format(
+              "iOS recorder error: failed to recover the input: {}",
+              [[AudioAPIError describe:error] UTF8String]));
       return;
   }
 }
@@ -253,8 +252,9 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
   }
 
   if (!didStartNativeRecorder) {
-    std::string message =
-        "Failed to start native recorder: " + describeNativeError(nativeStartError);
+    auto message = std::format(
+        "Failed to start native recorder: {}",
+        [[AudioAPIError describe:nativeStartError] UTF8String]);
     message += "; ";
     message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
 
@@ -375,7 +375,10 @@ Result<NoneType, std::string> IOSAudioRecorder::resume()
 
   NSError *resumeError = nil;
   if (![nativeRecorder_ resume:&resumeError]) {
-    return Err("Failed to resume native recorder: " + describeNativeError(resumeError));
+    return Err(
+        std::format(
+            "Failed to resume native recorder: {}",
+            [[AudioAPIError describe:resumeError] UTF8String]));
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
