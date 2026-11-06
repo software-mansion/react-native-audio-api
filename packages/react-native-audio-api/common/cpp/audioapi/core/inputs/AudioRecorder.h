@@ -78,9 +78,6 @@ class AudioRecorder {
 
   [[nodiscard]] virtual double getInputLatency() const = 0;
 
-  /// Delivers @p message to the JS error callback, if one is registered. Any thread.
-  void reportError(const std::string &message);
-
  protected:
   /// @brief Lifecycle of one recorder output: the file writer, the JS callback, or the adapter
   /// node. Written on the JS thread under that output's mutex; the audio thread reads it
@@ -129,6 +126,9 @@ class AudioRecorder {
   /// until the next start(). Nothing may deliver frames in the old format once this runs.
   /// The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
   Result<NoneType, std::string> reprepareOutputs(const StreamFormat &format);
+
+  /// Delivers @p message to the JS error callback, if one is registered.
+  void reportError(const std::string &message);
 
   /// Payload of @p handle, or nullptr when not connected. Valid exactly as long as the handle
   /// is held, so callers keep the handle (or adapterNodeMutex_) for the pointer's lifetime.
