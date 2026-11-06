@@ -78,7 +78,7 @@ TEST_F(HostGraphTest, AddNode) {
   });
 
   // Create a new handle and add it via HostGraph
-  auto handle = std::make_shared<NodeHandle>(0, nullptr);
+  auto handle = std::make_shared<NodeHandle>(nullptr);
   auto [hostNode, event] = hostGraph.addNode(handle);
 
   EXPECT_EQ(hostNode->handle, handle);
@@ -91,7 +91,7 @@ TEST_F(HostGraphTest, AddNode) {
 
   // After event: node added to AudioGraph
   EXPECT_EQ(audioGraph.size(), 4u);
-  audioGraph[handle->index].test_node_identifier__ = 3;
+  audioGraph[*handle].test_node_identifier__ = 3;
 
   auto adj = TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph);
   EXPECT_EQ(adj.size(), 4u);
@@ -320,6 +320,35 @@ TEST_F(HostGraphTest, RemoveNode_GhostNodeMustNotAllowCycle) {
 
   EXPECT_TRUE(addResult.is_err()) << "HostGraph should detect the cycle through the ghost node";
   EXPECT_EQ(addResult.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
+}
+
+TEST_F(HostGraphTest, RemoveAllEdges_SurvivesCompactionBeforeEventRuns) {
+  // 0 (isolated, about to be removed)   1 -> 2 -> 3
+  auto [audioGraph, hostGraph] = TestGraphUtils::createTestGraph({
+      {},  // 0
+      {2}, // 1 -> 2
+      {3}, // 2 -> 3
+      {}   // 3
+  });
+
+  auto removeNodeEvent = std::move(hostGraph.removeNode(findNode(hostGraph, 0))).unwrap();
+  removeNodeEvent(audioGraph, disposer_);
+
+  // The audio thread compacts node 0 out only after the JS thread has built the
+  // disconnect event, so every audio-graph position the event saw shifts by one.
+  auto disconnectEvent = std::move(hostGraph.removeAllEdges(findNode(hostGraph, 1))).unwrap();
+  audioGraph.sortAndCompact();
+  ASSERT_EQ(audioGraph.size(), 3u);
+  disconnectEvent(audioGraph, disposer_);
+
+  std::vector<std::vector<size_t>> expected = {
+      {},  // 0 (removed)
+      {},  // 1
+      {3}, // 2 -> 3
+      {}   // 3
+  };
+  EXPECT_EQ(TestGraphUtils::convertAudioGraphToAdjacencyList(audioGraph), expected);
+  EXPECT_EQ(TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph), expected);
 }
 
 } // namespace audioapi::utils::graph

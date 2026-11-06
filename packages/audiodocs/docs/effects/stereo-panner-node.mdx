@@ -5,10 +5,16 @@ sidebar_position: 9
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useStereoPannerPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useStereoPannerPlayground';
 
 # StereoPannerNode
 
 The `StereoPannerNode` interface represents the change in ratio between two output channels (left and right speaker).
+
+Press play, then click the `StereoPannerNode` box to compare the panned signal with the centered original. The meters show how much of the signal reaches each speaker.
+
+<InteractivePlayground tag="StereoPannerNode" usePlayground={useStereoPannerPlayground} />
 
 ## Constructor
 

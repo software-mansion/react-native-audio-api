@@ -11,7 +11,7 @@ import { colors } from '../../styles';
 import AudioPlayer from './AudioPlayer';
 
 // const remoteAsset =
-//   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+//   'https://docs.swmansion.com/react-native-audio-api/audio/voice/example-voice-01.mp3';
 
 import staticAsset from './voice-sample-landing.mp3';
 

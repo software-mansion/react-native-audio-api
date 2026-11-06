@@ -109,6 +109,17 @@ class AlignedAudioBuffer {
   [[nodiscard]] size_t getSize() const noexcept {
     return size_;
   }
+
+  /// @brief Changes the frame count of every channel in place (see AlignedAudioArray::resize).
+  /// @note Only for a buffer nothing else references yet: channels shared through
+  /// shareChannels() or exposed to JS would change length under their holders.
+  void resize(size_t size) {
+    for (const auto &channel : channels_) {
+      channel->resize(size);
+    }
+    size_ = size;
+  }
+
   [[nodiscard]] double getDuration() const noexcept {
     return static_cast<double>(size_) / static_cast<double>(getSampleRate());
   }

@@ -20,14 +20,18 @@ Everything lives in [`core/utils/graph/`](https://github.com/software-mansion/re
 ```cpp
 struct NodeHandle {
   std::unique_ptr<GraphObject> audioNode;
-  std::uint32_t index;   // position in AudioGraph::nodes, audio thread writes it
+
+ private:
+  friend class AudioGraph;
+  std::uint32_t index_;  // position in AudioGraph::nodes, audio thread writes it
 };
 ```
 
 A handle is created on the JS thread and stored in both `HostGraph::HostVertex` and `AudioGraph::Vertex`, so its reference
 count is 2 for as long as the node is alive in both graphs. `AudioGraph` sorts and compacts its array freely and rewrites `index` after every
-move, which is how an event built on the JS thread (`graph[handle->index]`) finds the right node when it runs on the audio thread. `index`
-is never read on the JS thread.
+move, which is how an event built on the JS thread (`graph[*handle]`, `graph.indexOf(*handle)`) finds the right node when it runs on
+the audio thread. The index is private to `AudioGraph`, so an event must capture the handle and resolve it inside the closure: an index
+captured on the JS thread goes stale as soon as the audio thread sorts or compacts (the `disconnect()` crash fixed in `removeAllEdges`).
 
 The count going from 2 to 1 is the signal that the audio thread has dropped the node. Nothing else is sent; the host side polls
 `use_count() == 1` when it is convenient (see [Ghost collection](#ghost-collection)).
@@ -38,7 +42,7 @@ flowchart LR
     HN["HostGraph::HostVertex<br/>inputs / outputs<br/>ghost"]
   end
   subgraph shared["shared_ptr, use_count = 2"]
-    H["NodeHandle<br/>audioNode: unique_ptr&lt;GraphObject&gt;<br/>index: uint32"]
+    H["NodeHandle<br/>audioNode: unique_ptr&lt;GraphObject&gt;<br/>index_: uint32 (private)"]
   end
   subgraph audio["audio thread"]
     AN["AudioGraph::Vertex<br/>input_head / link_head<br/>orphaned"]

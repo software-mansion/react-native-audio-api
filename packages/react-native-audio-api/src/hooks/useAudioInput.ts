@@ -11,6 +11,8 @@ import {
 const meaningfulReasons: RouteChangeReason[] = [
   'NewDeviceAvailable',
   'OldDeviceUnavailable',
+  // iOS reports a disconnected Bluetooth headset that was the current input this way not old device unavailable
+  'Override',
   // e.g. system picks a different device as current one is not suitable for the new configuration
   'CategoryChange',
   'ConfigurationChange',
