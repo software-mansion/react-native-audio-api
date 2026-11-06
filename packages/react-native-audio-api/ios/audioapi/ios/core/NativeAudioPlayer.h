@@ -19,11 +19,11 @@ typedef void (^RenderAudioBlock)(AudioBufferList *outputBuffer, int numFrames);
                        channelCount:(int)channelCount
             preferredIOBufferFrames:(int)preferredIOBufferFrames;
 
-- (bool)start:(NSError **)error;
+- (bool)start;
 
 - (void)stop;
 
-- (bool)resume:(NSError **)error;
+- (bool)resume;
 
 - (void)suspend;
 
