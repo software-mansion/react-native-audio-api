@@ -316,6 +316,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(receivedFrames, 0);
 
   [recorder setInputArmed:YES];
+  recorder.expectedBufferCount = input.bufferList()->mNumberBuffers;
   status = recorder.receiverSinkBlock(&timestamp, 8, input.bufferList());
 
   XCTAssertEqual(status, (OSStatus)kAudioServicesNoError);
