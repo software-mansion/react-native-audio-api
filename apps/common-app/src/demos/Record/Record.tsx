@@ -86,12 +86,6 @@ const Record: FC = () => {
     currentPositionSV.value = 0;
   }, [currentPositionSV]);
 
-  const updateNotification = (paused: boolean) => {
-    RecordingNotificationManager.show({
-      paused,
-    });
-  };
-
   const setupNotification = (paused: boolean) => {
     RecordingNotificationManager.show({
       title: 'Recording Demo',
@@ -101,7 +95,7 @@ const Record: FC = () => {
       color: 0xff6200,
       showStopAction: true,
       deepLinkUri: 'audioapi-example://record',
-      usesChronometer: true,
+      usesChronometer: true
     });
   };
 
@@ -162,14 +156,12 @@ const Record: FC = () => {
 
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
-    updateNotification(true);
     setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
   const onResumeRecording = useCallback(() => {
     Recorder.resume();
-    updateNotification(false);
     setState(RecordingState.Recording);
   }, []);
 
