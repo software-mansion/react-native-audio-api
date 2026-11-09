@@ -174,11 +174,7 @@ describe('Worklet Tests', () => {
 ### Error handling testing
 
 ```typescript
-import {
-  AudioRecorder,
-  NotSupportedError,
-  InvalidStateError
-} from 'react-native-audio-api/mock';
+import { NotSupportedError } from 'react-native-audio-api/mock';
 
 describe('Error Handling Tests', () => {
   it('should handle various error conditions', () => {
@@ -186,17 +182,6 @@ describe('Error Handling Tests', () => {
     expect(() => {
       throw new NotSupportedError('Feature not supported');
     }).toThrow('Feature not supported');
-
-    // Test recorder connection errors
-    const recorder = new AudioRecorder();
-    const context = new AudioContext();
-    const adapter = context.createRecorderAdapter();
-
-    // First connection should work
-    recorder.connect(adapter);
-
-    // Second connection should throw
-    expect(() => recorder.connect(adapter)).toThrow();
   });
 });
 ```
