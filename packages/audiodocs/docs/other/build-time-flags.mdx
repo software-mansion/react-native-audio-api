@@ -54,9 +54,7 @@ After changing them:
 ```
 
 Links the prebuilt FFmpeg libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`)
-into the app. Apps that play HLS or stream remote URLs have to
-turn it on: without FFmpeg, remote progressive sources are downloaded fully before decoding and HLS
-sources fail.
+into the app.
 
 ### Where FFmpeg is used {#where-ffmpeg-is-used}
 
@@ -69,7 +67,7 @@ Without FFmpeg, remote progressive sources are fully downloaded in JS and decode
 `preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.
 
 The FFmpeg binaries are downloaded during `pod install` / Swift package resolution / the first
-Gradle build. FFmpeg is distributed under the LGPL — see `THIRD_PARTY.md` in the repository for the
+Gradle build. FFmpeg is distributed under the LGPL — see [`THIRD_PARTY.md`](https://github.com/software-mansion/react-native-audio-api/blob/main/THIRD_PARTY.md) in the repository for the
 notice that applies to FFmpeg-enabled builds.
 
 ## `disableStaticExternalLibs` {#disablestaticexternallibs}
@@ -82,8 +80,7 @@ notice that applies to FFmpeg-enabled builds.
 
 Removes the bundled Opus / Ogg / Vorbis static libraries (`libopus`, `libopusfile`, `libogg`,
 `libvorbis`, `libvorbisenc`, `libvorbisfile`), which are linked by default. Decoding `.ogg`, `.opus` or `.oga` files
-through `AudioContext.decodeAudioData` (or any other decoding path) then returns an error — those
-formats are handled inside miniaudio via the now-disabled custom backends. The `OpusOgg` recording
+through `AudioContext.decodeAudioData` (or any other decoding path) will fail. The `OpusOgg` recording
 format and Ogg/Opus [file concatenation](../utils/file-concatenation.mdx) are affected as well.
 
 ## `disableAudioRecorder` {#disableaudiorecorder}
