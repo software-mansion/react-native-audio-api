@@ -101,4 +101,4 @@ for an `NSMicrophoneUsageDescription` entry (`ITMS-90683`). On Android, the app 
 
 In such a build `new AudioRecorder()` throws, and `AudioManager.requestRecordingPermissions()`,
 `AudioManager.checkRecordingPermissions()` and, on Android, `RecordingNotificationManager.show()`
-reject.
+reject. The permission calls reject with the error code `E_RECORDER_DISABLED`.

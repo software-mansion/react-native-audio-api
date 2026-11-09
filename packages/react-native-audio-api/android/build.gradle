@@ -157,7 +157,14 @@ def audioApiPrefabHeadersDir = layout.buildDirectory.dir("prefab-headers").get()
 def audioApiPrefabHeaderIncludes = ["audioapi/**/*.h", "audioapi/**/*.hpp"]
 // Third-party headers (FFmpeg, Opus, Vorbis, Ogg) are not part of the extension API
 // and are not guaranteed to exist in every build, so they never reach the prefab.
-def audioApiPrefabHeaderExcludes = ["audioapi/external/**"]
+// AudioAPIModuleInstaller.h is the library's own JSI install, not for extensions, and it
+// compiles differently depending on private build defines (RN_AUDIO_API_AUDIO_RECORDER_DISABLED).
+// android/AudioAPIModule.h, the JNI module, includes it, so it stays out too.
+def audioApiPrefabHeaderExcludes = [
+  "audioapi/external/**",
+  "audioapi/AudioAPIModuleInstaller.h",
+  "audioapi/android/AudioAPIModule.h",
+]
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
@@ -359,6 +366,7 @@ tasks.register('prepareAudioApiHeadersForPrefabs', Copy) {
     }
     from(audioApiAndroidCppDir) {
         include(audioApiPrefabHeaderIncludes)
+        exclude(audioApiPrefabHeaderExcludes)
     }
     into(audioApiPrefabHeadersDir)
 }

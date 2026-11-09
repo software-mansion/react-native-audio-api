@@ -358,29 +358,20 @@ static AudioSessionManager *_sharedInstance = nil;
 }
 
 #ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
+static NSString *const RecordingDisabledCode = @"E_RECORDER_DISABLED";
 static NSString *const RecordingDisabledMessage =
     @"Recording is unavailable: react-native-audio-api was built with \"disableAudioRecorder\": true.";
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject
 {
-  reject(nil, RecordingDisabledMessage, nil);
-}
-
-- (NSString *)requestRecordingPermissions
-{
-  return @"Denied";
+  reject(RecordingDisabledCode, RecordingDisabledMessage, nil);
 }
 
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject
 {
-  reject(nil, RecordingDisabledMessage, nil);
-}
-
-- (NSString *)checkRecordingPermissions
-{
-  return @"Denied";
+  reject(RecordingDisabledCode, RecordingDisabledMessage, nil);
 }
 #else
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve

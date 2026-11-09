@@ -32,6 +32,7 @@ class AudioAPIModule(
     const val NAME = NativeAudioAPIModuleSpec.NAME
     private const val TAG = "AudioAPIModule"
     private const val INPUT_DEVICE_ERROR = "E_INPUT_DEVICE"
+    private const val RECORDING_DISABLED_ERROR = "E_RECORDER_DISABLED"
     private const val RECORDING_DISABLED_MESSAGE =
       "Recording is unavailable: react-native-audio-api was built with \"disableAudioRecorder\": true."
   }
@@ -162,7 +163,7 @@ class AudioAPIModule(
 
   override fun requestRecordingPermissions(promise: Promise) {
     if (BuildConfig.RN_AUDIO_API_AUDIO_RECORDER_DISABLED) {
-      promise.reject(null, RECORDING_DISABLED_MESSAGE)
+      promise.reject(RECORDING_DISABLED_ERROR, RECORDING_DISABLED_MESSAGE)
       return
     }
     val permissionRequestListener = PermissionRequestListener(promise)
@@ -171,7 +172,7 @@ class AudioAPIModule(
 
   override fun checkRecordingPermissions(promise: Promise) {
     if (BuildConfig.RN_AUDIO_API_AUDIO_RECORDER_DISABLED) {
-      promise.reject(null, RECORDING_DISABLED_MESSAGE)
+      promise.reject(RECORDING_DISABLED_ERROR, RECORDING_DISABLED_MESSAGE)
       return
     }
     promise.resolve(MediaSessionManager.checkRecordingPermissions())
