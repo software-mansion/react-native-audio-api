@@ -117,7 +117,7 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
       recorder.clearOnError();
       if (recorder.isRecording() || recorder.isPaused()) {
         logAction(log, `${CALLS.stop} on releasing the recorder`, async () => {
-          unwrap(await recorder.stop());
+          await recorder.stop();
           AudioRecorder.consumeLastRecordingResult();
         });
       }
@@ -136,9 +136,7 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
     const permission = await AudioManager.requestRecordingPermissions();
     log(`${CALLS.permission} → ${permission}`);
     setLevel(NO_BUFFERS);
-    await logAction(log, CALLS.start, async () =>
-      unwrap(await recorder.start())
-    );
+    await logAction(log, CALLS.start, () => recorder.start());
   }, [log, recorder]);
 
   const pause = useCallback(
@@ -152,9 +150,7 @@ export function useRecorder(log: Log, onTake: (path: string) => void) {
   );
 
   const stop = useCallback(async () => {
-    const info = await logAction(log, CALLS.stop, async () =>
-      unwrap(await recorder.stop())
-    );
+    const info = await logAction(log, CALLS.stop, () => recorder.stop());
     if (!info) {
       return;
     }
