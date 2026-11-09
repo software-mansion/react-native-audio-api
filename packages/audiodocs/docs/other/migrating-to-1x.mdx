@@ -56,7 +56,7 @@ With Expo, remove `disableFFmpeg` from the plugin options and set the options in
 If you previously disabled the static external libraries (Opus, Vorbis) through the Podfile or `gradle.properties`, they are linked again until you move the option to `package.json`.
 :::
 
-[`isFfmpegEnabled()`](../other/runtime-flags.mdx#isffmpegenabled) keeps its name, but now returns `false` unless you enabled FFmpeg — including in the `react-native-audio-api/mock` implementation. See [Build-time flags](../other/build-time-flags.mdx#enableffmpeg) for details.
+See [Build-time flags](../other/build-time-flags.mdx#enableffmpeg) for what FFmpeg enables.
 
 ### Worklets moved to `react-native-audio-worklets`
 

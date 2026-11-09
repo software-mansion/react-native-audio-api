@@ -7,8 +7,7 @@ sidebar_position: 5
 Some features of `react-native-audio-api` are chosen when the native code is built: whether FFmpeg
 is linked, whether the bundled Opus / Ogg / Vorbis libraries are included, and whether the audio
 recorder is compiled in at all. The third-party libraries are prebuilt and downloaded at build
-time; each adds several megabytes to the app binary. Changing a flag needs a native rebuild. To check at runtime what
-ended up in the binary you are running, see [Runtime flags](./runtime-flags.mdx).
+time; each adds several megabytes to the app binary. Changing a flag needs a native rebuild.
 
 | Flag | Default | Effect |
 | :---- | :---: | :---- |
@@ -57,8 +56,17 @@ After changing them:
 Links the prebuilt FFmpeg libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`)
 into the app. Apps that play HLS or stream remote URLs have to
 turn it on: without FFmpeg, remote progressive sources are downloaded fully before decoding and HLS
-sources fail. See [where FFmpeg is used](./runtime-flags.mdx#where-ffmpeg-is-used) for the full list,
-and use [`isFfmpegEnabled()`](./runtime-flags.mdx#isffmpegenabled) to branch at runtime.
+sources fail.
+
+### Where FFmpeg is used {#where-ffmpeg-is-used}
+
+| Area | API | Requires FFmpeg for |
+| :---: | :---: | :---- |
+| Streaming | [`<Audio>`](../sources/audio-tag.mdx), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
+| Metadata | [`getAudioDuration`](../utils/decoding.mdx#getaudioduration), [`<Audio>`](../sources/audio-tag.mdx) `preload="metadata"` | Remote `http(s):` URL duration probing |
+
+Without FFmpeg, remote progressive sources are fully downloaded in JS and decoded that way;
+`preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.
 
 The FFmpeg binaries are downloaded during `pod install` / Swift package resolution / the first
 Gradle build. FFmpeg is distributed under the LGPL — see `THIRD_PARTY.md` in the repository for the

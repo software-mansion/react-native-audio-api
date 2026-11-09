@@ -75,7 +75,7 @@ Only **required** field is a `source`. Callbacks default to no-ops if omitted.
 
 #### `metadata` (native)
 
-For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](../utils/decoding.mdx#getaudioduration). This requires an FFmpeg-enabled build — check with [`isFfmpegEnabled`](../other/runtime-flags.mdx#isffmpegenabled).
+For remote `http(s):` sources, duration is read through the same native URL probing path as [`getAudioDuration`](../utils/decoding.mdx#getaudioduration). This requires an FFmpeg-enabled build — see [`enableFFmpeg`](../other/build-time-flags.mdx#enableffmpeg).
 
 When FFmpeg is disabled, `preload="metadata"` is treated as `none`: the source is not fetched and duration stays unknown until playback starts.
 
@@ -185,4 +185,4 @@ const MyAudioTagWrapper : React.FC = () => {
 
 ## Remarks
 
-- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build, which is **off by default** — see [Build-time flags](../other/build-time-flags.mdx#enableffmpeg). Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported, and HLS sources report a `NotSupportedError` through `onError`. See [Runtime flags](../other/runtime-flags.mdx#where-ffmpeg-is-used).
+- **FFmpeg:** Remote URL streaming (HTTP byte ranges) and HLS require an FFmpeg build, which is **off by default** — see [Build-time flags](../other/build-time-flags.mdx#enableffmpeg). Without FFmpeg, remote progressive sources are downloaded fully and decoded with OS APIs / miniaudio where supported, and HLS sources report a `NotSupportedError` through `onError`. See [where FFmpeg is used](../other/build-time-flags.mdx#where-ffmpeg-is-used).
