@@ -786,7 +786,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 - (bool)startIfNecessary
 {
-  std::scoped_lock lock(_engineLock);
+  std::unique_lock lock(_engineLock);
   if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
       [self.audioEngine isRunning]) {
     [self materializeTrackedNodesIfNeeded];
@@ -799,6 +799,13 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if ([self mustRebuildBeforeStart]) {
     [self rebuildGraphForCurrentHardware];
+    auto notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged];
+    // TODO: refactor lock-aware operations and communication between engine-recorder-player-manager
+    if (notifyInput != nil) {
+      lock.unlock();
+      notifyInput();
+      lock.lock();
+    }
   }
 
   if ([self startEngine]) {
