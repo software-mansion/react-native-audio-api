@@ -20,8 +20,7 @@ builds against `react-native-worklets`, which supports Swift Package Manager fro
 
 ## Build options
 
-[`enableFFmpeg` and `disableStaticExternalLibs`](./prebuilt-libraries-support.mdx#setting-the-options)
-are read from the `react-native-audio-api` section of the app's `package.json`, as with CocoaPods
+The [build-time flags](./build-time-flags.mdx#setting-the-flags) are read from the `react-native-audio-api` section of the app's `package.json`, as with CocoaPods
 and Gradle.
 
 :::caution
@@ -35,5 +34,5 @@ cd ios && npx react-native spm
 
 To confirm an `enableFFmpeg` change took effect, check
 [`isFfmpegEnabled()`](./runtime-flags#isffmpegenabled) at runtime. There is no runtime flag for
-`disableStaticExternalLibs`.
+`disableStaticExternalLibs` or `disableAudioRecorder`.
 :::

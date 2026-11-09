@@ -1,0 +1,96 @@
+---
+sidebar_position: 5
+---
+
+# Build-time flags
+
+Some features of `react-native-audio-api` are chosen when the native code is built: whether FFmpeg
+is linked, whether the bundled Opus / Ogg / Vorbis libraries are included, and whether the audio
+recorder is compiled in at all. The third-party libraries are prebuilt and downloaded at build
+time; each adds several megabytes to the app binary. Changing a flag needs a native rebuild. To check at runtime what
+ended up in the binary you are running, see [Runtime flags](./runtime-flags.mdx).
+
+| Flag | Default | Effect |
+| :---- | :---: | :---- |
+| [`enableFFmpeg`](#enableffmpeg) | `false` | Links FFmpeg: remote URL streaming, HLS (`.m3u8`) and remote URL metadata. |
+| [`disableStaticExternalLibs`](#disablestaticexternallibs) | `false` | Removes the bundled Opus / Ogg / Vorbis libraries: no `ogg`, `opus` or `oga` decoding. |
+| [`disableAudioRecorder`](#disableaudiorecorder) | `false` | Leaves the recorder and every microphone API out of the build. |
+
+The flags apply to both iOS and Android, are independent, and can be combined.
+
+:::tip Reducing app size
+Leaving FFmpeg off (the default) and setting `disableStaticExternalLibs` can shave several MB off the
+final app size across all ABIs / device slices. Pick the set of formats you actually need and turn
+the rest off.
+:::
+
+## Setting the flags {#setting-the-flags}
+
+Every build (CocoaPods, [Swift Package Manager](./swift-package-manager.mdx) and Gradle) reads the
+flags from a `react-native-audio-api` section of the app's `package.json`. Set them there in Expo
+apps too:
+
+```json
+"react-native-audio-api": {
+  "enableFFmpeg": true,
+  "disableStaticExternalLibs": false,
+  "disableAudioRecorder": false
+}
+```
+
+Each flag is `false` when left out, and must be `true` or `false`.
+
+After changing them:
+
+- **CocoaPods**: run `pod install` (in Expo apps, `npx expo prebuild`).
+- **Swift Package Manager**: run `npx react-native spm` in `ios`. If the app was already built, [reset the package cache](./swift-package-manager.mdx#build-options) first.
+- **Android**: just rebuild. Gradle reads the file on every build.
+
+## `enableFFmpeg` {#enableffmpeg}
+
+```json
+"react-native-audio-api": {
+  "enableFFmpeg": true
+}
+```
+
+Links the prebuilt FFmpeg libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`)
+into the app. Apps that play HLS or stream remote URLs have to
+turn it on: without FFmpeg, remote progressive sources are downloaded fully before decoding and HLS
+sources fail. See [where FFmpeg is used](./runtime-flags.mdx#where-ffmpeg-is-used) for the full list,
+and use [`isFfmpegEnabled()`](./runtime-flags.mdx#isffmpegenabled) to branch at runtime.
+
+The FFmpeg binaries are downloaded during `pod install` / Swift package resolution / the first
+Gradle build. FFmpeg is distributed under the LGPL — see `THIRD_PARTY.md` in the repository for the
+notice that applies to FFmpeg-enabled builds.
+
+## `disableStaticExternalLibs` {#disablestaticexternallibs}
+
+```json
+"react-native-audio-api": {
+  "disableStaticExternalLibs": true
+}
+```
+
+Removes the bundled Opus / Ogg / Vorbis static libraries (`libopus`, `libopusfile`, `libogg`,
+`libvorbis`, `libvorbisenc`, `libvorbisfile`), which are linked by default. Decoding `.ogg`, `.opus` or `.oga` files
+through `AudioContext.decodeAudioData` (or any other decoding path) then returns an error — those
+formats are handled inside miniaudio via the now-disabled custom backends. The `OpusOgg` recording
+format and Ogg/Opus [file concatenation](../utils/file-concatenation.mdx) are affected as well.
+
+## `disableAudioRecorder` {#disableaudiorecorder}
+
+```json
+"react-native-audio-api": {
+  "disableAudioRecorder": true
+}
+```
+
+Leaves the [audio recorder](../inputs/audio-recorder.mdx) and every microphone API out of the
+native build, for apps that only play audio. On iOS, App Store Connect then no longer asks the app
+for an `NSMicrophoneUsageDescription` entry (`ITMS-90683`). On Android, the app does not need the
+`RECORD_AUDIO` permission.
+
+In such a build `new AudioRecorder()` throws, and `AudioManager.requestRecordingPermissions()`,
+`AudioManager.checkRecordingPermissions()` and, on Android, `RecordingNotificationManager.show()`
+reject.
