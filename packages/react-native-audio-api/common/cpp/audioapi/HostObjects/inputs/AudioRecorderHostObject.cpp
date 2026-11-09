@@ -54,28 +54,33 @@ AudioRecorderHostObject::~AudioRecorderHostObject() {
   });
 }
 
+namespace {
+
+PromiseResolver resolveWithUndefined() {
+  return [](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
+    return jsi::Value::undefined();
+  };
+}
+
+PromiseResolver rejectWith(std::string message) {
+  return [message = std::move(message)](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
+    return message;
+  };
+}
+
+} // namespace
+
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto audioRecorder = audioRecorder_;
 
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
     auto result = ActiveRecorderHandle::global().tryStart(audioRecorder);
 
-    return [result =
-                std::move(result)](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      auto jsResult = jsi::Object(runtime);
+    if (result.is_err()) {
+      return rejectWith(result.unwrap_err());
+    }
 
-      jsResult.setProperty(
-          runtime,
-          "status",
-          jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
-
-      if (!result.is_ok()) {
-        jsResult.setProperty(
-            runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
-      }
-
-      return jsi::Value(std::move(jsResult));
-    };
+    return resolveWithUndefined();
   });
 }
 
@@ -85,32 +90,22 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
     auto result = ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
 
-    using returnValue = std::variant<jsi::Value, std::string>;
+    if (result.is_err()) {
+      return rejectWith(result.unwrap_err());
+    }
 
-    return [result = std::move(result)](jsi::Runtime &runtime) -> returnValue {
-      auto jsResult = jsi::Object(runtime);
-
-      jsResult.setProperty(
-          runtime,
-          "status",
-          jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
-
-      if (result.is_ok()) {
-        const auto &info = result.unwrap();
-        auto pathsArray = jsi::Array(runtime, info.paths.size());
-        for (size_t i = 0; i < info.paths.size(); ++i) {
-          pathsArray.setValueAtIndex(
-              runtime, i, jsi::String::createFromUtf8(runtime, info.paths[i]));
-        }
-        jsResult.setProperty(runtime, "paths", pathsArray);
-        jsResult.setProperty(runtime, "size", info.size);
-        jsResult.setProperty(runtime, "duration", info.duration);
-      } else {
-        jsResult.setProperty(
-            runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+    return [info =
+                result.unwrap()](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+      auto pathsArray = jsi::Array(runtime, info.paths.size());
+      for (size_t i = 0; i < info.paths.size(); ++i) {
+        pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, info.paths[i]));
       }
 
-      return jsi::Value(std::move(jsResult));
+      auto fileInfo = jsi::Object(runtime);
+      fileInfo.setProperty(runtime, "paths", pathsArray);
+      fileInfo.setProperty(runtime, "size", info.size);
+      fileInfo.setProperty(runtime, "duration", info.duration);
+      return jsi::Value(std::move(fileInfo));
     };
   });
 }
@@ -142,16 +137,6 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   return jsResult;
 }
 
-namespace {
-
-PromiseResolver resolveWithUndefined() {
-  return [](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
-    return jsi::Value::undefined();
-  };
-}
-
-} // namespace
-
 /// Closing a file mid-recording joins the writer thread, so it runs on the lane like stop().
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, disableFileOutput) {
   auto audioRecorder = audioRecorder_;
@@ -177,7 +162,12 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, resume) {
   auto audioRecorder = audioRecorder_;
 
   return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
-    ActiveRecorderHandle::global().resume(audioRecorder);
+    auto result = ActiveRecorderHandle::global().resume(audioRecorder);
+
+    if (result.is_err()) {
+      return rejectWith(result.unwrap_err());
+    }
+
     return resolveWithUndefined();
   });
 }

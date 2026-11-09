@@ -91,13 +91,10 @@ async function finalizeRotatedRecording() {
   });
 
   // Start and stop the recorder as usual.
-  const result = await audioRecorder.stop();
+  const { paths } = await audioRecorder.stop();
+  const outputPath = paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
 
-  if (result.status === 'success') {
-    const outputPath = result.paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
-
-    await concatAudioFiles(result.paths, outputPath);
-  }
+  await concatAudioFiles(paths, outputPath);
 }
 ```
 
