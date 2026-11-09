@@ -98,12 +98,11 @@ describe('Audio Recording Tests', () => {
     expect(result.status).toBe('success');
 
     // Test recording workflow
-    const startResult = await recorder.start();
-    expect(startResult.status).toBe('success');
+    await recorder.start();
     expect(recorder.isRecording()).toBe(true);
 
-    const stopResult = await recorder.stop();
-    expect(stopResult.status).toBe('success');
+    const fileInfo = await recorder.stop();
+    expect(fileInfo.paths.length).toBeGreaterThan(0);
     expect(recorder.isRecording()).toBe(false);
   });
 });

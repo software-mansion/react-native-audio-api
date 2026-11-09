@@ -197,9 +197,10 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -212,8 +213,8 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.stop();
-    console.log(result);
+    const fileInfo = await audioRecorder.stop();
+    console.log(fileInfo);
     setIsRecording(false);
     await AudioManager.setAudioSessionActivity(false);
   };
@@ -290,10 +291,10 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -371,10 +372,10 @@ const MyRecorder: React.FC = () => {
       await audioContext.resume();
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -452,12 +453,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from the system audio input device. Returns a `Promise<Result<{}>>` that resolves when recording has started.
+          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it.
         </div>
         ```tsx
-        const result = await audioRecorder.start();
-
-        console.log(result.status);
+        try {
+          await audioRecorder.start();
+        } catch (error) {
+          console.error(error);
+        }
         ```
       </td>
     </tr>
@@ -472,17 +475,15 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Stops the input stream and cleans up each input access method. Returns a `Promise<Result<FileInfo>>` that resolves when recording has stopped.
+          Stops the input stream and cleans up each input access method. Returns a `Promise<FileInfo>` that resolves when recording has stopped, and rejects when the recorder was not started or the output files could not be finalized.
 
           For details on the returned file information, see [FileInfo](#fileinfo).
         </div>
         ```tsx
-        const result = await audioRecorder.stop();
-
-        if (result.status === 'success') {
-          const { paths, duration, size } = result;
-        } else if (result.status === 'error') {
-          console.error(result.message);
+        try {
+          const { paths, duration, size } = await audioRecorder.stop();
+        } catch (error) {
+          console.error(error);
         }
         ```
       </td>
@@ -518,12 +519,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Resumes the recording if it was previously paused; otherwise does nothing. Returns a `Promise<void>` that resolves when the input stream is running again.
+          Resumes a paused recording. Returns a `Promise<void>` that resolves when the input stream is running again. Resuming a recording that is already running succeeds without changing anything. The promise rejects when the recorder was not started, or when the system refused to resume, in which case the recording stays paused.
         </div>
         ```tsx
-        await audioRecorder.resume();
-
-        console.log(audioRecorder.isRecording());
+        try {
+          await audioRecorder.resume();
+        } catch (error) {
+          console.warn(error);
+        }
         ```
       </td>
     </tr>
@@ -1275,6 +1278,6 @@ audioRecorder.pause();
 await audioRecorder.resume(); // start and pause have already completed here
 ```
 
-Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`.
+Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`. `start`, `stop` and `resume` reject when they fail, so catch the promises you do not await.
 
 [`AudioContext`](../core/audio-context.mdx#remarks) and [`OfflineAudioContext`](../core/offline-audio-context.mdx) order their `suspend`, `resume`, `close` and `startRendering` promises the same way.

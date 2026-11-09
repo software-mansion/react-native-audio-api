@@ -1,4 +1,5 @@
 #import <audioapi/ios/core/NativeAudioPlayer.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
@@ -36,7 +37,7 @@
   [audioEngine stopIfNecessary];
   [self attachSourceNodeIfNeeded:audioEngine];
 
-  if (![audioEngine startIfNecessary]) {
+  if (![audioEngine startIfNecessary:nil]) {
     [self detachSourceNodeIfAttached:audioEngine];
     [audioEngine stopIfPossible];
     return false;
@@ -85,10 +86,10 @@
   // AVAudioEngine adopts a new buffer duration only when it starts, so it is requested first.
   [sessionManager setPreferredIOBufferFrames:_preferredIOBufferFrames];
 
-  NSError *error = nil;
-  if (![sessionManager ensureActiveWithError:&error]) {
-    NSLog(@"Error while activating audio session for playback: %@", [error debugDescription]);
+  NSError *activationError = nil;
+  if (![sessionManager ensureActiveWithError:&activationError]) {
     [sessionManager resetPreferredIOBufferFrames];
+    [AudioAPIError fail:nil with:[AudioAPIError sessionActivationFailed:activationError]];
     return false;
   }
 

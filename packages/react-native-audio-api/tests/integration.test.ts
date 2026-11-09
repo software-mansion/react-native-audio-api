@@ -118,15 +118,12 @@ describe('Mock Integration Tests', () => {
       recorder.connect(recorderAdapter);
 
       // Start recording
-      const startResult = await recorder.start();
-      expect(startResult.status).toBe('success');
+      await recorder.start();
       expect(recorder.isRecording()).toBe(true);
 
       // Stop recording
-      const stopResult = await recorder.stop();
-      expect(stopResult.status).toBe('success');
-      // @ts-ignore - paths is not seen as the correct type
-      expect(stopResult.paths?.length).toBeGreaterThan(0);
+      const fileInfo = await recorder.stop();
+      expect(fileInfo.paths.length).toBeGreaterThan(0);
       expect(recorder.isRecording()).toBe(false);
     });
 

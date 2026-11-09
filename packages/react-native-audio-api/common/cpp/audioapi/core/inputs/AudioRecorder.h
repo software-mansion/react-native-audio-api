@@ -41,7 +41,10 @@ class AudioRecorder {
   void disableFileOutput();
 
   virtual void pause() = 0;
-  virtual void resume() = 0;
+  /// @brief Resumes a paused recording.
+  /// @return The platform's reason when it refused; Ok when the recorder resumed or was not
+  /// paused.
+  virtual Result<NoneType, std::string> resume() = 0;
 
   /// @brief Moves a recording or paused session onto the input device the platform
   /// currently selects.

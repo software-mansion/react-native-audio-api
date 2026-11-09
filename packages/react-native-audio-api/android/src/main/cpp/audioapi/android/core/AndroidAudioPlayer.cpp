@@ -7,6 +7,7 @@
 #include <audioapi/utils/Macros.h>
 
 #include <jni.h>
+#include <sched.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -29,6 +30,9 @@ PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
   }
   return PerformanceMode::LowLatency;
 }
+
+/// About one second of 128-frame callbacks at 48 kHz.
+constexpr uint32_t CALLBACKS_BETWEEN_AFFINITY_CHECKS = 375;
 
 } // namespace
 
@@ -78,6 +82,8 @@ bool AndroidAudioPlayer::openAudioStreamLocked() {
         oboe::convertToText(result));
     return false;
   }
+
+  mStream_->setPerformanceHintEnabled(true);
 
   isInitialized_.store(true, std::memory_order_release);
   return true;
@@ -176,6 +182,8 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
     lastCallbackFrameCount_.store(numFrames, std::memory_order_release);
   }
 
+  keepAudioThreadOnOneCore();
+
   const CurrentRenderScope renderScope(currentRenders_);
 
   auto *buffer = static_cast<float *>(audioData);
@@ -197,6 +205,25 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
   }
 
   return DataCallbackResult::Continue;
+}
+
+void AndroidAudioPlayer::keepAudioThreadOnOneCore() {
+  if (callbacksUntilAffinityCheck_ > 0) {
+    --callbacksUntilAffinityCheck_;
+    return;
+  }
+  callbacksUntilAffinityCheck_ = CALLBACKS_BETWEEN_AFFINITY_CHECKS;
+
+  cpu_set_t current;
+  CPU_ZERO(&current);
+  if (sched_getaffinity(0, sizeof(current), &current) == 0 && CPU_COUNT(&current) == 1) {
+    return;
+  }
+
+  cpu_set_t thisCore;
+  CPU_ZERO(&thisCore);
+  CPU_SET(sched_getcpu(), &thisCore);
+  sched_setaffinity(0, sizeof(thisCore), &thisCore);
 }
 
 namespace {

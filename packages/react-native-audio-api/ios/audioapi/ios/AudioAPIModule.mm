@@ -5,6 +5,7 @@
 #import <React/RCTCallInvoker.h>
 #endif // RCT_NEW_ARCH_ENABLED
 #import <audioapi/AudioAPIModuleInstaller.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
@@ -135,21 +136,8 @@ RCT_EXPORT_METHOD(
     auto success = [self.audioSessionManager setActive:enabled error:&error];
 
     if (!success) {
-      NSDictionary *meta = @{
-        @"nativeCode" : @(error.code),
-        @"nativeDomain" : error.domain ?: @"",
-        @"nativeDesc" : error.description ?: @"",
-      };
-
-      NSError *jsError =
-          [NSError errorWithDomain:@"AudioAPIModule"
-                              code:error.code
-                          userInfo:@{
-                            NSLocalizedDescriptionKey : @"Failed to set audio session active state",
-                            @"meta" : meta,
-                          }];
-
-      reject(@"E_AUDIO_SESSION", @"Failed to set audio session active state", jsError);
+      NSError *failure = [AudioAPIError sessionActivityChangeFailed:error];
+      reject(@"E_AUDIO_SESSION", failure.localizedDescription, failure);
       return;
     }
 

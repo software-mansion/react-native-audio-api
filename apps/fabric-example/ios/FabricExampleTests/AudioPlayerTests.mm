@@ -141,7 +141,7 @@ class IOSAudioPlayer : public AudioPlayer {
   self.stopIfNecessaryCallCount += 1;
 }
 
-- (bool)startIfNecessary
+- (bool)startIfNecessary:(NSError **)error
 {
   self.startIfNecessaryCallCount += 1;
   self.sourceNodeIdsPresentAtLastStart = [self.attachedSourceNodeIds copy];
@@ -178,8 +178,7 @@ class IOSAudioPlayer : public AudioPlayer {
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-                     onInputNotification:
-                         (void (^)(AudioEngineInputNotification))onInputNotification
+                     onInputNotification:(AudioEngineInputNotificationBlock)onInputNotification
 {
   self.attachInputNodeCallCount += 1;
   (void)receiverBlock;

@@ -132,6 +132,28 @@ artifacts_present() {
     return 0
 }
 
+DOWNLOAD_ATTEMPTS=3
+DOWNLOAD_RETRY_DELAY_SECONDS=5
+
+# GitHub release downloads fail now and then (a 5xx or a dropped connection), and one such
+# failure would otherwise fail the whole build; a few short retries ride most of them out.
+download_with_retry() {
+    local url="$1"
+    local output="$2"
+    local attempt
+
+    for ((attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++)); do
+        if curl -fsSL --connect-timeout 30 "$url" -o "$output"; then
+            return 0
+        fi
+        if [ "$attempt" -lt "$DOWNLOAD_ATTEMPTS" ]; then
+            echo "Download attempt ${attempt}/${DOWNLOAD_ATTEMPTS} failed for ${url}, retrying in ${DOWNLOAD_RETRY_DELAY_SECONDS}s." >&2
+            sleep "$DOWNLOAD_RETRY_DELAY_SECONDS"
+        fi
+    done
+    return 1
+}
+
 for name in "${DOWNLOAD_NAMES[@]}"; do
     ARCH_URL="${MAIN_DOWNLOAD_URL}/${TAG}/${name}"
     ZIP_FILE_PATH="${TEMP_DOWNLOAD_DIR}/${name}"
@@ -155,12 +177,10 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
 
     # If we are here, the artifacts are missing, so we download and unzip.
     echo "Downloading from: $ARCH_URL"
-    curl -fsSL "$ARCH_URL" -o "$ZIP_FILE_PATH"
-
-    if [ $? -ne 0 ]; then
+    if ! download_with_retry "$ARCH_URL" "$ZIP_FILE_PATH"; then
         # The build cannot succeed without these files, so fail here where the cause is
         # visible instead of at compile/link time with a missing-header or symbol error.
-        echo "Error: Download failed for ${ARCH_URL}." >&2
+        echo "Error: Download failed for ${ARCH_URL} after ${DOWNLOAD_ATTEMPTS} attempts." >&2
         rm -f "$ZIP_FILE_PATH"
         rm -rf "$TEMP_DOWNLOAD_DIR"
         exit 1

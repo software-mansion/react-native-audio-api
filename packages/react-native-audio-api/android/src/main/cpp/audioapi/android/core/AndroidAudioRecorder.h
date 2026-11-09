@@ -35,7 +35,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   Result<FileInfo, std::string> stop() override;
 
   void pause() override;
-  void resume() override;
+  Result<NoneType, std::string> resume() override;
   /// @brief Reopens the capture stream on the input AudioInputRouter currently selects.
   /// A stream format that differs from the previous one re-points the outputs at it without
   /// splitting the file (see reprepareOutputs()). Does nothing while idle.
