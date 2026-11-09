@@ -76,12 +76,12 @@ const Record: FC = () => {
 
     audioRecorder.connect(audioContext, audioContext.destination);
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
+    try {
+      await audioRecorder.start();
+    } catch (error) {
       Alert.alert(
         'Recording Error',
-        `Failed to start recording: ${result.message}`
+        `Failed to start recording: ${(error as Error).message}`
       );
       return;
     }
@@ -153,12 +153,12 @@ const Record: FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
+    try {
+      await audioRecorder.start();
+    } catch (error) {
       Alert.alert(
         'Recording Error',
-        `Failed to start recording: ${result.message}`
+        `Failed to start recording: ${(error as Error).message}`
       );
       return;
     }
