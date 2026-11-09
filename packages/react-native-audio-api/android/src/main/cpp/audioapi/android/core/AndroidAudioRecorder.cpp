@@ -289,24 +289,24 @@ void AndroidAudioRecorder::pause() {
 
 /// @brief Resumes the audio recording stream if it was previously paused.
 /// Control lane, or any thread holding the ActiveRecorderHandle mutex.
-void AndroidAudioRecorder::resume() {
+Result<NoneType, std::string> AndroidAudioRecorder::resume() {
   std::scoped_lock streamLock(streamMutex_);
-  // No stream while a restart is under way; the restart brings the session back paused.
-  if (!isPaused() || mStream_ == nullptr) {
-    return;
+  if (!isPaused()) {
+    return Ok(None);
   }
 
-  const auto result = mStream_->start();
+  // The restart brings the session back paused, so this resume would be lost.
+  if (mStream_ == nullptr) {
+    return Err(std::string("Cannot resume while the input stream is restarting"));
+  }
+
+  auto result = mStream_->start();
   if (result != oboe::Result::OK) {
-    __android_log_print(
-        ANDROID_LOG_WARN,
-        "AndroidAudioRecorder",
-        "Failed to resume the capture stream: %s",
-        oboe::convertToText(result));
-    return;
+    return Err("Failed to resume stream: " + std::string(oboe::convertToText(result)));
   }
 
   state_.store(RecorderState::Recording, std::memory_order_release);
+  return Ok(None);
 }
 
 /// @brief onAudioReady callback that is invoked by the Oboe stream when new audio data is available.

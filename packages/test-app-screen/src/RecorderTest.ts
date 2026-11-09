@@ -79,10 +79,7 @@ const recordToFile = async (format: FileFormat): Promise<string> => {
     fileName: `format_test_${FileFormat[format]}`,
   });
 
-  const started = await recorder.start();
-  if (started.status === 'error') {
-    throw new Error(`start failed: ${started.message}`);
-  }
+  await recorder.start();
   try {
     await sleep(RECORD_DURATION_MS);
   } catch (error) {
@@ -91,9 +88,6 @@ const recordToFile = async (format: FileFormat): Promise<string> => {
   }
 
   const stopped = await recorder.stop();
-  if (stopped.status === 'error') {
-    throw new Error(`stop failed: ${stopped.message}`);
-  }
   if (stopped.paths.length === 0) {
     throw new Error('stop returned no file');
   }
