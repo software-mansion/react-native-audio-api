@@ -114,13 +114,22 @@ export default class AudioRecorder {
     return this.recorder.disableFileOutput();
   }
 
-  /** Starts the audio recording process with configured output options */
-  start(): Promise<Result<{}>> {
+  /**
+   * Starts the audio recording process with configured output options.
+   *
+   * Rejects when the platform refuses to start the recording.
+   */
+  start(): Promise<void> {
     return this.recorder.start();
   }
 
-  /** Stops the audio recording process and releases internal resources */
-  stop(): Promise<Result<FileInfo>> {
+  /**
+   * Stops the audio recording process and releases internal resources.
+   *
+   * Resolves with the info of the finalized output files. Rejects when the
+   * recorder was not started, or the output files could not be finalized.
+   */
+  stop(): Promise<FileInfo> {
     return this.recorder.stop();
   }
 
@@ -129,7 +138,12 @@ export default class AudioRecorder {
     return this.recorder.pause();
   }
 
-  /** Resumes the audio recording process after being paused */
+  /**
+   * Resumes the audio recording process after being paused. Does nothing when
+   * the recording is already running. Rejects when the recorder was not
+   * started, or the platform refuses to resume, in which case the recording
+   * stays paused.
+   */
   resume(): Promise<void> {
     return this.recorder.resume();
   }

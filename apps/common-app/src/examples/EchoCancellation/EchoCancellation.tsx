@@ -198,10 +198,7 @@ async function recordEcho(setup: EchoSetup): Promise<EchoResult> {
       throw new Error(callback.message);
     }
 
-    const started = await recorder.start();
-    if (started.status === 'error') {
-      throw new Error(started.message);
-    }
+    await recorder.start();
 
     await wait(NOISE_FLOOR_SECONDS * 1000);
     const playbackStartFrame = chunks.reduce(

@@ -663,16 +663,17 @@ const AudioPipelineStress: FC = () => {
                 throw new Error('Recorder is not ready');
               }
 
-              const result = await recorder.stop();
-              recorder.clearOnAudioReady();
-
-              if (result.status === 'error') {
+              try {
+                await recorder.stop();
+              } catch (error) {
                 addInfoStep(
                   steps,
                   'stop-after-deactivation-result',
-                  'Recorder stop returned an error after deactivation',
-                  result.message
+                  'Recorder stop rejected after deactivation',
+                  error instanceof Error ? error.message : String(error)
                 );
+              } finally {
+                recorder.clearOnAudioReady();
               }
 
               await hardResetResources('recover after recording deactivation');
@@ -711,9 +712,14 @@ const AudioPipelineStress: FC = () => {
               await AudioManager.setAudioSessionActivity(true);
 
               resourcesRef.current.configureRecorderTap();
-              const result = await resourcesRef.current.tryStartRecording();
+              let startError: unknown;
+              try {
+                await resourcesRef.current.tryStartRecording();
+              } catch (error) {
+                startError = error;
+              }
 
-              if (result.status === 'success') {
+              if (startError === undefined) {
                 throw new Error(
                   'Recording unexpectedly started under playback-only session settings'
                 );
@@ -723,7 +729,9 @@ const AudioPipelineStress: FC = () => {
                 steps,
                 'expected-recording-failure',
                 'Recorder rejected the wrong category as expected',
-                result.message
+                startError instanceof Error
+                  ? startError.message
+                  : String(startError)
               );
 
               resourcesRef.current.recorder?.clearOnAudioReady();
