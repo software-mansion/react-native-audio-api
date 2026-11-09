@@ -177,6 +177,15 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 @property(nonatomic, assign) BOOL lastInputArmed;
 @property(nonatomic, assign) BOOL throwsOnStart;
 @property(nonatomic, strong) NSException *startException;
+/// Refreshing reports a format change the first time and none afterwards.
+@property(atomic, assign) BOOL reportsFormatChangeOnFirstRefresh;
+@property(atomic, assign) NSInteger refreshCallCount;
+/// When set, the first re-prepare signals `reprepareParked` and waits on
+/// `releaseParkedReprepare` before reading the buffer size.
+@property(atomic, strong) dispatch_semaphore_t reprepareParked;
+@property(atomic, strong) dispatch_semaphore_t releaseParkedReprepare;
+@property(atomic, assign) BOOL reprepareIsParked;
+@property(atomic, assign) BOOL armedWhileReprepareParked;
 
 @end
 
@@ -204,7 +213,30 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 }
 
 - (int)getResolvedBufferSize {
+  dispatch_semaphore_t releaseParkedReprepare = self.releaseParkedReprepare;
+  if (releaseParkedReprepare != nil) {
+    self.releaseParkedReprepare = nil;
+    self.reprepareIsParked = YES;
+    dispatch_semaphore_signal(self.reprepareParked);
+    dispatch_semaphore_wait(
+        releaseParkedReprepare,
+        dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
+    self.reprepareIsParked = NO;
+  }
+
   return self.mockResolvedBufferSize;
+}
+
+- (BOOL)refreshResolvedInputFormatReturningChanged:(BOOL *)formatChanged {
+  if (!self.reportsFormatChangeOnFirstRefresh) {
+    return [super refreshResolvedInputFormatReturningChanged:formatChanged];
+  }
+
+  @synchronized(self) {
+    self.refreshCallCount += 1;
+    *formatChanged = self.refreshCallCount == 1;
+  }
+  return YES;
 }
 
 - (BOOL)start:(NSError **)error {
@@ -227,6 +259,9 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 - (void)setInputArmed:(BOOL)armed {
   self.setInputArmedCallCount += 1;
   self.lastInputArmed = armed;
+  if (armed && self.reprepareIsParked) {
+    self.armedWhileReprepareParked = YES;
+  }
   [super setInputArmed:armed];
 }
 
@@ -311,6 +346,10 @@ public:
     NativeAudioRecorder *previous = nativeRecorder_;
     nativeRecorder_ = nativeRecorder;
     return previous;
+  }
+
+  float streamSampleRate() const {
+    return streamSampleRate_.load(std::memory_order_acquire);
   }
 
   void setRecorderState(RecorderState state) {
@@ -656,6 +695,94 @@ public:
 
   recorder->replaceNativeRecorder(original);
   [original cleanup];
+}
+
+- (void)testConcurrentHardwareChangeArmsInputOnlyAfterOutputsAreReprepared {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
+  _recorder->setRecorderState(RecorderState::Recording);
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  AudioEngineInputNotificationBlock notifyInput =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // The engine notifies a rebuilt graph: this call sees the format change and
+  // is held while re-preparing the outputs.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged, nil);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+
+  // A second starter notifies the same graph and starts it once this returns.
+  dispatch_semaphore_t secondNotificationReturned = dispatch_semaphore_create(0);
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged, nil);
+    dispatch_semaphore_signal(secondNotificationReturned);
+  });
+  dispatch_semaphore_wait(
+      secondNotificationReturned,
+      dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC));
+  dispatch_semaphore_signal(releaseParkedReprepare);
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertFalse(nativeRecorder.armedWhileReprepareParked);
+  XCTAssertTrue(nativeRecorder.lastInputArmed);
+}
+
+- (void)testHardwareChangeOfStoppedSessionFinishesBeforeNextStart {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
+  self.audioEngine.state = AudioEngineStateRunning;
+  XCTAssertTrue(_recorder->start().is_ok());
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  AudioEngineInputNotificationBlock notifyInput =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // A notification for the first session is held while re-preparing its
+  // outputs in the first session's format.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged, nil);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), queue,
+                 ^{
+                   dispatch_semaphore_signal(releaseParkedReprepare);
+                 });
+
+  // The session stops and a new one starts in another format meanwhile.
+  XCTAssertTrue(_recorder->stop().is_ok());
+  nativeRecorder.mockResolvedInputFormat =
+      [[AVAudioFormat alloc] initStandardFormatWithSampleRate:48000
+                                                     channels:2];
+  XCTAssertTrue(_recorder->start().is_ok());
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertEqual(_recorder->streamSampleRate(), 48000.0F);
 }
 
 - (void)testStopReturnsErrorWhileIdle {
