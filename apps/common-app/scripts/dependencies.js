@@ -2,14 +2,36 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Finds `node_modules/<name>` the way Node does, walking up from common-app, so
+ * it holds for hoisted and isolated node_modules alike.
+ *
+ * @param {string} name
+ */
+function findLinkedRoot(name) {
+  for (let dir = path.resolve(__dirname, '..'); ; dir = path.dirname(dir)) {
+    const candidate = path.join(dir, 'node_modules', name);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    if (dir === path.dirname(dir)) {
+      throw new Error(`common-app: cannot find dependency ${name}`);
+    }
+  }
+}
+
+/**
  * Follows the node_modules symlink of workspace packages, so Gradle and
  * CocoaPods register them under packages/, the same path editors use.
+ * Other packages keep the node_modules path: under an isolated layout their
+ * real path embeds a store hash that would churn Podfile.lock.
  *
  * @param {string} name
  */
 function resolveDependencyRoot(name) {
-  const linkedRoot = path.resolve(__dirname, `../../../node_modules/${name}`);
-  return fs.existsSync(linkedRoot) ? fs.realpathSync(linkedRoot) : linkedRoot;
+  const linkedRoot = findLinkedRoot(name);
+  const realRoot = fs.realpathSync(linkedRoot);
+  const isWorkspacePackage = !realRoot.split(path.sep).includes('node_modules');
+  return isWorkspacePackage ? realRoot : linkedRoot;
 }
 
 /**
