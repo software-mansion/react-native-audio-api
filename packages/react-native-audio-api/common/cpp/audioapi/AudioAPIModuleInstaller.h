@@ -2,7 +2,9 @@
 
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
+#ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
 #include <audioapi/HostObjects/inputs/AudioRecorderHostObject.h>
+#endif
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
@@ -144,6 +146,12 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
+#ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
+          throw jsi::JSError(
+              runtime,
+              "AudioRecorder is unavailable: react-native-audio-api was built with "
+              "\"disableAudioRecorder\": true.");
+#else
           auto optionsResult = count > 0
               ? AudioRecorderOptions::CreateFromJSIValue(runtime, args[0])
               : AudioRecorderOptions::CreateFromJSIValue(runtime, jsi::Value::undefined());
@@ -160,6 +168,7 @@ class AudioAPIModuleInstaller {
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
 
           return jsiObject;
+#endif
         });
   }
 

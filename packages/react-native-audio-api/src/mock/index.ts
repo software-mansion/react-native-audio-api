@@ -719,18 +719,6 @@ class AudioBufferSourceNodeMock extends AudioScheduledSourceNodeMock {
   }
 }
 
-class RecorderAdapterNodeMock extends AudioNodeMock {
-  public wasConnected: boolean = false;
-
-  constructor(context: BaseAudioContextMock) {
-    super(context, {});
-  }
-
-  getNode(): Record<string, unknown> {
-    return {};
-  }
-}
-
 class AudioBufferQueueSourceNodeMock extends AudioScheduledSourceNodeMock {
   private _onbufferended: ((event: { bufferId: string }) => void) | null = null;
   private eventEmitter = new MockAudioEventEmitter();
@@ -930,10 +918,6 @@ class BaseAudioContextMock {
     return new WaveShaperNodeMock(this, options);
   }
 
-  createRecorderAdapter(): RecorderAdapterNodeMock {
-    return new RecorderAdapterNodeMock(this);
-  }
-
   createBufferQueueSource(
     options?: AudioBufferQueueSourceOptions
   ): AudioBufferQueueSourceNodeMock {
@@ -1058,11 +1042,11 @@ class AudioRecorderMock {
     return Promise.resolve();
   }
 
-  connect(_node: RecorderAdapterNodeMock): void {
-    if (_node.wasConnected) {
-      throw new Error('RecorderAdapterNode cannot be connected more than once');
-    }
-    _node.wasConnected = true;
+  connect(
+    _context: BaseAudioContextMock,
+    destination: AudioNodeMock
+  ): AudioNodeMock {
+    return destination;
   }
 
   disconnect(): void {}
@@ -1208,8 +1192,6 @@ const concatAudioFiles = (
 
   return Promise.resolve(outputPath);
 };
-
-const isFfmpegEnabled = (): boolean => false;
 
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
@@ -1361,7 +1343,6 @@ export const GainNode = GainNodeMock;
 export const MediaElementAudioSourceNode = MediaElementAudioSourceNodeMock;
 export const OfflineAudioContext = OfflineAudioContextMock;
 export const OscillatorNode = OscillatorNodeMock;
-export const RecorderAdapterNode = RecorderAdapterNodeMock;
 export const StereoPannerNode = StereoPannerNodeMock;
 export const PannerNode = PannerNodeMock;
 export const WaveShaperNode = WaveShaperNodeMock;
@@ -1387,7 +1368,6 @@ export {
   decodeAudioData,
   decodePCMInBase64,
   getAudioDuration,
-  isFfmpegEnabled,
   setMockSystemVolume,
   useSystemVolume,
 };
@@ -1415,7 +1395,6 @@ export type GainNode = GainNodeMock;
 export type MediaElementAudioSourceNode = MediaElementAudioSourceNodeMock;
 export type OfflineAudioContext = OfflineAudioContextMock;
 export type OscillatorNode = OscillatorNodeMock;
-export type RecorderAdapterNode = RecorderAdapterNodeMock;
 export type StereoPannerNode = StereoPannerNodeMock;
 export type PannerNode = PannerNodeMock;
 export type WaveShaperNode = WaveShaperNodeMock;
@@ -1478,7 +1457,6 @@ export default {
   MediaElementAudioSourceNode: MediaElementAudioSourceNodeMock,
   OfflineAudioContext: OfflineAudioContextMock,
   OscillatorNode: OscillatorNodeMock,
-  RecorderAdapterNode: RecorderAdapterNodeMock,
   StereoPannerNode: StereoPannerNodeMock,
   PannerNode: PannerNodeMock,
   WaveShaperNode: WaveShaperNodeMock,
@@ -1490,7 +1468,6 @@ export default {
   getAudioDuration,
   changePlaybackSpeed,
   concatAudioFiles,
-  isFfmpegEnabled,
   useSystemVolume,
   setMockSystemVolume,
 

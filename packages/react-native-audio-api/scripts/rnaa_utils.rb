@@ -7,8 +7,9 @@ def try_to_parse_react_native_package_json(node_modules_dir)
 end
 
 # Build options come from the app's package.json:
-#   "react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false }
-# Bare apps write the section by hand; in Expo apps `expo prebuild` writes it from the plugin options.
+#   "react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false, "disableAudioRecorder": false }
+# Bare apps write the section by hand; in Expo apps `expo prebuild` writes the two older options
+# from the (deprecated) plugin options.
 # The Podfile directory is the app's ios/, so the app root is its parent.
 def read_audio_api_build_options()
   package_json_path = File.join(Pod::Config.instance.installation_root.to_s, '..', 'package.json')
@@ -16,6 +17,7 @@ def read_audio_api_build_options()
   return {
     :ffmpeg_enabled => boolean_build_option(options, 'enableFFmpeg'),
     :static_external_libs_disabled => boolean_build_option(options, 'disableStaticExternalLibs'),
+    :audio_recorder_disabled => boolean_build_option(options, 'disableAudioRecorder'),
   }
 end
 

@@ -35,8 +35,10 @@ target_link_libraries(my-extension
 )
 ```
 
-Prefab ships `audioapi/**/*.{h,hpp}` headers (include-only, same pattern as
-react-native-worklets). Extension code must still include only `<audioapi/compatibility/StableAPI.h>`.
+Prefab ships `audioapi/**/*.{h,hpp}` headers except `AudioAPIModuleInstaller.h` and
+`android/AudioAPIModule.h` (include-only,
+same pattern as react-native-worklets). Extension code must still include only `<audioapi/compatibility/StableAPI.h>`;
+a type an extension needs belongs in `StableAPI.h`.
 
 ---
 
@@ -105,6 +107,9 @@ obvious in the podspec:
 | `audioapi::AudioNode` | Base class for custom `AudioNode` implementations |
 | `audioapi::AudioScheduledSourceNodeHostObject` | HostObject base for scheduled source nodes (`start`/`stop`/`onended`) |
 | `audioapi::AudioScheduledSourceNode` | Base class for scheduled sources (e.g. worklet generators) |
+| `audioapi::AudioDestinationNode` | Destination passed to `BaseAudioContext::initialize` overrides |
+| `audioapi::AudioEventHandlerRegistryHostObject` | Host object behind the global `AudioEventEmitter`; gives access to the event registry |
+| `audioapi::typedAudioNode<NodeT>()` (via `HostObjects/TypedAudioNodePtr.hpp`) | Downcast a HostObject's graph node to its concrete `AudioNode` type |
 | `AudioScheduledSourceNodeOptions` (via `types/NodeOptions.h`) | Options for scheduled source HostObjects |
 | `audioapi::utils::graph::Graph` | Audio graph owned by the context |
 | `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`) | Frame-size and engine constants |
