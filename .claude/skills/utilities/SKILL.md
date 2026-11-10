@@ -33,7 +33,9 @@ Holds N channels of `AudioArrayBuffer`. Handles up/down-mixing automatically on 
 
 Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
 
-Channel layout constants: `ChannelMono=0`, `ChannelLeft=0`, `ChannelRight=1`, `ChannelCenter=2`, `ChannelLFE=3`, `ChannelSurroundLeft=4`, `ChannelSurroundRight=5`.
+Channel layout constants: `ChannelType` (namespace scope, shared by every alignment): `MONO=0`, `LEFT=0`, `RIGHT=1`, `CENTER=2`, `LFE=3`, `SURROUND_LEFT=4`, `SURROUND_RIGHT=5`.
+
+Pass `const AudioBuffer &` between pipeline stages (encoders, remixers, recorder callback) instead of unpacking it into a `std::array<const float *, MAX_CHANNEL_COUNT>`: the data already lives in a pooled buffer by the time a worker sees it, and a pointer array only re-creates what `getChannel()` gives. Raw pointer arrays belong only at third-party boundaries (r8brain, AVFoundation, Opus, Oboe). `r8b::MultiChannelResampler::process(input, inputStart, length, output)` reads a slice of a buffer, so chunked resampling needs no pointer arithmetic either.
 
 `getChannel()` returns a non-owning `AudioArray*`. `getSharedChannel()` returns `shared_ptr<AudioArrayBuffer>` (use for JSI transfer).
 

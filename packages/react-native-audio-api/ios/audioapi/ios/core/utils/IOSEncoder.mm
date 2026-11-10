@@ -338,12 +338,12 @@ void IOSEncoder::releaseConversionPipeline()
   state_->inputBufferListStorage.clear();
 }
 
-EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
+EncodeResult IOSEncoder::encode(const AudioBuffer &input, int numFrames)
 {
   if (!isOpen() || state_->audioFile == nil) {
     return Err("Encoder is not open");
   }
-  if (channels == nullptr || numFrames <= 0) {
+  if (numFrames <= 0) {
     return Err("Invalid encode input");
   }
   if (static_cast<size_t>(numFrames) > state_->maxInputFrames) {
@@ -355,7 +355,7 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
 
     const auto frames = static_cast<size_t>(numFrames);
     const int convertedChannelCount = state_->remixer.outputChannelCount();
-    const auto convertedChannels = state_->remixer.remix(channels, frames);
+    const AudioBuffer &converted = state_->remixer.remix(input, frames);
 
     // Wrap the planar frames in place: the buffer list points at them for the duration of this
     // call and AVAudioPCMBuffer reads through it without copying.
@@ -364,9 +364,7 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
     for (int channel = 0; channel < convertedChannelCount; ++channel) {
       bufferList->mBuffers[channel].mNumberChannels = 1;
       bufferList->mBuffers[channel].mDataByteSize = static_cast<UInt32>(frames * sizeof(float));
-      // AudioBufferList carries void*; nothing below writes through it.
-      bufferList->mBuffers[channel].mData = const_cast<float *>(
-          convertedChannels[channel]); // NOLINT(cppcoreguidelines-pro-type-const-cast)
+      bufferList->mBuffers[channel].mData = converted.getChannel(channel)->begin();
     }
     AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:state_->inputFormat
                                                                bufferListNoCopy:bufferList

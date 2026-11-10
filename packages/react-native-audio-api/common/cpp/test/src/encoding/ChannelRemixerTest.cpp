@@ -1,6 +1,8 @@
 #include <audioapi/encoding/ChannelRemixer.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -14,24 +16,25 @@ constexpr size_t kFrames = 64;
 constexpr float kSampleRate = 48000.0f;
 const float kSqrtHalf = std::sqrt(0.5f);
 
+/// A kFrames-long buffer holding one constant level per channel.
+AudioBuffer constantInput(const std::vector<float> &levels) {
+  AudioBuffer input(kFrames, static_cast<int>(levels.size()), kSampleRate);
+  for (size_t channel = 0; channel < levels.size(); ++channel) {
+    std::fill_n(input.getChannel(channel)->begin(), kFrames, levels[channel]);
+  }
+  return input;
+}
+
 /// Remixes one constant level per input channel and returns each output channel's level.
 std::vector<float> remixLevels(const std::vector<float> &inputLevels, int outputChannelCount) {
-  std::vector<std::vector<float>> planar;
-  std::vector<const float *> channels;
-  for (float level : inputLevels) {
-    planar.emplace_back(kFrames, level);
-  }
-  for (const auto &channel : planar) {
-    channels.push_back(channel.data());
-  }
-
+  const AudioBuffer input = constantInput(inputLevels);
   ChannelRemixer remixer(
       static_cast<int>(inputLevels.size()), outputChannelCount, kFrames, kSampleRate);
-  const auto remixed = remixer.remix(channels.data(), kFrames);
+  const AudioBuffer &remixed = remixer.remix(input, kFrames);
 
   std::vector<float> levels;
   for (int channel = 0; channel < outputChannelCount; ++channel) {
-    levels.push_back(remixed[channel][kFrames / 2]);
+    levels.push_back((*remixed.getChannel(channel))[kFrames / 2]);
   }
   return levels;
 }
@@ -39,16 +42,13 @@ std::vector<float> remixLevels(const std::vector<float> &inputLevels, int output
 } // namespace
 
 TEST(ChannelRemixerTest, MatchingCountsPassTheCallersChannelsThrough) {
-  std::vector<float> left(kFrames, 0.1f);
-  std::vector<float> right(kFrames, 0.2f);
-  const float *channels[] = {left.data(), right.data()};
+  const AudioBuffer input = constantInput({0.1f, 0.2f});
 
   ChannelRemixer remixer(2, 2, kFrames, kSampleRate);
-  const auto remixed = remixer.remix(channels, kFrames);
+  const AudioBuffer &remixed = remixer.remix(input, kFrames);
 
   EXPECT_FALSE(remixer.isRemixing());
-  EXPECT_EQ(remixed[0], left.data());
-  EXPECT_EQ(remixed[1], right.data());
+  EXPECT_EQ(&remixed, &input);
 }
 
 TEST(ChannelRemixerTest, FiveOneToStereoMixesCenterAndSurroundsAndDropsLfe) {
@@ -85,16 +85,11 @@ TEST(ChannelRemixerTest, CountWithoutSpeakerRuleKeepsLeadingChannelsInOrder) {
 }
 
 TEST(ChannelRemixerTest, RemixingReplacesThePreviousBlock) {
-  std::vector<float> first(kFrames, 0.5f);
-  std::vector<float> second(kFrames, 0.1f);
-  const float *firstChannels[] = {first.data(), first.data()};
-  const float *secondChannels[] = {second.data(), second.data()};
-
   ChannelRemixer remixer(2, 1, kFrames, kSampleRate);
-  (void)remixer.remix(firstChannels, kFrames);
-  const auto remixed = remixer.remix(secondChannels, kFrames);
+  (void)remixer.remix(constantInput({0.5f, 0.5f}), kFrames);
+  const AudioBuffer &remixed = remixer.remix(constantInput({0.1f, 0.1f}), kFrames);
 
-  EXPECT_NEAR(remixed[0][0], 0.1f, 1e-6f);
+  EXPECT_NEAR((*remixed.getChannel(0))[0], 0.1f, 1e-6f);
 }
 
 // NOLINTEND
