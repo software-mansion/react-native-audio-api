@@ -7091,12 +7091,22 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "fabric-example@workspace:apps/fabric-example"
   dependencies:
+    "@babel/core": "catalog:"
+    "@babel/runtime": "catalog:"
+    "@react-native-community/cli": "catalog:"
+    "@react-native-community/cli-platform-android": "catalog:"
+    "@react-native-community/cli-platform-ios": "catalog:"
+    "@react-native/babel-preset": "catalog:"
+    "@react-native/metro-config": "catalog:"
+    "@types/react": "catalog:"
+    babel-plugin-module-resolver: "npm:^4.1.0"
     common-app: "workspace:*"
     lucide-react-native: "catalog:"
     prettier: "catalog:"
     react: "catalog:"
     react-native: "catalog:"
     react-native-svg: "catalog:"
+    react-native-worklets: "catalog:"
   languageName: unknown
   linkType: soft
 
@@ -11935,8 +11945,12 @@ __metadata:
     typescript: "catalog:"
     wpt-runner: "npm:^7.0.0"
   peerDependencies:
+    "@expo/config-plugins": "*"
     react: "*"
     react-native: "*"
+  peerDependenciesMeta:
+    "@expo/config-plugins":
+      optional: true
   bin:
     setup-rn-audio-api-web: ./scripts/setup-rn-audio-api-web.js
   languageName: unknown
