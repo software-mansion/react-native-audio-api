@@ -352,6 +352,9 @@ task downloadPrebuiltBinaries(type: Exec) {
   def isWindows = Os.isFamily(Os.FAMILY_WINDOWS)
   if (isWindows) {
     commandLine 'C:\\Program Files\\Git\\usr\\bin\\bash.exe', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegEnabled() ? '' : 'skipffmpeg'
+    // Git's bash inherits the caller's PATH, which usually lacks the tools in its own usr\bin.
+    def pathKey = System.getenv().keySet().find { it.equalsIgnoreCase('PATH') } ?: 'PATH'
+    environment pathKey, 'C:\\Program Files\\Git\\usr\\bin;' + (System.getenv(pathKey) ?: '')
   } else {
     // Invoked through bash on purpose: the script needs no executable bit this way.
     commandLine 'bash', '../scripts/download-prebuilt-binaries.sh', 'android', isFFmpegEnabled() ? '' : 'skipffmpeg'
