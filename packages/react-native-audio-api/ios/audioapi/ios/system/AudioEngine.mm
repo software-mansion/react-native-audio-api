@@ -22,6 +22,8 @@
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
 @property (nonatomic, copy) AudioEngineInputNotificationBlock onInputNotification;
+/// Kept registered but out of the graph: no sink node, no voice processing, no notifications.
+@property (nonatomic, assign) BOOL suspended;
 
 @end
 
@@ -44,6 +46,7 @@
 - (void)createAudioEngineIfNeeded;
 - (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
 - (BOOL)hasInput;
+- (BOOL)hasActiveInput;
 - (BOOL)hasSources;
 - (BOOL)hasTrackedGraph;
 - (AVAudioFormat *)currentInputConnectionFormat;
@@ -90,6 +93,11 @@ static AudioEngine *_sharedInstance = nil;
 - (BOOL)hasInput
 {
   return self.inputRegistration != nil;
+}
+
+- (BOOL)hasActiveInput
+{
+  return [self hasInput] && !self.inputRegistration.suspended;
 }
 
 - (BOOL)hasSources
@@ -220,7 +228,8 @@ static AudioEngine *_sharedInstance = nil;
 /// @brief The input node's current output format, or nil when unusable. Lock held.
 - (AVAudioFormat *)liveInputFormat
 {
-  if (self.audioEngine == nil) {
+  // Reading `inputNode` pulls the microphone into the engine.
+  if (self.audioEngine == nil || self.inputRegistration.suspended) {
     return nil;
   }
 
@@ -252,7 +261,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (BOOL)materializeInputNodeIfNeeded
 {
-  if (self.inputRegistration == nil) {
+  if (![self hasActiveInput]) {
     return YES;
   }
 
@@ -307,7 +316,8 @@ static AudioEngine *_sharedInstance = nil;
 // so this has to run before the input connection format is read.
 - (void)applyVoiceProcessing
 {
-  BOOL wantsVoiceProcessing = self.inputRegistration.voiceProcessingEnabled;
+  BOOL wantsVoiceProcessing =
+      [self hasActiveInput] && self.inputRegistration.voiceProcessingEnabled;
 
   // A freshly created engine has voice processing off, so for playback-only
   // graphs there is nothing to undo - and reading `inputNode` would needlessly
@@ -607,7 +617,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   const BOOL resumeEngine =
-      shouldEngineResumeAfterInterruption(shouldResume, [self hasInput], [self hasSources]);
+      shouldEngineResumeAfterInterruption(shouldResume, [self hasActiveInput], [self hasSources]);
 
   if (!resumeEngine) {
     [self stopEngine];
@@ -625,7 +635,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self stopEngine];
   [self rebuildAudioEngine];
 
-  if (self.inputRegistration != nil && self.inputNode == nil) {
+  if ([self hasActiveInput] && self.inputNode == nil) {
     [AudioAPIError fail:error with:[AudioAPIError inputFormatUnavailable]];
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
@@ -670,7 +680,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 {
   AudioEngineInputNotificationBlock handler = self.inputRegistration.onInputNotification;
 
-  if (handler == nil) {
+  if (handler == nil || self.inputRegistration.suspended) {
     return nil;
   }
 
@@ -777,7 +787,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   // Never rebuilds; callers check `mustRebuildBeforeStart` first.
   [self materializeTrackedNodesIfNeeded];
 
-  if (self.inputRegistration != nil && self.inputNode == nil) {
+  if ([self hasActiveInput] && self.inputNode == nil) {
     [AudioAPIError fail:outError with:[AudioAPIError inputFormatUnavailable]];
     return false;
   }
@@ -841,18 +851,74 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   return false;
 }
 
-- (void)pauseIfNecessary
+- (void)suspendInput
 {
   std::scoped_lock lock(_engineLock);
-  if (self.state == AudioEngineState::AudioEngineStatePaused) {
+
+  if (![self hasActiveInput]) {
     return;
   }
 
-  if (self.audioEngine != nil) {
-    [self.audioEngine pause];
+  self.inputRegistration.suspended = YES;
+
+  // An interrupted engine is rebuilt only when the interruption ends, and that rebuild already
+  // leaves a suspended input out.
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.audioEngine == nil) {
+    return;
   }
 
-  self.state = AudioEngineState::AudioEngineStatePaused;
+  const BOOL wasRunning = self.state == AudioEngineState::AudioEngineStateRunning;
+
+  // A rebuild is the only way to drop the sink node and switch voice processing off. It keeps a
+  // past session deactivation on record, so the next start after one still rebuilds.
+  [self rebuildAudioEngine];
+
+  if (!wasRunning) {
+    return;
+  }
+
+  if (![self hasSources]) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    return;
+  }
+
+  if (![self startEngine:nil]) {
+    [self settleStateAfterFailedStart];
+    [self notifyOutputRecoveryFailed];
+  }
+}
+
+- (bool)resumeInput:(NSError **)error
+{
+  BOOL wasPlaying = NO;
+
+  {
+    std::scoped_lock lock(_engineLock);
+    wasPlaying = self.state == AudioEngineState::AudioEngineStateRunning && [self hasSources];
+
+    if (self.inputRegistration.suspended) {
+      self.inputRegistration.suspended = NO;
+
+      // Stopped, so startIfNecessary: rebuilds instead of attaching the input to the running
+      // engine: voice processing can only change on a stopped engine.
+      if ([self.audioEngine isRunning]) {
+        [self.audioEngine stop];
+      }
+
+      self.graphNeedsRebuild = true;
+    }
+  }
+
+  if ([self startIfNecessary:error]) {
+    return true;
+  }
+
+  if (wasPlaying) {
+    std::scoped_lock lock(_engineLock);
+    [self notifyOutputRecoveryFailed];
+  }
+
+  return false;
 }
 
 - (void)stopIfNecessary

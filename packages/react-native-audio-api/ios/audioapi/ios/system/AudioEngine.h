@@ -89,7 +89,16 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 
 /// On false, `error` is an `AudioAPIErrorDomain` error naming the step that failed.
 - (bool)startIfNecessary:(NSError **)error;
-- (void)pauseIfNecessary;
+/// @brief Stops capture without stopping playback: rebuilds the graph without the input, so the
+/// microphone and voice processing are released, and restarts the engine if sources were playing.
+/// Otherwise the engine is left `Paused`. The input stays registered but hears no notifications
+/// and reports no live format until `resumeInput:`.
+- (void)suspendInput;
+/// @brief Puts a suspended input back into the graph by rebuilding and starting the engine.
+/// The input hears `HardwareChanged` before the start. If the start fails, playing sources are
+/// told through their `onOutputRecoveryFailed`.
+/// @return false with an `AudioAPIErrorDomain` error when the engine could not be started.
+- (bool)resumeInput:(NSError **)error;
 - (void)stopIfNecessary;
 
 - (void)stopIfPossible;
