@@ -126,28 +126,13 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
                          voiceProcessingEnabled:self.voiceProcessingEnabled
                             onInputNotification:self.onInputNotification];
 
-  if (![audioEngine startIfNecessary]) {
+  if (![audioEngine startIfNecessary:error]) {
     [audioEngine detachInputNode];
     [audioEngine stopIfPossible];
-
-    if (error != nil) {
-      *error = [NSError
-          errorWithDomain:@"NativeAudioRecorder"
-                     code:1
-                 userInfo:@{
-                   NSLocalizedDescriptionKey : @"Failed to start audio engine for recording",
-                 }];
-    }
-
     return NO;
   }
 
   [self storeResolvedInputFormat:[self readLiveInputFormat]];
-
-  if (error != nil) {
-    *error = nil;
-  }
-
   return YES;
 }
 
@@ -171,12 +156,12 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   [audioEngine pauseIfNecessary];
 }
 
-- (BOOL)resume
+- (BOOL)resume:(NSError **)error
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  return [audioEngine startIfNecessary];
+  return [audioEngine startIfNecessary:error];
 }
 
 - (void)cleanup

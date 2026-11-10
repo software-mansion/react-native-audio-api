@@ -5,6 +5,7 @@ sidebar_position: 1
 import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 import DecodeAudioDataDocs from '@site/src/components/DecodeAudioDataDocs/DecodeAudioDataDocs';
 import Heading from '@theme/Heading';
+import AudioGraphFigure from '@site/src/components/AudioGraphFigure';
 
 # BaseAudioContext
 
@@ -22,7 +23,7 @@ In general we can distinguish four types of nodes:
 - Analysis nodes (e.g [`AnalyserNode`](../analysis/analyser-node.mdx))
 - Destination nodes (e.g [`AudioDestinationNode`](../destinations/audio-destination-node.mdx))
 
-![](/img/audio-graph.png)
+<AudioGraphFigure />
 
 #### Rendering the audio graph
 
@@ -220,7 +221,7 @@ Decodes base64-encoded PCM audio data.
 | `base64String` | `string` | Base64-encoded PCM audio data. |
 | `inputSampleRate` | `number` | Sample rate of the input PCM data. |
 | `inputChannelCount` | `number` | Number of channels in the input PCM data. |
-| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Default is `true`. |
+| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Defaults to `true`. |
 
 **Returns:** `Promise<AudioBuffer>`
 

@@ -16,7 +16,7 @@ const FFT_SIZE = 512;
 const FREQUENCY_BIN_COUNT = FFT_SIZE / 2;
 
 const URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
+  'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
 const ANALYSER_MIN_DB = -100;
 const ANALYSER_MAX_DB = -30;

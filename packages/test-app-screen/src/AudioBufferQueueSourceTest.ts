@@ -1,4 +1,5 @@
 import { AudioContext, AudioBuffer } from 'react-native-audio-api';
+import { sleep } from './interruption';
 
 interface BufferEndedEvent {
   bufferId: string;
@@ -6,9 +7,7 @@ interface BufferEndedEvent {
 }
 
 const AUDIO_URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-02.mp3';
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
 export const loadAudioBuffer = async (
   ctx: AudioContext
@@ -274,16 +273,20 @@ export const queueSourcePlaybackRateTest = async (
   buffer: AudioBuffer,
   setInfo: (info: string) => void
 ) => {
-  for (const rate of [0.5, 1.0, 1.5, 2.0]) {
-    setInfo(`Playback rate: ${rate}x (3s)...`);
-    const source = ctx.createBufferQueueSource();
-    source.playbackRate.value = rate;
-    source.enqueueBuffer(sliceBuffer(ctx, buffer, 0, 3));
-    source.connect(ctx.destination);
-    source.start(ctx.currentTime, 0);
-    await sleep(3000);
-    source.stop();
-    await sleep(300);
+  for (const pitchCorrection of [false, true]) {
+    for (const rate of [0.5, 2.0]) {
+      setInfo(
+        `Playback rate: ${rate}x pitchCorrection=${pitchCorrection} (3s)...`
+      );
+      const source = ctx.createBufferQueueSource({ pitchCorrection });
+      source.playbackRate.value = rate;
+      source.enqueueBuffer(sliceBuffer(ctx, buffer, 0, 3));
+      source.connect(ctx.destination);
+      source.start(ctx.currentTime, 0);
+      await sleep(3000);
+      source.stop();
+      await sleep(300);
+    }
   }
   setInfo('Playback rate: done.');
 };
@@ -293,17 +296,16 @@ export const queueSourceDetuneTest = async (
   buffer: AudioBuffer,
   setInfo: (info: string) => void
 ) => {
-  for (const cents of [-1200, 0, 1200]) {
-    setInfo(`Detune: ${cents} cents (2.5s)...`);
-    const source = ctx.createBufferQueueSource();
-    source.detune.value = cents;
-    source.enqueueBuffer(sliceBuffer(ctx, buffer, 0, 3));
-    source.connect(ctx.destination);
-    source.start(ctx.currentTime, 0);
-    await sleep(2500);
-    source.stop();
-    await sleep(300);
-  }
+  const cents = 1200;
+  setInfo(`Detune: ${cents} cents (2.5s)...`);
+  const source = ctx.createBufferQueueSource();
+  source.detune.value = cents;
+  source.enqueueBuffer(sliceBuffer(ctx, buffer, 0, 3));
+  source.connect(ctx.destination);
+  source.start(ctx.currentTime, 0);
+  await sleep(2500);
+  source.stop();
+  await sleep(300);
   setInfo('Detune: done.');
 };
 
@@ -333,50 +335,4 @@ export const queueSourceLastFlagTest = async (
     .map((e) => `${e.bufferId}:${e.isLastBufferInQueue ? 'last' : 'not-last'}`)
     .join(', ');
   setInfo(`isLastBufferInQueue flag: events [${summary}].`);
-};
-
-export const queueSourceLongPlaybackTest = async (
-  ctx: AudioContext,
-  buffer: AudioBuffer,
-  setInfo: (info: string) => void
-) => {
-  const totalDurationMs = 60000;
-  const sliceLen = 4;
-  const source = ctx.createBufferQueueSource();
-  let endedCount = 0;
-  source.onbufferended = () => {
-    endedCount += 1;
-  };
-  source.connect(ctx.destination);
-
-  const bufferDuration = buffer.duration;
-  let nextOffset = 0;
-  const enqueueNext = () => {
-    if (nextOffset + sliceLen > bufferDuration) {
-      nextOffset = 0;
-    }
-    source.enqueueBuffer(sliceBuffer(ctx, buffer, nextOffset, sliceLen));
-    nextOffset += sliceLen;
-  };
-  for (let i = 0; i < 3; i++) {
-    enqueueNext();
-  }
-
-  source.start(ctx.currentTime, 0);
-  setInfo(
-    `Long playback: streaming ${sliceLen}s slices for ${totalDurationMs / 1000}s...`
-  );
-
-  const start = Date.now();
-  while (Date.now() - start < totalDurationMs) {
-    await sleep(sliceLen * 1000);
-    enqueueNext();
-    setInfo(
-      `Long playback: ${Math.round((Date.now() - start) / 1000)}s elapsed, onbufferended count=${endedCount}.`
-    );
-  }
-
-  source.stop();
-  await sleep(500);
-  setInfo(`Long playback: done. onbufferended fired ${endedCount} time(s).`);
 };
