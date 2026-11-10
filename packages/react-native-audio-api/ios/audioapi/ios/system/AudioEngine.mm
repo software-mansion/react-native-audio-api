@@ -24,9 +24,6 @@
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
 @property (nonatomic, copy) AudioEngineInputNotificationBlock onInputNotification;
-/// Capture paused: no notifications, no live format, and every rebuilt graph leaves the input
-/// out. While sources play, the sink node and voice processing stay in the running graph until
-/// the next rebuild.
 @property (nonatomic, assign) BOOL suspended;
 
 @end
@@ -236,7 +233,6 @@ static AudioEngine *_sharedInstance = nil;
 #ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
   return nil;
 #else
-  // Reading `inputNode` pulls the microphone into the engine.
   if (self.audioEngine == nil || self.inputRegistration.suspended) {
     return nil;
   }
@@ -331,8 +327,6 @@ static AudioEngine *_sharedInstance = nil;
 - (void)applyVoiceProcessing
 {
 #ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
-  // A suspended input whose sink is still connected keeps voice processing: toggling it changes
-  // the input format under that connection.
   BOOL wantsVoiceProcessing = self.inputRegistration.voiceProcessingEnabled &&
       ([self hasActiveInput] || self.inputNode != nil);
 
@@ -424,7 +418,6 @@ static AudioEngine *_sharedInstance = nil;
   [self.sourceNodes removeObjectForKey:sourceNodeId];
   [self.sourceFormats removeObjectForKey:sourceNodeId];
 
-  // The microphone stayed open for the playback; with none left nothing can click.
   if (self.inputRegistration.suspended && self.inputNode != nil && ![self hasSources] &&
       self.state != AudioEngineState::AudioEngineStateInterrupted) {
     [self releaseSuspendedInput];
@@ -936,14 +929,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   self.inputRegistration.suspended = YES;
 
-  // An interrupted engine is rebuilt only when the interruption ends, and that rebuild already
-  // leaves a suspended input out.
+  // An interrupted engine is rebuilt only when the interruption ends
   if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.audioEngine == nil) {
     return;
   }
 
-  // Releasing the microphone takes a rebuild, which would cut the playback with a click and
-  // switch voice processing, and with it the output volume. The owner already drops the input.
   if (self.state == AudioEngineState::AudioEngineStateRunning && [self hasSources]) {
     return;
   }
@@ -953,13 +943,10 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 /// @brief Rebuilds the graph without the suspended input, which closes the microphone and
 /// switches voice processing off; a running engine is left `Paused`. Lock held.
-/// @discussion Only destroying the engine disposes its I/O unit, so detaching the sink alone
-/// would keep the microphone open.
 - (void)releaseSuspendedInput
 {
   const BOOL wasRunning = self.state == AudioEngineState::AudioEngineStateRunning;
 
-  // Keeps a past session deactivation on record, so the next start after one still rebuilds.
   [self rebuildAudioEngine];
 
   if (wasRunning) {
@@ -980,8 +967,6 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
       const BOOL sinkStillRunning = self.inputNode != nil &&
           self.state == AudioEngineState::AudioEngineStateRunning && [self.audioEngine isRunning];
 
-      // Otherwise stopped, so startIfNecessary: rebuilds instead of attaching the input to the
-      // running engine: voice processing can only change on a stopped engine.
       if (!sinkStillRunning) {
         if ([self.audioEngine isRunning]) {
           [self.audioEngine stop];
