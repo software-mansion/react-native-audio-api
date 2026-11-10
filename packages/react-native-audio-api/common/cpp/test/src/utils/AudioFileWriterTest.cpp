@@ -89,7 +89,7 @@ class FakeEncoder final : public AudioEncoder {
     return OpenEncoderResult::Ok(filePath_);
   }
 
-  EncodeResult encode(const float *const * /*channels*/, int numFrames) override {
+  EncodeResult encode(const AudioBuffer & /*input*/, int numFrames) override {
     addEncodedFrames(static_cast<size_t>(numFrames));
     log_.encodedBuffers.fetch_add(1, std::memory_order_acq_rel);
     return EncodeResult::Ok(static_cast<size_t>(numFrames));

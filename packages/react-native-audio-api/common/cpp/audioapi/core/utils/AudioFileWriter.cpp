@@ -403,17 +403,12 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
   }
   const int numFrames = pending.numFrames;
 
-  std::array<const float *, MAX_CHANNEL_COUNT> channels{};
-  for (int channel = 0; channel < streamFormat_.layout.channelCount; ++channel) {
-    channels[channel] = pending.buffer->getChannel(channel)->begin();
-  }
-
   std::string encodeError;
   bool encoded = false;
   {
     std::scoped_lock lock(fileMutex_);
     if (isFileOpen() && currentEncoder_ != nullptr) {
-      auto result = currentEncoder_->encode(channels.data(), numFrames);
+      auto result = currentEncoder_->encode(*pending.buffer, numFrames);
       if (result.is_ok()) {
         encoded = true;
       } else {
