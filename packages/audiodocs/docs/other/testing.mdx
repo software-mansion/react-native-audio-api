@@ -174,14 +174,26 @@ describe('Worklet Tests', () => {
 ### Error handling testing
 
 ```typescript
-import { NotSupportedError } from 'react-native-audio-api/mock';
+import {
+  AudioContext,
+  IndexSizeError,
+  InvalidStateError
+} from 'react-native-audio-api/mock';
 
 describe('Error Handling Tests', () => {
-  it('should handle various error conditions', () => {
-    // Test error creation
+  it('should reject invalid graph operations', () => {
+    const context = new AudioContext();
+    const gain = context.createGain();
+
+    // A GainNode has a single output, so output index 1 is out of range
+    expect(() => gain.connect(context.destination, 1)).toThrow(IndexSizeError);
+
+    // A WaveShaperNode curve can only be set once
+    const shaper = context.createWaveShaper();
+    shaper.curve = new Float32Array([-1, 0, 1]);
     expect(() => {
-      throw new NotSupportedError('Feature not supported');
-    }).toThrow('Feature not supported');
+      shaper.curve = new Float32Array([-1, 1]);
+    }).toThrow(InvalidStateError);
   });
 });
 ```

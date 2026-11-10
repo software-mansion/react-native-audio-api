@@ -7,7 +7,7 @@ sidebar_position: 5
 Some features of `react-native-audio-api` are chosen when the native code is built: whether FFmpeg
 is linked, whether the bundled Opus / Ogg / Vorbis libraries are included, and whether the audio
 recorder is compiled in at all. The third-party libraries are prebuilt and downloaded at build
-time; each adds several megabytes to the app binary. Changing a flag needs a native rebuild.
+time; each adds memory overhead to the app binary. Changing a flag needs a native rebuild.
 
 | Flag | Default | Effect |
 | :---- | :---: | :---- |
