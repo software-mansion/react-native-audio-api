@@ -21,7 +21,7 @@ class IOSEncoder : public AudioEncoder {
       const EncoderOutputSpec &outputSpec,
       const std::string &filePath) override;
 
-  EncodeResult encode(const float *const *channels, int numFrames) override;
+  EncodeResult encode(const AudioBuffer &input, int numFrames) override;
 
   CloseEncoderResult close() override;
 

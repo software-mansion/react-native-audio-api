@@ -150,6 +150,12 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
+### Building without the recorder {#building-without-the-recorder}
+
+Apps that only play audio can leave the recorder and every microphone API out of the native build
+with the [`disableAudioRecorder`](../other/build-time-flags.mdx#disableaudiorecorder) build-time
+flag. iOS apps then need no `NSMicrophoneUsageDescription` entry, and `new AudioRecorder()` throws.
+
 ## Examples
 
 <Tabs group="usage">
@@ -818,7 +824,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Routes captured audio into an audio graph by creating a recorder adapter with [BaseAudioContext.createRecorderAdapter()](../core/base-audio-context.mdx#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) used to create the recorder adapter and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
+          Routes captured audio into an audio graph through an internal adapter node created in `context`, wired to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) the audio graph belongs to and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
         </div>
         ```tsx
           audioRecorder.connect(audioContext, audioContext.destination);
@@ -1048,7 +1054,7 @@ Selecting a format the current platform cannot encode (for example `Caf` on Andr
 :::
 
 :::note Opus
-Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
+Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/build-time-flags.mdx#disablestaticexternallibs), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
 :::
 
 #### FileInfo

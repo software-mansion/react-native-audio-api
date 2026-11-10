@@ -32,7 +32,7 @@ class OggOpusEncoder final : public AudioEncoder {
       const EncoderOutputSpec &outputSpec,
       const std::string &filePath) override;
 
-  EncodeResult encode(const float *const *channels, int numFrames) override;
+  EncodeResult encode(const AudioBuffer &input, int numFrames) override;
 
   /// Pads the last packet with silence and trims it back through the end-of-stream granule
   /// position, so a decoder returns exactly the frames that were encoded.
@@ -50,7 +50,7 @@ class OggOpusEncoder final : public AudioEncoder {
  private:
   Result<NoneType, std::string> prepareConversion(const StreamFormat &inputFormat);
   /// Maps and resamples @p channels into the file layout and hands the result to the packetizer.
-  Result<NoneType, std::string> convertAndQueue(const float *const *channels, int numFrames);
+  Result<NoneType, std::string> convertAndQueue(const AudioBuffer &input, int numFrames);
   void discardOutputFile();
 
   std::unique_ptr<EncoderState> state_;

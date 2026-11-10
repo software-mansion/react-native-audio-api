@@ -377,12 +377,8 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
 
   // The decoder reads interleaved; the encoder takes planar, so repack once per chunk.
   std::vector<float> buffer(DECODE_CHUNK_FRAMES * channels);
-  AudioBuffer planar(
+  AudioBuffer chunk(
       DECODE_CHUNK_FRAMES, static_cast<int>(channels), static_cast<float>(sampleRate));
-  std::array<const float *, MAX_CHANNEL_COUNT> planarChannels{};
-  for (uint32_t channel = 0; channel < channels; ++channel) {
-    planarChannels[channel] = planar.getChannel(channel)->begin();
-  }
   for (auto &input : inputs) {
     while (true) {
       const size_t framesRead = input.readPcmFrames(buffer.data(), DECODE_CHUNK_FRAMES);
@@ -390,8 +386,8 @@ AudioFileConcatResult concatAudioFilesWithEncoder(
         break;
       }
 
-      planar.deinterleaveFrom(buffer.data(), framesRead);
-      auto encodeResult = encoder->encode(planarChannels.data(), static_cast<int>(framesRead));
+      chunk.deinterleaveFrom(buffer.data(), framesRead);
+      auto encodeResult = encoder->encode(chunk, static_cast<int>(framesRead));
       if (encodeResult.is_err()) {
         // A truncated file at the requested path would pass for a finished one.
         encoder->close();

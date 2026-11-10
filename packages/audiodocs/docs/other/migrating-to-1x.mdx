@@ -28,7 +28,7 @@ You still need FFmpeg for:
 - HLS (`.m3u8`) sources, which throw `NotSupportedError` without FFmpeg,
 - [`getAudioDuration`](../utils/decoding.mdx) on remote URLs and `<Audio preload="metadata">`.
 
-The build options also moved. The Podfile environment variables and `gradle.properties` keys are no longer read — set the options in your app's `package.json` (or the Expo plugin) instead:
+The build options also moved. The Podfile environment variables and `gradle.properties` keys are no longer read — set the options in your app's `package.json` instead:
 
 ```text title="No longer read"
 // diff-remove-start
@@ -50,24 +50,13 @@ disableAudioapiStaticExternalLibs=true
 }
 ```
 
-With Expo, replace `disableFFmpeg` with `enableFFmpeg` in the plugin options. The plugin writes the values into your `package.json` during `expo prebuild`, so commit that change.
-
-```json
-["react-native-audio-api", {
-// diff-remove-start
-  "disableFFmpeg": true
-// diff-remove-end
-// diff-add-start
-  "enableFFmpeg": true
-// diff-add-end
-}]
-```
+With Expo, remove `disableFFmpeg` from the plugin options and set the options in `package.json` as above.
 
 :::caution
 If you previously disabled the static external libraries (Opus, Vorbis) through the Podfile or `gradle.properties`, they are linked again until you move the option to `package.json`.
 :::
 
-[`isFfmpegEnabled()`](../other/runtime-flags.mdx#isffmpegenabled) keeps its name, but now returns `false` unless you enabled FFmpeg — including in the `react-native-audio-api/mock` implementation. See [Prebuilt libraries support](../other/prebuilt-libraries-support.mdx) for details.
+See [Build-time flags](../other/build-time-flags.mdx#enableffmpeg) for what FFmpeg enables.
 
 ### Worklets moved to `react-native-audio-worklets`
 

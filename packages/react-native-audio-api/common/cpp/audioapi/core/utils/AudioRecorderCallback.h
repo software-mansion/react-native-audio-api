@@ -94,8 +94,8 @@ class AudioRecorderCallback {
   void runCallbackTask(PendingCallbackFrames pending);
   /// Remixes and/or resamples @p slotFrames chunk by chunk into the circular buffer.
   void convertAndPushChunks(const AudioBuffer &slotFrames, int numFrames);
-  void pushChannels(const AudioBuffer &planarFrames, int numFrames);
-  void pushChannels(const float *const *planarFrames, int numFrames);
+  /// Appends @p numFrames frames of @p frames, read from frame @p start, to the ring.
+  void pushChannels(const AudioBuffer &frames, size_t start, int numFrames);
   void releaseProcessingResources();
 
   std::atomic<bool> isInitialized_{false};
