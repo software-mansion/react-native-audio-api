@@ -1234,20 +1234,37 @@
   return NO;
 }
 
-- (void)testSuspendInputKeepsSourcesPlaying {
+- (void)testSuspendInputLeavesTheRunningGraphAloneWhileSourcesPlay {
   [self startRecordingWithPlayback:YES];
-  FakeAudioEngine *recordingEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+  AVAudioSinkNode *sink = self.audioEngine.inputNode;
 
   [self.audioEngine suspendInput];
 
-  FakeAudioEngine *playbackEngine = self.audioEngine.currentFakeAudioEngine;
-  XCTAssertNotEqual(playbackEngine, recordingEngine);
-  XCTAssertEqual(recordingEngine.pauseCallCount, 0);
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, engine);
+  XCTAssertEqual(engine.stopCallCount, 0);
+  XCTAssertEqual(engine.pauseCallCount, 0);
+  XCTAssertTrue(engine.isRunning);
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
-  XCTAssertTrue(playbackEngine.isRunning);
-  XCTAssertEqual(self.audioEngine.sourceNodes.count, 1UL);
+  XCTAssertEqual(self.audioEngine.inputNode, sink);
+  XCTAssertNil([self.audioEngine getLiveInputFormat]);
+}
+
+- (void)testLastSourceDetachingReleasesASuspendedInput {
+  NSString *sourceNodeId = [self attachSourceNodeToAudioEngine];
+  [self attachInputRecordingNotifications];
+  XCTAssertTrue([self.audioEngine startIfNecessary:nil]);
+  [self.audioEngine suspendInput];
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+
+  [self.audioEngine detachSourceNodeWithId:sourceNodeId];
+
+  FakeAudioEngine *rebuiltEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(rebuiltEngine, engine);
+  XCTAssertEqual(rebuiltEngine.startCallCount, 0);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
   XCTAssertNil(self.audioEngine.inputNode);
-  XCTAssertFalse([self isSinkAttachedTo:playbackEngine]);
+  XCTAssertFalse([self isSinkAttachedTo:rebuiltEngine]);
 }
 
 - (void)testSuspendInputWithoutSourcesLeavesEnginePaused {
@@ -1299,16 +1316,32 @@
   XCTAssertNil(self.audioEngine.inputNode);
 }
 
-- (void)testResumeInputRebuildsWithTheInputAndNotifiesItBeforeStarting {
+- (void)testResumeInputReusesASinkStillInTheRunningGraph {
   NSMutableArray<NSArray *> *notifications = [self startRecordingWithPlayback:YES];
   [self.audioEngine suspendInput];
-  FakeAudioEngine *playbackEngine = self.audioEngine.currentFakeAudioEngine;
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+  AVAudioSinkNode *sink = self.audioEngine.inputNode;
+
+  XCTAssertTrue([self.audioEngine resumeInput:nil]);
+
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, engine);
+  XCTAssertEqual(engine.stopCallCount, 0);
+  XCTAssertEqual(engine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.inputNode, sink);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertNotNil([self.audioEngine getLiveInputFormat]);
+  XCTAssertEqual(notifications.count, 0UL);
+}
+
+- (void)testResumeInputRebuildsWithTheInputAndNotifiesItBeforeStarting {
+  NSMutableArray<NSArray *> *notifications = [self startRecordingWithPlayback:NO];
+  [self.audioEngine suspendInput];
+  FakeAudioEngine *pausedEngine = self.audioEngine.currentFakeAudioEngine;
 
   XCTAssertTrue([self.audioEngine resumeInput:nil]);
 
   FakeAudioEngine *recordingEngine = self.audioEngine.currentFakeAudioEngine;
-  XCTAssertNotEqual(recordingEngine, playbackEngine);
-  XCTAssertEqual(playbackEngine.stopCallCount, 1);
+  XCTAssertNotEqual(recordingEngine, pausedEngine);
   XCTAssertEqual(recordingEngine.startCallCount, 1);
   XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
   XCTAssertNotNil(self.audioEngine.inputNode);
@@ -1330,6 +1363,8 @@
                              }];
   XCTAssertTrue([self.audioEngine startIfNecessary:nil]);
   [self.audioEngine suspendInput];
+  // A route change rebuilds the playback without the suspended input, so resuming must rebuild.
+  [self.audioEngine restartAudioEngine];
   self.audioEngine.nextCreatedEngineStartError =
       [NSError errorWithDomain:@"AudioEngineTests" code:9 userInfo:nil];
 
