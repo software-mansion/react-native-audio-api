@@ -22,8 +22,9 @@ def isNewArchitectureEnabled() {
 }
 
 // Build options come from the app's package.json:
-// "react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false }.
-// Bare apps write the section by hand; in Expo apps `expo prebuild` writes it from the plugin options.
+// "react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false, "disableAudioRecorder": false }.
+// Bare apps write the section by hand; in Expo apps `expo prebuild` writes the two older options
+// from the (deprecated) plugin options.
 // The Gradle root project is the app's android/, so the app root is its parent.
 def readAudioApiBuildOptions() {
   def packageJsonFile = new File(rootProject.projectDir.parentFile, "package.json")
@@ -53,6 +54,10 @@ def isFFmpegEnabled() {
 
 def isStaticExternalLibsDisabled() {
   return booleanBuildOption("disableStaticExternalLibs")
+}
+
+def isAudioRecorderDisabled() {
+  return booleanBuildOption("disableAudioRecorder")
 }
 
 apply plugin: "com.android.library"
@@ -152,7 +157,14 @@ def audioApiPrefabHeadersDir = layout.buildDirectory.dir("prefab-headers").get()
 def audioApiPrefabHeaderIncludes = ["audioapi/**/*.h", "audioapi/**/*.hpp"]
 // Third-party headers (FFmpeg, Opus, Vorbis, Ogg) are not part of the extension API
 // and are not guaranteed to exist in every build, so they never reach the prefab.
-def audioApiPrefabHeaderExcludes = ["audioapi/external/**"]
+// AudioAPIModuleInstaller.h is the library's own JSI install, not for extensions, and it
+// compiles differently depending on private build defines (RN_AUDIO_API_AUDIO_RECORDER_DISABLED).
+// android/AudioAPIModule.h, the JNI module, includes it, so it stays out too.
+def audioApiPrefabHeaderExcludes = [
+  "audioapi/external/**",
+  "audioapi/AudioAPIModuleInstaller.h",
+  "audioapi/android/AudioAPIModule.h",
+]
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
@@ -162,6 +174,7 @@ def REACT_NATIVE_MINOR_VERSION = REACT_NATIVE_VERSION.startsWith("0.0.0-") ? 100
 def IS_NEW_ARCHITECTURE_ENABLED = isNewArchitectureEnabled()
 def IS_RN_AUDIO_API_FFMPEG_ENABLED = isFFmpegEnabled()
 def IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = isStaticExternalLibsDisabled()
+def IS_RN_AUDIO_API_AUDIO_RECORDER_DISABLED = isAudioRecorderDisabled()
 
 apply from: "./fix-prefab.gradle"
 
@@ -193,6 +206,7 @@ android {
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
     buildConfigField "boolean", "RN_AUDIO_API_FFMPEG_ENABLED", IS_RN_AUDIO_API_FFMPEG_ENABLED.toString()
     buildConfigField "boolean", "RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED", isStaticExternalLibsDisabled().toString()
+    buildConfigField "boolean", "RN_AUDIO_API_AUDIO_RECORDER_DISABLED", IS_RN_AUDIO_API_AUDIO_RECORDER_DISABLED.toString()
 
     externalNativeBuild {
       cmake {
@@ -206,7 +220,8 @@ android {
           "-DIS_NEW_ARCHITECTURE_ENABLED=${IS_NEW_ARCHITECTURE_ENABLED}",
           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
           "-DRN_AUDIO_API_FFMPEG_ENABLED=${IS_RN_AUDIO_API_FFMPEG_ENABLED}",
-          "-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=${IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED}"
+          "-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=${IS_RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED}",
+          "-DRN_AUDIO_API_AUDIO_RECORDER_DISABLED=${IS_RN_AUDIO_API_AUDIO_RECORDER_DISABLED}"
         ]
 
         arguments = cmakeArgs
@@ -351,6 +366,7 @@ tasks.register('prepareAudioApiHeadersForPrefabs', Copy) {
     }
     from(audioApiAndroidCppDir) {
         include(audioApiPrefabHeaderIncludes)
+        exclude(audioApiPrefabHeaderExcludes)
     }
     into(audioApiPrefabHeadersDir)
 }

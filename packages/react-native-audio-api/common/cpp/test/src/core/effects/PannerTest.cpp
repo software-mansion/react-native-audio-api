@@ -91,7 +91,7 @@ TEST_P(PannerMonoParametrizedTest, PanModulatesInputMonoCorrectly) {
   auto monoInputBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
 
   for (size_t i = 0; i < monoInputBuffer->getSize(); ++i) {
-    (*monoInputBuffer->getChannelByType(AudioBuffer::ChannelMono))[i] = i + 1;
+    (*monoInputBuffer->getChannelByType(ChannelType::MONO))[i] = i + 1;
   }
 
   panNode.setInputBuffer(monoInputBuffer);
@@ -119,11 +119,11 @@ TEST_P(PannerMonoParametrizedTest, PanModulatesInputMonoCorrectly) {
 
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
+        (*resultBuffer->getChannelByType(ChannelType::LEFT))[i],
         (i + 1) * params.expectedGainL * totalGain,
         TOLERANCE);
     EXPECT_NEAR(
-        (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+        (*resultBuffer->getChannelByType(ChannelType::RIGHT))[i],
         (i + 1) * params.expectedGainR * totalGain,
         TOLERANCE);
   }
@@ -191,11 +191,11 @@ TEST_P(PannerStereoParametrizedTest, PanModulatesInputStereoCorrectly) {
 
   auto inputBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < inputBuffer->getSize(); ++i) {
-    (*inputBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i] = i + 1;
-    (*inputBuffer->getChannelByType(AudioBuffer::ChannelRight))[i] = i + 1;
+    (*inputBuffer->getChannelByType(ChannelType::LEFT))[i] = i + 1;
+    (*inputBuffer->getChannelByType(ChannelType::RIGHT))[i] = i + 1;
   }
-  const auto inputLeftSpan = inputBuffer->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  const auto inputRightSpan = inputBuffer->getChannelByType(AudioBuffer::ChannelRight)->span();
+  const auto inputLeftSpan = inputBuffer->getChannelByType(ChannelType::LEFT)->span();
+  const auto inputRightSpan = inputBuffer->getChannelByType(ChannelType::RIGHT)->span();
 
   panNode.setInputBuffer(inputBuffer);
   panNode.processNode(FRAMES_TO_PROCESS);
@@ -231,20 +231,18 @@ TEST_P(PannerStereoParametrizedTest, PanModulatesInputStereoCorrectly) {
     const float rightGain = params.expectedGainR * step;
     if (azimuth <= 0) {
       EXPECT_NEAR(
-          (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
+          (*resultBuffer->getChannelByType(ChannelType::LEFT))[i],
           (step + leftGain) * totalGain,
           TOLERANCE);
       EXPECT_NEAR(
-          (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+          (*resultBuffer->getChannelByType(ChannelType::RIGHT))[i],
           rightGain * totalGain,
           TOLERANCE);
     } else {
       EXPECT_NEAR(
-          (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-          leftGain * totalGain,
-          TOLERANCE);
+          (*resultBuffer->getChannelByType(ChannelType::LEFT))[i], leftGain * totalGain, TOLERANCE);
       EXPECT_NEAR(
-          (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
+          (*resultBuffer->getChannelByType(ChannelType::RIGHT))[i],
           (step + rightGain) * totalGain,
           TOLERANCE);
     }
@@ -286,7 +284,7 @@ TEST_F(PannerTest, PositionXAudioRateProcessing) {
 
   auto monoInputBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < monoInputBuffer->getSize(); ++i) {
-    (*monoInputBuffer->getChannelByType(AudioBuffer::ChannelMono))[i] = 1.0f;
+    (*monoInputBuffer->getChannelByType(ChannelType::MONO))[i] = 1.0f;
   }
 
   // Test only the change in positionX parameter
@@ -305,8 +303,8 @@ TEST_F(PannerTest, PositionXAudioRateProcessing) {
   panNode.processNode(FRAMES_TO_PROCESS);
 
   auto resultBuffer = panNode.getOutputBuffer();
-  const auto outLeft = resultBuffer->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  const auto outRight = resultBuffer->getChannelByType(AudioBuffer::ChannelRight)->span();
+  const auto outLeft = resultBuffer->getChannelByType(ChannelType::LEFT)->span();
+  const auto outRight = resultBuffer->getChannelByType(ChannelType::RIGHT)->span();
 
   EXPECT_GT(outLeft[0], outLeft[1]);
   EXPECT_GT(outLeft[1], outLeft[2]);
@@ -326,7 +324,7 @@ TEST_F(PannerTest, ConeAngles) {
 
   auto monoInputBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < monoInputBuffer->getSize(); ++i) {
-    (*monoInputBuffer->getChannelByType(AudioBuffer::ChannelMono))[i] = 1.0f;
+    (*monoInputBuffer->getChannelByType(ChannelType::MONO))[i] = 1.0f;
   }
 
   panNode.setInputBuffer(monoInputBuffer);
@@ -348,13 +346,9 @@ TEST_F(PannerTest, ConeAngles) {
 
   for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
     EXPECT_NEAR(
-        (*resultBuffer->getChannelByType(AudioBuffer::ChannelLeft))[i],
-        EXPECTED_SILENCE,
-        TOLERANCE);
+        (*resultBuffer->getChannelByType(ChannelType::LEFT))[i], EXPECTED_SILENCE, TOLERANCE);
     EXPECT_NEAR(
-        (*resultBuffer->getChannelByType(AudioBuffer::ChannelRight))[i],
-        EXPECTED_SILENCE,
-        TOLERANCE);
+        (*resultBuffer->getChannelByType(ChannelType::RIGHT))[i], EXPECTED_SILENCE, TOLERANCE);
   }
 }
 

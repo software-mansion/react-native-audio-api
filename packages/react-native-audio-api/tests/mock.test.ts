@@ -171,14 +171,6 @@ describe('React Native Audio API Mocks', () => {
       context = new MockAPI.AudioContext();
     });
 
-    describe('RecorderAdapterNode', () => {
-      it('should create a RecorderAdapterNode', () => {
-        const recorderAdapter = context.createRecorderAdapter();
-        expect(recorderAdapter).toBeInstanceOf(MockAPI.RecorderAdapterNode);
-        expect(recorderAdapter.wasConnected).toBe(false);
-      });
-    });
-
     describe('AudioBufferQueueSourceNode', () => {
       it('should create an AudioBufferQueueSourceNode', () => {
         const queueSource = context.createBufferQueueSource();
@@ -248,15 +240,16 @@ describe('React Native Audio API Mocks', () => {
       expect(recorder.isRecording()).toBe(false);
     });
 
-    it('should support RecorderAdapterNode connection', () => {
+    it('should connect to a destination node', () => {
       const context = new MockAPI.AudioContext();
-      const adapter = context.createRecorderAdapter();
 
-      expect(() => recorder.connect(adapter)).not.toThrow();
-      expect(adapter.wasConnected).toBe(true);
-
-      // Should throw on duplicate connection
-      expect(() => recorder.connect(adapter)).toThrow();
+      expect(recorder.connect(context, context.destination)).toBe(
+        context.destination
+      );
+      // Reconnecting reuses the recorder's internal adapter, so it does not throw.
+      expect(() =>
+        recorder.connect(context, context.destination)
+      ).not.toThrow();
     });
 
     it('should support audio data callbacks', () => {

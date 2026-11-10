@@ -33,7 +33,7 @@ import { useAudioSourceLoader } from './useAudioSourceLoader';
  * playlists play at all, only when the native build includes FFmpeg. Without
  * it every remote file is downloaded in full before playback and an HLS
  * source rejects with `NotSupportedError`.
- * @see https://docs.swmansion.com/react-native-audio-api/docs/other/prebuilt-libraries-support#enabling-ffmpeg
+ * @see https://docs.swmansion.com/react-native-audio-api/docs/other/build-time-flags#enableffmpeg
  */
 const Audio = React.memo(
   React.forwardRef<AudioTagHandle, AudioProps>((props, ref) => {

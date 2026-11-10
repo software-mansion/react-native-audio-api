@@ -228,6 +228,9 @@ static AudioEngine *_sharedInstance = nil;
 /// @brief The input node's current output format, or nil when unusable. Lock held.
 - (AVAudioFormat *)liveInputFormat
 {
+#ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
+  return nil;
+#else
   // Reading `inputNode` pulls the microphone into the engine.
   if (self.audioEngine == nil || self.inputRegistration.suspended) {
     return nil;
@@ -246,6 +249,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   return inputFormat;
+#endif
 }
 
 - (AVAudioFormat *)currentInputConnectionFormat
@@ -264,6 +268,10 @@ static AudioEngine *_sharedInstance = nil;
   if (![self hasActiveInput]) {
     return YES;
   }
+
+#ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
+  return NO;
+#else
 
   if (self.audioEngine == nil) {
     return NO;
@@ -297,6 +305,7 @@ static AudioEngine *_sharedInstance = nil;
   [self.audioEngine attachNode:self.inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:self.inputNode format:inputFormat];
   return YES;
+#endif
 }
 
 /// @brief Connects the main mixer to the output in the input's format.
@@ -316,6 +325,7 @@ static AudioEngine *_sharedInstance = nil;
 // so this has to run before the input connection format is read.
 - (void)applyVoiceProcessing
 {
+#ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
   BOOL wantsVoiceProcessing =
       [self hasActiveInput] && self.inputRegistration.voiceProcessingEnabled;
 
@@ -352,6 +362,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 
   _voiceProcessingApplied = wantsVoiceProcessing;
+#endif
 }
 
 - (void)materializeTrackedNodesIfNeeded

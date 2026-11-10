@@ -163,10 +163,8 @@ export default class AudioRecorder {
   }
 
   /**
-   * Disconnects the recorder from all connected adapter nodes.
-   *
-   * After calling this method, any connected {@link RecorderAdapterNode} will no
-   * longer receive audio data until reconnected.
+   * Disconnects the recorder from the audio graph. The destination passed to
+   * {@link connect} no longer receives recorded audio until connected again.
    */
   disconnect(): void {
     this.recorder.disconnect();
