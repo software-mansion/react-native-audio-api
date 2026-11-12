@@ -51,6 +51,42 @@ NodeT *nodeOf(utils::graph::HostGraph::HostVertex *hostNode) {
   return static_cast<NodeT *>(hostNode->handle->audioNode->asAudioNode());
 }
 
+/// A mono queue source wired to the destination of its own context, rendered
+/// through processGraph like production. Used by the pause/resume tests.
+struct GraphQueueSource {
+  std::shared_ptr<OfflineAudioContext> context;
+  /// Non-owning: the node lives in `context`'s graph, which outlives this struct's use.
+  AudioBufferQueueSourceNode *node;
+  std::shared_ptr<DSPAudioBuffer> out;
+
+  std::span<float> render() {
+    context->processGraph(out.get(), QUANTUM);
+    return out->getChannel(0)->span();
+  }
+};
+
+GraphQueueSource makeGraphQueueSource(
+    const std::shared_ptr<MockAudioEventHandlerRegistry> &eventRegistry,
+    size_t frames = SAMPLE_RATE) {
+  auto context =
+      std::make_shared<OfflineAudioContext>(1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
+  auto graph = context->getGraph();
+
+  auto *destinationHostNode = graph->addNode(std::make_unique<AudioDestinationNode>(context));
+  context->initialize(nodeOf<AudioDestinationNode>(destinationHostNode));
+
+  auto *sourceHostNode = graph->addNode(
+      std::make_unique<AudioBufferQueueSourceNode>(context, BaseAudioBufferSourceOptions()));
+  EXPECT_TRUE(graph->addEdge(sourceHostNode, destinationHostNode).is_ok());
+
+  auto *node = nodeOf<AudioBufferQueueSourceNode>(sourceHostNode);
+  if (frames > 0) {
+    // Starts at 1 so a played frame is never 0.0f, which marks silence below.
+    node->enqueueBuffer(makeRampBuffer(frames, 1), 0, nullptr);
+  }
+  return {context, node, std::make_shared<DSPAudioBuffer>(QUANTUM, 1, (float)SAMPLE_RATE)};
+}
+
 } // namespace
 
 class AudioBufferQueueSourceTest : public ::testing::Test {
@@ -221,41 +257,6 @@ TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
     }
     rendered += QUANTUM;
   }
-}
-
-/// A mono queue source wired to the destination of its own context, rendered
-/// through processGraph like production. Used by the pause/resume tests.
-struct GraphQueueSource {
-  std::shared_ptr<OfflineAudioContext> context;
-  AudioBufferQueueSourceNode *node;
-  std::shared_ptr<DSPAudioBuffer> out;
-
-  std::span<float> render() {
-    context->processGraph(out.get(), QUANTUM);
-    return out->getChannel(0)->span();
-  }
-};
-
-static GraphQueueSource makeGraphQueueSource(
-    const std::shared_ptr<MockAudioEventHandlerRegistry> &eventRegistry,
-    size_t frames = SAMPLE_RATE) {
-  auto context =
-      std::make_shared<OfflineAudioContext>(1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
-  auto graph = context->getGraph();
-
-  auto *destinationHostNode = graph->addNode(std::make_unique<AudioDestinationNode>(context));
-  context->initialize(nodeOf<AudioDestinationNode>(destinationHostNode));
-
-  auto *sourceHostNode = graph->addNode(
-      std::make_unique<AudioBufferQueueSourceNode>(context, BaseAudioBufferSourceOptions()));
-  EXPECT_TRUE(graph->addEdge(sourceHostNode, destinationHostNode).is_ok());
-
-  auto *node = nodeOf<AudioBufferQueueSourceNode>(sourceHostNode);
-  if (frames > 0) {
-    // Starts at 1 so a played frame is never 0.0f, which marks silence below.
-    node->enqueueBuffer(makeRampBuffer(frames, 1), 0, nullptr);
-  }
-  return {context, node, std::make_shared<DSPAudioBuffer>(QUANTUM, 1, (float)SAMPLE_RATE)};
 }
 
 /// pause() then resume() on a playing node: the paused node stays in the graph,
