@@ -46,8 +46,19 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
 }
 
 void AudioBufferQueueSourceNode::stop(double when) {
+  if (isFinished()) {
+    return;
+  }
+  if (isPaused_) {
+    // A paused node is already silent, so it finishes now whatever `when` is.
+    // Waiting for the render path would never end for an empty queue, and the
+    // base stop() would undo a pending pause or compare against startTime_ == -1.
+    isPaused_ = false;
+    playbackState_ = PlaybackState::FINISHED;
+    disable();
+    return;
+  }
   AudioScheduledSourceNode::stop(when);
-  isPaused_ = false;
 }
 
 void AudioBufferQueueSourceNode::start(double when) {
@@ -72,8 +83,20 @@ void AudioBufferQueueSourceNode::resume(double when) {
 }
 
 void AudioBufferQueueSourceNode::pause() {
-  AudioScheduledSourceNode::stop(0.0);
+  // Not through AudioScheduledSourceNode::stop(): for a started node stop(0)
+  // takes its stop-before-start branch, which finishes and disables the node
+  // for good, so resume() would play silence.
   isPaused_ = true;
+  if (isScheduled()) {
+    // Nothing rendered yet: unschedule, keeping the buffers and read position.
+    playbackState_ = PlaybackState::UNSCHEDULED;
+    startTime_ = -1.0;
+    stopTime_ = -1.0;
+    return;
+  }
+  // The render path stops the node on its next quantum and calls disable(),
+  // which keeps the buffers while isPaused_ is set.
+  stopTime_ = 0.0;
 }
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
@@ -129,10 +152,10 @@ void AudioBufferQueueSourceNode::clearBuffers() {
 
 void AudioBufferQueueSourceNode::disable() {
   if (isPaused_) {
+    // Stays paused until start() (resume) or stop() clears isPaused_.
     playbackState_ = PlaybackState::UNSCHEDULED;
     startTime_ = -1.0;
     stopTime_ = -1.0;
-    isPaused_ = false;
 
     return;
   }
