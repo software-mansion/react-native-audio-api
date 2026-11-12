@@ -184,19 +184,30 @@ enum class PlaybackState {
   UNSCHEDULED,      // before start() called
   SCHEDULED,        // start() called, waiting for startTime_
   PLAYING,          // actively producing audio
+  PAUSED,           // silent, position kept; stopTime_ still applies
   STOP_SCHEDULED,   // stop() called, waiting for stopTime_
   FINISHED          // done, node will be disabled
 };
 ```
 
+Pausing is a state, not a stop. `pausePlayback()` / `resumePlayback(when)` move a node into and out of `PAUSED`. Only the HostObjects of sources that offer pausing call them: `AudioBufferQueueSourceNodeHostObject` maps its JS `pause` / `resume` straight onto them, with no forwarding methods on the node. Never fake a pause with `stop(0)`, `UNSCHEDULED`, or a side flag: `stop()` on a started node takes the stop-before-start branch, whose `AudioNode::disable()` excludes the node from the pull for good, so a later resume renders silence (the 1.0.0 queue-source bug). The rules `PAUSED` carries:
+- `stopTime_` is an absolute context time and survives a pause. `updatePlaybackInfo` finishes a paused node in the quantum holding its stop time; `resumePlayback(when)` keeps the node paused when the stop time is not after `when`.
+- `stop(when)` while paused only records `stopTime_` (there is no start to compare against).
+- `canBeDestructed()` is true while paused: only the JS handle can resume the node.
+- `AudioFileSourceNode` resumes through `start()` (its JS `play()`), not `resumePlayback()`: the base `start()` keeps `stopTime_`, and a stop time already passed ends the node a quantum later without audio. Its `pause()` also moves a never-started source to `PAUSED`, because `MediaElementAudioSourceNode::canBeDestructed()` is "my file source is paused" and the media node holds a raw pointer to it: a source waiting for its first `start()` must keep its media node, a paused one may lose it.
+- A paused source must still reach `updatePlaybackInfo` each quantum. An early return for "paused" ahead of it (the old `filePaused_` check in `renderPreflight`) hides a stop time from the render path while the node stays connected.
+
+`hasEnded()` is the one piece of this state readable off the audio thread (an atomic set before `ENDED` is dispatched, exposed as the `hasEnded` HostObject getter). JS wrappers that guard calls by state keep the transitions they request themselves, because native applies `start`/`pause`/`resume` a quantum after the call, and read only the ending from native.
+
 Subclasses call `updatePlaybackInfo(currentTime, framesToProcess)` at the top of `processNode()` to transition the state machine and handle sample-accurate start/stop.
 
 When the node finishes, `AudioScheduledSourceNode::disable()` fires `ENDED` through its `EventCaller` (`dispatchEmptyFromAudioThread`); a node that will never render (stop-before-start) defers it with `EventCaller::deferEmpty` instead — see `thread-safety-itc`.
 
-A source only advances its state machine while it is being pulled. Once disconnected (no processable consumer) it is skipped by `iter()`, so a stop frame that has not rendered yet would never be observed and the node would stay PLAYING, never fire `ended` and never satisfy `canBeDestructed()` — the graph then keeps it forever (stretcher queues, params, scratch buffers). `GraphObject::advanceWithoutRender(currentSampleFrame)` closes that gap: `Graph::advanceUnpulledNodes` calls it each quantum for every node left out of the processable set, and `AudioScheduledSourceNode` overrides it to finish once the stop frame is strictly before the quantum (same transition as the render path's "first silent quantum" branch; Chromium does the same in `AudioScheduledSourceHandler::HandleStoppableSourceNode`). Keep the render path authoritative: pulled nodes must not be touched by this hook. A disconnected source that was never stopped still has no stop frame and stays alive until `stop()` or the JS wrapper dies.
+A source only advances its state machine while it is being pulled. Once disconnected (no processable consumer) it is skipped by `iter()`, so a stop frame that has not rendered yet would never be observed and the node would stay PLAYING, never fire `ended` and never satisfy `canBeDestructed()` — the graph then keeps it forever (stretcher queues, params, scratch buffers). `GraphObject::advanceWithoutRender(currentSampleFrame)` closes that gap: `Graph::advanceUnpulledNodes` calls it each quantum for every node left out of the processable set, and `AudioScheduledSourceNode` overrides it to finish once the stop frame is strictly before the quantum (same transition as the render path's "first silent quantum" branch; Chromium does the same in `AudioScheduledSourceHandler::HandleStoppableSourceNode`). Keep the render path authoritative: the graph never calls this hook on a pulled node. The one caller besides the graph is `AudioBufferBaseSourceNode::processNode`, for a pulled source with nothing to render (empty queue): it returns before `updatePlaybackInfo`, so without the call a stop time would never be reached. A disconnected source that was never stopped still has no stop frame and stays alive until `stop()` or the JS wrapper dies.
 
 Pitfalls:
 - `start(double)` in this base class is a separate overload from `AudioBufferSourceNode::start(when, offset, duration)`. Calling `node->start(when)` on an ABSN skips the derived logic; the HostObject always passes three arguments, and so must tests.
+- `stop()` on a `FINISHED` node is ignored. JS does not guard a repeated `stop()`, and honouring it would take the stop-before-start branch again and fire a second `ended`.
 - `AudioBufferBaseSourceNode::processNode` is `final` and returns early on `isEmpty()`. Whether a started-but-empty source ends there (`ended` fires) is `endsWhenStartedEmpty()`: the base default is true (spec: a null buffer forces `stop = currentTime`); `AudioBufferQueueSourceNode` overrides it to false because an empty queue is waiting for the next enqueue. The check runs per quantum on the audio thread on purpose, because the buffer setter legitimately acquires content assigned after `start()` but before the first render.
 
 ---

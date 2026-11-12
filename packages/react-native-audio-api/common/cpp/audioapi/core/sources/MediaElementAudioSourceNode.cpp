@@ -65,7 +65,7 @@ bool MediaElementAudioSourceNode::fileSourceNodePaused() const {
   if (fileSource_ == nullptr) {
     return true;
   }
-  return fileSource_->filePaused();
+  return fileSource_->isPaused();
 }
 
 } // namespace audioapi

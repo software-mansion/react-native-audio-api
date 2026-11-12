@@ -57,7 +57,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, start) {
 JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, pause) {
   auto handle = node_->handle;
   auto event = [handle, node = bufferQueueSourceNode_](BaseAudioContext &) {
-    node->pause();
+    node->pausePlayback();
   };
   bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
 
@@ -68,7 +68,7 @@ JSI_HOST_FUNCTION_IMPL(AudioBufferQueueSourceNodeHostObject, resume) {
   auto handle = node_->handle;
   auto event =
       [handle, node = bufferQueueSourceNode_, when = args[0].getNumber()](BaseAudioContext &) {
-        node->resume(when);
+        node->resumePlayback(when);
       };
   bufferQueueSourceNode_->scheduleAudioEvent(std::move(event));
   return jsi::Value::undefined();

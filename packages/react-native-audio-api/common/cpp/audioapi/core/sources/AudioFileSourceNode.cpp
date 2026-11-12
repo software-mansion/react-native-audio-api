@@ -368,18 +368,8 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::handleEndOfStreamPlayback(
   return processingBuffer;
 }
 
-//void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
-//  if (isRoutedThroughMediaElement()) {
-//    return;
-//  }
-//
-//  AudioScheduledSourceNode::connect(node);
-//}
-//
-
 void AudioFileSourceNode::start(double when) {
   AudioScheduledSourceNode::start(when);
-  filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   positionChanged_.requestFlush();
@@ -391,22 +381,8 @@ void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
 
 void AudioFileSourceNode::releaseMediaElementSource(uint64_t bindingId) {
   uint64_t expected = bindingId;
-  if (!activeMediaBindingId_.compare_exchange_strong(
-          expected, 0, std::memory_order_acq_rel, std::memory_order_acquire)) {
-    return;
-  }
-
-  ensureConnectedForDirectPlayback();
-}
-
-void AudioFileSourceNode::ensureConnectedForDirectPlayback() {
-  if (filePaused_ || isUnscheduled() || isFinished()) {
-    return;
-  }
-
-  //  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-  //    connect(context->getDestination());
-  //  }
+  activeMediaBindingId_.compare_exchange_strong(
+      expected, 0, std::memory_order_acq_rel, std::memory_order_acquire);
 }
 
 bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const {
@@ -418,7 +394,13 @@ bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const 
 }
 
 void AudioFileSourceNode::pause() {
-  filePaused_ = true;
+  if (isUnscheduled()) {
+    // A source paused before its first start() counts as paused too: a media
+    // element node bound to it becomes destructible only while its source is paused.
+    playbackState_ = PlaybackState::PAUSED;
+  } else {
+    pausePlayback();
+  }
   // A deliberate pause is not a stall — don't leave a stale "buffering" state
   // observed by JS once processDecodedOutput() stops being called below.
   bufferingStateDispatcher_.advance(/* hasData */ true, 0);
@@ -431,7 +413,6 @@ void AudioFileSourceNode::disable() {
     seekDecoderDaemon_->requestStop();
   }
 
-  filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   bufferingStateDispatcher_.advance(/* hasData */ true, 0);
@@ -645,7 +626,6 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
 
   if (endOfStreamStopPending_) {
     endOfStreamStopPending_ = false;
-    filePaused_ = true;
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     handleStopScheduled();
     processingBuffer->zero();
@@ -654,11 +634,6 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
 
   if (endOfStreamDrainPending_) {
     return handleEndOfStreamPlayback(processingBuffer, framesToProcess, eofDrainRate_);
-  }
-
-  if (filePaused_) {
-    processingBuffer->zero();
-    return processingBuffer;
   }
 
   outContext = context_.lock();
