@@ -75,7 +75,13 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 - (bool)isCurrentEngine:(AVAudioEngine *)engine;
 
 - (bool)startIfNecessary;
-- (void)pauseIfNecessary;
+/// @brief Stops capture without stopping playback. Without playback, or once
+/// the last source detaches, the graph is rebuilt without the input, closing
+/// the microphone, and the engine is left `Paused`.
+- (void)suspendInput;
+/// @brief Lets a suspended input capture again.
+/// @return false when the engine could not be started.
+- (bool)resumeInput;
 - (void)stopIfNecessary;
 
 - (void)stopIfPossible;

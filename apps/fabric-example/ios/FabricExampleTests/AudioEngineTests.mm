@@ -1059,24 +1059,209 @@
   XCTAssertTrue(self.audioEngine.graphNeedsRebuild);
 }
 
-- (void)testPauseIfNecessaryNoOpsWhenAlreadyPaused {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  self.audioEngine.state = AudioEngineStatePaused;
-
-  [self.audioEngine pauseIfNecessary];
-
-  XCTAssertEqual(fakeEngine.pauseCallCount, 0);
-  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+/// Attaches an input whose notifications are appended to the returned array as
+/// `@[ @(notification) ]`.
+- (NSMutableArray<NSArray *> *)attachInputRecordingNotifications {
+  NSMutableArray<NSArray *> *notifications = [NSMutableArray array];
+  [self.audioEngine
+      attachInputNodeWithReceiverBlock:[self testInputReceiverBlock]
+                voiceProcessingEnabled:NO
+                   onInputNotification:^(AudioEngineInputNotification notification) {
+                     @synchronized(notifications) {
+                       [notifications addObject:@[ @(notification) ]];
+                     }
+                   }];
+  return notifications;
 }
 
-- (void)testPauseIfNecessaryPausesActiveEngine {
-  FakeAudioEngine *fakeEngine = self.audioEngine.currentFakeAudioEngine;
-  self.audioEngine.state = AudioEngineStateRunning;
+/// Starts an engine that records and, with @p withPlayback, plays a source.
+- (NSMutableArray<NSArray *> *)startRecordingWithPlayback:(BOOL)withPlayback {
+  NSMutableArray<NSArray *> *notifications = [self attachInputRecordingNotifications];
 
-  [self.audioEngine pauseIfNecessary];
+  if (withPlayback) {
+    [self attachSourceNodeToAudioEngine];
+  }
 
-  XCTAssertEqual(fakeEngine.pauseCallCount, 1);
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+  @synchronized(notifications) {
+    [notifications removeAllObjects];
+  }
+  return notifications;
+}
+
+- (BOOL)isSinkAttachedTo:(FakeAudioEngine *)engine {
+  for (AVAudioNode *node in engine.recordedAttachedNodes) {
+    if ([node isKindOfClass:[AVAudioSinkNode class]]) {
+      return YES;
+    }
+  }
+
+  return NO;
+}
+
+- (void)testSuspendInputLeavesTheRunningGraphAloneWhileSourcesPlay {
+  [self startRecordingWithPlayback:YES];
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+  AVAudioSinkNode *sink = self.audioEngine.inputNode;
+
+  [self.audioEngine suspendInput];
+
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, engine);
+  XCTAssertEqual(engine.stopCallCount, 0);
+  XCTAssertEqual(engine.pauseCallCount, 0);
+  XCTAssertTrue(engine.isRunning);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertEqual(self.audioEngine.inputNode, sink);
+  XCTAssertNil([self.audioEngine getLiveInputFormat]);
+}
+
+- (void)testLastSourceDetachingReleasesASuspendedInput {
+  NSString *sourceNodeId = [self attachSourceNodeToAudioEngine];
+  [self attachInputRecordingNotifications];
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+  [self.audioEngine suspendInput];
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+
+  [self.audioEngine detachSourceNodeWithId:sourceNodeId];
+
+  FakeAudioEngine *rebuiltEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(rebuiltEngine, engine);
+  XCTAssertEqual(rebuiltEngine.startCallCount, 0);
   XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertNil(self.audioEngine.inputNode);
+  XCTAssertFalse([self isSinkAttachedTo:rebuiltEngine]);
+}
+
+- (void)testSuspendInputWithoutSourcesLeavesEnginePaused {
+  [self startRecordingWithPlayback:NO];
+
+  [self.audioEngine suspendInput];
+
+  FakeAudioEngine *rebuiltEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertEqual(rebuiltEngine.startCallCount, 0);
+  XCTAssertNil(self.audioEngine.inputNode);
+  XCTAssertFalse([self isSinkAttachedTo:rebuiltEngine]);
+}
+
+- (void)testSuspendInputWhileInterruptedKeepsTheEngineInterrupted {
+  [self startRecordingWithPlayback:YES];
+  FakeAudioEngine *interruptedEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertTrue([self.audioEngine onInterruptionBegin]);
+
+  [self.audioEngine suspendInput];
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateInterrupted);
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, interruptedEngine);
+}
+
+- (void)testPlaybackStartedDuringSuspendedInputLeavesTheMicrophoneOut {
+  [self startRecordingWithPlayback:NO];
+  [self.audioEngine suspendInput];
+
+  // A player starts the way NativeAudioPlayer does.
+  [self attachSourceNodeToAudioEngine];
+  [self.audioEngine stopIfNecessary];
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+
+  FakeAudioEngine *playbackEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertNil(self.audioEngine.inputNode);
+  XCTAssertFalse([self isSinkAttachedTo:playbackEngine]);
+}
+
+- (void)testSuspendedInputHearsNoNotificationsAndReportsNoFormat {
+  NSMutableArray<NSArray *> *notifications = [self startRecordingWithPlayback:YES];
+  [self.audioEngine suspendInput];
+
+  [self.audioEngine restartAudioEngine];
+
+  XCTAssertEqual(notifications.count, 0UL);
+  XCTAssertNil([self.audioEngine getLiveInputFormat]);
+  XCTAssertNil(self.audioEngine.inputNode);
+}
+
+- (void)testResumeInputReusesASinkStillInTheRunningGraph {
+  NSMutableArray<NSArray *> *notifications = [self startRecordingWithPlayback:YES];
+  [self.audioEngine suspendInput];
+  FakeAudioEngine *engine = self.audioEngine.currentFakeAudioEngine;
+  AVAudioSinkNode *sink = self.audioEngine.inputNode;
+
+  XCTAssertTrue([self.audioEngine resumeInput]);
+
+  XCTAssertEqual(self.audioEngine.currentFakeAudioEngine, engine);
+  XCTAssertEqual(engine.stopCallCount, 0);
+  XCTAssertEqual(engine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.inputNode, sink);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertNotNil([self.audioEngine getLiveInputFormat]);
+  XCTAssertEqual(notifications.count, 0UL);
+}
+
+- (void)testResumeInputRebuildsWithTheInputAndNotifiesItBeforeStarting {
+  NSMutableArray<NSArray *> *notifications = [self startRecordingWithPlayback:NO];
+  [self.audioEngine suspendInput];
+  FakeAudioEngine *pausedEngine = self.audioEngine.currentFakeAudioEngine;
+
+  XCTAssertTrue([self.audioEngine resumeInput]);
+
+  FakeAudioEngine *recordingEngine = self.audioEngine.currentFakeAudioEngine;
+  XCTAssertNotEqual(recordingEngine, pausedEngine);
+  XCTAssertEqual(recordingEngine.startCallCount, 1);
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertNotNil(self.audioEngine.inputNode);
+  XCTAssertTrue([self isSinkAttachedTo:recordingEngine]);
+  XCTAssertEqual(notifications.count, 1UL);
+  XCTAssertEqualObjects(notifications.firstObject[0],
+                        @(AudioEngineInputNotificationHardwareChanged));
+}
+
+- (void)testResumeInputFailureTellsPlayingSources {
+  [self attachInputRecordingNotifications];
+  XCTestExpectation *outputRecoveryFailed =
+      [self expectationWithDescription:@"onOutputRecoveryFailed"];
+  [self.audioEngine attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
+                                         sampleRate:44100
+                                       channelCount:2
+                             onOutputRecoveryFailed:^{
+                               [outputRecoveryFailed fulfill];
+                             }];
+  XCTAssertTrue([self.audioEngine startIfNecessary]);
+  [self.audioEngine suspendInput];
+  // A route change rebuilds the playback without the suspended input, so resuming must rebuild.
+  [self.audioEngine restartAudioEngine];
+  self.audioEngine.nextCreatedEngineStartError =
+      [NSError errorWithDomain:@"AudioEngineTests" code:9 userInfo:nil];
+
+  XCTAssertFalse([self.audioEngine resumeInput]);
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  [self waitForExpectations:@[ outputRecoveryFailed ] timeout:1];
+}
+
+- (void)testInterruptionEndResumesPlaybackOnlyForSuspendedInput {
+  [self startRecordingWithPlayback:YES];
+  [self.audioEngine suspendInput];
+  XCTAssertTrue([self.audioEngine onInterruptionBegin]);
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:true],
+                 AudioEngineInterruptionEndOutcomeRunning);
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStateRunning);
+  XCTAssertNil(self.audioEngine.inputNode);
+  XCTAssertFalse([self isSinkAttachedTo:self.audioEngine.currentFakeAudioEngine]);
+}
+
+- (void)testInterruptionEndWithoutPlaybackResumeKeepsSuspendedInputPaused {
+  [self startRecordingWithPlayback:YES];
+  [self.audioEngine suspendInput];
+  XCTAssertTrue([self.audioEngine onInterruptionBegin]);
+
+  XCTAssertEqual([self.audioEngine onInterruptionEnd:false],
+                 AudioEngineInterruptionEndOutcomePaused);
+
+  XCTAssertEqual(self.audioEngine.state, AudioEngineStatePaused);
+  XCTAssertNil(self.audioEngine.inputNode);
 }
 
 - (void)testStopIfNecessaryNoOpsFromIdle {
