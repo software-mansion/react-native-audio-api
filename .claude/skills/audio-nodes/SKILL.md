@@ -159,7 +159,14 @@ feeds the graph through a `RecorderAdapterNode` instead of being processed by it
 The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
 that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
 `setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
-subclasses own only the platform input stream. The one thing the base needs from the platform is
+subclasses own only the platform input stream. Each output is one `OutputSlot` (`file_`, `callback_`,
+`adapter_`: state, mutex, target); a subclass locks the slot mutexes and calls the base, and never
+reads or writes a slot's state or target itself. A platform `start()` prepares the outputs only
+through `prepareOutputs()`, and when anything fails after that it ends like `stop()`: detach under
+the slot mutexes, finalize without them, so no file stays open. `detachSideEffects()` moves the file
+writer out (a new one each session) but copies the callback and the adapter handle, which stay
+registered: JS `connect()` creates its adapter once, so moving the handle out made every later
+`start()` fail with "Recorder adapter node is unavailable.". The one thing the base needs from the platform is
 `resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
 it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
 cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
@@ -168,7 +175,7 @@ that subclass. State a consumer already owns stays with the consumer: the adapte
 layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
 `AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
-Pitfall: never redeclare a base member (`streamSampleRate_`, `fileWriter_`,
+Pitfall: never redeclare a base member (`streamSampleRate_`, `file_`,
 `lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
 audio-thread fan-out reads its own member and silently drops that output.
 

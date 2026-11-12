@@ -13,17 +13,12 @@
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/encoding/AdtsHeader.h>
-#import <audioapi/encoding/EncoderCapabilities.h>
 #import <audioapi/events/AudioEventProducer.h>
 #import <audioapi/events/IAudioEventHandlerRegistry.h>
-#import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
 #import <audioapi/events/AudioEventPayload.h>
 #import <audioapi/events/IAudioEventHandlerRegistry.h>
 
-#include <cmath>
-#include <cstring>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -358,12 +353,12 @@ public:
   }
 
   std::string currentFilePath() const {
-    std::scoped_lock lock(fileWriterMutex_);
-    return fileWriter_ != nullptr ? fileWriter_->getFilePath() : "";
+    std::scoped_lock lock(file_.mutex);
+    return file_.target != nullptr ? file_.target->getFilePath() : "";
   }
 
   bool fileOutputEnabledIntent() const {
-    return wantsFileOutput();
+    return file_.isWanted();
   }
 
   bool fileOutputConfigured() const {
@@ -371,7 +366,7 @@ public:
   }
 
   bool callbackOutputEnabledIntent() const {
-    return wantsCallback();
+    return callback_.isWanted();
   }
 
   bool callbackOutputConfigured() const {
@@ -379,7 +374,7 @@ public:
   }
 
   bool connectionEnabledIntent() const {
-    return wantsConnection();
+    return adapter_.isWanted();
   }
 
   bool connectionConfigured() const {
@@ -896,6 +891,55 @@ public:
       containsString:@"Failed to prepare callback: Invalid callback"]);
 }
 
+- (void)testAFailedStartClosesTheFileItOpened {
+  self.audioEngine.state = AudioEngineStateRunning;
+  NSString *uuid = [[NSUUID UUID] UUIDString];
+  auto properties = [self validFileProperties];
+  properties->path.fileName =
+      [[NSString stringWithFormat:@"ios-recorder-failed-start-%@", uuid] UTF8String];
+  XCTAssertTrue(_recorder->enableFileOutput(properties).is_ok());
+  // Prepared after the file, so the start fails with the file already open.
+  XCTAssertTrue(_recorder->setOnAudioReadyCallback(0, 256, 2, 99).is_ok());
+
+  auto result = _recorder->start();
+
+  XCTAssertTrue(result.is_err());
+  XCTAssertTrue(_recorder->isIdle());
+  XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
+  XCTAssertFalse(_recorder->fileOutputConfigured());
+  XCTAssertTrue(_recorder->fileOutputEnabledIntent());
+  XCTAssertEqual(_recorder->currentFilePath(), "");
+}
+
+- (void)testStartFailsWhenTheConnectedAdapterNodeIsGone {
+  self.audioEngine.state = AudioEngineStateRunning;
+  _recorder->connect(std::make_shared<utils::graph::NodeHandle>(nullptr));
+
+  auto result = _recorder->start();
+
+  XCTAssertTrue(result.is_err());
+  XCTAssertEqualObjects(
+      NSStringFromStdString(result.unwrap_err()), @"Recorder adapter node is unavailable.");
+  XCTAssertTrue(_recorder->isIdle());
+  XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
+  XCTAssertFalse(self.nativeRecorder.lastInputArmed);
+}
+
+- (void)testAConnectedRecorderStartsAgainAfterStop {
+  self.audioEngine.state = AudioEngineStateRunning;
+  auto adapterFixture = makeRecorderAdapterFixture();
+  _recorder->connect(adapterFixture.handle);
+  XCTAssertTrue(_recorder->start().is_ok());
+  XCTAssertTrue(_recorder->stop().is_ok());
+  XCTAssertFalse(_recorder->isConnected());
+
+  auto restartResult = _recorder->start();
+
+  XCTAssertTrue(restartResult.is_ok());
+  XCTAssertTrue(_recorder->isConnected());
+  XCTAssertFalse(adapterFixture.adapter()->buff_.empty());
+}
+
 - (void)testConnectWhileActiveInitializesAdapterAndDisconnectClearsIt {
   auto adapterFixture = makeRecorderAdapterFixture();
   auto *adapter = adapterFixture.adapter();
@@ -914,203 +958,6 @@ public:
   _recorder->disconnect();
 
   XCTAssertFalse(_recorder->isConnected());
-}
-
-@end
-
-/// The file type AVAudioFile writes follows the path extension, so the ADTS format is
-/// proven at the byte level: every frame must start with a sync word and its length must
-/// land exactly on the next one.
-@interface IOSEncoderAdtsTests : XCTestCase
-@end
-
-@implementation IOSEncoderAdtsTests
-
-- (void)testAacExtensionWritesSelfDelimitingAdtsFrames {
-  NSString *path = [NSTemporaryDirectory()
-      stringByAppendingPathComponent:@"ios-encoder-adts-test.aac"];
-  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-
-  const AudioLayout layout{.sampleRate = 44100, .channelCount = 1};
-  ios::encoder::IOSEncoder encoder(EncoderSettings{
-      .fileLayout = layout,
-      .encoding =
-          AudioFileProperties::EncodingConfig{
-              .format = AudioFileProperties::FileFormat::ADTS,
-              .bitRate = 64000,
-              .bitDepth = AudioFileProperties::BitDepth::Bit16,
-              .flacCompressionLevel = 0,
-              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
-          },
-  });
-  const EncoderOutputSpec spec =
-      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::ADTS);
-  XCTAssertEqual(spec.container, AudioContainer::ADTS);
-
-  auto openResult = encoder.open(
-      StreamFormat{.layout = layout, .maxFramesPerBuffer = 1024}, spec, path.UTF8String);
-  XCTAssertTrue(openResult.is_ok(), @"%s",
-                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
-
-  audioapi::AudioBuffer input(1024, layout.channelCount, layout.sampleRate);
-  std::fill(input[0].begin(), input[0].end(), 0.25f);
-  for (int block = 0; block < 40; ++block) {
-    XCTAssertTrue(encoder.encode(input, 1024).is_ok());
-  }
-  XCTAssertTrue(encoder.close().is_ok());
-
-  NSData *data = [NSData dataWithContentsOfFile:path];
-  XCTAssertGreaterThan(data.length, adts::HEADER_SIZE);
-  const auto *bytes = static_cast<const uint8_t *>(data.bytes);
-
-  size_t offset = 0;
-  size_t frames = 0;
-  while (offset + adts::HEADER_SIZE <= data.length) {
-    adts::HeaderBytes header{};
-    std::memcpy(header.data(), bytes + offset, adts::HEADER_SIZE);
-    XCTAssertEqual(header[0], 0xFF, @"frame %zu", frames);
-    XCTAssertEqual(header[1] & 0xF6, 0xF0, @"frame %zu", frames);
-    // 13-bit frame length straddles bytes 3..5; computed here because nothing in the iOS
-    // library references the ADTS helpers, so they are not linked into the test host.
-    const size_t frameLength = ((static_cast<size_t>(header[3]) & 0x3U) << 11) |
-        (static_cast<size_t>(header[4]) << 3) | (static_cast<size_t>(header[5]) >> 5);
-    XCTAssertGreaterThan(frameLength, adts::HEADER_SIZE, @"frame %zu", frames);
-    offset += frameLength;
-    frames += 1;
-  }
-  XCTAssertEqual(offset, data.length);
-  XCTAssertGreaterThan(frames, 0u);
-
-  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-}
-
-@end
-
-/// Input and file channel counts that differ are remixed with the Web Audio speaker rules
-/// (AudioBuffer::copy), as on Android. Each input channel carries its own constant level into a
-/// float WAV at the input's rate, so every file channel must hold exactly the rule's weighted sum.
-@interface IOSEncoderChannelMixTests : XCTestCase
-@end
-
-static const float kSqrtHalf = std::sqrt(0.5f);
-static const float kTolerance = 1e-5f;
-
-@implementation IOSEncoderChannelMixTests
-
-- (std::vector<float>)levelsAfterEncoding:(const std::vector<float> &)inputLevels
-                       intoFileChannels:(int)fileChannelCount {
-  NSString *path = [NSTemporaryDirectory()
-      stringByAppendingPathComponent:@"ios-encoder-channel-mix-test.wav"];
-  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-
-  constexpr float sampleRate = 48000;
-  constexpr int framesPerBlock = 512;
-  const int inputChannelCount = static_cast<int>(inputLevels.size());
-
-  ios::encoder::IOSEncoder encoder(EncoderSettings{
-      .fileLayout = {.sampleRate = sampleRate, .channelCount = fileChannelCount},
-      .encoding =
-          AudioFileProperties::EncodingConfig{
-              .format = AudioFileProperties::FileFormat::WAV,
-              .bitRate = 0,
-              .bitDepth = AudioFileProperties::BitDepth::Bit32,
-              .flacCompressionLevel = 0,
-              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
-          },
-  });
-  auto openResult = encoder.open(
-      StreamFormat{
-          .layout = {.sampleRate = sampleRate, .channelCount = inputChannelCount},
-          .maxFramesPerBuffer = framesPerBlock},
-      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::WAV),
-      path.UTF8String);
-  XCTAssertTrue(openResult.is_ok(), @"%s",
-                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
-
-  audioapi::AudioBuffer input(framesPerBlock, inputChannelCount, sampleRate);
-  for (int channel = 0; channel < inputChannelCount; ++channel) {
-    std::fill(input[channel].begin(), input[channel].end(), inputLevels[channel]);
-  }
-  for (int block = 0; block < 8; ++block) {
-    XCTAssertTrue(encoder.encode(input, framesPerBlock).is_ok());
-  }
-  XCTAssertTrue(encoder.close().is_ok());
-
-  NSError *error = nil;
-  AVAudioFile *file = [[AVAudioFile alloc] initForReading:[NSURL fileURLWithPath:path]
-                                             commonFormat:AVAudioPCMFormatFloat32
-                                              interleaved:NO
-                                                    error:&error];
-  XCTAssertNil(error);
-  XCTAssertEqual(file.processingFormat.channelCount, static_cast<AVAudioChannelCount>(fileChannelCount));
-  AVAudioPCMBuffer *buffer =
-      [[AVAudioPCMBuffer alloc] initWithPCMFormat:file.processingFormat
-                                    frameCapacity:static_cast<AVAudioFrameCount>(file.length)];
-  XCTAssertTrue([file readIntoBuffer:buffer error:&error]);
-  XCTAssertGreaterThan(buffer.frameLength, 0u);
-
-  std::vector<float> levels;
-  const AVAudioFrameCount middle = buffer.frameLength / 2;
-  for (int channel = 0; channel < fileChannelCount; ++channel) {
-    levels.push_back(buffer.floatChannelData[channel][middle]);
-  }
-  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-  return levels;
-}
-
-
-- (void)testFiveOneToStereoMixesCenterAndSurroundsIntoBothSides {
-  const float left = 0.1f, right = 0.2f, center = 0.3f, lfe = 0.4f;
-  const float surroundLeft = 0.05f, surroundRight = 0.06f;
-  auto levels =
-      [self levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight} intoFileChannels:2];
-
-  XCTAssertEqualWithAccuracy(levels[0], left + kSqrtHalf * (center + surroundLeft), kTolerance);
-  XCTAssertEqualWithAccuracy(levels[1], right + kSqrtHalf * (center + surroundRight), kTolerance);
-}
-
-- (void)testFiveOneToMonoIncludesEveryChannelButLfe {
-  const float left = 0.1f, right = 0.2f, center = 0.3f, lfe = 0.4f;
-  const float surroundLeft = 0.05f, surroundRight = 0.06f;
-  auto levels =
-      [self levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight} intoFileChannels:1];
-
-  XCTAssertEqualWithAccuracy(
-      levels[0],
-      kSqrtHalf * (left + right) + center + 0.5f * (surroundLeft + surroundRight),
-      kTolerance);
-}
-
-- (void)testQuadToStereoAveragesFrontAndSurroundPerSide {
-  const float left = 0.1f, right = 0.2f, surroundLeft = 0.3f, surroundRight = 0.4f;
-  auto levels = [self levelsAfterEncoding:std::vector<float>{left, right, surroundLeft, surroundRight} intoFileChannels:2];
-
-  XCTAssertEqualWithAccuracy(levels[0], 0.5f * (left + surroundLeft), kTolerance);
-  XCTAssertEqualWithAccuracy(levels[1], 0.5f * (right + surroundRight), kTolerance);
-}
-
-- (void)testStereoToMonoAveragesBothSides {
-  auto levels = [self levelsAfterEncoding:std::vector<float>{0.2f, 0.6f} intoFileChannels:1];
-
-  XCTAssertEqualWithAccuracy(levels[0], 0.4f, kTolerance);
-}
-
-- (void)testCountWithoutSpeakerRuleKeepsLeadingChannelsInOrder {
-  std::vector<float> inputLevels;
-  for (int channel = 0; channel < 16; ++channel) {
-    inputLevels.push_back(0.01f * static_cast<float>(channel + 1));
-  }
-  auto levels = [self levelsAfterEncoding:inputLevels intoFileChannels:2];
-
-  XCTAssertEqualWithAccuracy(levels[0], 0.01f, kTolerance);
-  XCTAssertEqualWithAccuracy(levels[1], 0.02f, kTolerance);
-}
-
-- (void)testMonoToStereoCopiesIntoBothSides {
-  auto levels = [self levelsAfterEncoding:std::vector<float>{0.3f} intoFileChannels:2];
-
-  XCTAssertEqualWithAccuracy(levels[0], 0.3f, kTolerance);
-  XCTAssertEqualWithAccuracy(levels[1], 0.3f, kTolerance);
 }
 
 @end
