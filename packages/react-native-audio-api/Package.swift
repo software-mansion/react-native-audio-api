@@ -112,8 +112,7 @@ if isAudioRecorderDisabled {
   defines.append(("RN_AUDIO_API_AUDIO_RECORDER_DISABLED", "1"))
   mainTargetExcludes += [
     "common/cpp/audioapi/HostObjects/inputs/AudioRecorderHostObject.cpp",
-    "ios/audioapi/ios/core/IOSAudioRecorder.mm",
-    "ios/audioapi/ios/core/NativeAudioRecorder.m",
+    "ios/audioapi/ios/core/IOSRecorderInput.mm",
   ]
 }
 

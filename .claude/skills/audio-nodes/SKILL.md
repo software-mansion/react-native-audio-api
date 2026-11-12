@@ -153,24 +153,32 @@ classDiagram
 
 ### AudioRecorder (not an AudioNode)
 
-`core/inputs/AudioRecorder` is a standalone base class, not part of the `AudioNode` hierarchy — it
+`core/inputs/AudioRecorder` is a standalone `final` class, not part of the `AudioNode` hierarchy — it
 feeds the graph through a `RecorderAdapterNode` instead of being processed by it.
 
-The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
-that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
-`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
-subclasses own only the platform input stream. The one thing the base needs from the platform is
-`resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
-it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
-cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
-state only one platform touches (Android's `streamMutex_`, iOS's `inputChannelCount_`) lives in
-that subclass. State a consumer already owns stays with the consumer: the adapter node's ring
-layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
-`AudioFileWriter::closeFile()`) are not mirrored in the recorder.
-
-Pitfall: never redeclare a base member (`streamSampleRate_`, `fileWriter_`,
-`lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
-audio-thread fan-out reads its own member and silently drops that output.
+It owns the session state machine: an explicit `Phase` (`Idle`, `Recording`, `Paused`, `Rerouting`;
+the table of what holds in each is in `AudioRecorder.h`) that only `enter()` changes, which is also
+the only place that arms the gate. `start`/`stop`/`pause`/`resume`/`rerouteInput` are a `switch`
+over the phase, serialized by `controlMutex_`; add a phase rather than a flag when the session gains
+a state. The recorder also ends its own session (a reroute that cannot reopen the input stops it)
+and reports the claim and the end through `IRecordingSessionRegistry`, so nothing outside decides
+what a session does. Its state lives in two kinds of struct rather than loose members: one `SessionState`
+(phase, input generation, stream format; guarded by `controlMutex_`) and one `OutputSlot` per
+output (`file_`, `callback_`, `adapter_`: state, mutex, target). Put new session state in
+`SessionState` and a new output in a slot of its own. It owns everything that happens to recorded
+frames too (file writer, JS callback, adapter
+node — `enableFileOutput`, `setupFileWriter`, `setOnAudioReadyCallback`, `connect`,
+`detachSideEffects`/`finalizeSideEffects`). The platform's part is only the capture stream behind
+`IRecorderInput` (`AndroidRecorderInput`, `IOSRecorderInput`; created by
+`createPlatformRecorderInput()`, defined next to each). The input returns its `StreamFormat` from
+`open()` and `currentFormat()`, hands frames to the `RecorderInputGate` it was given (the recorder
+arms it only while recording and disarms it before changing anything the audio thread reads), and
+reports what it did not cause through `RecorderInputEvents` (`formatChanged` for an iOS route
+change, `lost` for an Android disconnect, `failed`); events carry the generation of the opening
+they come from and are dropped once that opening has ended. Add shared recorder behavior to
+`AudioRecorder`, not to one input. State a consumer already owns stays with the consumer: the
+adapter node's ring layout (`RecorderAdapterNode::writeFrames`) and the session's file paths
+(returned by `AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
 ---
 
