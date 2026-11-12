@@ -36,7 +36,7 @@ void AudioScheduledSourceNode::stop(double when) {
   stopTime_ = when;
   if (isPaused()) {
     // Nothing is playing, so there is no start to compare against: the node
-    // finishes once `when` comes, unless resumePlayback() gets it playing before then.
+    // finishes once `when` comes, unless resume() gets it playing before then.
     return;
   }
 
@@ -55,13 +55,13 @@ void AudioScheduledSourceNode::stop(double when) {
   }
 }
 
-void AudioScheduledSourceNode::pausePlayback() {
+void AudioScheduledSourceNode::pause() {
   if (isScheduled() || isPlaying()) {
     playbackState_ = PlaybackState::PAUSED;
   }
 }
 
-void AudioScheduledSourceNode::resumePlayback(double when) {
+void AudioScheduledSourceNode::resume(double when) {
   if (!isPaused()) {
     return;
   }

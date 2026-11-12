@@ -137,12 +137,12 @@ TEST_F(AudioScheduledSourceTest, PauseSuspendsPlaybackUntilResumed) {
   sourceNode.playFrames(RENDER_QUANTUM);
   ASSERT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PLAYING);
 
-  sourceNode.pausePlayback();
+  sourceNode.pause();
   sourceNode.playFrames(RENDER_QUANTUM);
   EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PAUSED);
   EXPECT_FALSE(sourceNode.hasEnded());
 
-  sourceNode.resumePlayback(0);
+  sourceNode.resume(0);
   EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::SCHEDULED);
   sourceNode.playFrames(RENDER_QUANTUM);
   EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PLAYING);
@@ -150,7 +150,7 @@ TEST_F(AudioScheduledSourceTest, PauseSuspendsPlaybackUntilResumed) {
 
 TEST_F(AudioScheduledSourceTest, PauseLeavesANodeThatWasNeverStartedAlone) {
   auto sourceNode = TestableAudioScheduledSourceNode(context);
-  sourceNode.pausePlayback();
+  sourceNode.pause();
   EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::UNSCHEDULED);
 }
 
@@ -165,10 +165,10 @@ TEST_F(AudioScheduledSourceTest, PausedNodeFinishesAtItsStopTime) {
 
     // Both cases share the context clock, so times are relative to it.
     const double now = context->getCurrentTime();
-    sourceNode.pausePlayback();
+    sourceNode.pause();
     sourceNode.stop(now + 2.5 * RENDER_QUANTUM_TIME);
     if (isResumeRequestedAfterStopTime) {
-      sourceNode.resumePlayback(now + 4 * RENDER_QUANTUM_TIME);
+      sourceNode.resume(now + 4 * RENDER_QUANTUM_TIME);
     }
 
     sourceNode.playFrames(RENDER_QUANTUM);
@@ -188,8 +188,8 @@ TEST_F(AudioScheduledSourceTest, ResumedNodeKeepsItsStopTime) {
   sourceNode.stop(3.5 * RENDER_QUANTUM_TIME);
   sourceNode.playFrames(RENDER_QUANTUM);
 
-  sourceNode.pausePlayback();
-  sourceNode.resumePlayback(0);
+  sourceNode.pause();
+  sourceNode.resume(0);
   sourceNode.playFrames(RENDER_QUANTUM);
   sourceNode.playFrames(RENDER_QUANTUM);
   EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PLAYING);

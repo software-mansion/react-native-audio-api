@@ -39,11 +39,11 @@ class AudioScheduledSourceNode : public AudioNode {
 
   /// @brief Suspends a scheduled or playing node; any other state is left alone.
   /// @note Audio Thread only
-  void pausePlayback();
+  virtual void pause();
 
   /// @brief Schedules a paused node to continue at `when`, keeping its stop time.
   /// @note Audio Thread only
-  void resumePlayback(double when);
+  void resume(double when);
 
   /// @note Audio Thread only
   bool isUnscheduled() const;

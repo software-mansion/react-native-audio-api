@@ -93,7 +93,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   }
 
   /// @brief Stops decoding on the audio thread until playback is started again.
-  void pause();
+  void pause() override;
 
   /// @brief Enables looping at end-of-file.
   void setLoop(bool v) {

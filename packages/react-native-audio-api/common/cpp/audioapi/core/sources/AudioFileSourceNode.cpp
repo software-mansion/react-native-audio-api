@@ -399,7 +399,7 @@ void AudioFileSourceNode::pause() {
     // element node bound to it becomes destructible only while its source is paused.
     playbackState_ = PlaybackState::PAUSED;
   } else {
-    pausePlayback();
+    AudioScheduledSourceNode::pause();
   }
   // A deliberate pause is not a stall — don't leave a stale "buffering" state
   // observed by JS once processDecodedOutput() stops being called below.

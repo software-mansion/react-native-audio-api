@@ -282,7 +282,7 @@ TEST_F(AudioBufferQueueSourceTest, PauseThenResumeContinuesFromPausedFrame) {
   }
   ASSERT_GT(lastPlayed, 0.0f);
 
-  source.node->pausePlayback();
+  source.node->pause();
   for (int q = 0; q < 3; ++q) {
     auto channel = source.render();
     for (int i = 0; i < QUANTUM; ++i) {
@@ -290,7 +290,7 @@ TEST_F(AudioBufferQueueSourceTest, PauseThenResumeContinuesFromPausedFrame) {
     }
   }
 
-  source.node->resumePlayback(0.0);
+  source.node->resume(0.0);
   auto channel = source.render();
   ASSERT_NEAR(channel[0], lastPlayed + 1e-6f, 1e-9f)
       << "Resumed node did not continue from the frame it was paused at";
@@ -304,7 +304,7 @@ TEST_F(AudioBufferQueueSourceTest, PauseThenResumeContinuesFromPausedFrame) {
 TEST_F(AudioBufferQueueSourceTest, PauseBeforeFirstQuantumThenResumePlaysFromStart) {
   auto source = makeGraphQueueSource(eventRegistry);
   source.node->start(0.0);
-  source.node->pausePlayback();
+  source.node->pause();
 
   for (int q = 0; q < 2; ++q) {
     auto channel = source.render();
@@ -313,7 +313,7 @@ TEST_F(AudioBufferQueueSourceTest, PauseBeforeFirstQuantumThenResumePlaysFromSta
     }
   }
 
-  source.node->resumePlayback(0.0);
+  source.node->resume(0.0);
   auto channel = source.render();
   ASSERT_NEAR(channel[0], 1e-6f, 1e-9f) << "Resumed node did not start at the first frame";
 }
@@ -367,7 +367,7 @@ TEST_F(AudioBufferQueueSourceTest, StopWhilePausedStaysSilentAndEndsOnce) {
       }
     }
 
-    source.node->pausePlayback();
+    source.node->pause();
     for (int q = 0; q < testCase.quantaBetweenPauseAndStop; ++q) {
       source.render();
     }
@@ -431,9 +431,9 @@ TEST_F(AudioBufferQueueSourceTest, ResumeBeforeQueuedStopPlaysUntilStopTime) {
     }
     if (isStoppedBeforePause) {
       source.node->stop(quantaToTime(STOP_QUANTUM));
-      source.node->pausePlayback();
+      source.node->pause();
     } else {
-      source.node->pausePlayback();
+      source.node->pause();
       source.node->stop(quantaToTime(STOP_QUANTUM));
     }
 
@@ -442,7 +442,7 @@ TEST_F(AudioBufferQueueSourceTest, ResumeBeforeQueuedStopPlaysUntilStopTime) {
     }
     EXPECT_FALSE(source.node->hasEnded()) << "a paused node reported itself ended";
 
-    source.node->resumePlayback(0.0);
+    source.node->resume(0.0);
     for (int q = RESUME_QUANTUM; q < STOP_QUANTUM; ++q) {
       auto channel = source.render();
       ASSERT_NEAR(channel[0], lastPlayed + 1e-6f, 1e-9f)
@@ -497,10 +497,10 @@ TEST_F(AudioBufferQueueSourceTest, PausedNodeEndsAtQueuedStopTime) {
       source.render();
     }
 
-    source.node->pausePlayback();
+    source.node->pause();
     source.node->stop(quantaToTime(STOP_QUANTUM));
     if (testCase.isResumedAfterStopTime) {
-      source.node->resumePlayback(quantaToTime(STOP_QUANTUM + 4));
+      source.node->resume(quantaToTime(STOP_QUANTUM + 4));
     }
 
     for (int q = PAUSE_QUANTUM; q < STOP_QUANTUM; ++q) {
@@ -516,7 +516,7 @@ TEST_F(AudioBufferQueueSourceTest, PausedNodeEndsAtQueuedStopTime) {
     EXPECT_TRUE(hasEndedAtDispatch) << "JS handling ended must already read hasEnded";
 
     // The node has ended: a late resume() must not bring it back.
-    source.node->resumePlayback(0.0);
+    source.node->resume(0.0);
     expectSilent(source.render());
     EXPECT_EQ(endedCount, 1);
   }
