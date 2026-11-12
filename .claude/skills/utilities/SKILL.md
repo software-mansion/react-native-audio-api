@@ -260,7 +260,7 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ### `VectorMath.h` — SIMD-optimized vector math
 
-SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onAudioFrames`, `AudioFileWriter`, `AudioRecorderCallback`, `AudioEncoder::encode` all take one pointer per channel); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
+SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onInputFrames`, `AudioFileWriter`, `AudioRecorderCallback`, `AudioEncoder::encode` all take one pointer per channel); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
 
 ---
 

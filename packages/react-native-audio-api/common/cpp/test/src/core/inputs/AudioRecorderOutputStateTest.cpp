@@ -3,6 +3,8 @@
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <gtest/gtest.h>
+#include <test/src/core/inputs/FakeRecorderInput.h>
+#include <test/src/utils/FakeFileBackend.h>
 
 #include <atomic>
 #include <memory>
@@ -10,136 +12,113 @@
 #include <string>
 
 using namespace audioapi;
+using namespace audioapi::test_support;
 
 // NOLINTBEGIN
 
-namespace {
+namespace audioapi {
 
-/// Never starts a stream, so every output it is given stays at Requested at most.
-class IdleAudioRecorder : public AudioRecorder {
- public:
-  IdleAudioRecorder() : AudioRecorder(nullptr) {}
+/// Reaches the recorder's output bookkeeping, which is private.
+struct AudioRecorderTestPeer {
+  using OutputState = AudioRecorder::OutputState;
+  using FileSlot = AudioRecorder::OutputSlot<AudioFileWriter>;
 
-  using AudioRecorder::deactivate;
-  using AudioRecorder::OutputState;
-  using AudioRecorder::wantsCallback;
-  using AudioRecorder::wantsConnection;
-  using AudioRecorder::wantsFileOutput;
-
-  Result<NoneType, std::string> prepareOutputsLocked(const StreamFormat &format) {
-    std::scoped_lock outputsLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-    return prepareOutputs(format);
+  static bool wantsCallback(const AudioRecorder &recorder) {
+    return recorder.callback_.isWanted();
   }
 
-  Result<NoneType, std::string> start() override {
-    return Err(std::string("not supported"));
-  }
-  Result<FileInfo, std::string> stop() override {
-    return Err(std::string("not supported"));
-  }
-  void pause() override {}
-  Result<NoneType, std::string> resume() override {
-    return Ok(None);
-  }
-  Result<NoneType, std::string> rerouteInput() override {
-    return Ok(None);
-  }
-  bool isRecording() const override {
-    return false;
-  }
-  bool isPaused() const override {
-    return false;
-  }
-  bool isIdle() const override {
-    return true;
-  }
-  [[nodiscard]] double getInputLatency() const override {
-    return 0.0;
+  static bool wantsFileOutput(const AudioRecorder &recorder) {
+    return recorder.file_.isWanted();
   }
 
- protected:
-  [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override {
-    return Err(std::string("no stream"));
+  static bool wantsConnection(const AudioRecorder &recorder) {
+    return recorder.adapter_.isWanted();
+  }
+
+  static Result<NoneType, std::string> prepareOutputs(
+      AudioRecorder &recorder,
+      const StreamFormat &format) {
+    std::scoped_lock outputsLock(
+        recorder.callback_.mutex, recorder.file_.mutex, recorder.adapter_.mutex);
+    return recorder.prepareOutputs(format);
   }
 };
 
-std::shared_ptr<AudioFileProperties> wavProperties() {
-  return std::make_shared<AudioFileProperties>(
-      AudioFileProperties::PathConfig{
-          .directory = AudioFileProperties::FileDirectory::Cache,
-          .subDirectory = "",
-          .fileName = "",
-      },
-      AudioLayout{.sampleRate = 48000.0F, .channelCount = 1},
-      AudioFileProperties::EncodingConfig{
-          .format = AudioFileProperties::FileFormat::WAV,
-          .bitRate = 0,
-          .bitDepth = AudioFileProperties::BitDepth::Bit16,
-          .flacCompressionLevel = 0,
-          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
-      },
-      AudioFileProperties::WriterConfig{.rotateIntervalBytes = 0, .androidFlushIntervalMs = 0});
+} // namespace audioapi
+
+namespace {
+
+using OutputState = AudioRecorderTestPeer::OutputState;
+
+/// Never started, so every output it is given stays at Requested at most.
+std::shared_ptr<AudioRecorder> createIdleRecorder() {
+  return std::make_shared<AudioRecorder>(nullptr, std::make_shared<FakeRecorderInput>());
 }
 
 } // namespace
 
-using OutputState = IdleAudioRecorder::OutputState;
-
 TEST(AudioRecorderOutputStateTest, DeactivateDemotesAnActiveOutputToRequested) {
-  std::atomic<OutputState> state{OutputState::Active};
-  IdleAudioRecorder::deactivate(state);
-  EXPECT_EQ(state.load(), OutputState::Requested);
+  AudioRecorderTestPeer::FileSlot slot;
+  slot.set(OutputState::Active);
+
+  slot.deactivate();
+
+  EXPECT_FALSE(slot.isActive());
+  EXPECT_TRUE(slot.isWanted());
 }
 
 TEST(AudioRecorderOutputStateTest, DeactivateNeverEnablesADisabledOutput) {
-  std::atomic<OutputState> state{OutputState::Disabled};
-  IdleAudioRecorder::deactivate(state);
-  EXPECT_EQ(state.load(), OutputState::Disabled);
+  AudioRecorderTestPeer::FileSlot slot;
+
+  slot.deactivate();
+
+  EXPECT_FALSE(slot.isWanted());
 }
 
 TEST(AudioRecorderOutputStateTest, InvalidFilePropertiesAreRejectedAtEnable) {
-  IdleAudioRecorder recorder;
-  auto properties = wavProperties();
+  auto recorder = createIdleRecorder();
+  auto properties = wavFileProperties();
   properties->fileLayout.sampleRate = 0.0F;
 
-  EXPECT_TRUE(recorder.enableFileOutput(properties).is_err());
-  EXPECT_FALSE(recorder.wantsFileOutput());
+  EXPECT_TRUE(recorder->enableFileOutput(properties).is_err());
+  EXPECT_FALSE(AudioRecorderTestPeer::wantsFileOutput(*recorder));
 }
 
 TEST(AudioRecorderOutputStateTest, AFormatThePlatformCannotWriteIsRejectedAtEnable) {
-  IdleAudioRecorder recorder;
-  auto properties = wavProperties();
+  auto recorder = createIdleRecorder();
+  auto properties = wavFileProperties();
   properties->encoding.format = AudioFileProperties::FileFormat::OPUS_WEBM;
 
-  EXPECT_TRUE(recorder.enableFileOutput(properties).is_err());
-  EXPECT_FALSE(recorder.wantsFileOutput());
+  EXPECT_TRUE(recorder->enableFileOutput(properties).is_err());
+  EXPECT_FALSE(AudioRecorderTestPeer::wantsFileOutput(*recorder));
 }
 
 TEST(AudioRecorderOutputStateTest, CallbackIsRequestedUntilAStreamPreparesIt) {
-  IdleAudioRecorder recorder;
+  auto recorder = createIdleRecorder();
 
-  ASSERT_TRUE(recorder.setOnAudioReadyCallback(48000.0F, 1024, 1, 1).is_ok());
-  EXPECT_TRUE(recorder.wantsCallback());
-  EXPECT_FALSE(recorder.usesCallback());
+  ASSERT_TRUE(recorder->setOnAudioReadyCallback(48000.0F, 1024, 1, 1).is_ok());
+  EXPECT_TRUE(AudioRecorderTestPeer::wantsCallback(*recorder));
+  EXPECT_FALSE(recorder->usesCallback());
 
-  recorder.clearOnAudioReadyCallback();
-  EXPECT_FALSE(recorder.wantsCallback());
+  recorder->clearOnAudioReadyCallback();
+  EXPECT_FALSE(AudioRecorderTestPeer::wantsCallback(*recorder));
 }
 
 TEST(AudioRecorderOutputStateTest, AConnectionWhoseAdapterNodeIsGoneFailsToPrepare) {
-  IdleAudioRecorder recorder;
-  recorder.connect(std::make_shared<utils::graph::NodeHandle>(nullptr));
-  ASSERT_TRUE(recorder.wantsConnection());
+  auto recorder = createIdleRecorder();
+  recorder->connect(std::make_shared<utils::graph::NodeHandle>(nullptr));
+  ASSERT_TRUE(AudioRecorderTestPeer::wantsConnection(*recorder));
 
-  auto result = recorder.prepareOutputsLocked(
+  auto result = AudioRecorderTestPeer::prepareOutputs(
+      *recorder,
       StreamFormat{
           .layout = AudioLayout{.sampleRate = 48000.0F, .channelCount = 1},
           .maxFramesPerBuffer = 1024,
       });
 
   EXPECT_TRUE(result.is_err());
-  EXPECT_FALSE(recorder.isConnected());
-  EXPECT_TRUE(recorder.wantsConnection());
+  EXPECT_FALSE(recorder->isConnected());
+  EXPECT_TRUE(AudioRecorderTestPeer::wantsConnection(*recorder));
 }
 
 // NOLINTEND

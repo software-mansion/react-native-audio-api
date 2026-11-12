@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/inputs/FileInfo.h>
+#include <audioapi/core/inputs/IRecordingSessionRegistry.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
@@ -15,74 +16,61 @@ class AudioRecorder;
 
 /// @brief The process-wide view of the recording session that is currently active.
 ///
-/// The JavaScript host object owns the AudioRecorder. Native code still needs
-/// to reach that recorder when js is dead. This handle publishes a non-owning
-/// reference to the recorder so those actions can reach it.
-/// Only one recording session is published at a time.
-class ActiveRecorderHandle {
+/// The JavaScript host object owns the AudioRecorder. Native code still needs to reach that
+/// recorder when JS is dead, so this handle keeps a non-owning reference to the recorder that
+/// holds the session, forwards to it, and keeps what the last session recorded until JS asks for
+/// it. Recorders report to it through IRecordingSessionRegistry; what a session does, and how it
+/// ends, is the recorder's.
+class ActiveRecorderHandle final : public IRecordingSessionRegistry {
  public:
   static ActiveRecorderHandle &global();
   DELETE_COPY_AND_MOVE(ActiveRecorderHandle);
-  ~ActiveRecorderHandle() = default;
+  ~ActiveRecorderHandle() override = default;
 
-  /// @brief Starts @p recorder and stores it in the slot unless another non-idle
-  /// recorder already occupies it. The slot is assigned only if start succeeds.
-  Result<NoneType, std::string> tryStart(const std::shared_ptr<AudioRecorder> &recorder);
+  bool claim(const std::shared_ptr<AudioRecorder> &recorder) override;
+  /// A recording that names no file is not kept.
+  void ended(const AudioRecorder &recorder, const std::optional<FileInfo> &recording) override;
 
-  /// @brief The state of the recorder in the slot, or Idle when the slot is empty.
+  /// @brief The state of the recorder that holds the session, or Idle when none does.
   [[nodiscard]] RecorderState currentState() const;
 
-  /// @brief True while a recording session is active; a paused recording counts as
-  /// ongoing because it still owns an open output file.
+  /// @brief True from a recorder's claim until its session has ended: while it starts, records,
+  /// is paused, and while its files are being closed. Once this turns false, what the session
+  /// recorded is available to consumeLastRecordingResult().
   [[nodiscard]] bool isRecordingOngoing() const;
 
-  /// @brief Pauses an actively recording session; a no-op in any other state.
+  /// @brief AudioRecorder::pause() on the recorder that holds the session.
+  /// @return Its state afterwards; Idle when no recorder holds the session.
   RecorderState pause();
 
-  /// @brief pause() if the slot holds @p expected; otherwise leaves the occupant alone and
-  /// returns Idle, which is the only state a recorder outside the slot can be in.
-  RecorderState pause(const std::shared_ptr<AudioRecorder> &expected);
-
-  /// @brief Resumes a paused session; a no-op in any other state. A refused resume leaves the
-  /// session paused; the returned state shows it.
+  /// @brief AudioRecorder::resume() on the recorder that holds the session. A refused resume
+  /// leaves the session paused; the returned state shows it.
   RecorderState resume();
 
-  /// @brief Resumes @p expected when it is the paused occupant, like MediaRecorder.resume().
-  /// @return An error when @p expected is not in the slot, so it is idle; otherwise
-  /// AudioRecorder::resume()'s result, which is Ok when it was already recording.
-  Result<NoneType, std::string> resume(const std::shared_ptr<AudioRecorder> &expected);
-
-  /// @brief AudioRecorder::rerouteInput() on the occupant; Ok when the slot is empty.
+  /// @brief AudioRecorder::rerouteInput() on the recorder that holds the session; Ok when none
+  /// does.
   Result<NoneType, std::string> rerouteInput();
 
-  /// @brief Stops the occupant and returns AudioRecorder::stop()'s Result,
-  /// including the original error. On success with non-empty paths, stashes a
-  /// copy for consumeLastRecordingResult() and clears the slot. Blocks until
-  /// the output file is finalized. Because of this, don't call on a UI thread.
+  /// @brief AudioRecorder::stop() on the recorder that holds the session. Blocks until the
+  /// output file is finalized. Because of this, don't call on a UI thread.
   Result<FileInfo, std::string> stopAndReturnInfo();
 
-  /// @brief stopAndReturnInfo() if the slot still holds @p expected; otherwise
-  /// returns an error and does not stop the occupant.
-  Result<FileInfo, std::string> stopAndReturnInfo(const std::shared_ptr<AudioRecorder> &expected);
-
-  /// @brief Stops the occupant (same as stopAndReturnInfo) and returns the
-  /// resulting slot state. The stop Result is discarded; file info is still stashed.
+  /// @brief stopAndReturnInfo(), returning the state afterwards instead of the recording.
   RecorderState stopAndReturnState();
 
-  /// @brief Consume-once: returns the file info stashed by stopAndReturnInfo()
-  /// and clears it, or std::nullopt when nothing is stashed.
+  /// @brief Consume-once: returns what the last ended session recorded and clears it, or
+  /// std::nullopt when nothing is kept.
   std::optional<FileInfo> consumeLastRecordingResult();
 
  private:
   ActiveRecorderHandle() = default;
   friend struct ActiveRecorderHandleTestPeer;
 
-  static RecorderState stateOf(const std::shared_ptr<AudioRecorder> &recorder);
+  [[nodiscard]] std::shared_ptr<AudioRecorder> sessionHolder() const;
 
-  /// @brief Drops the slot without stopping the recorder.
-  void clearRecorder();
-
-  mutable std::recursive_mutex mutex_;
+  /// Guards the two members below. Never held across a call into a recorder, which can take
+  /// seconds to start and blocks on a file close to stop.
+  mutable std::mutex mutex_;
   std::weak_ptr<AudioRecorder> recorder_;
   std::optional<FileInfo> lastResult_;
 };

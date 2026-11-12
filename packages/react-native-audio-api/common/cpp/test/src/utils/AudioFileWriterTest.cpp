@@ -3,6 +3,7 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <test/src/utils/FakeFileBackend.h>
 
 #include <atomic>
 #include <cstddef>
@@ -15,126 +16,11 @@
 #include <vector>
 
 using namespace audioapi;
+using namespace audioapi::test_support;
 
 // NOLINTBEGIN
 
 namespace {
-
-/// Shared by every encoder a session opens. Written on the worker thread; read by the test
-/// after closeFile(), which joins that worker.
-struct FakeEncoderLog {
-  std::atomic<size_t> fileSizeBytes{0};
-  std::atomic<int> encodedBuffers{0};
-  std::atomic<int> closedFiles{0};
-  std::atomic<bool> failNextOpen{false};
-  std::atomic<bool> failNextReprepare{false};
-  /// Creates the first resolved path on disk before returning it, so the writer finds it
-  /// taken whatever name it generated.
-  std::atomic<bool> occupyFirstResolvedPath{false};
-  double fileSizeMB = 1.0;
-  double fileDurationSec = 2.0;
-
-  std::mutex mutex;
-  /// Resolved paths are this prefix plus the bare file name; empty by default so a test can
-  /// assert on the names directly.
-  std::string pathPrefix;
-  std::vector<std::string> openedFileNames;
-  StreamFormat lastOpenedFormat{};
-  size_t lastOpenedMaxFramesPerBuffer = 0;
-  StreamFormat lastRepreparedFormat{};
-  size_t lastRepreparedMaxFramesPerBuffer = 0;
-  EncoderOutputSpec outputSpec{
-      .container = AudioContainer::WAV,
-      .codec = AudioCodec::PCM,
-      .extension = "wav"};
-};
-
-class FakeEncoder final : public AudioEncoder {
- public:
-  FakeEncoder(const EncoderSettings &settings, FakeEncoderLog &log)
-      : AudioEncoder(settings), log_(log) {}
-
-  OpenEncoderResult open(
-      const StreamFormat &inputFormat,
-      const EncoderOutputSpec & /*outputSpec*/,
-      const std::string &filePath) override {
-    if (log_.failNextOpen.exchange(false)) {
-      return OpenEncoderResult::Err("encoder refused to open");
-    }
-    inputFormat_ = inputFormat;
-    filePath_ = filePath;
-    {
-      std::scoped_lock lock(log_.mutex);
-      log_.lastOpenedFormat = inputFormat;
-      log_.lastOpenedMaxFramesPerBuffer = inputFormat.maxFramesPerBuffer;
-    }
-    markOpen();
-    return OpenEncoderResult::Ok(filePath);
-  }
-
-  /// Mirrors IOSEncoder::reprepareInput.
-  OpenEncoderResult reprepareInput(const StreamFormat &inputFormat) override {
-    if (!isOpen()) {
-      return OpenEncoderResult::Err("encoder is not open");
-    }
-    if (log_.failNextReprepare.exchange(false)) {
-      return OpenEncoderResult::Err("encoder refused the new input format");
-    }
-    inputFormat_ = inputFormat;
-    {
-      std::scoped_lock lock(log_.mutex);
-      log_.lastRepreparedFormat = inputFormat;
-      log_.lastRepreparedMaxFramesPerBuffer = inputFormat.maxFramesPerBuffer;
-    }
-    return OpenEncoderResult::Ok(filePath_);
-  }
-
-  EncodeResult encode(const AudioBuffer & /*input*/, int numFrames) override {
-    addEncodedFrames(static_cast<size_t>(numFrames));
-    log_.encodedBuffers.fetch_add(1, std::memory_order_acq_rel);
-    return EncodeResult::Ok(static_cast<size_t>(numFrames));
-  }
-
-  CloseEncoderResult close() override {
-    markClosed();
-    log_.closedFiles.fetch_add(1, std::memory_order_acq_rel);
-    return CloseEncoderResult::Ok({log_.fileSizeMB, log_.fileDurationSec});
-  }
-
-  [[nodiscard]] size_t getFileSizeBytes() const override {
-    return log_.fileSizeBytes.load(std::memory_order_acquire);
-  }
-
- private:
-  FakeEncoderLog &log_;
-};
-
-/// Stands in for the platform steps the desktop test build cannot perform. Resolved paths are
-/// the bare file names, so a test can assert on them directly.
-PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
-  return PlatformFileBackend{
-      .resolveOutputSpec =
-          [&log](AudioFileProperties::FileFormat /*format*/) {
-            std::scoped_lock lock(log.mutex);
-            return Result<EncoderOutputSpec, std::string>::Ok(log.outputSpec);
-          },
-      .resolvePath =
-          [&log](
-              const std::shared_ptr<AudioFileProperties> & /*properties*/,
-              const std::string &fileName) {
-            std::scoped_lock lock(log.mutex);
-            log.openedFileNames.push_back(fileName);
-            const std::string path = log.pathPrefix + fileName;
-            if (log.occupyFirstResolvedPath.exchange(false)) {
-              std::ofstream(path).put('\0');
-            }
-            return Result<std::string, std::string>::Ok(path);
-          },
-      .createEncoder = [&log](const EncoderSettings &settings) -> CreateEncoderResult {
-        return CreateEncoderResult::Ok(std::make_unique<FakeEncoder>(settings, log));
-      },
-  };
-}
 
 // Mirror AudioFileWriter::FILE_SIZE_CHECK_WRITE_INTERVAL and POOL_SIZE.
 constexpr int kBuffersBetweenSizeChecks = 10;

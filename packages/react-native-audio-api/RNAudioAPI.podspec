@@ -23,7 +23,7 @@ static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_
 
 audio_recorder_disabled_flag = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? '-DRN_AUDIO_API_AUDIO_RECORDER_DISABLED=1' : ''
 audio_recorder_common_sources = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? ["common/cpp/audioapi/HostObjects/inputs/AudioRecorderHostObject.cpp"] : []
-audio_recorder_ios_sources = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? ["ios/audioapi/ios/core/IOSAudioRecorder.mm", "ios/audioapi/ios/core/NativeAudioRecorder.m"] : []
+audio_recorder_ios_sources = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? ["ios/audioapi/ios/core/IOSRecorderInput.mm"] : []
 
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_ENABLED ? '' : 'skipffmpeg'
 download_script_env_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
