@@ -24,6 +24,7 @@
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverBlock;
 @property (nonatomic, assign) BOOL voiceProcessingEnabled;
 @property (nonatomic, copy) AudioEngineInputNotificationBlock onInputNotification;
+@property (nonatomic, assign) BOOL suspended;
 
 @end
 
@@ -46,6 +47,7 @@
 - (void)createAudioEngineIfNeeded;
 - (void)destroyAudioEnginePreservingSessionDeactivationState:(BOOL)preserveSessionDeactivationState;
 - (BOOL)hasInput;
+- (BOOL)hasActiveInput;
 - (BOOL)hasSources;
 - (BOOL)hasTrackedGraph;
 - (AVAudioFormat *)currentInputConnectionFormat;
@@ -54,6 +56,7 @@
 - (void)connectVoiceProcessingIOOutput:(AVAudioFormat *)format;
 - (void)applyVoiceProcessing;
 - (void)materializeTrackedNodesIfNeeded;
+- (void)releaseSuspendedInput;
 
 - (AVAudioFormat *)liveInputFormat;
 - (void)resetInputNode;
@@ -92,6 +95,11 @@ static AudioEngine *_sharedInstance = nil;
 - (BOOL)hasInput
 {
   return self.inputRegistration != nil;
+}
+
+- (BOOL)hasActiveInput
+{
+  return [self hasInput] && !self.inputRegistration.suspended;
 }
 
 - (BOOL)hasSources
@@ -225,7 +233,7 @@ static AudioEngine *_sharedInstance = nil;
 #ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
   return nil;
 #else
-  if (self.audioEngine == nil) {
+  if (self.audioEngine == nil || self.inputRegistration.suspended) {
     return nil;
   }
 
@@ -258,7 +266,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (BOOL)materializeInputNodeIfNeeded
 {
-  if (self.inputRegistration == nil) {
+  if (![self hasActiveInput]) {
     return YES;
   }
 
@@ -319,7 +327,8 @@ static AudioEngine *_sharedInstance = nil;
 - (void)applyVoiceProcessing
 {
 #ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
-  BOOL wantsVoiceProcessing = self.inputRegistration.voiceProcessingEnabled;
+  BOOL wantsVoiceProcessing = self.inputRegistration.voiceProcessingEnabled &&
+      ([self hasActiveInput] || self.inputNode != nil);
 
   // A freshly created engine has voice processing off, so for playback-only
   // graphs there is nothing to undo - and reading `inputNode` would needlessly
@@ -408,6 +417,11 @@ static AudioEngine *_sharedInstance = nil;
   [self.sourceRegistrations removeObjectForKey:sourceNodeId];
   [self.sourceNodes removeObjectForKey:sourceNodeId];
   [self.sourceFormats removeObjectForKey:sourceNodeId];
+
+  if (self.inputRegistration.suspended && self.inputNode != nil && ![self hasSources] &&
+      self.state != AudioEngineState::AudioEngineStateInterrupted) {
+    [self releaseSuspendedInput];
+  }
 
   if (![self hasTrackedGraph]) {
     self.graphNeedsRebuild = false;
@@ -658,7 +672,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   }
 
   const BOOL resumeEngine =
-      shouldEngineResumeAfterInterruption(shouldResume, [self hasInput], [self hasSources]);
+      shouldEngineResumeAfterInterruption(shouldResume, [self hasActiveInput], [self hasSources]);
   AUDIO_LOG_DEBUG("rebuildAfterInterruption resumeEngine=%{public}s", logBool(resumeEngine));
 
   if (!resumeEngine) {
@@ -677,7 +691,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   [self stopEngine];
   [self rebuildAudioEngine];
 
-  if (self.inputRegistration != nil && self.inputNode == nil) {
+  if ([self hasActiveInput] && self.inputNode == nil) {
     [AudioAPIError fail:error with:[AudioAPIError inputFormatUnavailable]];
     self.state = AudioEngineState::AudioEngineStateInterrupted;
     return AudioEngineInterruptionEndOutcomeStillInterrupted;
@@ -734,7 +748,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 {
   AudioEngineInputNotificationBlock handler = self.inputRegistration.onInputNotification;
 
-  if (handler == nil) {
+  if (handler == nil || self.inputRegistration.suspended) {
     return nil;
   }
 
@@ -841,7 +855,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   // Never rebuilds; callers check `mustRebuildBeforeStart` first.
   [self materializeTrackedNodesIfNeeded];
 
-  if (self.inputRegistration != nil && self.inputNode == nil) {
+  if ([self hasActiveInput] && self.inputNode == nil) {
     [AudioAPIError fail:outError with:[AudioAPIError inputFormatUnavailable]];
     return false;
   }
@@ -905,18 +919,74 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
   return false;
 }
 
-- (void)pauseIfNecessary
+- (void)suspendInput
 {
   std::scoped_lock lock(_engineLock);
-  if (self.state == AudioEngineState::AudioEngineStatePaused) {
+
+  if (![self hasActiveInput]) {
     return;
   }
 
-  if (self.audioEngine != nil) {
-    [self.audioEngine pause];
+  self.inputRegistration.suspended = YES;
+
+  // An interrupted engine is rebuilt only when the interruption ends
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted || self.audioEngine == nil) {
+    return;
   }
 
-  self.state = AudioEngineState::AudioEngineStatePaused;
+  if (self.state == AudioEngineState::AudioEngineStateRunning && [self hasSources]) {
+    return;
+  }
+
+  [self releaseSuspendedInput];
+}
+
+/// @brief Rebuilds the graph without the suspended input, which closes the microphone and
+/// switches voice processing off; a running engine is left `Paused`. Lock held.
+- (void)releaseSuspendedInput
+{
+  const BOOL wasRunning = self.state == AudioEngineState::AudioEngineStateRunning;
+
+  [self rebuildAudioEngine];
+
+  if (wasRunning) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+  }
+}
+
+- (bool)resumeInput:(NSError **)error
+{
+  BOOL wasPlaying = NO;
+
+  {
+    std::scoped_lock lock(_engineLock);
+    wasPlaying = self.state == AudioEngineState::AudioEngineStateRunning && [self hasSources];
+
+    if (self.inputRegistration.suspended) {
+      self.inputRegistration.suspended = NO;
+      const BOOL sinkStillRunning = self.inputNode != nil &&
+          self.state == AudioEngineState::AudioEngineStateRunning && [self.audioEngine isRunning];
+
+      if (!sinkStillRunning) {
+        if ([self.audioEngine isRunning]) {
+          [self.audioEngine stop];
+        }
+
+        self.graphNeedsRebuild = true;
+      }
+    }
+  }
+
+  if ([self startIfNecessary:error]) {
+    return true;
+  }
+
+  if (wasPlaying) {
+    std::scoped_lock lock(_engineLock);
+    [self notifyOutputRecoveryFailed];
+  }
+
+  return false;
 }
 
 - (void)stopIfNecessary
