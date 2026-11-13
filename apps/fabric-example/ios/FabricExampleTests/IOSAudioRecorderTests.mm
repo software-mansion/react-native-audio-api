@@ -952,10 +952,10 @@ public:
   XCTAssertTrue(openResult.is_ok(), @"%s",
                 openResult.is_err() ? openResult.unwrap_err().c_str() : "");
 
-  std::vector<float> samples(1024, 0.25f);
-  const float *channels[1] = {samples.data()};
+  audioapi::AudioBuffer input(1024, layout.channelCount, layout.sampleRate);
+  std::fill(input[0].begin(), input[0].end(), 0.25f);
   for (int block = 0; block < 40; ++block) {
-    XCTAssertTrue(encoder.encode(channels, 1024).is_ok());
+    XCTAssertTrue(encoder.encode(input, 1024).is_ok());
   }
   XCTAssertTrue(encoder.close().is_ok());
 
@@ -1027,16 +1027,12 @@ static const float kTolerance = 1e-5f;
   XCTAssertTrue(openResult.is_ok(), @"%s",
                 openResult.is_err() ? openResult.unwrap_err().c_str() : "");
 
-  std::vector<std::vector<float>> planar;
-  std::vector<const float *> channels;
-  for (float level : inputLevels) {
-    planar.emplace_back(framesPerBlock, level);
-  }
-  for (const auto &channel : planar) {
-    channels.push_back(channel.data());
+  audioapi::AudioBuffer input(framesPerBlock, inputChannelCount, sampleRate);
+  for (int channel = 0; channel < inputChannelCount; ++channel) {
+    std::fill(input[channel].begin(), input[channel].end(), inputLevels[channel]);
   }
   for (int block = 0; block < 8; ++block) {
-    XCTAssertTrue(encoder.encode(channels.data(), framesPerBlock).is_ok());
+    XCTAssertTrue(encoder.encode(input, framesPerBlock).is_ok());
   }
   XCTAssertTrue(encoder.close().is_ok());
 
