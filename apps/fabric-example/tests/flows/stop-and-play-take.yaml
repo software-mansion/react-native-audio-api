@@ -1,0 +1,15 @@
+executionPrerequisite: Audio I/O Playground is open with a recording in progress, or paused by an interruption
+steps:
+  - echo: Stop the recording
+  - scroll-to: { target: { id: recorder-stop } }
+  - tap: { id: recorder-stop }
+  - echo: Play the take back through the playback panel
+  - scroll-to: { target: { id: playback-source } }
+  - await: { text: { in: { id: playback-last-take }, contains: 'last take: take' } }
+  - tap: { id: playback-source }
+  - await: { visible: { id: playback-source-option-Last take } }
+  - tap: { id: playback-source-option-Last take }
+  - await: { hidden: { id: playback-source-option-Last take } }
+  - scroll-to: { target: { id: playback-play } }
+  - tap: { id: playback-play }
+  - await: { text: { in: { id: playback-status }, contains: source playing } }
