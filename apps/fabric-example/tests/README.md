@@ -27,6 +27,8 @@ A test exits non-zero at the first failed flow, unanswered prompt or "n" answer,
 |---|---|---|
 | `recording-and-playback.sh` | simulator or iPhone | speaks, then judges the played take |
 | `recording-interruption.sh` | physical iPhone | speaks, interrupts the recording, then judges the played take |
+| `leftover-playback-playground.sh` | physical iPhone | interrupts a recording with a Safari call, then listens for the previous take during the next recording (Audio I/O Playground) |
+| `leftover-playback-recorder-demo.sh` | physical iPhone | the same scenario on the Recorder demo |
 
 The iOS simulator never interrupts an audio session, so `recording-interruption.sh` fails there at
 `expect-interruption-logged`.
@@ -54,6 +56,7 @@ A test is a bash script that sources `harness.sh` and alternates between:
   names the state the previous step has to leave the app in.
 - `ask_to "<instruction>"` waits until the person presses Enter; a note typed first goes to the log.
 - `confirm "<question>"` fails the test unless the person answers "y", and logs what they observed.
+- `check "<question>"` is a `confirm` that lets the test continue: an "n" fails the test when it ends.
 - `journal "<text>"` adds a `[test]` line of your own to the run log.
 
 Record new fragments with Argent's e2e recorder against the Audio I/O Playground screen, whose
