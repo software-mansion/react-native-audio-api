@@ -118,6 +118,8 @@ const Audio = React.memo(
 
     const {
       fileSourceRef,
+      mediaElementSourceRef,
+      setMediaElementSource,
       ready: loaderReady,
       duration,
       loadForPlayback,
@@ -268,8 +270,8 @@ const Audio = React.memo(
         setVolume: setVolumeState,
         setMuted: setMutedState,
         setPlaybackRate,
-        getFileSourceNode: () =>
-          fileSourceRef.current?.getFileSourceNode() ?? null,
+        getMediaElementSource: () => mediaElementSourceRef.current,
+        setMediaElementSource,
       }),
       [
         pause,
@@ -278,7 +280,8 @@ const Audio = React.memo(
         setMutedState,
         setVolumeState,
         setPlaybackRate,
-        fileSourceRef,
+        mediaElementSourceRef,
+        setMediaElementSource,
       ]
     );
 

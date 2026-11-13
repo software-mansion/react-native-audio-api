@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
+import type AudioNode from '../core/AudioNode';
 import type BaseAudioContext from '../core/BaseAudioContext';
 import { probeDuration } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
@@ -43,6 +44,9 @@ type UseAudioSourceLoaderParams = {
 
 type UseAudioSourceLoaderResult = {
   fileSourceRef: RefObject<AudioFileSourceNode | null>;
+  /** The node the tag plays through; `null` stands for the context destination. */
+  mediaElementSourceRef: RefObject<AudioNode | null>;
+  setMediaElementSource: (mediaElementSource: AudioNode) => void;
   ready: boolean;
   duration: number;
   setDuration: Dispatch<SetStateAction<number>>;
@@ -71,6 +75,7 @@ export function useAudioSourceLoader({
   const [duration, setDuration] = useState(0);
 
   const fileSourceRef = useRef<AudioFileSourceNode>(null);
+  const mediaElementSourceRef = useRef<AudioNode | null>(null);
   const sourceRef = useRef<ArrayBuffer | string | null>(null);
   const isFetchingCancelled = useRef(false);
   const fullDataFetched = useRef(false);
@@ -89,6 +94,11 @@ export function useAudioSourceLoader({
   playbackRateRef.current = playbackRate;
   const preservesPitchRef = useRef(preservesPitch);
   preservesPitchRef.current = preservesPitch;
+
+  const setMediaElementSource = useCallback((mediaElementSource: AudioNode) => {
+    mediaElementSourceRef.current = mediaElementSource;
+    fileSourceRef.current?.setOutput(mediaElementSource);
+  }, []);
 
   const disposeSource = useCallback(() => {
     fileSourceRef.current?.stopPositionTracking();
@@ -135,6 +145,7 @@ export function useAudioSourceLoader({
     fileSource.setVolume(initialVolume);
     fileSource.setPlaybackRate(initialPlaybackRate);
     fileSource.setPreservesPitch(initialPreservesPitch);
+    fileSource.setOutput(mediaElementSourceRef.current);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoadRef.current();
@@ -279,6 +290,8 @@ export function useAudioSourceLoader({
 
   return {
     fileSourceRef,
+    mediaElementSourceRef,
+    setMediaElementSource,
     ready,
     duration,
     setDuration,

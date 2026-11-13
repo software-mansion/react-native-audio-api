@@ -1,7 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
-#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
@@ -375,34 +374,10 @@ void AudioFileSourceNode::start(double when) {
   positionChanged_.requestFlush();
 }
 
-void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
-  activeMediaBindingId_.store(bindingId, std::memory_order_release);
-}
-
-void AudioFileSourceNode::releaseMediaElementSource(uint64_t bindingId) {
-  uint64_t expected = bindingId;
-  activeMediaBindingId_.compare_exchange_strong(
-      expected, 0, std::memory_order_acq_rel, std::memory_order_acquire);
-}
-
-bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const {
-  if (bindingId == 0) {
-    return false;
-  }
-
-  return activeMediaBindingId_.load(std::memory_order_acquire) == bindingId;
-}
-
 void AudioFileSourceNode::pause() {
-  if (isUnscheduled()) {
-    // A source paused before its first start() counts as paused too: a media
-    // element node bound to it becomes destructible only while its source is paused.
-    playbackState_ = PlaybackState::PAUSED;
-  } else {
-    AudioScheduledSourceNode::pause();
-  }
+  AudioScheduledSourceNode::pause();
   // A deliberate pause is not a stall — don't leave a stale "buffering" state
-  // observed by JS once processDecodedOutput() stops being called below.
+  // observed by JS once processNode() stops decoding below.
   bufferingStateDispatcher_.advance(/* hasData */ true, 0);
 }
 
@@ -607,14 +582,6 @@ size_t AudioFileSourceNode::renderWithoutPitchPreservation(
   return inputFrames;
 }
 
-void AudioFileSourceNode::processNode(int framesToProcess) {
-  if (isRoutedThroughMediaElement()) {
-    audioBuffer_->zero();
-    return;
-  }
-  processDecodedOutput(framesToProcess);
-}
-
 std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPreflight(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
@@ -650,11 +617,8 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
   return std::nullopt;
 }
 
-void AudioFileSourceNode::processDecodedOutput(
-    int framesToProcess,
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer) {
-  const std::shared_ptr<DSPAudioBuffer> &processingBuffer =
-      outputBuffer != nullptr ? outputBuffer : audioBuffer_;
+void AudioFileSourceNode::processNode(int framesToProcess) {
+  const std::shared_ptr<DSPAudioBuffer> &processingBuffer = audioBuffer_;
 
   std::shared_ptr<BaseAudioContext> context;
   if (renderPreflight(processingBuffer, framesToProcess, context)) {

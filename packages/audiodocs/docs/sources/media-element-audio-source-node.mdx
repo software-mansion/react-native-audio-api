@@ -110,5 +110,6 @@ Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 
 #### Native routing
 
-- On native, the underlying file source is disconnected from the destination when this node is created so audio is not processed twice.
+- From the moment this node is created, the tag is heard only through it, including after it reaches its end and is played again. While the node is not connected to anything, the tag keeps playing silently, as in the browser.
+- To hear the tag unprocessed again, connect the node to the destination: a tag cannot be given back or routed through a second node.
 - Use the same [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) for transport controls (`play`, `pause`, `seekToTime`, `volume`).
