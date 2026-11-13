@@ -351,12 +351,13 @@ Result<FileInfo, std::string> IOSAudioRecorder::stop()
 
 void IOSAudioRecorder::pause()
 {
-  if (!isRecording()) {
+  auto expectedState = RecorderState::Recording;
+  if (!state_.compare_exchange_strong(
+          expectedState, RecorderState::Paused, std::memory_order_acq_rel)) {
     return;
   }
 
   [nativeRecorder_ pause];
-  state_.store(RecorderState::Paused, std::memory_order_release);
 }
 
 Result<NoneType, std::string> IOSAudioRecorder::rerouteInput()
@@ -366,12 +367,19 @@ Result<NoneType, std::string> IOSAudioRecorder::rerouteInput()
 
 Result<NoneType, std::string> IOSAudioRecorder::resume()
 {
-  if (!isPaused()) {
+  if (isIdle() || isRecording()) {
     return Ok(None);
   }
 
+  // Capture the system stopped still reads `Recording`, and nobody awaits its restart.
+  const bool isRestartingStoppedCapture = !isPaused();
+
   NSError *resumeError = nil;
   if (![nativeRecorder_ resume:&resumeError]) {
+    [nativeRecorder_ setInputArmed:false];
+    if (isRestartingStoppedCapture) {
+      handleInputNotification(AudioEngineInputNotificationRecoveryFailed, resumeError);
+    }
     return Err(
         std::string("Failed to resume native recorder: ") +
         [[AudioAPIError describe:resumeError] UTF8String]);
@@ -391,18 +399,10 @@ bool IOSAudioRecorder::isRecording() const
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
-/// Any thread. A stopped audio engine reads as paused, so an interrupted session looks paused.
+/// Any thread.
 bool IOSAudioRecorder::isPaused() const
 {
-  AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  auto currentState = state_.load(std::memory_order_acquire);
-
-  if (currentState == RecorderState::Idle) {
-    return false;
-  }
-
-  return currentState == RecorderState::Paused ||
-      [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
+  return state_.load(std::memory_order_acquire) == RecorderState::Paused;
 }
 
 /// Any thread.
