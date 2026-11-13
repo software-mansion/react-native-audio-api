@@ -55,7 +55,7 @@ for (const name of WEB_AUDIO_CLASSES) {
       continue;
     }
     throw new Error(
-      `Failed to load ${name} for WPT (${error.message}). Run yarn build first.`,
+      `Failed to load ${name} for WPT (${error.message}). Run pnpm build first.`,
       { cause: error }
     );
   }

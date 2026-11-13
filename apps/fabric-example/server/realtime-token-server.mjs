@@ -6,7 +6,7 @@ const model = 'gpt-realtime-2.1-mini';
 const missingKeyMessage =
   'Missing OPENAI_API_KEY on the token server. From the repository root, run ' +
   '`cp -n apps/fabric-example/.env.example apps/fabric-example/.env.local`, ' +
-  'set OPENAI_API_KEY in .env.local, then restart `yarn server`.';
+  'set OPENAI_API_KEY in .env.local, then restart `pnpm server`.';
 
 const session = {
   type: 'realtime',

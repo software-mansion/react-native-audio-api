@@ -9,14 +9,14 @@
 | **full** | smoke, then all extended categories | each mode’s default |
 
 ```bash
-yarn test:cpp                          # smoke
-yarn test:cpp:extended                 # all categories
-yarn test:cpp:extended -- graph
-yarn test:cpp:full
-yarn test:cpp:coverage                 # smoke + llvm-cov HTML
-yarn test:cpp:smoke --ubasan           # Address + UndefinedBehavior sanitizers
-yarn test:cpp:extended -- graph --tsan
-yarn test:cpp:extended -- graph --no-ubasan
+pnpm test:cpp                          # smoke
+pnpm test:cpp:extended                 # all categories
+pnpm test:cpp:extended -- graph
+pnpm test:cpp:full
+pnpm test:cpp:coverage                 # smoke + llvm-cov HTML
+pnpm test:cpp:smoke --ubasan           # Address + UndefinedBehavior sanitizers
+pnpm test:cpp:extended -- graph --tsan
+pnpm test:cpp:extended -- graph --no-ubasan
 bash common/cpp/test/run-tests.sh --help
 ```
 
@@ -32,8 +32,8 @@ Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
 **`GraphNodeGrowthTest` is smoke**, not `graph`: it is short (~100–200 ms) and needs unsanitized `AudioThreadGuard` (asserts `GTEST_SKIP` under ASan/TSan).
 
-**Add a category:** (1) gtest filter and CI path globs in `filters.sh`, (2) append the name to `CPP_TEST_EXTENDED_CATEGORIES`, (3) in `tests.yml` add a `workflow_dispatch` boolean and one `cpp-extended-*` job that calls `cpp-job.yml` with `run: yarn test:cpp:extended -- <category>`, `categories: <category>`, and `force`.
+**Add a category:** (1) gtest filter and CI path globs in `filters.sh`, (2) append the name to `CPP_TEST_EXTENDED_CATEGORIES`, (3) in `tests.yml` add a `workflow_dispatch` boolean and one `cpp-extended-*` job that calls `cpp-job.yml` with `run: pnpm test:cpp:extended -- <category>`, `categories: <category>`, and `force`.
 
 ### Docker (Linux leak / ASan)
 
-`yarn test:cpp:docker` runs `run-tests.sh` in Docker (default `extended`). Extra args are forwarded. Use this from macOS when you need Linux ASan leak detection.
+`pnpm test:cpp:docker` runs `run-tests.sh` in Docker (default `extended`). Extra args are forwarded. Use this from macOS when you need Linux ASan leak detection.
