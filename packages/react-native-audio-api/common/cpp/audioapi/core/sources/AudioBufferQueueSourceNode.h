@@ -20,16 +20,9 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
       const std::shared_ptr<BaseAudioContext> &context,
       const BaseAudioBufferSourceOptions &options);
 
-  /// @note Audio Thread only
-  void stop(double when) override;
-
   void start(double when) override;
   /// @note Audio Thread only
   void start(double when, double offset);
-  /// @note Audio Thread only
-  void pause();
-
-  void resume(double when);
 
   /// @note Audio Thread only
   void enqueueBuffer(
@@ -72,7 +65,6 @@ class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
   // User provided buffers
   std::list<std::pair<size_t, std::shared_ptr<AudioBuffer>>> buffers_;
 
-  bool isPaused_ = false;
   bool addExtraTailFrames_ = false;
   std::shared_ptr<AudioBuffer> tailBuffer_;
 
