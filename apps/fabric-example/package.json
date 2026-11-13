@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "lucide-react-native": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-svg": "catalog:",

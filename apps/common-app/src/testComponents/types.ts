@@ -25,5 +25,5 @@ export interface ControlAction {
   title: string;
   onPress: () => void;
   disabled?: boolean;
-  width?: number;
+  minWidth?: number;
 }

@@ -82,7 +82,6 @@ const Metronome: FC = () => {
         value={beatsPerBar}
         label="Beats"
         onValueChange={onBeatsPerBarChange}
-        minLabelWidth={50}
       />
     </Container>
   );

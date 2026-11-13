@@ -220,6 +220,7 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				FFBBC7DCD7B14E58B2D67A0D /* [CP] Embed Pods Frameworks */,
 				F76AD7E20DFECB04BAA2A91A /* [CP] Copy Pods Resources */,
+				954ABBC1552E440C8EF3B869 /* Copy nanoicons fonts */,
 			);
 			buildRules = (
 			);
@@ -408,6 +409,20 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-FabricExampleTestHost/Pods-FabricExampleTestHost-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		954ABBC1552E440C8EF3B869 /* Copy nanoicons fonts */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy nanoicons fonts";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\n        NANOICONS_DIR=\"${PROJECT_DIR}/nanoicons-fonts\"\n        if [ -d \"$NANOICONS_DIR\" ]; then\n          cp \"$NANOICONS_DIR\"/*.ttf \"${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/\" 2>/dev/null || true\n        fi\n      ";
 		};
 		E3BC4D20797660E18B5D8B86 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;

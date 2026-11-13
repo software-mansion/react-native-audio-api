@@ -233,7 +233,9 @@ const AudioParamPipeline: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const isUnmountedRef = useRef(false);
   const stopRequestedRef = useRef(false);
-  const currentOscRef = useRef<ReturnType<AudioContext['createOscillator']> | null>(null);
+  const currentOscRef = useRef<ReturnType<
+    AudioContext['createOscillator']
+  > | null>(null);
 
   const [audioStatuses, setAudioStatuses] = useState<
     Record<string, PlayStatus>
@@ -372,19 +374,19 @@ const AudioParamPipeline: FC = () => {
       title: isPlayingAll ? 'Running…' : 'Play All',
       onPress: playAll,
       disabled: isPlayingAll,
-      width: 110,
+      minWidth: 110,
     },
     {
       title: 'Stop',
       onPress: stopAll,
       disabled: !isPlayingAll,
-      width: 80,
+      minWidth: 80,
     },
     {
       title: 'Reset',
       onPress: reset,
       disabled: isPlayingAll,
-      width: 90,
+      minWidth: 90,
     },
   ];
 
@@ -401,8 +403,10 @@ const AudioParamPipeline: FC = () => {
   const playedCount = Object.values(audioStatuses).filter(
     (s) => s === 'done'
   ).length;
-  const passedCount = errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
-  const failedCount = errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
+  const passedCount =
+    errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
+  const failedCount =
+    errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
 
   const totalCount = ERROR_SUB_CASES.length;
   const hasAnyResults = playedCount > 0 || errorSteps !== null;
@@ -464,7 +468,7 @@ const AudioParamPipeline: FC = () => {
                 title={status === 'playing' ? 'Playing…' : 'Play'}
                 onPress={() => playTestCase(tc)}
                 disabled={status === 'playing' || isPlayingAll}
-                width={80}
+                minWidth={80}
               />
             </View>
           );
@@ -495,7 +499,6 @@ const AudioParamPipeline: FC = () => {
             title={errorRunning ? 'Running…' : 'Run Test'}
             onPress={runErrorTest}
             disabled={errorRunning || isPlayingAll}
-            width={100}
           />
         </View>
       </ScrollView>

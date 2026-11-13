@@ -1,13 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
-
-const MAX_LOG_ENTRIES = 300;
-
 export type Log = (line: string) => void;
-
-export interface LogEntry {
-  id: number;
-  text: string;
-}
 
 function pad(value: number, length = 2): string {
   return String(value).padStart(length, '0');
@@ -34,25 +25,12 @@ export function describeCall(name: string, ...args: unknown[]): string {
 }
 
 /**
- * Newest entry first. Every line is mirrored to `console.log` with a
- * `[playground]` prefix, so it interleaves with the native logs in Xcode and
- * Logcat.
+ * The `[playground]` prefix makes these lines easy to find among the native
+ * logs in Xcode and Logcat.
  */
-export function useLog() {
-  const [entries, setEntries] = useState<LogEntry[]>([]);
-  const nextId = useRef(0);
-
-  const log = useCallback<Log>((line) => {
-    const text = `${timestamp()} ${line}`;
-    console.log(`[playground] ${text}`);
-    const entry = { id: nextId.current++, text };
-    setEntries((previous) => [entry, ...previous].slice(0, MAX_LOG_ENTRIES));
-  }, []);
-
-  const clear = useCallback(() => setEntries([]), []);
-
-  return { entries, log, clear };
-}
+export const logToConsole: Log = (line) => {
+  console.log(`[playground] ${timestamp()} ${line}`);
+};
 
 /**
  * Logs `label`, runs the action, then logs `label: ok` or `label: failed:

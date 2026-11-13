@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 import {
   Audio,
   AudioTagHandle,
@@ -21,7 +21,6 @@ const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/m4a/sample4.m4a';
 // const DEMO_AUDIO_URL = 'https://filesamples.com/samples/audio/mp3/sample4.mp3';
 
 const AudioTag: React.FC = () => {
-  const { width: screenWidth } = useWindowDimensions();
   const [sliderVolume, setSliderVolume] = useState(1);
   const [sliderPlaybackRate, setSliderPlaybackRate] = useState(1);
   const audioRef = useRef<AudioTagHandle>(null);
@@ -150,7 +149,6 @@ const AudioTag: React.FC = () => {
             min={0}
             max={1}
             step={0.01}
-            minLabelWidth={70}
           />
           <Spacer.Vertical size={20} />
           <Slider
@@ -160,7 +158,6 @@ const AudioTag: React.FC = () => {
             min={0.25}
             max={4}
             step={0.25}
-            minLabelWidth={70}
           />
           <Spacer.Vertical size={12} />
         </View>
@@ -172,7 +169,6 @@ const AudioTag: React.FC = () => {
               : 'Route without MediaElement node'
           }
           onPress={handleMediaElementRouteChange}
-          width={screenWidth * 0.8}
         />
       </View>
     </Container>

@@ -1,40 +1,49 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
   useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
-import { runOnJS } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 const SLIDER_HEIGHT = 100;
 const THUMB_SIZE = 30;
 const TRACK_HEIGHT = SLIDER_HEIGHT - THUMB_SIZE;
 
-const AText = Animated.createAnimatedComponent(TextInput);
+const AnimatedValueText = Animated.createAnimatedComponent(TextInput);
 
 interface VerticalSliderProps {
   label: string;
+  /** Normalized position, 0 (bottom) to 1 (top). */
   value: number;
   labelColor?: string;
   valueColor?: string;
-  onValueChange: (val: number) => void;
+  onValueChange: (value: number) => void;
+  /**
+   * Snap points; when set, the fader snaps to the nearest one on release, draws
+   * a tick for each and hides its numeric value.
+   */
   possibleValues?: number[];
 }
 
+/**
+ * A hardware-style fader for the pedal bodies: a thin slot with a square cap
+ * you drag up and down, the label and value printed on the pedal.
+ */
 const VerticalSlider: React.FC<VerticalSliderProps> = ({
   label,
   value,
   labelColor = '#333',
   valueColor = '#555',
   onValueChange,
-  possibleValues
+  possibleValues,
 }) => {
   const progress = useSharedValue(value);
   const startValue = useSharedValue(0);
+  const hasSnapPoints = !!possibleValues && possibleValues.length > 0;
 
   useEffect(() => {
     progress.value = withSpring(value);
@@ -60,128 +69,96 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
     return closest;
   };
 
-  const handleValueChange = (val: number) => {
-    onValueChange(val);
-  };
-
   const gesture = usePanGesture({
     onActivate: () => {
       startValue.value = progress.value;
     },
-    onUpdate: (e) => {
-      const change = -e.translationY / TRACK_HEIGHT;
-      const newValue = startValue.value + change;
-      const clampedValue = Math.min(Math.max(newValue, 0), 1);
-      progress.value = clampedValue;
+    onUpdate: (event) => {
+      const next = startValue.value - event.translationY / TRACK_HEIGHT;
+      progress.value = Math.min(Math.max(next, 0), 1);
     },
     onDeactivate: () => {
-      if (possibleValues && possibleValues.length > 0) {
+      if (hasSnapPoints) {
         const snappedValue = findClosestValue(progress.value);
         progress.value = withSpring(snappedValue);
-        scheduleOnRN(handleValueChange, snappedValue);
+        scheduleOnRN(onValueChange, snappedValue);
       } else {
-        const finalValue = Math.min(Math.max(progress.value, 0), 1);
-        scheduleOnRN(handleValueChange, finalValue);
+        scheduleOnRN(onValueChange, Math.min(Math.max(progress.value, 0), 1));
       }
     },
   });
 
-  const thumbStyle = useAnimatedStyle(() => {
-    const translateY = (1 - progress.value) * TRACK_HEIGHT;
-    return {
-      transform: [{ translateY }],
-    };
-  });
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: (1 - progress.value) * TRACK_HEIGHT }],
+  }));
 
-  const renderTickMarks = () => {
-    if (!possibleValues || possibleValues.length === 0) {
-      return null;
-    }
-
-    return possibleValues.map((val, index) => {
-      const position = (1 - val) * TRACK_HEIGHT + THUMB_SIZE / 2;
-      return (
-        <View
-          key={index}
-          style={[
-            styles.tickMark,
-            {
-              top: position, // Center the tick mark
-            },
-          ]}
-        />
-      );
-    });
-  };
-
-  const displayProps = useAnimatedProps(() => {
-    if (possibleValues && possibleValues.length > 0) {
-      return {
-        defaultValue: '',
-        text: '',
-      };
-    }
-
-    return {
-      defaultValue: (value * 100).toString(),
-      text: (progress.value * 100).toFixed(0),
-    };
+  const valueProps = useAnimatedProps(() => {
+    const text = hasSnapPoints ? '' : (progress.value * 100).toFixed(0);
+    return { text, defaultValue: text };
   });
 
   return (
-    <View style={styles.sliderContainer}>
-      <Text style={[styles.sliderLabel, { color: labelColor }]}>{label}</Text>
-      <View style={styles.sliderTrackContainer}>
-        <View style={styles.sliderTrack} />
-        {renderTickMarks()}
+    <View style={styles.container}>
+      <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
+      <View style={styles.trackContainer}>
+        <View style={styles.track} />
+        {possibleValues?.map((snapValue) => (
+          <View
+            key={snapValue}
+            style={[
+              styles.tick,
+              { top: (1 - snapValue) * TRACK_HEIGHT + THUMB_SIZE / 2 },
+            ]}
+          />
+        ))}
         <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.sliderThumbHitArea, thumbStyle]}>
-            <View style={styles.sliderThumb} />
+          <Animated.View style={[styles.thumbHitArea, thumbStyle]}>
+            <View style={styles.thumb} />
           </Animated.View>
         </GestureDetector>
       </View>
-      <AText style={[styles.sliderValue, { color: valueColor }]} editable={false} animatedProps={displayProps} />
-      {/* <Text style={[styles.sliderValue, { color: valueColor }]}>
-        {getDisplayValue()}
-      </Text> */}
+      <AnimatedValueText
+        style={[styles.value, { color: valueColor }]}
+        editable={false}
+        animatedProps={valueProps}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  sliderContainer: {
+  container: {
     alignItems: 'center',
     gap: 5,
     height: SLIDER_HEIGHT + 40,
   },
-  sliderLabel: {
+  label: {
     fontWeight: 'bold',
     fontSize: 12,
   },
-  sliderTrackContainer: {
+  trackContainer: {
     width: 40,
     height: SLIDER_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  sliderTrack: {
+  track: {
     position: 'absolute',
     width: 4,
     height: '100%',
     backgroundColor: '#111',
     borderRadius: 2,
   },
-  tickMark: {
+  tick: {
     position: 'absolute',
+    left: '50%',
     width: 12,
     height: 2,
-    backgroundColor: '#fff',
+    marginLeft: -6,
     borderRadius: 1,
-    left: '50%',
-    marginLeft: -6, // Center horizontally
+    backgroundColor: '#fff',
   },
-  sliderThumbHitArea: {
+  thumbHitArea: {
     position: 'absolute',
     top: 0,
     width: 40,
@@ -189,19 +166,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sliderThumb: {
+  thumb: {
     width: 30,
     height: 15,
     backgroundColor: '#222',
     borderWidth: 1,
     borderColor: '#fff',
     borderRadius: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
+    boxShadow: '0 2px 2px rgba(0, 0, 0, 0.5)',
   },
-  sliderValue: {
+  value: {
+    padding: 0,
     fontSize: 10,
     fontVariant: ['tabular-nums'],
   },

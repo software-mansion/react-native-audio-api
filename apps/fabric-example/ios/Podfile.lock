@@ -14,6 +14,29 @@ PODS:
   - hermes-engine (260318099.0.4):
     - hermes-engine/Pre-built (= 260318099.0.4)
   - hermes-engine/Pre-built (260318099.0.4)
+  - LiquidGlass (0.8.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RCT-Folly (2024.11.18.00):
     - RCT-Folly/Default (= 2024.11.18.00)
     - ReactNativeDependencies
@@ -1351,6 +1374,53 @@ PODS:
     - Yoga
   - react-native-background-timer (2.4.1):
     - React-Core
+  - react-native-menu (2.0.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-nano-icons (1.0.1):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-FabricComponents
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-safe-area-context (5.9.0):
     - hermes-engine
     - RCTRequired
@@ -1430,6 +1500,53 @@ PODS:
     - React
     - React-bridging
     - React-callinvoker
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-slider (5.2.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - react-native-slider/common (= 5.2.2)
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-slider/common (5.2.2):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
     - React-Core
     - React-Core-prebuilt
     - React-cxxstableapi
@@ -1840,6 +1957,29 @@ PODS:
     - React-utils (= 0.88.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.88.0)
+  - ReactNavigation (8.0.0-alpha.51):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNAudioAPI (1.1.0):
     - hermes-engine
     - RCTRequired
@@ -2110,7 +2250,7 @@ PODS:
     - ReactNativeDependencies
     - RNWorklets
     - Yoga
-  - RNScreens (4.27.0):
+  - RNScreens (4.30.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2133,9 +2273,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNScreens/common (= 4.27.0)
+    - RNScreens/common (= 4.30.0)
     - Yoga
-  - RNScreens/common (4.27.0):
+  - RNScreens/common (4.30.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2293,6 +2433,7 @@ DEPENDENCIES:
   - fmt (from `build/rndeps-facades/fmt`)
   - glog (from `build/rndeps-facades/glog`)
   - hermes-engine (from `../../../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - "LiquidGlass (from `../../../node_modules/@callstack/liquid-glass`)"
   - RCT-Folly (from `build/rndeps-facades/RCT-Folly`)
   - RCTDeprecation (from `build/rncore-facades/RCTDeprecation`)
   - RCTRequired (from `build/rncore-facades/RCTRequired`)
@@ -2335,8 +2476,11 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - React-mutationobservernativemodule (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver`)
   - react-native-background-timer (from `../../../node_modules/react-native-background-timer`)
+  - "react-native-menu (from `../../../node_modules/@react-native-menu/menu`)"
+  - react-native-nano-icons (from `../../../node_modules/react-native-nano-icons`)
   - react-native-safe-area-context (from `../../../node_modules/react-native-safe-area-context`)
   - "react-native-skia (from `../../../node_modules/@shopify/react-native-skia`)"
+  - "react-native-slider (from `../../../node_modules/@react-native-community/slider`)"
   - React-NativeModulesApple (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../../../node_modules/react-native/ReactCommon/react/networking`)
   - React-oscompat (from `../../../node_modules/react-native/ReactCommon/oscompat`)
@@ -2374,6 +2518,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../../../node_modules/react-native/ReactCommon`)
   - ReactNativeDependencies (from `../../../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
+  - "ReactNavigation (from `../../../node_modules/@react-navigation/native`)"
   - RNAudioAPI (from `../../../packages/react-native-audio-api`)
   - RNAudioWorklets (from `../../../packages/react-native-audio-worklets`)
   - RNGestureHandler (from `../../../node_modules/react-native-gesture-handler`)
@@ -2400,6 +2545,8 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../../../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-v260318099.0.2
+  LiquidGlass:
+    :path: "../../../node_modules/@callstack/liquid-glass"
   RCT-Folly:
     :path: build/rndeps-facades/RCT-Folly
   RCTDeprecation:
@@ -2482,10 +2629,16 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver"
   react-native-background-timer:
     :path: "../../../node_modules/react-native-background-timer"
+  react-native-menu:
+    :path: "../../../node_modules/@react-native-menu/menu"
+  react-native-nano-icons:
+    :path: "../../../node_modules/react-native-nano-icons"
   react-native-safe-area-context:
     :path: "../../../node_modules/react-native-safe-area-context"
   react-native-skia:
     :path: "../../../node_modules/@shopify/react-native-skia"
+  react-native-slider:
+    :path: "../../../node_modules/@react-native-community/slider"
   React-NativeModulesApple:
     :path: "../../../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-networking:
@@ -2560,6 +2713,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon"
   ReactNativeDependencies:
     :podspec: "../../../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
+  ReactNavigation:
+    :path: "../../../node_modules/@react-navigation/native"
   RNAudioAPI:
     :path: "../../../packages/react-native-audio-api"
   RNAudioWorklets:
@@ -2587,6 +2742,7 @@ SPEC CHECKSUMS:
   fmt: ba0886e864ebb21d14c98b2e12e164b8002f5b93
   glog: 3cf7cb46f743c4bc758ae3e6d9c15bd1b4cfd6d4
   hermes-engine: 9458d26f2edf7c65ad37da5c067990c267ac807f
+  LiquidGlass: 90d4f92e7a6c8577f38515c30a3fe36d3c157760
   RCT-Folly: 82921e585c0400eda46fac1068297aa9dfb035e4
   RCTDeprecation: e134f2a2c096a6450f5fcbbe949531f913a2ff04
   RCTRequired: f1a68295837ee8f91e112ed1b5694d12e7ff1784
@@ -2628,8 +2784,11 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 8b3aaa5f3b907ecf071b105589868d9f027a448d
   React-mutationobservernativemodule: 11d77d3f7360578f07847843544ada23cc473049
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
+  react-native-menu: 4b594e5520ae74d069e3a088645823d557e2e7e2
+  react-native-nano-icons: 4076e6ad207208090ea1f653e741887e8f026cae
   react-native-safe-area-context: 0613ae3f639560e81b2b1f84382a834ef5a205d2
   react-native-skia: 293d9a1164933055b181712ae6bb8052583de4b6
+  react-native-slider: 5f655882a4ec96c21d705abb305419c257a2f12b
   React-NativeModulesApple: 52f3def085f129de1307e3eb78e26729ff70f421
   React-networking: 1e6441349ac72bfd4f7a79c300c3dd76993a7058
   React-oscompat: e64123dd8199f9e99cede19fa542c3da3445481e
@@ -2667,11 +2826,12 @@ SPEC CHECKSUMS:
   ReactCodegen: 6b0a01dfedf4d3949c11b9ed9ca17f1407c8b70a
   ReactCommon: 145a14b942b19fc2fe38927f261955ada56978aa
   ReactNativeDependencies: d3b7423ba1e52525e42085c8470109abde583d2e
+  ReactNavigation: 1cf3b6680f489f3dcddddab84a855717421796f7
   RNAudioAPI: e90723a383dc28ce8a22e23ef6489c5af7a5f221
   RNAudioWorklets: 067cda814a268335c0e3b7272c6472bee5c7941e
   RNGestureHandler: 68686990357a73f5ed0a0db98b4885eb36c4cb77
   RNReanimated: ed309a4f658a5bb0e807df58424c5aea7a7395de
-  RNScreens: 1b386604ba6e45b594cb15714a078d7dca096211
+  RNScreens: 6d0d3b7819284dbf9f222899eb819f069fce4b8b
   RNSVG: 2763b18e0405296e97c651358716e997ce041b1f
   RNWorklets: 0d23420091001705e895540acae9fa4f67d6c21e
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871

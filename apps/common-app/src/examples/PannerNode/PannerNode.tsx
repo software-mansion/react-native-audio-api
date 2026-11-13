@@ -1,9 +1,18 @@
-import React, { useEffect, useRef, useState, FC } from 'react';
+import React, {
+  FC,
+  memo,
+  MutableRefObject,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   AudioBuffer,
   AudioBufferSourceNode,
   AudioContext,
+  AudioParam,
   PannerNode,
 } from 'react-native-audio-api';
 
@@ -13,7 +22,6 @@ import { colors, layout } from '../../styles';
 const MUSIC_URL =
   'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
-const LABEL_WIDTH = 100;
 const ORBIT_RADIUS = 2;
 const VIEW_SIZE = 220;
 const VIEW_SCALE = VIEW_SIZE / 2 / 4.5;
@@ -121,7 +129,10 @@ const figureEightOutline = Array.from({ length: 48 }, (_, i) => {
 /** Degrees in the horizontal plane: 0 in front, -90 left, 90 right, ±180 behind. */
 const azimuthOf = ({ x, z }: Vec3) => (Math.atan2(x, -z) * 180) / Math.PI;
 
-/** Equal-power panning folds the back half onto the front, so behind sounds centred. */
+/**
+ * Equal-power panning folds the back half onto the front, so behind sounds
+ * centred.
+ */
 const expectedBalance = (position: Vec3) => {
   const azimuth = azimuthOf(position);
   const folded =
@@ -163,15 +174,31 @@ const describeFacing = (pose: Pose) => {
   return `Speaker turned ${Math.round(angle)}° away from you`;
 };
 
-const applyPose = (panner: PannerNode, pose: Pose) => {
+/**
+ * How quickly the panner glides to each new pose, in seconds. Assigning
+ * `.value` once per animation frame steps the gains ~60 times a second, which
+ * is heard as a buzz at the frame rate.
+ */
+const POSE_SMOOTHING_SECONDS = 0.03;
+/**
+ * How far the animation clock may run past `currentTime`. The audio clock
+ * stands still for whole output buffers and then jumps (up to ~50 ms on some
+ * Android devices), so the animation carries it forward with wall time in
+ * between; the cap freezes the motion if audio stalls instead of drifting.
+ */
+const CLOCK_LEAD_CAP_SECONDS = 0.1;
+
+const applyPose = (panner: PannerNode, pose: Pose, now: number) => {
   const { position } = pose;
   const facing = facingOf(pose);
-  panner.positionX.value = position.x;
-  panner.positionY.value = position.y;
-  panner.positionZ.value = position.z;
-  panner.orientationX.value = facing.x;
-  panner.orientationY.value = facing.y;
-  panner.orientationZ.value = facing.z;
+  const glide = (param: AudioParam, value: number) =>
+    param.setTargetAtTime(value, now, POSE_SMOOTHING_SECONDS);
+  glide(panner.positionX, position.x);
+  glide(panner.positionY, position.y);
+  glide(panner.positionZ, position.z);
+  glide(panner.orientationX, facing.x);
+  glide(panner.orientationY, facing.y);
+  glide(panner.orientationZ, facing.z);
 };
 
 const BalanceMeter: FC<{ balance: number }> = ({ balance }) => (
@@ -198,6 +225,32 @@ const toViewPoint = ({ x, z }: { x: number; z: number }) => {
   };
 };
 
+/** The figure-8 outline never moves, so it is not re-rendered every frame. */
+const FigureEightPath = memo(() => (
+  <>
+    {figureEightOutline.map((point, i) => {
+      const pathPoint = toViewPoint(point);
+      return (
+        <View
+          key={i}
+          style={[
+            styles.pathDot,
+            { left: pathPoint.left - 1, top: pathPoint.top - 1 },
+          ]}
+        />
+      );
+    })}
+  </>
+));
+
+const Head = memo(() => (
+  <View style={styles.head}>
+    <View style={styles.nose} />
+    <Text style={styles.earLeft}>L</Text>
+    <Text style={styles.earRight}>R</Text>
+  </View>
+));
+
 const TopDownView: FC<{ pose: Pose; showPath: boolean }> = ({
   pose,
   showPath,
@@ -207,24 +260,8 @@ const TopDownView: FC<{ pose: Pose; showPath: boolean }> = ({
   const { left, top } = toViewPoint(pose.position);
   return (
     <View style={styles.view}>
-      {showPath &&
-        figureEightOutline.map((point, i) => {
-          const pathPoint = toViewPoint(point);
-          return (
-            <View
-              key={i}
-              style={[
-                styles.pathDot,
-                { left: pathPoint.left - 1, top: pathPoint.top - 1 },
-              ]}
-            />
-          );
-        })}
-      <View style={styles.head}>
-        <View style={styles.nose} />
-        <Text style={styles.earLeft}>L</Text>
-        <Text style={styles.earRight}>R</Text>
-      </View>
+      {showPath && <FigureEightPath />}
+      <Head />
       <View
         style={[
           styles.speaker,
@@ -245,14 +282,103 @@ const TopDownView: FC<{ pose: Pose; showPath: boolean }> = ({
   );
 };
 
+/** What the screen shows for one moment of the animation. */
+interface Frame {
+  pose: Pose;
+  mode: Mode;
+  stepIndex: number;
+  stepProgress: number;
+}
+
+/** Receives, from the loop, the frame the listener is hearing right now. */
+type FrameSink = (frame: Frame) => void;
+
+interface LivePanelProps {
+  sinkRef: MutableRefObject<FrameSink | null>;
+  isPlaying: boolean;
+  mode: Mode;
+  stepIndex: number;
+}
+
+/**
+ * Everything that changes every animation frame. It holds the per-frame state
+ * itself, so a frame re-renders only these readouts instead of the whole
+ * screen, which kept the JS thread at ~20 fps on a mid-range Android phone.
+ */
+const LivePanel: FC<LivePanelProps> = ({
+  sinkRef,
+  isPlaying,
+  mode: selectedMode,
+  stepIndex: selectedStepIndex,
+}) => {
+  const [frame, setFrame] = useState<Frame>({
+    pose: at(0, 0, -ORBIT_RADIUS),
+    mode: selectedMode,
+    stepIndex: selectedStepIndex,
+    stepProgress: 0,
+  });
+
+  useLayoutEffect(() => {
+    sinkRef.current = setFrame;
+    return () => {
+      sinkRef.current = null;
+    };
+  }, [sinkRef]);
+
+  // While playing, the loop delivers mode and step changes once they are heard.
+  useEffect(() => {
+    if (!isPlaying) {
+      setFrame((current) => ({
+        ...current,
+        mode: selectedMode,
+        stepIndex: selectedStepIndex,
+        stepProgress: 0,
+      }));
+    }
+  }, [isPlaying, selectedMode, selectedStepIndex]);
+
+  const { pose, mode, stepIndex, stepProgress } = frame;
+  const step = GUIDED_STEPS[stepIndex];
+  const expectation =
+    mode === 'figureEight'
+      ? describeFigureEightPosition(pose.position)
+      : step.expect;
+
+  return (
+    <>
+      {mode === 'guided' && (
+        <>
+          <Text style={styles.section}>
+            Step {stepIndex + 1}/{GUIDED_STEPS.length}: {step.title}
+          </Text>
+          <View style={styles.progressTrack}>
+            <View
+              style={[styles.progressFill, { width: `${stepProgress * 100}%` }]}
+            />
+          </View>
+          <Spacer.Vertical size={8} />
+        </>
+      )}
+
+      <Text style={styles.expectLabel}>You should hear</Text>
+      <Text style={styles.expect}>{expectation}</Text>
+      <Text style={styles.facing}>{describeFacing(pose)}</Text>
+      <Spacer.Vertical size={12} />
+      <BalanceMeter balance={expectedBalance(pose.position)} />
+      <Spacer.Vertical size={16} />
+
+      <TopDownView pose={pose} showPath={mode === 'figureEight'} />
+    </>
+  );
+};
+
 const PannerNodeExample: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('figureEight');
   const [periodSeconds, setPeriodSeconds] = useState(8);
-  const [pose, setPose] = useState<Pose>(at(0, 0, -ORBIT_RADIUS));
   const [stepIndex, setStepIndex] = useState(0);
-  const [stepProgress, setStepProgress] = useState(0);
+  const frameSinkRef = useRef<FrameSink | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
@@ -264,7 +390,11 @@ const PannerNodeExample: FC = () => {
   settingsRef.current = { mode, periodSeconds };
   const pathAngleRef = useRef(0);
   const guidedRef = useRef({ index: 0, startTime: 0 });
+  /** Animation clock: `currentTime` carried forward between buffer jumps. */
   const lastTimeRef = useRef(0);
+  const lastWallTimeRef = useRef(0);
+  /** Recent frames by animation time, oldest first, still waiting to be heard. */
+  const pendingFramesRef = useRef<{ time: number; frame: Frame }[]>([]);
 
   useEffect(() => {
     const ctx = new AudioContext();
@@ -289,11 +419,9 @@ const PannerNodeExample: FC = () => {
   }, []);
 
   const goToStep = (index: number) => {
-    const ctx = audioContextRef.current;
     const wrapped = (index + GUIDED_STEPS.length) % GUIDED_STEPS.length;
-    guidedRef.current = { index: wrapped, startTime: ctx?.currentTime ?? 0 };
+    guidedRef.current = { index: wrapped, startTime: lastTimeRef.current };
     setStepIndex(wrapped);
-    setStepProgress(0);
   };
 
   const tick = () => {
@@ -302,12 +430,24 @@ const PannerNodeExample: FC = () => {
     if (!ctx || !panner) {
       return;
     }
-    const now = ctx.currentTime;
+    const wallTime = performance.now() / 1000;
+    const wallElapsed = wallTime - lastWallTimeRef.current;
+    lastWallTimeRef.current = wallTime;
+    const audioTime = ctx.currentTime;
+    const now = Math.max(
+      lastTimeRef.current,
+      audioTime,
+      Math.min(
+        lastTimeRef.current + wallElapsed,
+        audioTime + CLOCK_LEAD_CAP_SECONDS
+      )
+    );
     const elapsed = now - lastTimeRef.current;
     lastTimeRef.current = now;
 
     const settings = settingsRef.current;
     let nextPose: Pose;
+    let progress = 0;
     if (settings.mode === 'figureEight') {
       pathAngleRef.current += (2 * Math.PI * elapsed) / settings.periodSeconds;
       nextPose = figureEightPose(pathAngleRef.current);
@@ -317,16 +457,33 @@ const PannerNodeExample: FC = () => {
         goToStep(guidedRef.current.index + 1);
         step = GUIDED_STEPS[guidedRef.current.index];
       }
-      const progress = Math.min(
+      progress = Math.min(
         (now - guidedRef.current.startTime) / step.durationSeconds,
         1
       );
-      setStepProgress(progress);
       nextPose = step.pose(progress);
     }
 
-    applyPose(panner, nextPose);
-    setPose(nextPose);
+    applyPose(panner, nextPose, now);
+
+    // The pose scheduled at `now` reaches the speaker `outputLatency` later
+    // (far more on Android than on iOS) and the glide trails it by
+    // about one time constant, so the screen shows the frame heard right now.
+    const pending = pendingFramesRef.current;
+    pending.push({
+      time: now,
+      frame: {
+        pose: nextPose,
+        mode: settings.mode,
+        stepIndex: guidedRef.current.index,
+        stepProgress: progress,
+      },
+    });
+    const audibleTime = now - ctx.outputLatency - POSE_SMOOTHING_SECONDS;
+    while (pending.length > 1 && pending[1].time <= audibleTime) {
+      pending.shift();
+    }
+    frameSinkRef.current?.(pending[0].frame);
     frameRef.current = requestAnimationFrame(tick);
   };
 
@@ -353,6 +510,8 @@ const PannerNodeExample: FC = () => {
     pannerRef.current = panner;
 
     lastTimeRef.current = ctx.currentTime;
+    lastWallTimeRef.current = performance.now() / 1000;
+    pendingFramesRef.current = [];
     goToStep(0);
     source.start();
     frameRef.current = requestAnimationFrame(tick);
@@ -382,12 +541,6 @@ const PannerNodeExample: FC = () => {
     goToStep(0);
   };
 
-  const step = GUIDED_STEPS[stepIndex];
-  const expectation =
-    mode === 'figureEight'
-      ? describeFigureEightPosition(pose.position)
-      : step.expect;
-
   return (
     <Container>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -415,39 +568,18 @@ const PannerNodeExample: FC = () => {
         <View style={styles.row}>
           <Button
             onPress={handlePlayPause}
-            title={
-              isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play'
-            }
+            title={isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play'}
             disabled={isLoading}
           />
         </View>
         <Spacer.Vertical size={20} />
 
-        {mode === 'guided' && (
-          <>
-            <Text style={styles.section}>
-              Step {stepIndex + 1}/{GUIDED_STEPS.length}: {step.title}
-            </Text>
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${stepProgress * 100}%` },
-                ]}
-              />
-            </View>
-            <Spacer.Vertical size={8} />
-          </>
-        )}
-
-        <Text style={styles.expectLabel}>You should hear</Text>
-        <Text style={styles.expect}>{expectation}</Text>
-        <Text style={styles.facing}>{describeFacing(pose)}</Text>
-        <Spacer.Vertical size={12} />
-        <BalanceMeter balance={expectedBalance(pose.position)} />
-        <Spacer.Vertical size={16} />
-
-        <TopDownView pose={pose} showPath={mode === 'figureEight'} />
+        <LivePanel
+          sinkRef={frameSinkRef}
+          isPlaying={isPlaying}
+          mode={mode}
+          stepIndex={stepIndex}
+        />
         <Spacer.Vertical size={16} />
 
         {mode === 'figureEight' ? (
@@ -458,7 +590,6 @@ const PannerNodeExample: FC = () => {
             min={4}
             max={16}
             step={0.5}
-            minLabelWidth={LABEL_WIDTH}
           />
         ) : (
           <View style={styles.row}>
@@ -468,10 +599,7 @@ const PannerNodeExample: FC = () => {
             >
               <Text style={styles.chipText}>Previous</Text>
             </Pressable>
-            <Pressable
-              style={styles.chip}
-              onPress={() => goToStep(stepIndex)}
-            >
+            <Pressable style={styles.chip} onPress={() => goToStep(stepIndex)}>
               <Text style={styles.chipText}>Repeat</Text>
             </Pressable>
             <Pressable

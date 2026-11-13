@@ -1,4 +1,5 @@
 import type {
+  AnalyserNode,
   AudioBufferQueueSourceNode,
   AudioContext,
 } from 'react-native-audio-api';
@@ -10,8 +11,15 @@ type AssistantAudio = {
   renderedMs: number;
 };
 
+/** Samples per output level reading (about 43 ms at 24 kHz). */
+const LEVEL_WINDOW = 1024;
+
 export class AssistantPlayback {
   private readonly queue: AudioBufferQueueSourceNode;
+  /** Sits between the queue and the speakers to measure the reply's level. */
+  private readonly analyser: AnalyserNode;
+  private readonly levelSamples = new Float32Array(LEVEL_WINDOW);
+  private speaking = false;
   private started = false;
   private closed = false;
   private generation = 0;
@@ -27,10 +35,14 @@ export class AssistantPlayback {
   constructor(
     private readonly context: AudioContext,
     private readonly canPlay: () => boolean,
-    private readonly onError: (message: string) => void
+    private readonly onError: (message: string) => void,
+    private readonly onSpeakingChange: (speaking: boolean) => void
   ) {
     this.queue = context.createBufferQueueSource();
-    this.queue.connect(context.destination);
+    this.analyser = context.createAnalyser();
+    this.analyser.fftSize = LEVEL_WINDOW;
+    this.queue.connect(this.analyser);
+    this.analyser.connect(context.destination);
     this.queue.onbufferended = ({ bufferId }) => {
       if (this.closed || !this.canPlay()) {
         return;
@@ -43,7 +55,26 @@ export class AssistantPlayback {
           queued.audio.renderedMs += queued.durationMs;
         }
       }
+      if (this.pendingBuffers === 0) {
+        this.setSpeaking(false);
+      }
     };
+  }
+
+  /** The latest stretch of the reply's audio, while it's playing. */
+  readOutput(): Float32Array | null {
+    if (!this.speaking) {
+      return null;
+    }
+    this.analyser.getFloatTimeDomainData(this.levelSamples);
+    return this.levelSamples;
+  }
+
+  private setSpeaking(speaking: boolean) {
+    if (this.speaking !== speaking) {
+      this.speaking = speaking;
+      this.onSpeakingChange(speaking);
+    }
   }
 
   enqueue(
@@ -82,6 +113,7 @@ export class AssistantPlayback {
           return;
         }
         const bufferId = this.queue.enqueueBuffer(buffer);
+        this.setSpeaking(true);
         this.queued.set(bufferId, {
           audio,
           durationMs: buffer.duration * 1000,
@@ -111,6 +143,7 @@ export class AssistantPlayback {
     this.queued.clear();
     this.pendingBuffers = 0;
     this.queue.clearBuffers();
+    this.setSpeaking(false);
     return audio;
   }
 
@@ -121,6 +154,7 @@ export class AssistantPlayback {
       this.interrupt();
       this.queue.stop();
       this.queue.disconnect();
+      this.analyser.disconnect();
     } catch {
       // Queue shutdown can race with a native audio-context teardown.
     }
