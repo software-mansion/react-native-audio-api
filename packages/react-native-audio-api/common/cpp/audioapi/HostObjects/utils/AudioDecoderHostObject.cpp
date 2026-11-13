@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
 #include <audioapi/decoding/AudioDecoding.h>
+#include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
@@ -45,7 +46,7 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto sampleRate = static_cast<float>(args[1].getNumber());
 
   auto promise = promiseVendor_->createAsyncPromise(
-      [bytes = std::vector<uint8_t>(data, data + size), sampleRate]() -> PromiseResolver {
+      [bytes = decoding::EncodedBytes(data, data + size), sampleRate]() -> PromiseResolver {
         auto result = audiodecoding::decodeWithMemoryBlock(bytes.data(), bytes.size(), sampleRate);
 
         if (result.is_err()) {
