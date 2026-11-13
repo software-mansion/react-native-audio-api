@@ -58,7 +58,12 @@ start_recorder() {
 
 finish_run() {
   local status=$?
-  if [[ $status -eq 0 ]]; then
+  trap - EXIT
+  if [[ $status -eq 0 && $FAILED_CHECKS -gt 0 ]]; then
+    status=1
+    journal "FAIL: $FAILED_CHECKS failed check(s)"
+    echo "FAIL: $FAILED_CHECKS failed check(s)" >&2
+  elif [[ $status -eq 0 ]]; then
     journal "PASS"
     echo "PASS: $TEST_NAME"
   fi
@@ -69,6 +74,7 @@ finish_run() {
     rm -f "$RECORDER_INPUT"
     echo "Log: $LOG_FILE"
   fi
+  exit "$status"
 }
 
 # The library reads AUDIO_LOG_LEVEL once per launch and logs only warnings without it. Argent's
@@ -113,6 +119,22 @@ confirm() {
   fi
 }
 
+# Like `confirm`, but an "n" is remembered and fails the test when it ends, so the steps after it
+# still run.
+check() {
+  local answer observed
+  journal "asked: $1"
+  printf '\n?? %s [y/n] ' "$1"
+  read -r answer || fail "nobody answered: $1"
+  journal "answered: $answer"
+  if [[ "$answer" != [yY]* ]]; then
+    read -r -p "   What did you observe instead? " observed || true
+    journal "FAILED CHECK: $1${observed:+ (observed: $observed)}"
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+  fi
+}
+
+FAILED_CHECKS=0
 command -v argent >/dev/null || fail "argent CLI not found, install it with: npm i -g @swmansion/argent"
 DEVICE="${E2E_DEVICE:-$(only_booted_simulator)}"
 TEST_NAME="$(basename "$0" .sh)"

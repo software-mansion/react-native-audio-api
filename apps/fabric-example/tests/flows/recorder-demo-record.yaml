@@ -1,0 +1,9 @@
+executionPrerequisite: The Recorder demo is open, idle or still playing a take
+steps:
+  - echo: Return to idle if a take is still playing, then start recording
+  - when: { text: { in: { id: record-status }, equals: 'Playing...' } }
+    steps:
+      - tap: { id: record-toggle }
+      - await: { text: { in: { id: record-status }, equals: Idle } }
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Recording...' } }

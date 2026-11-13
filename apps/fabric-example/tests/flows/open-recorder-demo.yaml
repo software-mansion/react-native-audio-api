@@ -1,0 +1,15 @@
+executionPrerequisite: FabricExample was just launched
+steps:
+  - await: { visible: { text: Demo Apps } }
+  - await: { idle: true, stableFor: 1000 }
+  - echo: Dismiss the LogBox banner that covers the tab bar
+  - when: { visible: { text: Open debugger to view warnings } }
+    steps:
+      - tap: { role: Image, after: { text: Open debugger to view warnings } }
+      - await: { hidden: { text: Open debugger to view warnings } }
+  - echo: Open the Demo Apps tab, then the Recorder demo
+  - tap: { text: Demo Apps }
+  - await: { visible: { text: Recorder } }
+  - await: { idle: true }
+  - tap: { text: Recorder }
+  - await: { text: { in: { id: record-status }, equals: Idle } }

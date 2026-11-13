@@ -1,0 +1,10 @@
+executionPrerequisite: Audio I/O Playground is open at or below the Playback panel, a take was played or is still playing
+steps:
+  - echo: Disconnect the source if it is still playing, without stopping it
+  - scroll-to: { target: { id: playback-status }, direction: up }
+  - when: { text: { in: { id: playback-status }, contains: source playing } }
+    steps:
+      - scroll-to: { target: { id: playback-disconnect } }
+      - tap: { id: playback-disconnect }
+      - scroll-to: { target: { id: playback-status }, direction: up }
+      - await: { text: { in: { id: playback-status }, contains: no source } }

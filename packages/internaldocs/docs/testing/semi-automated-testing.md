@@ -113,6 +113,7 @@ bash apps/fabric-example/tests/recording-and-playback.sh
 |---|---|---|
 | `recording-and-playback.sh` | simulator or iPhone | speaks, then judges the played take |
 | `recording-interruption.sh` | physical iPhone | speaks, interrupts the recording, then judges the played take |
+| `leftover-playback-playground.sh`, `leftover-playback-recorder-demo.sh` | physical iPhone | interrupts a recording with a Safari call, then listens for the previous take during the next recording |
 
 With more than one simulator booted, or for a physical iPhone, set `E2E_DEVICE=<udid>`. A build signed for a physical iPhone also needs `APP_BUNDLE_ID`. The iOS simulator never interrupts an audio session, so the interruption test only passes on hardware.
 

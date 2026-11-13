@@ -1,0 +1,7 @@
+executionPrerequisite: The Recorder demo is in the foreground and shows a recording in progress
+steps:
+  - echo: Stop the recording and start playing the take
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: Ready to Play } }
+  - tap: { id: record-toggle }
+  - await: { text: { in: { id: record-status }, equals: 'Playing...' } }
