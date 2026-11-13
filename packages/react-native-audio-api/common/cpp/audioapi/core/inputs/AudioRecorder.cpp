@@ -105,7 +105,7 @@ void AudioRecorder::disableFileOutput() {
   }
 }
 
-Result<NoneType, std::string> AudioRecorder::setupFileWriter(
+Result<NoneType, std::string> AudioRecorder::prepareFileWriter(
     const std::shared_ptr<AudioFileProperties> &properties,
     const StreamFormat &format) {
   file_.target =
@@ -218,7 +218,7 @@ Result<NoneType, std::string> AudioRecorder::prepareAdapterNode(const StreamForm
 
 Result<NoneType, std::string> AudioRecorder::prepareOutputs(const StreamFormat &format) {
   if (file_.isWanted()) {
-    auto writerResult = setupFileWriter(fileProperties_, format);
+    auto writerResult = prepareFileWriter(fileProperties_, format);
     if (!writerResult.is_ok()) {
       return writerResult;
     }

@@ -61,10 +61,22 @@ static bool collectPlanarInputChannels(
   return true;
 }
 
-static void stopStartedRecorder(NativeAudioRecorder *nativeRecorder)
+static void stopRecorder(NativeAudioRecorder *nativeRecorder)
 {
   [nativeRecorder setInputArmed:false];
   [nativeRecorder stop];
+}
+
+static std::string withInputDiagnostics(
+    std::string message,
+    AudioSessionManager *audioSessionManager)
+{
+  message += "; ";
+  message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
+#if TARGET_OS_SIMULATOR
+  message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
+#endif
+  return message;
 }
 
 /// JS thread only. Only the iOS fields of @p options are read. Buffers are sized in start().
@@ -218,47 +230,32 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
     @try {
       didStartNativeRecorder = [nativeRecorder_ start:&nativeStartError];
     } @catch (NSException *exception) {
-      stopStartedRecorder(nativeRecorder_);
+      stopRecorder(nativeRecorder_);
 
       std::string message = "Failed to start native recorder";
       message += ": exception={name=";
       message += [[exception.name description] UTF8String];
       message += ", reason=";
       message += [[(exception.reason ?: @"<none>") description] UTF8String];
-      message += "}; ";
-      message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
+      message += '}';
 
-#if TARGET_OS_SIMULATOR
-      message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
-#endif
-
-      return Err(message);
+      return Err(withInputDiagnostics(std::move(message), audioSessionManager));
     }
 
     if (!didStartNativeRecorder) {
       auto message = std::string("Failed to start native recorder: ") +
           [[AudioAPIError describe:nativeStartError] UTF8String];
-      message += "; ";
-      message += [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
-
-#if TARGET_OS_SIMULATOR
-      message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
-#endif
-
-      return Err(message);
+      return Err(withInputDiagnostics(std::move(message), audioSessionManager));
     }
 
     auto formatResult = resolveStreamFormat();
 
     if (!formatResult.is_ok()) {
-      std::string message = "Audio input format is unavailable. " +
-          describeRecorderFormat([nativeRecorder_ getResolvedInputFormat]) + "; " +
-          [[audioSessionManager inputDiagnosticsSnapshot] UTF8String];
-#if TARGET_OS_SIMULATOR
-      message += "; simulatorHint={Select a host microphone in Simulator > I/O > Audio Input}";
-#endif
-
-      stopStartedRecorder(nativeRecorder_);
+      auto message = withInputDiagnostics(
+          "Audio input format is unavailable. " +
+              describeRecorderFormat([nativeRecorder_ getResolvedInputFormat]),
+          audioSessionManager);
+      stopRecorder(nativeRecorder_);
       return Err(message);
     }
 
@@ -278,7 +275,7 @@ Result<NoneType, std::string> IOSAudioRecorder::start()
       return Ok(None);
     }
 
-    stopStartedRecorder(nativeRecorder_);
+    stopRecorder(nativeRecorder_);
     abandoned = detachSideEffects();
   }
 

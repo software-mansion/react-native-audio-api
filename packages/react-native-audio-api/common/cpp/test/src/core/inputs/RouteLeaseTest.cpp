@@ -12,7 +12,8 @@ using namespace audioapi;
 namespace {
 
 RouteLease countingLease(int &releases, std::optional<int32_t> deviceId = 7) {
-  return {deviceId, [&releases] { ++releases; }};
+  return RouteLease(
+      new std::optional<int32_t>(deviceId), RouteReleaser{[&releases] { ++releases; }});
 }
 
 } // namespace
@@ -21,7 +22,7 @@ TEST(RouteLeaseTest, DestroyingALeaseGivesTheRouteBackOnce) {
   int releases = 0;
   {
     auto lease = countingLease(releases);
-    EXPECT_EQ(lease.deviceId(), std::optional<int32_t>(7));
+    EXPECT_EQ(*lease, std::optional<int32_t>(7));
   }
 
   EXPECT_EQ(releases, 1);
@@ -47,16 +48,16 @@ TEST(RouteLeaseTest, AssigningOverALeaseGivesItsRouteBackFirst) {
 
   EXPECT_EQ(firstReleases, 1);
   EXPECT_EQ(secondReleases, 0);
-  EXPECT_FALSE(held.deviceId().has_value());
+  EXPECT_FALSE(held->has_value());
 
-  held = RouteLease{};
+  held = nullptr;
   EXPECT_EQ(secondReleases, 1);
 }
 
 TEST(RouteLeaseTest, AnEmptyLeaseGivesNothingBack) {
   RouteLease lease;
 
-  EXPECT_FALSE(lease.deviceId().has_value());
+  EXPECT_EQ(lease, nullptr);
 }
 
 // NOLINTEND

@@ -158,7 +158,7 @@ feeds the graph through a `RecorderAdapterNode` instead of being processed by it
 
 The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
 that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
-`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
+`prepareFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
 subclasses own only the platform input stream. Each output is one `OutputSlot` (`file_`, `callback_`,
 `adapter_`: state, mutex, target); a subclass locks the slot mutexes and calls the base, and never
 reads or writes a slot's state or target itself. A platform `start()` prepares the outputs only

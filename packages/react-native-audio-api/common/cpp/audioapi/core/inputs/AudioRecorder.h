@@ -146,7 +146,7 @@ class AudioRecorder {
   [[nodiscard]] virtual double platformInputLatency(double callbackSeconds) const = 0;
 
   /// Opens the session's file for @p format. The caller must hold file_.mutex.
-  Result<NoneType, std::string> setupFileWriter(
+  Result<NoneType, std::string> prepareFileWriter(
       const std::shared_ptr<AudioFileProperties> &properties,
       const StreamFormat &format);
 
@@ -180,7 +180,7 @@ class AudioRecorder {
 
   /// Must run with no recorder mutex held: closing the writer joins its worker thread. The
   /// file URIs are collected only after that join, once a rotation in flight has reported its file.
-  Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects sideEffects);
+  static Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects sideEffects);
 
   std::atomic<RecorderState> state_{RecorderState::Idle};
 

@@ -70,8 +70,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// Oboe error thread or the thread AudioInputRouter reroutes on.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
-  const int32_t preferredDeviceId =
-      route_.deviceId().value_or(NativeInputRouting::kSystemDefaultDeviceId);
+  const int32_t preferredDeviceId = route_->value_or(NativeInputRouting::kSystemDefaultDeviceId);
 
   if (mStream_ != nullptr) {
     if (streamDeviceId_ == preferredDeviceId) {
@@ -166,7 +165,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
 
     route_ = std::move(route);
 
-    if (route_.deviceId().has_value()) {
+    if (route_->has_value()) {
       result = startCapture(std::nullopt, RecorderState::Recording);
     }
 
@@ -176,7 +175,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
 
     // Ended like stop(): the stream opened for this start would otherwise stay open until the
     // next one.
-    route_ = RouteLease{};
+    route_ = nullptr;
     closeStream();
     abandoned = detachSideEffects();
   }
@@ -229,7 +228,9 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
 }
 
 RouteLease AndroidAudioRecorder::acquireRoute() {
-  return {NativeInputRouting::acquireInputRoute(), &NativeInputRouting::releaseInputRoute};
+  return RouteLease(
+      new std::optional<int32_t>(NativeInputRouting::acquireInputRoute()),
+      RouteReleaser{&NativeInputRouting::releaseInputRoute});
 }
 
 /// @brief Closes the audio stream, releasing the microphone, and finalizes any output (file
@@ -248,7 +249,7 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
     }
 
     state_.store(RecorderState::Idle, std::memory_order_release);
-    route_ = RouteLease{};
+    route_ = nullptr;
     lastCallbackFrameCount_.store(0, std::memory_order_release);
 
     // There is no stream while restartCapture() is between closing the old one and opening
@@ -365,7 +366,7 @@ bool AndroidAudioRecorder::isIdle() const {
 void AndroidAudioRecorder::cleanup() {
   std::scoped_lock streamLock(streamMutex_);
   state_.store(RecorderState::Idle, std::memory_order_release);
-  route_ = RouteLease{};
+  route_ = nullptr;
   closeStream();
 }
 
@@ -399,13 +400,13 @@ Result<NoneType, std::string> AndroidAudioRecorder::restartCapture() {
     }
     stateToRestore = state_.load(std::memory_order_acquire);
     closeStream();
-    route_ = RouteLease{};
+    route_ = nullptr;
   }
 
   // Outside the recorder's mutexes for the same reason as in start(). stop() may run in
   // this window; it finds no stream and finalizes the session.
   auto route = acquireRoute();
-  if (!route.deviceId().has_value()) {
+  if (!route->has_value()) {
     __android_log_print(
         ANDROID_LOG_WARN,
         "AndroidAudioRecorder",
@@ -458,7 +459,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     }
 
     if (isIdle()) {
-      route_ = RouteLease{};
+      route_ = nullptr;
       closeStream();
       return;
     }
