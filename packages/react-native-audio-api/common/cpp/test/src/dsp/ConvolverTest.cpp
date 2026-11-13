@@ -1,175 +1,190 @@
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/utils/AudioArray.hpp>
-#include <audioapi/utils/ThreadPool.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
-#include <memory>
+#include <cstddef>
 #include <random>
 #include <vector>
 
-namespace audioapi {
+using namespace audioapi;
 
-/// Test-side definition of the friend declared in Convolver.h.
-struct ConvolverInspector {
-  static size_t tailMisses(const Convolver &convolver) {
-    return convolver._tailMisses;
-  }
-};
-} // namespace audioapi
-
-namespace audioapi::test {
+// NOLINTBEGIN
 
 namespace {
 
-constexpr size_t kBlockSize = 128;
-// Float accumulation over thousands of taps drifts by a few ULPs of the result.
-constexpr float kAbsTolerance = 1e-4f;
-constexpr float kRelTolerance = 1e-5f;
+constexpr float kTolerance = 1e-4f;
 
-std::vector<float> randomSamples(size_t count, unsigned seed) {
+std::vector<float> randomSignal(size_t length, unsigned seed, float gain = 1.0f) {
   std::mt19937 rng(seed);
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-  std::vector<float> samples(count);
-  for (auto &sample : samples) {
-    sample = dist(rng);
+  std::vector<float> signal(length);
+  for (auto &sample : signal) {
+    sample = gain * dist(rng);
   }
-  return samples;
+  return signal;
 }
 
-/// Plain time-domain convolution, the ground truth every FFT path must match.
 std::vector<float> directConvolution(
     const std::vector<float> &input,
     const std::vector<float> &ir) {
-  std::vector<float> out(input.size(), 0.0f);
+  std::vector<float> output(input.size(), 0.0f);
   for (size_t n = 0; n < input.size(); ++n) {
-    for (size_t i = 0; i < ir.size() && i <= n; ++i) {
-      out[n] += input[n - i] * ir[i];
+    double acc = 0.0;
+    const size_t taps = std::min(ir.size(), n + 1);
+    for (size_t k = 0; k < taps; ++k) {
+      acc += static_cast<double>(ir[k]) * input[n - k];
     }
+    output[n] = static_cast<float>(acc);
   }
-  return out;
+  return output;
 }
 
-struct Fixture {
-  std::vector<float> ir;
-  std::vector<float> input;
-  std::vector<float> expected;
-  size_t blocks;
-
-  Fixture(size_t irLength, size_t blockCount, unsigned seed)
-      : ir(randomSamples(irLength, seed)),
-        input(randomSamples(blockCount * kBlockSize, seed + 1)),
-        expected(directConvolution(input, ir)),
-        blocks(blockCount) {}
-
-  std::shared_ptr<Convolver> makeConvolver() const {
-    AudioArray irArray(ir.size());
-    for (size_t i = 0; i < ir.size(); ++i) {
-      irArray[i] = ir[i];
-    }
-    auto convolver = std::make_shared<Convolver>();
-    EXPECT_TRUE(convolver->init(kBlockSize, irArray, ir.size()));
-    return convolver;
+std::vector<size_t> uniformChunks(size_t total, size_t chunk) {
+  std::vector<size_t> chunks;
+  for (size_t done = 0; done < total; done += chunk) {
+    chunks.push_back(std::min(chunk, total - done));
   }
+  return chunks;
+}
 
-  void feedBlock(size_t block, DSPAudioArray &in) const {
-    for (size_t i = 0; i < kBlockSize; ++i) {
-      in[i] = input[block * kBlockSize + i];
+std::vector<size_t> randomChunks(size_t total, size_t maxChunk, unsigned seed) {
+  std::mt19937 rng(seed);
+  std::uniform_int_distribution<size_t> dist(1, maxChunk);
+  std::vector<size_t> chunks;
+  for (size_t done = 0; done < total;) {
+    const size_t chunk = std::min(dist(rng), total - done);
+    chunks.push_back(chunk);
+    done += chunk;
+  }
+  return chunks;
+}
+
+/// Streams @p input through a convolver in calls of @p chunks frames, each call through
+/// quantum-sized scratch arrays like the node's buffers.
+std::vector<float> convolveInChunks(
+    const std::vector<float> &input,
+    const std::vector<float> &ir,
+    size_t blockSize,
+    const std::vector<size_t> &chunks) {
+  Convolver convolver;
+  AudioArray irArray(ir.data(), ir.size());
+  EXPECT_TRUE(convolver.init(blockSize, irArray, ir.size()));
+
+  const size_t maxChunk = *std::max_element(chunks.begin(), chunks.end());
+  DSPAudioArray in(maxChunk);
+  DSPAudioArray out(maxChunk);
+  std::vector<float> output;
+  output.reserve(input.size());
+
+  size_t position = 0;
+  for (const size_t chunk : chunks) {
+    in.zero();
+    in.copy(input.data() + position, 0, 0, chunk);
+    convolver.process(in, out, chunk);
+    output.insert(output.end(), out.begin(), out.begin() + chunk);
+    position += chunk;
+  }
+  return output;
+}
+
+void expectMatchesReference(const std::vector<float> &actual, const std::vector<float> &expected) {
+  ASSERT_EQ(actual.size(), expected.size());
+  float maxError = 0.0f;
+  size_t worstFrame = 0;
+  for (size_t i = 0; i < actual.size(); ++i) {
+    const float error = std::fabs(actual[i] - expected[i]);
+    if (error > maxError) {
+      maxError = error;
+      worstFrame = i;
     }
   }
+  EXPECT_LT(maxError, kTolerance) << "worst frame " << worstFrame;
+}
 
-  void expectBlock(size_t block, const DSPAudioArray &out) const {
-    for (size_t i = 0; i < kBlockSize; ++i) {
-      const float want = expected[block * kBlockSize + i];
-      ASSERT_NEAR(out[i], want, kAbsTolerance + kRelTolerance * std::abs(want))
-          << "block " << block << " sample " << i;
-    }
-  }
+struct ChunkingCase {
+  const char *name;
+  size_t blockSize;
+  size_t irLength;
+  std::vector<size_t> chunks;
 };
+
+constexpr size_t kSignalLength = 8192;
+
+class ConvolverChunkingTest : public ::testing::TestWithParam<ChunkingCase> {};
 
 } // namespace
 
-TEST(ConvolverTest, InlineTailMatchesDirectConvolution) {
-  Fixture fx(/*irLength=*/2000, /*blockCount=*/40, /*seed=*/1);
-  auto convolver = fx.makeConvolver();
-  ASSERT_TRUE(convolver->hasTail());
-  DSPAudioArray in(kBlockSize), out(kBlockSize);
+TEST_P(ConvolverChunkingTest, MatchesDirectConvolutionWithoutLatency) {
+  const auto &param = GetParam();
+  const auto input = randomSignal(kSignalLength, 1);
+  const auto ir =
+      randomSignal(param.irLength, 2, 1.0f / std::sqrt(static_cast<float>(param.irLength)));
 
-  for (size_t block = 0; block < fx.blocks; ++block) {
-    fx.feedBlock(block, in);
-    convolver->process(in, out);
-    fx.expectBlock(block, out);
-  }
-  // Nothing precomputed the tails, so every block past the silent prefix fell back.
-  EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), fx.blocks - Convolver::HEAD_SEGMENTS);
+  const auto output = convolveInChunks(input, ir, param.blockSize, param.chunks);
+
+  expectMatchesReference(output, directConvolution(input, ir));
 }
 
-TEST(ConvolverTest, ShortIrHasNoTailAndMatchesDirectConvolution) {
-  Fixture fx(/*irLength=*/300, /*blockCount=*/12, /*seed=*/2);
-  auto convolver = fx.makeConvolver();
-  EXPECT_FALSE(convolver->hasTail());
-  DSPAudioArray in(kBlockSize), out(kBlockSize);
+INSTANTIATE_TEST_SUITE_P(
+    Convolver,
+    ConvolverChunkingTest,
+    ::testing::Values(
+        ChunkingCase{"Uniform128Block128", 128, 3000, uniformChunks(kSignalLength, 128)},
+        ChunkingCase{"Uniform441Block512", 512, 3000, uniformChunks(kSignalLength, 441)},
+        ChunkingCase{"Uniform100Block128", 128, 3000, uniformChunks(kSignalLength, 100)},
+        ChunkingCase{"Uniform1000Block128", 128, 3000, uniformChunks(kSignalLength, 1000)},
+        ChunkingCase{"Uniform1Block128", 128, 300, uniformChunks(kSignalLength, 1)},
+        ChunkingCase{"Uniform20Block32", 32, 1000, uniformChunks(kSignalLength, 20)},
+        ChunkingCase{"RandomBlock32", 32, 1000, randomChunks(kSignalLength, 100, 8)},
+        ChunkingCase{"IrShorterThanBlock", 512, 50, uniformChunks(kSignalLength, 441)},
+        ChunkingCase{"RandomBlock128", 128, 3000, randomChunks(kSignalLength, 700, 3)},
+        ChunkingCase{"RandomBlock512", 512, 5000, randomChunks(kSignalLength, 1500, 4)},
+        ChunkingCase{
+            "HardwareJitter470And471",
+            512,
+            4000,
+            [] {
+              std::vector<size_t> chunks;
+              for (size_t done = 0; done < kSignalLength;) {
+                const size_t chunk =
+                    std::min<size_t>(chunks.size() % 2 == 0 ? 470 : 471, kSignalLength - done);
+                chunks.push_back(chunk);
+                done += chunk;
+              }
+              return chunks;
+            }()}),
+    [](const ::testing::TestParamInfo<ChunkingCase> &info) {
+      return std::string(info.param.name);
+    });
 
-  for (size_t block = 0; block < fx.blocks; ++block) {
-    fx.feedBlock(block, in);
-    convolver->process(in, out);
-    fx.expectBlock(block, out);
-  }
-  EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), 0u);
+TEST(ConvolverTest, ChunkingDoesNotChangeTheOutput) {
+  const auto input = randomSignal(kSignalLength, 5);
+  const auto ir = randomSignal(2048, 6, 1.0f / std::sqrt(2048.0f));
+
+  const auto uniform = convolveInChunks(input, ir, 512, uniformChunks(kSignalLength, 512));
+  const auto irregular = convolveInChunks(input, ir, 512, randomChunks(kSignalLength, 900, 7));
+
+  expectMatchesReference(irregular, uniform);
 }
 
-TEST(ConvolverTest, PrecomputedTailMatchesDirectConvolution) {
-  Fixture fx(/*irLength=*/3000, /*blockCount=*/60, /*seed=*/3);
-  auto convolver = fx.makeConvolver();
-  DSPAudioArray in(kBlockSize), out(kBlockSize);
+TEST(ConvolverTest, ZeroLengthIrOutputsSilence) {
+  Convolver convolver;
+  AudioArray ir(1);
+  ASSERT_TRUE(convolver.init(128, ir, 0));
 
-  for (size_t block = 0; block < fx.blocks; ++block) {
-    fx.feedBlock(block, in);
-    convolver->process(in, out);
-    fx.expectBlock(block, out);
-    // A worker that always makes its deadline.
-    convolver->computeTail(convolver->nextTailBlock());
+  DSPAudioArray in(200);
+  DSPAudioArray out(200);
+  for (size_t i = 0; i < in.getSize(); ++i) {
+    in[i] = 1.0f;
+    out[i] = 1.0f;
   }
-  EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), 0u);
+  convolver.process(in, out, 200);
+
+  for (size_t i = 0; i < out.getSize(); ++i) {
+    EXPECT_EQ(out[i], 0.0f);
+  }
 }
 
-TEST(ConvolverTest, LateTailIsDroppedAndOutputStaysCorrect) {
-  Fixture fx(/*irLength=*/2000, /*blockCount=*/40, /*seed=*/4);
-  auto convolver = fx.makeConvolver();
-  DSPAudioArray in(kBlockSize), out(kBlockSize);
-
-  for (size_t block = 0; block < 20; ++block) {
-    fx.feedBlock(block, in);
-    convolver->process(in, out);
-    fx.expectBlock(block, out);
-  }
-  // The worker for block 10 shows up long after the audio thread rendered it.
-  convolver->computeTail(10);
-  const size_t missesSoFar = ConvolverInspector::tailMisses(*convolver);
-
-  for (size_t block = 20; block < fx.blocks; ++block) {
-    fx.feedBlock(block, in);
-    convolver->process(in, out);
-    fx.expectBlock(block, out);
-  }
-  EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), missesSoFar + (fx.blocks - 20));
-}
-
-TEST(ConvolverTest, TailsScheduledOnThreadPoolMatchDirectConvolution) {
-  Fixture fx(/*irLength=*/4000, /*blockCount=*/300, /*seed=*/5);
-  auto convolver = fx.makeConvolver();
-  ConvolverThreadPool pool(2);
-  DSPAudioArray in(kBlockSize), out(kBlockSize);
-
-  for (size_t block = 0; block < fx.blocks; ++block) {
-    fx.feedBlock(block, in);
-    convolver->process(in, out);
-    fx.expectBlock(block, out);
-    pool.schedule([convolver, tail = convolver->nextTailBlock()] { convolver->computeTail(tail); });
-  }
-  pool.wait();
-  // Hits and misses depend on scheduling; the output must not.
-  EXPECT_LT(ConvolverInspector::tailMisses(*convolver), fx.blocks);
-}
-
-} // namespace audioapi::test
+// NOLINTEND

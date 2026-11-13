@@ -123,7 +123,7 @@ std::shared_ptr<audioapi::DSPAudioBuffer> buildNegotiatedBufferIfNeeded(
   node->pendingChannelCount = computedNumberOfChannels;
 
   return std::make_shared<audioapi::DSPAudioBuffer>(
-      audioapi::RENDER_QUANTUM_SIZE,
+      audio->getContextRenderQuantumSize(),
       static_cast<int>(computedNumberOfChannels),
       audio->getContextSampleRate());
 }

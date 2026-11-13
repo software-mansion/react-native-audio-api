@@ -65,6 +65,14 @@ class AudioAPIModuleInstaller {
   }
 
  private:
+  /// The TS layer validates the range; a missing hint means the spec default.
+  static int renderQuantumSizeFromArg(const jsi::Value *args, size_t count, size_t index) {
+    if (count > index && args[index].isNumber()) {
+      return static_cast<int>(args[index].getNumber());
+    }
+    return RENDER_QUANTUM_SIZE;
+  }
+
   static jsi::Function getCreateAudioContextFunction(
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
@@ -72,7 +80,7 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
-        3,
+        4,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
@@ -92,13 +100,16 @@ class AudioAPIModuleInstaller {
                 args[2].getString(runtime).utf8(runtime));
           }
 
+          auto renderQuantumSize = renderQuantumSizeFromArg(args, count, 3);
+
           auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
               sampleRate,
               androidOutputProfile,
               audioEventHandlerRegistry,
               &runtime,
               jsCallInvoker,
-              latencyHint);
+              latencyHint,
+              renderQuantumSize);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });
@@ -111,7 +122,7 @@ class AudioAPIModuleInstaller {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createOfflineAudioContext"),
-        3,
+        4,
         [jsCallInvoker, audioEventHandlerRegistry](
             jsi::Runtime &runtime,
             const jsi::Value &thisValue,
@@ -120,6 +131,7 @@ class AudioAPIModuleInstaller {
           auto numberOfChannels = static_cast<int>(args[0].getNumber());
           auto length = static_cast<size_t>(args[1].getNumber());
           auto sampleRate = static_cast<float>(args[2].getNumber());
+          auto renderQuantumSize = renderQuantumSizeFromArg(args, count, 3);
 
           auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
               numberOfChannels,
@@ -127,7 +139,8 @@ class AudioAPIModuleInstaller {
               sampleRate,
               audioEventHandlerRegistry,
               &runtime,
-              jsCallInvoker);
+              jsCallInvoker,
+              renderQuantumSize);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
         });

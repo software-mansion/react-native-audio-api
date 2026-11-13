@@ -167,7 +167,7 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       pitchFactor);
 
   if (isPlaying()) {
-    positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
+    positionChanged_.advance(framesToProcess, getCurrentPosition());
   }
 }
 
@@ -206,7 +206,7 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   }
 
   if (isPlaying()) {
-    positionChanged_.advance(RENDER_QUANTUM_SIZE, getCurrentPosition());
+    positionChanged_.advance(framesToProcess, getCurrentPosition());
   }
 }
 

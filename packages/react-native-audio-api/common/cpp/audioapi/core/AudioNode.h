@@ -88,6 +88,14 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     return DEFAULT_SAMPLE_RATE;
   }
 
+  [[nodiscard]] int getContextRenderQuantumSize() const {
+    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      return context->getRenderQuantumSize();
+    }
+
+    return RENDER_QUANTUM_SIZE;
+  }
+
   [[nodiscard]] float getNyquistFrequency() const {
     constexpr float kNyquistDivisor = 2.0f;
     return getContextSampleRate() / kNyquistDivisor;

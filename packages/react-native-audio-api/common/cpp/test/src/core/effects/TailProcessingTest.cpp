@@ -260,7 +260,6 @@ TEST_F(TailProcessingTest, ConvolverTailLengthEqualsIRLength) {
       ir,
       /*convolvers=*/{},
       /*threadPool=*/nullptr,
-      /*internalBuffer=*/nullptr,
       /*intermediateBuffer=*/nullptr,
       /*scaleFactor=*/1.0f);
 
@@ -274,7 +273,7 @@ TEST_F(TailProcessingTest, ConvolverTailLengthEqualsIRLength) {
   // Swapping to a shorter IR updates the tail length on next silence.
   constexpr size_t kShorterFrames = 512;
   auto shorterIr = std::make_shared<AudioBuffer>(kShorterFrames, 1, kSampleRate);
-  conv.setBuffer(shorterIr, {}, nullptr, nullptr, nullptr, 1.0f);
+  conv.setBuffer(shorterIr, {}, nullptr, nullptr, 1.0f);
   EXPECT_EQ(conv.computeTail(), static_cast<int>(kShorterFrames));
 }
 

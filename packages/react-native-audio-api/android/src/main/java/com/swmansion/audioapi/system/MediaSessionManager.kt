@@ -120,6 +120,16 @@ object MediaSessionManager {
     return sampleRate.toDouble()
   }
 
+  /** One native output burst in seconds, so callers can convert it at their own sample rate. */
+  fun getDeviceBufferDuration(): Double {
+    val frames = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)?.toDoubleOrNull()
+    val sampleRate = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)?.toDoubleOrNull()
+    if (frames == null || sampleRate == null || frames <= 0.0 || sampleRate <= 0.0) {
+      return 0.0
+    }
+    return frames / sampleRate
+  }
+
   fun setSystemOptions(
     androidMode: String?,
     androidCommunicationDevice: String?,

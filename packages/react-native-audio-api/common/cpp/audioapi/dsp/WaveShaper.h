@@ -16,7 +16,10 @@ using SingleChannelResamplerPtr = std::unique_ptr<r8b::SingleChannelResampler>;
 
 class WaveShaper {
  public:
-  explicit WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate);
+  explicit WaveShaper(
+      const std::shared_ptr<AudioArray> &curve,
+      float sampleRate,
+      int renderQuantumSize = RENDER_QUANTUM_SIZE);
 
   void process(DSPAudioArray &channelData, int framesToProcess);
 
@@ -36,7 +39,8 @@ class WaveShaper {
   /// for OVERSAMPLE_NONE.
   static std::pair<SingleChannelResamplerPtr, SingleChannelResamplerPtr> makeResamplers(
       OverSampleType type,
-      float sampleRate);
+      float sampleRate,
+      int renderQuantumSize = RENDER_QUANTUM_SIZE);
 
  private:
   OverSampleType oversample_ = OverSampleType::OVERSAMPLE_NONE;

@@ -803,6 +803,7 @@ class BaseAudioContextMock {
   public destination: AudioDestinationNodeMock;
   public listener: AudioListenerMock;
   private _sampleRate: number = 44100;
+  private _renderQuantumSize: number = 128;
   private _currentTime: number = 0;
   protected _state: ContextState = 'running';
 
@@ -812,6 +813,9 @@ class BaseAudioContextMock {
     if (options?.sampleRate) {
       this._sampleRate = options.sampleRate;
     }
+    if (typeof options?.renderSizeHint === 'number') {
+      this._renderQuantumSize = options.renderSizeHint;
+    }
   }
 
   get currentTime(): number {
@@ -820,6 +824,10 @@ class BaseAudioContextMock {
 
   get sampleRate(): number {
     return this._sampleRate;
+  }
+
+  get renderQuantumSize(): number {
+    return this._renderQuantumSize;
   }
 
   get state(): ContextState {
