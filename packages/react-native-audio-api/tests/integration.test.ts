@@ -97,7 +97,7 @@ describe('Mock Integration Tests', () => {
   });
 
   describe('Audio Recording Workflow', () => {
-    it('should set up recording with adapter node', async () => {
+    it('should set up recording connected to the graph', async () => {
       const context = new MockAPI.AudioContext();
       const recorder = new MockAPI.AudioRecorder();
 
@@ -109,24 +109,15 @@ describe('Mock Integration Tests', () => {
       });
       // it would throw an error if the configuration failed, so we can assume success if no error is thrown
 
-      // Create audio source
-      const oscillator = context.createOscillator();
-      const recorderAdapter = context.createRecorderAdapter();
-
-      // Connect to recorder
-      oscillator.connect(recorderAdapter);
-      recorder.connect(recorderAdapter);
+      recorder.connect(context, context.destination);
 
       // Start recording
-      const startResult = await recorder.start();
-      expect(startResult.status).toBe('success');
+      await recorder.start();
       expect(recorder.isRecording()).toBe(true);
 
       // Stop recording
-      const stopResult = await recorder.stop();
-      expect(stopResult.status).toBe('success');
-      // @ts-ignore - paths is not seen as the correct type
-      expect(stopResult.paths?.length).toBeGreaterThan(0);
+      const fileInfo = await recorder.stop();
+      expect(fileInfo.paths.length).toBeGreaterThan(0);
       expect(recorder.isRecording()).toBe(false);
     });
 
@@ -267,16 +258,6 @@ describe('Mock Integration Tests', () => {
         throw new MockAPI.InvalidStateError('Invalid state');
       }).toThrow('Invalid state');
 
-      // Test recorder connection errors
-      const recorder = new MockAPI.AudioRecorder();
-      const context = new MockAPI.AudioContext();
-      const adapter = context.createRecorderAdapter();
-
-      // First connection should work
-      recorder.connect(adapter);
-
-      // Second connection should throw
-      expect(() => recorder.connect(adapter)).toThrow();
     });
   });
 

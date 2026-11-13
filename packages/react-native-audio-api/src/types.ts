@@ -87,7 +87,7 @@ export enum FileDirectory {
 
 // Values must stay in sync with the C++ `AudioFileProperties::Format` enum.
 // Support is platform-dependent; unsupported formats fail when recording starts.
-// See the audio recorder docs for the per-platform system-encoder matrix.
+// See the audio recorder docs for the per-platform format matrix.
 export enum FileFormat {
   Wav,
   Caf,
@@ -278,13 +278,6 @@ interface BaseAudioBufferSourceOptions extends AudioNodeOptions {
 }
 
 export type AudioBufferQueueSourceOptions = BaseAudioBufferSourceOptions;
-
-export enum AudioBufferQueueSourceState {
-  IDLE,
-  PLAYING,
-  PAUSED,
-  STOPPED,
-}
 
 export interface AudioBufferSourceOptions extends BaseAudioBufferSourceOptions {
   buffer?: AudioBufferLike;

@@ -27,6 +27,7 @@ type NavigationParamList = {
   TextToSpeech: undefined;
   AudioFile: undefined;
   AudioPipelineStress: undefined;
+  AudioIOPlayground: undefined;
   PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
@@ -150,7 +151,7 @@ export const Examples: Example[] = [
   },
   {
     key: 'EchoCancellation',
-    title: 'EAC',
+    title: 'AEC',
     Icon: icons.AudioLines,
     screen: EchoCancellation,
   },

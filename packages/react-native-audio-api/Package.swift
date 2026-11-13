@@ -32,8 +32,9 @@ func readJSONObject(at url: URL) -> [String: Any]? {
 }
 
 /// The build options: the `"react-native-audio-api"` section of the nearest app package.json above
-/// this package, e.g. `"react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false }`.
-/// Bare apps write the section by hand; in Expo apps `expo prebuild` writes it from the plugin options.
+/// this package, e.g. `"react-native-audio-api": { "enableFFmpeg": true, "disableStaticExternalLibs": false, "disableAudioRecorder": false }`.
+/// Bare apps write the section by hand; in Expo apps `expo prebuild` writes the two older options from
+/// the (deprecated) plugin options.
 /// React Native evaluates this manifest through its autolinking symlink
 /// (`<app>/ios/build/generated/autolinking/libs/ReactNativeAudioApi`), so walking up reaches the app through
 /// its `ios/` directory wherever the package manager placed this package.
@@ -73,6 +74,7 @@ func booleanOption(_ key: String, in configuration: [String: Any]) -> Bool {
 let appConfiguration = readAppConfiguration()
 let isFFmpegEnabled = booleanOption("enableFFmpeg", in: appConfiguration)
 let areStaticExternalLibsDisabled = booleanOption("disableStaticExternalLibs", in: appConfiguration)
+let isAudioRecorderDisabled = booleanOption("disableAudioRecorder", in: appConfiguration)
 
 var headerSearchPaths = ["common/cpp", "ios", "common/cpp/audioapi/external/include"]
 var defines: [(name: String, value: String)] = [
@@ -104,6 +106,15 @@ if areStaticExternalLibsDisabled {
     "common/cpp/audioapi/external/include/vorbis",
   ]
   binaryTargets += prebuiltBinaryTargets(staticExternalLibChecksums)
+}
+
+if isAudioRecorderDisabled {
+  defines.append(("RN_AUDIO_API_AUDIO_RECORDER_DISABLED", "1"))
+  mainTargetExcludes += [
+    "common/cpp/audioapi/HostObjects/inputs/AudioRecorderHostObject.cpp",
+    "ios/audioapi/ios/core/IOSAudioRecorder.mm",
+    "ios/audioapi/ios/core/NativeAudioRecorder.m",
+  ]
 }
 
 if isFFmpegEnabled {

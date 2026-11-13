@@ -35,7 +35,7 @@ class IOSAudioRecorder : public AudioRecorder {
   Result<FileInfo, std::string> stop() override;
 
   void pause() override;
-  void resume() override;
+  Result<NoneType, std::string> resume() override;
   /// Nothing to do: the session reroutes capture itself and the recorder follows through
   /// the input notifications.
   Result<NoneType, std::string> rerouteInput() override;
@@ -44,12 +44,11 @@ class IOSAudioRecorder : public AudioRecorder {
   bool isPaused() const override;
   bool isIdle() const override;
 
-  [[nodiscard]] double getInputLatency() const override;
-
  protected:
   /// The engine resolves the input format asynchronously, so it is read fresh on every call:
   /// between a route change and the engine settling there is no usable format at all.
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override;
+  [[nodiscard]] double platformInputLatency(double callbackSeconds) const override;
 
   NativeAudioRecorder *nativeRecorder_;
 
@@ -57,7 +56,7 @@ class IOSAudioRecorder : public AudioRecorder {
   /// Re-points the live outputs at the format the rebuilt engine input now delivers, with the
   /// input disarmed meanwhile so no buffer in either format slips through.
   Result<NoneType, std::string> reprepareForLiveInput();
-  void handleInputNotification(AudioEngineInputNotification notification);
+  void handleInputNotification(AudioEngineInputNotification notification, NSError *error);
   void handleHardwareChange();
 
   int32_t inputChannelCount_{0};

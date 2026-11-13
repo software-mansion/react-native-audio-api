@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -31,6 +32,7 @@ class FakeAudioRecorder : public AudioRecorder {
 
   std::vector<std::string> stopPaths{"file:///tmp/recording.m4a"};
   std::atomic<int> stopCount{0};
+  std::optional<std::string> resumeError;
 
   Result<NoneType, std::string> start() override {
     if (state_ != RecorderState::Idle) {
@@ -53,8 +55,15 @@ class FakeAudioRecorder : public AudioRecorder {
   void pause() override {
     state_ = RecorderState::Paused;
   }
-  void resume() override {
+  Result<NoneType, std::string> resume() override {
+    if (state_ != RecorderState::Paused) {
+      return Ok(None);
+    }
+    if (resumeError.has_value()) {
+      return Err(*resumeError);
+    }
     state_ = RecorderState::Recording;
+    return Ok(None);
   }
   Result<NoneType, std::string> rerouteInput() override {
     return Result<NoneType, std::string>::Ok(None);
@@ -70,11 +79,11 @@ class FakeAudioRecorder : public AudioRecorder {
     return state_ == RecorderState::Idle;
   }
 
-  [[nodiscard]] double getInputLatency() const override {
+ protected:
+  [[nodiscard]] double platformInputLatency(double /*callbackSeconds*/) const override {
     return 0.0;
   }
 
- protected:
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override {
     return Ok(StreamFormat{});
   }
@@ -150,11 +159,29 @@ TEST(ActiveRecorderHandleTest, PauseAndResumeWithExpectedIgnoreForeignRecorder) 
   EXPECT_EQ(handle.pause(current), RecorderState::Paused);
   EXPECT_TRUE(current->isPaused());
 
-  EXPECT_EQ(handle.resume(other), RecorderState::Idle);
+  auto foreignResume = handle.resume(other);
+  ASSERT_TRUE(foreignResume.is_err());
+  EXPECT_EQ(foreignResume.unwrap_err(), "Recorder is not in recording state.");
   EXPECT_TRUE(current->isPaused());
 
-  EXPECT_EQ(handle.resume(current), RecorderState::Recording);
+  EXPECT_TRUE(handle.resume(current).is_ok());
   EXPECT_TRUE(current->isRecording());
+}
+
+TEST(ActiveRecorderHandleTest, RefusedResumeKeepsSessionPausedAndReturnsTheReason) {
+  auto handleOwner = ActiveRecorderHandleTestPeer::createHandle();
+  ActiveRecorderHandle &handle = *handleOwner;
+  auto recorder = std::make_shared<FakeAudioRecorder>();
+  ASSERT_TRUE(handle.tryStart(recorder).is_ok());
+  handle.pause();
+  recorder->resumeError = "session activation refused";
+
+  auto result = handle.resume(recorder);
+
+  ASSERT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "session activation refused");
+  EXPECT_TRUE(recorder->isPaused());
+  EXPECT_EQ(handle.resume(), RecorderState::Paused);
 }
 
 TEST(ActiveRecorderHandleTest, StopStashesResultForSingleConsumption) {

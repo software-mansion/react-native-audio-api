@@ -150,6 +150,12 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
+### Building without the recorder {#building-without-the-recorder}
+
+Apps that only play audio can leave the recorder and every microphone API out of the native build
+with the [`disableAudioRecorder`](../other/build-time-flags.mdx#disableaudiorecorder) build-time
+flag. iOS apps then need no `NSMicrophoneUsageDescription` entry, and `new AudioRecorder()` throws.
+
 ## Examples
 
 <Tabs group="usage">
@@ -197,9 +203,10 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -212,8 +219,8 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.stop();
-    console.log(result);
+    const fileInfo = await audioRecorder.stop();
+    console.log(fileInfo);
     setIsRecording(false);
     await AudioManager.setAudioSessionActivity(false);
   };
@@ -290,10 +297,10 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -371,10 +378,10 @@ const MyRecorder: React.FC = () => {
       await audioContext.resume();
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -452,12 +459,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from the system audio input device. Returns a `Promise<Result<{}>>` that resolves when recording has started.
+          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it.
         </div>
         ```tsx
-        const result = await audioRecorder.start();
-
-        console.log(result.status);
+        try {
+          await audioRecorder.start();
+        } catch (error) {
+          console.error(error);
+        }
         ```
       </td>
     </tr>
@@ -472,17 +481,15 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Stops the input stream and cleans up each input access method. Returns a `Promise<Result<FileInfo>>` that resolves when recording has stopped.
+          Stops the input stream and cleans up each input access method. Returns a `Promise<FileInfo>` that resolves when recording has stopped, and rejects when the recorder was not started or the output files could not be finalized.
 
           For details on the returned file information, see [FileInfo](#fileinfo).
         </div>
         ```tsx
-        const result = await audioRecorder.stop();
-
-        if (result.status === 'success') {
-          const { paths, duration, size } = result;
-        } else if (result.status === 'error') {
-          console.error(result.message);
+        try {
+          const { paths, duration, size } = await audioRecorder.stop();
+        } catch (error) {
+          console.error(error);
         }
         ```
       </td>
@@ -518,12 +525,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Resumes the recording if it was previously paused; otherwise does nothing. Returns a `Promise<void>` that resolves when the input stream is running again.
+          Resumes a paused recording. Returns a `Promise<void>` that resolves when the input stream is running again. Resuming a recording that is already running succeeds without changing anything. The promise rejects when the recorder was not started, or when the system refused to resume, in which case the recording stays paused.
         </div>
         ```tsx
-        await audioRecorder.resume();
-
-        console.log(audioRecorder.isRecording());
+        try {
+          await audioRecorder.resume();
+        } catch (error) {
+          console.warn(error);
+        }
         ```
       </td>
     </tr>
@@ -696,7 +705,7 @@ export default MyRecorder;
         <div class="text-content">
           Configures and enables file output with the given options and stream properties. By default, the recorder writes to the cache directory using a high-quality `M4A` file.
 
-          Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's system encoders at this call, so an unsupported format fails here.
+          Must be called while the recorder is idle: the file is created by the next [start](#start). The requested format is checked against the platform's encoders at this call, so an unsupported format fails here.
 
           The file sample rate (`preset.sampleRate`) must be at most 48000 Hz, the highest rate the iOS and Android system encoders accept.
 
@@ -815,7 +824,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Routes captured audio into an audio graph by creating a recorder adapter with [BaseAudioContext.createRecorderAdapter()](../core/base-audio-context.mdx#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) used to create the recorder adapter and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
+          Routes captured audio into an audio graph through an internal adapter node created in `context`, wired to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) the audio graph belongs to and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
         </div>
         ```tsx
           audioRecorder.connect(audioContext, audioContext.destination);
@@ -997,8 +1006,6 @@ restarts at `_001` every time. Make the name unique per recording yourself.
 
 Describes desired file extension as well as codecs, containers (and muxers!) used to encode the file.
 
-All encoding is done with platform system APIs — iOS AVFoundation and Android MediaCodec/MediaMuxer. Because each platform exposes a different set of system encoders, format support is platform-specific.
-
 ```tsx
 enum FileFormat {
   Wav,
@@ -1016,20 +1023,20 @@ enum FileFormat {
 }
 ```
 
-The table below lists which formats each platform can encode with its system APIs:
+Each platform exposes a different set of encoders, making format support platform-specific. The table below lists which formats each platform can encode:
 
 | `FileFormat` | Container / codec | iOS | Android |
 | :--- | :--- | :---: | :---: |
 | `Wav` | WAV / PCM | ✅ | ✅ |
 | `M4A` | M4A / AAC-LC | ✅ | ✅ |
 | `Flac` | FLAC / FLAC | ✅ | ✅ |
+| `OpusOgg` | OGG / Opus | ✅ | ✅ |
 | `Adts` | ADTS / AAC-LC | ✅ | ✅ |
 | `Caf` | CAF / PCM | ✅ | ❌ |
 | `Aiff` | AIFF / PCM | ✅ | ❌ |
 | `Alac` | M4A / Apple Lossless | ✅ | ❌ |
 | `Ulaw` | WAV / µ-law | ✅ | ❌ |
 | `Alaw` | WAV / a-law | ✅ | ❌ |
-| `OpusOgg` | OGG / Opus | ❌ | ✅ |
 | `OpusWebm` | WebM / Opus | ❌ | ✅ |
 | `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
 
@@ -1043,7 +1050,11 @@ Every format is encoded at no more than 48000 Hz, because that is the highest ra
 :::
 
 :::caution Platform support
-Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusOgg` on iOS) fails when file output is enabled, with a descriptive error. Some Android formats also depend on the device OS version (Opus/OGG muxing requires newer releases); if a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac` or `Adts` for the widest cross-platform support.
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusWebm` on iOS) fails when file output is enabled, with a descriptive error. If a device lacks a system encoder for the requested format, recording start returns an error. Use `Wav`, `M4A`, `Flac`, `Adts`, or `OpusOgg` for the widest cross-platform support.
+:::
+
+:::note Opus
+Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/build-time-flags.mdx#disablestaticexternallibs), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
 :::
 
 #### FileInfo
@@ -1273,6 +1284,6 @@ audioRecorder.pause();
 await audioRecorder.resume(); // start and pause have already completed here
 ```
 
-Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`.
+Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`. `start`, `stop` and `resume` reject when they fail, so catch the promises you do not await.
 
 [`AudioContext`](../core/audio-context.mdx#remarks) and [`OfflineAudioContext`](../core/offline-audio-context.mdx) order their `suspend`, `resume`, `close` and `startRendering` promises the same way.

@@ -24,6 +24,8 @@ struct RuntimeObserverListener {
 struct RuntimeObserver {
   static void addListener(jsi::Runtime &rt, RuntimeObserverListener *listener);
   static void removeListener(jsi::Runtime &rt, RuntimeObserverListener *listener);
+  /** Removes the listener from every runtime it is registered with. */
+  static void removeListener(RuntimeObserverListener *listener);
 };
 
 } // namespace audioapi

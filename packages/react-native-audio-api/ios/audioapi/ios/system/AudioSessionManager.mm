@@ -1,16 +1,20 @@
 #import <AVFAudio/AVFAudio.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
+#define LOG_MODULE AudioSessionManager
+#import <audioapi/ios/utils/Log.h>
 
 #include <audioapi/core/utils/Constants.h>
 
 @interface AudioSessionManager ()
 
+#ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
 - (id)microphoneUsageDescriptionValue;
 - (bool)usesAudioApplicationRecordPermissionAPI;
 - (void)requestSystemRecordPermission:(void (^)(BOOL granted))completion;
 - (NSInteger)currentRecordPermissionStatus;
 - (NSString *)recordPermissionStatusString:(NSInteger)status;
+#endif
 - (NSString *)formatPorts:(NSArray<AVAudioSessionPortDescription *> *)ports;
 
 @end
@@ -70,7 +74,7 @@ static AudioSessionManager *_sharedInstance = nil;
 
 - (void)setPreferredIOBufferFrames:(int)frames
 {
-  if (!self.shouldManageSession) {
+  if (!self.shouldManageSession || self.audioSession == nil) {
     return;
   }
 
@@ -78,8 +82,8 @@ static AudioSessionManager *_sharedInstance = nil;
 
   NSError *error = nil;
   if (![self.audioSession setPreferredIOBufferDuration:duration error:&error]) {
-    NSLog(
-        @"[AudioSessionManager] Error while requesting IO buffer duration %f s: %@",
+    AUDIO_LOG_ERROR(
+        "Error while requesting IO buffer duration %f s: %{public}@",
         duration,
         [error debugDescription]);
   }
@@ -103,14 +107,15 @@ static AudioSessionManager *_sharedInstance = nil;
                            error:&categoryError];
 
   if (categoryError != nil) {
-    NSLog(@"Error while configuring audio session: %@", [categoryError debugDescription]);
+    AUDIO_LOG_ERROR(
+        "Error while configuring audio session: %{public}@", [categoryError debugDescription]);
     if (outError != nil) {
       *outError = categoryError;
     }
     return false;
   }
-  NSLog(
-      @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
+  AUDIO_LOG_DEBUG(
+      "Configured audio session: category=%{public}@, mode=%{public}@, options=%lu",
       self.audioSession.category,
       self.audioSession.mode,
       (unsigned long)self.audioSession.categoryOptions);
@@ -123,8 +128,8 @@ static AudioSessionManager *_sharedInstance = nil;
                                                                  error:&hapticsError];
 
       if (hapticsError != nil) {
-        NSLog(
-            @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+        AUDIO_LOG_ERROR(
+            "Error while setting allowHapticsAndSystemSoundsDuringRecording: %{public}@",
             [hapticsError debugDescription]);
         if (outError != nil) {
           *outError = hapticsError;
@@ -271,6 +276,7 @@ static AudioSessionManager *_sharedInstance = nil;
                        [self formatPorts:outputs]];
 }
 
+#ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
 - (id)microphoneUsageDescriptionValue
 {
   return [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
@@ -338,6 +344,7 @@ static AudioSessionManager *_sharedInstance = nil;
       return @"Undetermined";
   }
 }
+#endif
 
 - (NSString *)formatPorts:(NSArray<AVAudioSessionPortDescription *> *)ports
 {
@@ -358,6 +365,23 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSString stringWithFormat:@"[%@]", [formattedPorts componentsJoinedByString:@", "]];
 }
 
+#ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
+static NSString *const RecordingDisabledCode = @"E_RECORDER_DISABLED";
+static NSString *const RecordingDisabledMessage =
+    @"Recording is unavailable: react-native-audio-api was built with \"disableAudioRecorder\": true.";
+
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject
+{
+  reject(RecordingDisabledCode, RecordingDisabledMessage, nil);
+}
+
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+  reject(RecordingDisabledCode, RecordingDisabledMessage, nil);
+}
+#else
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject
 {
@@ -405,6 +429,7 @@ static AudioSessionManager *_sharedInstance = nil;
 {
   return [self recordPermissionStatusString:[self currentRecordPermissionStatus]];
 }
+#endif
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {

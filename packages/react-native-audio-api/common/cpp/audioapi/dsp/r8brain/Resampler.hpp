@@ -97,11 +97,21 @@ class MultiChannelResampler : public BaseResampler {
       const audioapi::AlignedAudioBuffer<Alignment> &input,
       int length,
       audioapi::AlignedAudioBuffer<Alignment> &output) {
+    return process(input, 0, length, output);
+  }
+
+  /// Resamples @p length frames of @p input, starting at frame @p inputStart, into @p output.
+  template <size_t Alignment>
+  int process(
+      const audioapi::AlignedAudioBuffer<Alignment> &input,
+      size_t inputStart,
+      int length,
+      audioapi::AlignedAudioBuffer<Alignment> &output) {
     const size_t numChannels = input.getNumberOfChannels();
     std::array<const float *, audioapi::MAX_CHANNEL_COUNT> inputPtrs{};
     std::array<float *, audioapi::MAX_CHANNEL_COUNT> outputPtrs{};
     for (size_t i = 0; i < numChannels; ++i) {
-      inputPtrs[i] = input.getChannel(i)->begin();
+      inputPtrs[i] = input.getChannel(i)->begin() + inputStart;
       outputPtrs[i] = output.getChannel(i)->begin();
     }
     return BaseResampler::process(inputPtrs.data(), length, outputPtrs.data());

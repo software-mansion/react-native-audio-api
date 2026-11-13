@@ -33,7 +33,9 @@ Holds N channels of `AudioArrayBuffer`. Handles up/down-mixing automatically on 
 
 Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
 
-Channel layout constants: `ChannelMono=0`, `ChannelLeft=0`, `ChannelRight=1`, `ChannelCenter=2`, `ChannelLFE=3`, `ChannelSurroundLeft=4`, `ChannelSurroundRight=5`.
+Channel layout constants: `ChannelType` (namespace scope, shared by every alignment): `MONO=0`, `LEFT=0`, `RIGHT=1`, `CENTER=2`, `LFE=3`, `SURROUND_LEFT=4`, `SURROUND_RIGHT=5`.
+
+Pass `const AudioBuffer &` between pipeline stages (encoders, remixers, recorder callback) instead of unpacking it into a `std::array<const float *, MAX_CHANNEL_COUNT>`: the data already lives in a pooled buffer by the time a worker sees it, and a pointer array only re-creates what `getChannel()` gives. Raw pointer arrays belong only at third-party boundaries (r8brain, AVFoundation, Opus, Oboe). `r8b::MultiChannelResampler::process(input, inputStart, length, output)` reads a slice of a buffer, so chunked resampling needs no pointer arithmetic either.
 
 `getChannel()` returns a non-owning `AudioArray*`. `getSharedChannel()` returns `shared_ptr<AudioArrayBuffer>` (use for JSI transfer).
 
@@ -176,6 +178,10 @@ audioapi::GB_IN_BYTES   // 1024^3.0
 `AudioLayout { float sampleRate; int channelCount; }` with a defaulted `operator==`. It is the file stream in `AudioFileProperties::stream` / `EncoderSettings::stream` and the `layout` of a `StreamFormat` (`encoding/StreamFormat.h`, which adds `maxFramesPerBuffer`). Hold a new pair of these as one `AudioLayout` and compare whole layouts (`inputLayout != outputLayout_`) rather than two fields. Storage typed for a native API stays native: the remux `TrackInfo` structs (`int32_t` from `AMediaFormat_getInt32`, `UInt32` from an ASBD) and the integer rates the Android encoder backends write into WAV headers and `MediaCodec` formats.
 
 ---
+
+### `encoding/ChannelRemixer.h` — encoder input → file channel count
+
+Every encoder (iOS `IOSEncoder`, Android `AndroidEncoder`, common `OggOpusEncoder`) brings its input to the file's channel count through this, before any resampling: `ChannelRemixer(inputChannels, fileChannels, maxFrames, sampleRate)`, then `remix(channels, frames)` returns the file's channel pointers (the caller's own when the counts match). It applies `AudioBuffer::copy` speaker rules (quad and 5.1 mixed, LFE dropped, other counts discrete in order), so all file formats on both platforms get the same channels. Don't hand channel mapping to a platform converter (`AVAudioConverter.channelMap`, discrete layouts): it differs per platform and dropped the right channel on stereo → mono.
 
 ## `common/cpp/audioapi/core/utils/` — Node and context utilities
 

@@ -1,8 +1,13 @@
+#include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <gtest/gtest.h>
+#include <test/src/MockAudioEventHandlerRegistry.h>
+#include <test/src/utils/FakeFileBackend.h>
 
 #include <atomic>
 #include <memory>
@@ -10,25 +15,50 @@
 #include <string>
 
 using namespace audioapi;
+using namespace audioapi::test_support;
 
 // NOLINTBEGIN
 
 namespace {
 
-/// Never starts a stream, so every output it is given stays at Requested at most.
+/// Never starts a stream: its outputs stay at Requested until the test prepares them for a
+/// format by hand, as a platform recorder does when its stream opens or changes format.
 class IdleAudioRecorder : public AudioRecorder {
  public:
-  IdleAudioRecorder() : AudioRecorder(nullptr) {}
+  explicit IdleAudioRecorder(const PlatformFileBackend *fileBackend = nullptr)
+      : AudioRecorder(nullptr, fileBackend) {}
 
-  using AudioRecorder::deactivate;
+  using AudioRecorder::OutputSlot;
   using AudioRecorder::OutputState;
-  using AudioRecorder::wantsCallback;
-  using AudioRecorder::wantsConnection;
-  using AudioRecorder::wantsFileOutput;
+
+  [[nodiscard]] bool wantsCallback() const {
+    return callback_.isWanted();
+  }
+  [[nodiscard]] bool wantsConnection() const {
+    return adapter_.isWanted();
+  }
+  [[nodiscard]] bool wantsFileOutput() const {
+    return file_.isWanted();
+  }
 
   Result<NoneType, std::string> prepareOutputsLocked(const StreamFormat &format) {
-    std::scoped_lock outputsLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+    std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
     return prepareOutputs(format);
+  }
+
+  Result<NoneType, std::string> reprepareOutputsLocked(const StreamFormat &format) {
+    std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
+    return reprepareOutputs(format);
+  }
+
+  /// Ends the session's outputs the way a platform stop() does.
+  Result<FileInfo, std::string> finishOutputs() {
+    DetachedSideEffects sideEffects;
+    {
+      std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
+      sideEffects = detachSideEffects();
+    }
+    return finalizeSideEffects(std::move(sideEffects));
   }
 
   Result<NoneType, std::string> start() override {
@@ -38,7 +68,9 @@ class IdleAudioRecorder : public AudioRecorder {
     return Err(std::string("not supported"));
   }
   void pause() override {}
-  void resume() override {}
+  Result<NoneType, std::string> resume() override {
+    return Ok(None);
+  }
   Result<NoneType, std::string> rerouteInput() override {
     return Ok(None);
   }
@@ -51,11 +83,12 @@ class IdleAudioRecorder : public AudioRecorder {
   bool isIdle() const override {
     return true;
   }
-  [[nodiscard]] double getInputLatency() const override {
+
+ protected:
+  [[nodiscard]] double platformInputLatency(double /*callbackSeconds*/) const override {
     return 0.0;
   }
 
- protected:
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override {
     return Err(std::string("no stream"));
   }
@@ -84,15 +117,21 @@ std::shared_ptr<AudioFileProperties> wavProperties() {
 using OutputState = IdleAudioRecorder::OutputState;
 
 TEST(AudioRecorderOutputStateTest, DeactivateDemotesAnActiveOutputToRequested) {
-  std::atomic<OutputState> state{OutputState::Active};
-  IdleAudioRecorder::deactivate(state);
-  EXPECT_EQ(state.load(), OutputState::Requested);
+  IdleAudioRecorder::OutputSlot<AudioFileWriter> slot;
+  slot.set(OutputState::Active);
+
+  slot.deactivate();
+
+  EXPECT_FALSE(slot.isActive());
+  EXPECT_TRUE(slot.isWanted());
 }
 
 TEST(AudioRecorderOutputStateTest, DeactivateNeverEnablesADisabledOutput) {
-  std::atomic<OutputState> state{OutputState::Disabled};
-  IdleAudioRecorder::deactivate(state);
-  EXPECT_EQ(state.load(), OutputState::Disabled);
+  IdleAudioRecorder::OutputSlot<AudioFileWriter> slot;
+
+  slot.deactivate();
+
+  EXPECT_FALSE(slot.isWanted());
 }
 
 TEST(AudioRecorderOutputStateTest, InvalidFilePropertiesAreRejectedAtEnable) {
@@ -126,7 +165,7 @@ TEST(AudioRecorderOutputStateTest, CallbackIsRequestedUntilAStreamPreparesIt) {
 
 TEST(AudioRecorderOutputStateTest, AConnectionWhoseAdapterNodeIsGoneFailsToPrepare) {
   IdleAudioRecorder recorder;
-  recorder.connect(std::make_shared<utils::graph::NodeHandle>(0, nullptr));
+  recorder.connect(std::make_shared<utils::graph::NodeHandle>(nullptr));
   ASSERT_TRUE(recorder.wantsConnection());
 
   auto result = recorder.prepareOutputsLocked(
@@ -138,6 +177,137 @@ TEST(AudioRecorderOutputStateTest, AConnectionWhoseAdapterNodeIsGoneFailsToPrepa
   EXPECT_TRUE(result.is_err());
   EXPECT_FALSE(recorder.isConnected());
   EXPECT_TRUE(recorder.wantsConnection());
+}
+
+namespace {
+
+constexpr float kSampleRate = 48000.0F;
+
+StreamFormat streamFormat(int channelCount) {
+  return StreamFormat{
+      .layout = AudioLayout{.sampleRate = kSampleRate, .channelCount = channelCount},
+      .maxFramesPerBuffer = 1024,
+  };
+}
+
+/// An adapter node that reports the channel count it was prepared for through buff_.
+struct AdapterFixture {
+  std::shared_ptr<OfflineAudioContext> context = std::make_shared<OfflineAudioContext>(
+      2,
+      512,
+      kSampleRate,
+      std::make_shared<MockAudioEventHandlerRegistry>());
+  std::shared_ptr<utils::graph::NodeHandle> handle =
+      std::make_shared<utils::graph::NodeHandle>(std::make_unique<RecorderAdapterNode>(context));
+
+  [[nodiscard]] RecorderAdapterNode &adapter() const {
+    return static_cast<RecorderAdapterNode &>(*handle->audioNode);
+  }
+};
+
+} // namespace
+
+TEST(AudioRecorderOutputStateTest, AnOutputThatCannotFollowAFormatChangeDoesNotHoldTheOthersBack) {
+  FakeEncoderLog log;
+  const auto backend = makeFakeBackend(log);
+  AdapterFixture adapterFixture;
+  IdleAudioRecorder recorder(&backend);
+  ASSERT_TRUE(recorder.enableFileOutput(wavProperties()).is_ok());
+  ASSERT_TRUE(recorder.setOnAudioReadyCallback(kSampleRate, 256, 1, 99).is_ok());
+  recorder.connect(adapterFixture.handle);
+  ASSERT_TRUE(recorder.prepareOutputsLocked(streamFormat(2)).is_ok());
+  ASSERT_EQ(adapterFixture.adapter().buff_.size(), 2U);
+  log.failNextReprepare.store(true);
+
+  auto result = recorder.reprepareOutputsLocked(streamFormat(1));
+
+  ASSERT_TRUE(result.is_err());
+  EXPECT_NE(result.unwrap_err().find("encoder refused the new input format"), std::string::npos);
+  EXPECT_FALSE(recorder.usesFileOutput());
+  EXPECT_TRUE(recorder.wantsFileOutput());
+  EXPECT_TRUE(recorder.usesCallback());
+  EXPECT_TRUE(recorder.isConnected());
+  EXPECT_EQ(adapterFixture.adapter().buff_.size(), 1U);
+}
+
+TEST(AudioRecorderOutputStateTest, AFileThatCannotFollowAFormatChangeIsStillReturned) {
+  FakeEncoderLog log;
+  const auto backend = makeFakeBackend(log);
+  IdleAudioRecorder recorder(&backend);
+  ASSERT_TRUE(recorder.enableFileOutput(wavProperties()).is_ok());
+  ASSERT_TRUE(recorder.prepareOutputsLocked(streamFormat(2)).is_ok());
+  log.failNextReprepare.store(true);
+  ASSERT_TRUE(recorder.reprepareOutputsLocked(streamFormat(1)).is_err());
+
+  auto recording = recorder.finishOutputs();
+
+  ASSERT_TRUE(recording.is_ok());
+  EXPECT_EQ(recording.unwrap().paths.size(), 1U);
+  EXPECT_DOUBLE_EQ(recording.unwrap().duration, log.fileDurationSec);
+  EXPECT_EQ(log.closedFiles.load(), 1);
+}
+
+namespace {
+
+/// Records a session whose last buffer the test sets, and reports the platform's latency as
+/// that buffer's duration plus a fixed amount.
+class LiveAudioRecorder final : public IdleAudioRecorder {
+ public:
+  static constexpr double PLATFORM_LATENCY = 0.005;
+
+  void deliverBuffer(int32_t frames, float sampleRate) {
+    lastCallbackFrameCount_.store(frames);
+    streamSampleRate_.store(sampleRate);
+  }
+
+  bool isIdle() const override {
+    return false;
+  }
+
+ protected:
+  [[nodiscard]] double platformInputLatency(double callbackSeconds) const override {
+    return callbackSeconds + PLATFORM_LATENCY;
+  }
+};
+
+} // namespace
+
+TEST(AudioRecorderOutputStateTest, InputLatencyGivesThePlatformTheLastBuffersDuration) {
+  LiveAudioRecorder recorder;
+  EXPECT_DOUBLE_EQ(recorder.getInputLatency(), LiveAudioRecorder::PLATFORM_LATENCY);
+
+  recorder.deliverBuffer(480, kSampleRate);
+
+  EXPECT_DOUBLE_EQ(
+      recorder.getInputLatency(), 480.0 / kSampleRate + LiveAudioRecorder::PLATFORM_LATENCY);
+}
+
+TEST(AudioRecorderOutputStateTest, AConnectedAdapterNodeIsFedAgainByTheNextSession) {
+  AdapterFixture adapterFixture;
+  IdleAudioRecorder recorder;
+  recorder.connect(adapterFixture.handle);
+  ASSERT_TRUE(recorder.prepareOutputsLocked(streamFormat(2)).is_ok());
+  ASSERT_TRUE(recorder.finishOutputs().is_ok());
+  EXPECT_FALSE(recorder.isConnected());
+  EXPECT_TRUE(adapterFixture.adapter().buff_.empty());
+
+  ASSERT_TRUE(recorder.prepareOutputsLocked(streamFormat(1)).is_ok());
+
+  EXPECT_TRUE(recorder.isConnected());
+  EXPECT_EQ(adapterFixture.adapter().buff_.size(), 1U);
+}
+
+TEST(AudioRecorderOutputStateTest, DestroyingARecorderClosesTheFileItLeftOpen) {
+  FakeEncoderLog log;
+  const auto backend = makeFakeBackend(log);
+  {
+    IdleAudioRecorder recorder(&backend);
+    ASSERT_TRUE(recorder.enableFileOutput(wavProperties()).is_ok());
+    ASSERT_TRUE(recorder.prepareOutputsLocked(streamFormat(1)).is_ok());
+    ASSERT_TRUE(recorder.usesFileOutput());
+  }
+
+  EXPECT_EQ(log.closedFiles.load(), 1);
 }
 
 // NOLINTEND

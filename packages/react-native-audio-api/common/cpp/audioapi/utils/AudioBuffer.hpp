@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -15,21 +16,21 @@
 
 namespace audioapi {
 
+enum class ChannelType : uint8_t {
+  MONO = 0,
+  LEFT = 0,
+  RIGHT = 1,
+  CENTER = 2,
+  LFE = 3,
+  SURROUND_LEFT = 4,
+  SURROUND_RIGHT = 5,
+};
+
 /// @brief AlignedAudioBuffer is a multi-channel audio buffer backed by AlignedAudioArray channels.
 /// @tparam Alignment The memory alignment in bytes for the underlying channel arrays.
 template <size_t Alignment>
 class AlignedAudioBuffer {
  public:
-  enum : uint8_t {
-    ChannelMono = 0,
-    ChannelLeft = 0,
-    ChannelRight = 1,
-    ChannelCenter = 2,
-    ChannelLFE = 3,
-    ChannelSurroundLeft = 4,
-    ChannelSurroundRight = 5,
-  };
-
   template <size_t A>
   friend class AlignedAudioBuffer;
 
@@ -109,6 +110,17 @@ class AlignedAudioBuffer {
   [[nodiscard]] size_t getSize() const noexcept {
     return size_;
   }
+
+  /// @brief Changes the frame count of every channel in place (see AlignedAudioArray::resize).
+  /// @note Only for a buffer nothing else references yet: channels shared through
+  /// shareChannels() or exposed to JS would change length under their holders.
+  void resize(size_t size) {
+    for (const auto &channel : channels_) {
+      channel->resize(size);
+    }
+    size_ = size;
+  }
+
   [[nodiscard]] double getDuration() const noexcept {
     return static_cast<double>(size_) / static_cast<double>(getSampleRate());
   }
@@ -121,7 +133,7 @@ class AlignedAudioBuffer {
 
   /// @brief Get the channel array for a specific channel type.
   /// @return Pointer to the AlignedAudioArray for the specified channel type - not owning.
-  [[nodiscard]] AlignedAudioArray<Alignment> *getChannelByType(int channelType) const {
+  [[nodiscard]] AlignedAudioArray<Alignment> *getChannelByType(ChannelType channelType) const {
     auto it = kChannelLayouts.find(getNumberOfChannels());
     if (it == kChannelLayouts.end()) {
       return nullptr;
@@ -351,6 +363,8 @@ class AlignedAudioBuffer {
   }
 
  private:
+  using enum ChannelType;
+
   std::vector<std::shared_ptr<AlignedAudioArrayBuffer<Alignment>>> channels_;
 
   size_t numberOfChannels_ = 0;
@@ -360,22 +374,12 @@ class AlignedAudioBuffer {
   static constexpr float kSqrtHalf = 0.7071067811865476f; // sqrtf(0.5f)
   static constexpr int kBlockSize = 64;
 
-  inline static const std::unordered_map<size_t, std::vector<int>> kChannelLayouts = {
-      {1, {ChannelMono}},
-      {2, {ChannelLeft, ChannelRight}},
-      {4, {ChannelLeft, ChannelRight, ChannelSurroundLeft, ChannelSurroundRight}},
-      {5, {ChannelLeft, ChannelRight, ChannelCenter, ChannelSurroundLeft, ChannelSurroundRight}},
-      {
-          6,
-          {
-              ChannelLeft,
-              ChannelRight,
-              ChannelCenter,
-              ChannelLFE,
-              ChannelSurroundLeft,
-              ChannelSurroundRight,
-          },
-      },
+  inline static const std::unordered_map<size_t, std::vector<ChannelType>> kChannelLayouts = {
+      {1, {MONO}},
+      {2, {LEFT, RIGHT}},
+      {4, {LEFT, RIGHT, SURROUND_LEFT, SURROUND_RIGHT}},
+      {5, {LEFT, RIGHT, CENTER, SURROUND_LEFT, SURROUND_RIGHT}},
+      {6, {LEFT, RIGHT, CENTER, LFE, SURROUND_LEFT, SURROUND_RIGHT}},
   };
 
   template <size_t OtherAlignment>
@@ -401,28 +405,28 @@ class AlignedAudioBuffer {
     auto numberOfSourceChannels = source.getNumberOfChannels();
     auto numberOfChannels = getNumberOfChannels();
 
-    auto mix = [&](int srcType, int dstType) {
+    auto mix = [&](ChannelType srcType, ChannelType dstType) {
       getChannelByType(dstType)->sum(
           *source.getChannelByType(srcType), sourceStart, destinationStart, length);
     };
 
     // Mono to stereo (1 -> 2, 4)
     if (numberOfSourceChannels == 1 && (numberOfChannels == 2 || numberOfChannels == 4)) {
-      mix(ChannelMono, ChannelLeft);
-      mix(ChannelMono, ChannelRight);
+      mix(MONO, LEFT);
+      mix(MONO, RIGHT);
     } else if (numberOfSourceChannels == 1 && numberOfChannels == 6) {
       // Mono to 5.1 (1 -> 6)
-      mix(ChannelMono, ChannelCenter);
+      mix(MONO, CENTER);
     } else if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
       // Stereo to 4 or 5.1 (2 -> 4, 6)
-      mix(ChannelLeft, ChannelLeft);
-      mix(ChannelRight, ChannelRight);
+      mix(LEFT, LEFT);
+      mix(RIGHT, RIGHT);
     } else if (numberOfSourceChannels == 4 && numberOfChannels == 6) {
       // Stereo 4 to 5.1 (4 -> 6)
-      mix(ChannelLeft, ChannelLeft);
-      mix(ChannelRight, ChannelRight);
-      mix(ChannelSurroundLeft, ChannelSurroundLeft);
-      mix(ChannelSurroundRight, ChannelSurroundRight);
+      mix(LEFT, LEFT);
+      mix(RIGHT, RIGHT);
+      mix(SURROUND_LEFT, SURROUND_LEFT);
+      mix(SURROUND_RIGHT, SURROUND_RIGHT);
     } else {
       discreteSum(source, sourceStart, destinationStart, length);
     }
@@ -437,50 +441,50 @@ class AlignedAudioBuffer {
     auto numberOfSourceChannels = source.getNumberOfChannels();
     auto numberOfChannels = getNumberOfChannels();
 
-    auto mix = [&](int srcType, int dstType, float gain = 1.0f) {
+    auto mix = [&](ChannelType srcType, ChannelType dstType, float gain = 1.0f) {
       getChannelByType(dstType)->sum(
           *source.getChannelByType(srcType), sourceStart, destinationStart, length, gain);
     };
 
     // Stereo to mono (2 -> 1): output += 0.5 * (input.L + input.R)
     if (numberOfSourceChannels == 2 && numberOfChannels == 1) {
-      mix(ChannelLeft, ChannelMono, 0.5f);
-      mix(ChannelRight, ChannelMono, 0.5f);
+      mix(LEFT, MONO, 0.5f);
+      mix(RIGHT, MONO, 0.5f);
     } else if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
       // Stereo 4 to mono (4 -> 1): output += 0.25 * (L + R + SL + SR)
-      mix(ChannelLeft, ChannelMono, 0.25f);
-      mix(ChannelRight, ChannelMono, 0.25f);
-      mix(ChannelSurroundLeft, ChannelMono, 0.25f);
-      mix(ChannelSurroundRight, ChannelMono, 0.25f);
+      mix(LEFT, MONO, 0.25f);
+      mix(RIGHT, MONO, 0.25f);
+      mix(SURROUND_LEFT, MONO, 0.25f);
+      mix(SURROUND_RIGHT, MONO, 0.25f);
     } else if (numberOfSourceChannels == 6 && numberOfChannels == 1) {
       // 5.1 to mono (6 -> 1): output += sqrt(0.5)*(L+R) + C + 0.5*(SL+SR)
-      mix(ChannelLeft, ChannelMono, kSqrtHalf);
-      mix(ChannelRight, ChannelMono, kSqrtHalf);
-      mix(ChannelCenter, ChannelMono);
-      mix(ChannelSurroundLeft, ChannelMono, 0.5f);
-      mix(ChannelSurroundRight, ChannelMono, 0.5f);
+      mix(LEFT, MONO, kSqrtHalf);
+      mix(RIGHT, MONO, kSqrtHalf);
+      mix(CENTER, MONO);
+      mix(SURROUND_LEFT, MONO, 0.5f);
+      mix(SURROUND_RIGHT, MONO, 0.5f);
     } else if (numberOfSourceChannels == 4 && numberOfChannels == 2) {
       // Stereo 4 to stereo 2 (4 -> 2): L += 0.5*(L+SL), R += 0.5*(R+SR)
-      mix(ChannelLeft, ChannelLeft, 0.5f);
-      mix(ChannelSurroundLeft, ChannelLeft, 0.5f);
-      mix(ChannelRight, ChannelRight, 0.5f);
-      mix(ChannelSurroundRight, ChannelRight, 0.5f);
+      mix(LEFT, LEFT, 0.5f);
+      mix(SURROUND_LEFT, LEFT, 0.5f);
+      mix(RIGHT, RIGHT, 0.5f);
+      mix(SURROUND_RIGHT, RIGHT, 0.5f);
     } else if (numberOfSourceChannels == 6 && numberOfChannels == 2) {
       // 5.1 to stereo (6 -> 2): L += L + sqrt(0.5)*(C+SL), R += R + sqrt(0.5)*(C+SR)
-      mix(ChannelLeft, ChannelLeft);
-      mix(ChannelCenter, ChannelLeft, kSqrtHalf);
-      mix(ChannelSurroundLeft, ChannelLeft, kSqrtHalf);
-      mix(ChannelRight, ChannelRight);
-      mix(ChannelCenter, ChannelRight, kSqrtHalf);
-      mix(ChannelSurroundRight, ChannelRight, kSqrtHalf);
+      mix(LEFT, LEFT);
+      mix(CENTER, LEFT, kSqrtHalf);
+      mix(SURROUND_LEFT, LEFT, kSqrtHalf);
+      mix(RIGHT, RIGHT);
+      mix(CENTER, RIGHT, kSqrtHalf);
+      mix(SURROUND_RIGHT, RIGHT, kSqrtHalf);
     } else if (numberOfSourceChannels == 6 && numberOfChannels == 4) {
       // 5.1 to stereo 4 (6 -> 4): L += L + sqrt(0.5)*C, R += R + sqrt(0.5)*C, SL += SL, SR += SR
-      mix(ChannelLeft, ChannelLeft);
-      mix(ChannelCenter, ChannelLeft, kSqrtHalf);
-      mix(ChannelRight, ChannelRight);
-      mix(ChannelCenter, ChannelRight, kSqrtHalf);
-      mix(ChannelSurroundLeft, ChannelSurroundLeft);
-      mix(ChannelSurroundRight, ChannelSurroundRight);
+      mix(LEFT, LEFT);
+      mix(CENTER, LEFT, kSqrtHalf);
+      mix(RIGHT, RIGHT);
+      mix(CENTER, RIGHT, kSqrtHalf);
+      mix(SURROUND_LEFT, SURROUND_LEFT);
+      mix(SURROUND_RIGHT, SURROUND_RIGHT);
     } else {
       discreteSum(source, sourceStart, destinationStart, length);
     }

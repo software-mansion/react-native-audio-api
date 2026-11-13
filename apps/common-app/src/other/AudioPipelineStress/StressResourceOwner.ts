@@ -5,6 +5,7 @@ import {
   AudioRecorder,
   FileDirectory,
   FileFormat,
+  type FileInfo,
 } from 'react-native-audio-api';
 
 import { BUFFER_LENGTH, MIN_DECODED_DURATION_SECONDS } from './constants';
@@ -45,19 +46,13 @@ export default class StressResourceOwner {
       );
     }
 
-    const fileOutputResult = recorder.enableFileOutput({
+    recorder.enableFileOutput({
       channelCount: 1,
       directory: FileDirectory.Cache,
       fileName: 'audio-pipeline-stress',
       format: FileFormat.M4A,
       subDirectory: 'AudioPipelineStress',
     });
-
-    if (fileOutputResult.status === 'error') {
-      throw new Error(
-        `Failed to enable recorder file output: ${fileOutputResult.message}`
-      );
-    }
 
     recorder.onError((event) => {
       this.lastRecorderError = event.message;
@@ -117,11 +112,7 @@ export default class StressResourceOwner {
 
   async startRecording(): Promise<void> {
     const { recorder } = this.getReadyResources();
-    const result = await recorder.start();
-
-    if (result.status === 'error') {
-      throw new Error(`Failed to start recording: ${result.message}`);
-    }
+    await recorder.start();
   }
 
   tryStartRecording() {
@@ -132,11 +123,11 @@ export default class StressResourceOwner {
   async stopRecordingAndDecode(): Promise<RecordingCapture> {
     const { context, recorder } = this.getReadyResources();
 
-    const stopResult = await recorder.stop();
-    recorder.clearOnAudioReady();
-
-    if (stopResult.status === 'error') {
-      throw new Error(`Failed to stop recording: ${stopResult.message}`);
+    let stopResult: FileInfo;
+    try {
+      stopResult = await recorder.stop();
+    } finally {
+      recorder.clearOnAudioReady();
     }
 
     if (!stopResult.paths.length) {

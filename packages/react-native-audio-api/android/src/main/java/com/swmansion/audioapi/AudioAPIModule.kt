@@ -17,6 +17,7 @@ import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.ForegroundServiceManager
 import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.NativeFileInfo
+import com.swmansion.audioapi.system.NativeRecorderControl
 import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
 import kotlin.concurrent.thread
@@ -31,6 +32,9 @@ class AudioAPIModule(
     const val NAME = NativeAudioAPIModuleSpec.NAME
     private const val TAG = "AudioAPIModule"
     private const val INPUT_DEVICE_ERROR = "E_INPUT_DEVICE"
+    private const val RECORDING_DISABLED_ERROR = "E_RECORDER_DISABLED"
+    private const val RECORDING_DISABLED_MESSAGE =
+      "Recording is unavailable: react-native-audio-api was built with \"disableAudioRecorder\": true."
   }
 
   val reactContext: WeakReference<ReactApplicationContext> = WeakReference(reactContext)
@@ -92,6 +96,8 @@ class AudioAPIModule(
   }
 
   override fun invalidate() {
+    // Before the cleanups below pull the foreground service and input routing from under it.
+    NativeRecorderControl.stop()
     reactContext.get()?.removeLifecycleEventListener(this)
     ForegroundServiceManager.cleanup()
     MediaSessionManager.cleanup()
@@ -158,11 +164,19 @@ class AudioAPIModule(
   override fun getSystemVolume(): Double = MediaSessionManager.getSystemVolume()
 
   override fun requestRecordingPermissions(promise: Promise) {
+    if (BuildConfig.RN_AUDIO_API_AUDIO_RECORDER_DISABLED) {
+      promise.reject(RECORDING_DISABLED_ERROR, RECORDING_DISABLED_MESSAGE)
+      return
+    }
     val permissionRequestListener = PermissionRequestListener(promise)
     MediaSessionManager.requestRecordingPermissions(permissionRequestListener)
   }
 
   override fun checkRecordingPermissions(promise: Promise) {
+    if (BuildConfig.RN_AUDIO_API_AUDIO_RECORDER_DISABLED) {
+      promise.reject(RECORDING_DISABLED_ERROR, RECORDING_DISABLED_MESSAGE)
+      return
+    }
     promise.resolve(MediaSessionManager.checkRecordingPermissions())
   }
 
@@ -244,6 +258,13 @@ class AudioAPIModule(
       if (type == null || key == null) {
         result.putBoolean("success", false)
         result.putString("error", "Type and key are required")
+        promise?.resolve(result)
+        return
+      }
+
+      if (type == "recording" && BuildConfig.RN_AUDIO_API_AUDIO_RECORDER_DISABLED) {
+        result.putBoolean("success", false)
+        result.putString("error", RECORDING_DISABLED_MESSAGE)
         promise?.resolve(result)
         return
       }

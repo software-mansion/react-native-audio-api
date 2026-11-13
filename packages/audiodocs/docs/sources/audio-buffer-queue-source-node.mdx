@@ -70,7 +70,7 @@ Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-sour
 
 ## Methods
 
-It inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
 
 ### `getLatency`
 
@@ -154,6 +154,9 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 Stops audio immediately. Unlike [`stop()`](./audio-scheduled-source-node.mdx#stop), which fully stops playback and clears the queued buffers,
 pause() halts the audio while keeping the current playback position, allowing you to resume from the same point later.
 
+A [`stop()`](./audio-scheduled-source-node.mdx#stop) time is absolute and survives a pause, whether `stop()` was called before or during it.
+If the node is resumed before that time, it plays until then. If it is still paused when that time comes, it ends without playing again.
+
 #### Errors:
 
 | Error type | Description |
@@ -181,11 +184,11 @@ Resumes audio playback with a specified delay. If no time is given, it resumes i
 
 ## Events
 
-It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
+Inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
 
 ### `onpositionchanged` <MobileOnly />
 
-Allows to set (or remove) a callback that will be fired after processing certain part of an audio.
+Sets (or removes) a callback that will be fired after processing a certain part of the audio.
 Frequency is defined by `onpositionchangedInterval`. By setting this callback you can achieve pause functionality.
 You can remove the callback by passing `null`.
 

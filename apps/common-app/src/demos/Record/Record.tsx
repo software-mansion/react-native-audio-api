@@ -6,6 +6,7 @@ import {
   AudioRecorder,
   concatAudioFiles,
   FileFormat,
+  type FileInfo,
   RecordingNotificationManager,
   useAudioInput,
 } from 'react-native-audio-api';
@@ -22,8 +23,8 @@ import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
 import { RecordingState } from './types';
 
-// concatAudioFiles supports WAV, M4A, FLAC, and ADTS — the formats recordable on
-// both iOS and Android.
+// concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) — the formats
+// recordable on both iOS and Android.
 const RECORDING_EXTENSION = FileFormat.M4A;
 const ROTATING_SIZE = 250_000;
 
@@ -31,6 +32,7 @@ const RECORDING_EXTENSION_NAME_MAP = {
   [FileFormat.Wav]: 'wav',
   [FileFormat.M4A]: 'm4a',
   [FileFormat.Flac]: 'flac',
+  [FileFormat.OpusOgg]: 'ogg',
   [FileFormat.Adts]: 'aac',
 };
 
@@ -85,12 +87,6 @@ const Record: FC = () => {
     currentPositionSV.value = 0;
   }, [currentPositionSV]);
 
-  const updateNotification = (paused: boolean) => {
-    RecordingNotificationManager.show({
-      paused,
-    });
-  };
-
   const setupNotification = (paused: boolean) => {
     RecordingNotificationManager.show({
       title: 'Recording Demo',
@@ -100,7 +96,7 @@ const Record: FC = () => {
       color: 0xff6200,
       showStopAction: true,
       deepLinkUri: 'audioapi-example://record',
-      usesChronometer: true,
+      usesChronometer: true
     });
   };
 
@@ -126,7 +122,12 @@ const Record: FC = () => {
       ios: {
         category: 'playAndRecord',
         mode: 'default',
-        options: ['defaultToSpeaker', 'allowBluetoothA2DP', 'mixWithOthers'],
+        options: [
+          'defaultToSpeaker',
+          'allowBluetoothA2DP',
+          'allowBluetoothHFP',
+          'mixWithOthers',
+        ],
       },
     });
 
@@ -139,31 +140,32 @@ const Record: FC = () => {
       return;
     }
 
-    const result = await Recorder.start();
-
-    setupNotification(false);
-
-    if (result.status === 'success') {
-      setIsInterrupted(false);
-      setState(RecordingState.Recording);
+    try {
+      await Recorder.start();
+    } catch (error) {
+      setupNotification(false);
+      console.log('Recording start error:', error);
+      Alert.alert(
+        'Error',
+        `Failed to start recording: ${(error as Error).message}`
+      );
+      setState(RecordingState.Idle);
       return;
     }
 
-    console.log('Recording start error:', result);
-    Alert.alert('Error', `Failed to start recording: ${result.message}`);
-    setState(RecordingState.Idle);
+    setupNotification(false);
+    setIsInterrupted(false);
+    setState(RecordingState.Recording);
   }, [state, hasPermissions]);
 
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
-    updateNotification(true);
     setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
   const onResumeRecording = useCallback(() => {
     Recorder.resume();
-    updateNotification(false);
     setState(RecordingState.Recording);
   }, []);
 
@@ -190,14 +192,21 @@ const Record: FC = () => {
   );
 
   const onStopRecording = useCallback(async () => {
-    const info = await Recorder.stop();
+    let info: FileInfo | null = null;
+    try {
+      info = await Recorder.stop();
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        `Failed to stop recording: ${(error as Error).message}`
+      );
+    }
     AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
     setIsInterrupted(false);
     setState(RecordingState.Loading);
 
-    if (info.status !== 'success') {
-      Alert.alert('Error', `Failed to stop recording: ${info.message}`);
+    if (!info) {
       setRecordedBuffer(null);
       setState(RecordingState.Idle);
       return;

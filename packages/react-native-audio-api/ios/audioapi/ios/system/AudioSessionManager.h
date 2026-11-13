@@ -54,11 +54,15 @@
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject;
+#ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
 - (NSString *)requestRecordingPermissions;
+#endif
 
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject;
+#ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
 - (NSString *)checkRecordingPermissions;
+#endif
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices;

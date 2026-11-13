@@ -23,8 +23,49 @@ on:
         default: true
 
 jobs:
+  changes:
+    name: Detect changes
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      cpp: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.cpp == 'true' }}
+      js: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.js == 'true' }}
+    steps:
+      - name: Path filter
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - 'package.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.yarn/**'
+              - '.nvmrc'
+              - 'packages/react-native-audio-api/package.json'
+              - '.github/actions/**'
+              - '.github/workflows/tests.yml'
+            cpp:
+              - 'packages/react-native-audio-api/common/**'
+              - '.github/workflows/cpp-job.yml'
+              - '.github/workflows/cpp-coverage-job.yml'
+            js:
+              - 'packages/react-native-audio-api/src/**'
+              - 'packages/react-native-audio-api/tests/**'
+              - 'packages/react-native-audio-api/mock/**'
+              - 'packages/react-native-audio-api/scripts/build.sh'
+              - 'packages/react-native-audio-api/babel.config.js'
+              - 'packages/react-native-audio-api/tsconfig*.json'
+              - 'tsconfig.json'
+              - '.github/workflows/js-job.yml'
+
   cpp-smoke-tests:
-    if: github.event_name == 'pull_request' || inputs.run_cpp_smoke_tests
+    needs: changes
+    if: needs.changes.outputs.cpp == 'true' && (github.event_name == 'pull_request' || inputs.run_cpp_smoke_tests)
     uses: ./.github/workflows/cpp-job.yml
     with:
       name: C++ smoke
@@ -40,9 +81,11 @@ jobs:
       force: ${{ github.event_name == 'workflow_dispatch' }}
 
   cpp-coverage:
-    if: github.event_name == 'pull_request' || inputs.run_cpp_coverage
+    needs: changes
+    if: needs.changes.outputs.cpp == 'true' && (github.event_name == 'pull_request' || inputs.run_cpp_coverage)
     uses: ./.github/workflows/cpp-coverage-job.yml
 
   js-tests:
-    if: github.event_name == 'pull_request' || inputs.run_js_tests
+    needs: changes
+    if: needs.changes.outputs.js == 'true' && (github.event_name == 'pull_request' || inputs.run_js_tests)
     uses: ./.github/workflows/js-job.yml

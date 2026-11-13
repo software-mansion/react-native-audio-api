@@ -2,6 +2,7 @@
 
 #import <audioapi/core/OfflineAudioContext.h>
 #import <audioapi/ios/core/IOSAudioRecorder.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
@@ -12,12 +13,12 @@
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
-#import <audioapi/encoding/AdtsHeader.h>
-#import <audioapi/encoding/EncoderCapabilities.h>
-#import <audioapi/ios/core/utils/IOSEncoder.h>
+#import <audioapi/events/AudioEventProducer.h>
+#import <audioapi/events/IAudioEventHandlerRegistry.h>
 #import <audioapi/utils/AudioFileProperties.h>
+#import <audioapi/events/AudioEventPayload.h>
+#import <audioapi/events/IAudioEventHandlerRegistry.h>
 
-#include <cstring>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -31,6 +32,42 @@ static NSString *NSStringFromStdString(const std::string &value) {
 
 namespace audioapi {
 
+/// Contexts take an event producer from their registry on construction, so tests need a
+/// registry even when no event is ever dispatched.
+class NullAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
+ public:
+  uint64_t registerHandler(
+      AudioEvent eventName,
+      const std::shared_ptr<facebook::jsi::Function> &handler) override {
+    return 0;
+  }
+
+  void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
+
+  bool dispatchEvent(
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return false;
+  }
+
+  bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return false;
+  }
+
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override {
+    return std::make_shared<AudioEventProducer>(producerQueue_);
+  }
+
+ private:
+  /// Only ever a binding target for the producers handed out above; nothing is enqueued.
+  moodycamel::ConcurrentQueue<int> producerQueue_;
+};
+
 struct RecorderAdapterTestFixture {
   std::shared_ptr<OfflineAudioContext> context;
   std::shared_ptr<utils::graph::NodeHandle> handle;
@@ -42,11 +79,11 @@ struct RecorderAdapterTestFixture {
 
 static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   RecorderAdapterTestFixture fixture;
-  fixture.context =
-      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr);
+  fixture.context = std::make_shared<OfflineAudioContext>(
+      2, 512, 44100.0f, std::make_shared<NullAudioEventHandlerRegistry>());
   auto adapterNode = std::make_unique<RecorderAdapterNode>(fixture.context);
   fixture.handle =
-      std::make_shared<utils::graph::NodeHandle>(0, std::move(adapterNode));
+      std::make_shared<utils::graph::NodeHandle>(std::move(adapterNode));
   return fixture;
 }
 
@@ -130,11 +167,21 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 @property(nonatomic, assign) NSInteger pauseCallCount;
 @property(nonatomic, assign) NSInteger resumeCallCount;
 @property(nonatomic, assign) BOOL resumeResult;
+@property(nonatomic, strong) NSError *resumeError;
 @property(nonatomic, assign) NSInteger cleanupCallCount;
 @property(nonatomic, assign) NSInteger setInputArmedCallCount;
 @property(nonatomic, assign) BOOL lastInputArmed;
 @property(nonatomic, assign) BOOL throwsOnStart;
 @property(nonatomic, strong) NSException *startException;
+/// Refreshing reports a format change the first time and none afterwards.
+@property(atomic, assign) BOOL reportsFormatChangeOnFirstRefresh;
+@property(atomic, assign) NSInteger refreshCallCount;
+/// When set, the first re-prepare signals `reprepareParked` and waits on
+/// `releaseParkedReprepare` before reading the buffer size.
+@property(atomic, strong) dispatch_semaphore_t reprepareParked;
+@property(atomic, strong) dispatch_semaphore_t releaseParkedReprepare;
+@property(atomic, assign) BOOL reprepareIsParked;
+@property(atomic, assign) BOOL armedWhileReprepareParked;
 
 @end
 
@@ -162,7 +209,30 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 }
 
 - (int)getResolvedBufferSize {
+  dispatch_semaphore_t releaseParkedReprepare = self.releaseParkedReprepare;
+  if (releaseParkedReprepare != nil) {
+    self.releaseParkedReprepare = nil;
+    self.reprepareIsParked = YES;
+    dispatch_semaphore_signal(self.reprepareParked);
+    dispatch_semaphore_wait(
+        releaseParkedReprepare,
+        dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
+    self.reprepareIsParked = NO;
+  }
+
   return self.mockResolvedBufferSize;
+}
+
+- (BOOL)refreshResolvedInputFormatReturningChanged:(BOOL *)formatChanged {
+  if (!self.reportsFormatChangeOnFirstRefresh) {
+    return [super refreshResolvedInputFormatReturningChanged:formatChanged];
+  }
+
+  @synchronized(self) {
+    self.refreshCallCount += 1;
+    *formatChanged = self.refreshCallCount == 1;
+  }
+  return YES;
 }
 
 - (BOOL)start:(NSError **)error {
@@ -185,6 +255,9 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 - (void)setInputArmed:(BOOL)armed {
   self.setInputArmedCallCount += 1;
   self.lastInputArmed = armed;
+  if (armed && self.reprepareIsParked) {
+    self.armedWhileReprepareParked = YES;
+  }
   [super setInputArmed:armed];
 }
 
@@ -196,8 +269,13 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   self.pauseCallCount += 1;
 }
 
-- (BOOL)resume {
+- (BOOL)resume:(NSError **)error {
   self.resumeCallCount += 1;
+
+  if (!self.resumeResult && error != nil) {
+    *error = self.resumeError;
+  }
+
   return self.resumeResult;
 }
 
@@ -207,6 +285,50 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 }
 
 @end
+
+/// Records every dispatched event so a test can read what reached JS.
+class RecordingEventRegistry : public IAudioEventHandlerRegistry {
+public:
+  struct Dispatched {
+    AudioEvent event;
+    uint64_t listenerId;
+    std::string reason;
+  };
+
+  std::vector<Dispatched> dispatched;
+
+  uint64_t registerHandler(
+      AudioEvent eventName,
+      const std::shared_ptr<facebook::jsi::Function> &handler) override {
+    return 0;
+  }
+
+  void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
+
+  bool dispatchEvent(
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    std::string reason;
+    if (auto *stringPayload = std::get_if<StringPayload>(&payload)) {
+      reason = stringPayload->reason;
+    }
+    dispatched.push_back({eventName, listenerId, reason});
+    return true;
+  }
+
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override {
+    return nullptr;
+  }
+
+  bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return dispatchEvent(eventName, listenerId, std::move(payload));
+  }
+};
 
 class TestableIOSAudioRecorder : public IOSAudioRecorder {
 public:
@@ -222,17 +344,21 @@ public:
     return previous;
   }
 
+  float streamSampleRate() const {
+    return streamSampleRate_.load(std::memory_order_acquire);
+  }
+
   void setRecorderState(RecorderState state) {
     state_.store(state, std::memory_order_release);
   }
 
   std::string currentFilePath() const {
-    std::scoped_lock lock(fileWriterMutex_);
-    return fileWriter_ != nullptr ? fileWriter_->getFilePath() : "";
+    std::scoped_lock lock(file_.mutex);
+    return file_.target != nullptr ? file_.target->getFilePath() : "";
   }
 
   bool fileOutputEnabledIntent() const {
-    return wantsFileOutput();
+    return file_.isWanted();
   }
 
   bool fileOutputConfigured() const {
@@ -240,7 +366,7 @@ public:
   }
 
   bool callbackOutputEnabledIntent() const {
-    return wantsCallback();
+    return callback_.isWanted();
   }
 
   bool callbackOutputConfigured() const {
@@ -248,7 +374,7 @@ public:
   }
 
   bool connectionEnabledIntent() const {
-    return wantsConnection();
+    return adapter_.isWanted();
   }
 
   bool connectionConfigured() const {
@@ -277,7 +403,8 @@ public:
   self.audioEngine = [[FakeIOSRecorderAudioEngine alloc] init];
   self.nativeRecorder = [[FakeNativeAudioRecorder alloc] init];
 
-  _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
+  _recorder = std::make_unique<TestableIOSAudioRecorder>(
+      std::make_shared<NullAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
   self.nativeRecorder.onInputNotification = self.originalNativeRecorder.onInputNotification;
 }
@@ -465,7 +592,7 @@ public:
 }
 
 - (void)testConnectWhileIdleTracksIntentWithoutLiveConnection {
-  auto adapter = std::make_shared<utils::graph::NodeHandle>(0, nullptr);
+  auto adapter = std::make_shared<utils::graph::NodeHandle>(nullptr);
 
   _recorder->connect(adapter);
 
@@ -514,6 +641,144 @@ public:
   XCTAssertEqual(self.nativeRecorder.resumeCallCount, 1);
   XCTAssertTrue(_recorder->isPaused());
   XCTAssertFalse(_recorder->isRecording());
+}
+
+- (void)testResumeReturnsTheNativeErrorWithoutReportingIt {
+  auto registry = std::make_shared<RecordingEventRegistry>();
+  auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
+  NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
+  recorder->setOnErrorCallback(42);
+  recorder->setRecorderState(RecorderState::Recording);
+  self.audioEngine.state = AudioEngineStateRunning;
+  recorder->pause();
+
+  self.nativeRecorder.resumeResult = NO;
+  self.nativeRecorder.resumeError =
+      [NSError errorWithDomain:NSOSStatusErrorDomain code:560557684 userInfo:nil];
+
+  auto result = recorder->resume();
+
+  XCTAssertTrue(result.is_err());
+  NSString *reason = NSStringFromStdString(result.unwrap_err());
+  XCTAssertTrue([reason containsString:@"Failed to resume"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"NSOSStatusErrorDomain"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
+  XCTAssertTrue(recorder->isPaused());
+  XCTAssertEqual(registry->dispatched.size(), 0UL);
+
+  recorder->replaceNativeRecorder(original);
+  [original cleanup];
+}
+
+- (void)testRecoveryFailedNotificationReportsThroughRecorderError {
+  auto registry = std::make_shared<RecordingEventRegistry>();
+  auto recorder = std::make_unique<TestableIOSAudioRecorder>(registry);
+  NativeAudioRecorder *original = recorder->replaceNativeRecorder(self.nativeRecorder);
+  recorder->setOnErrorCallback(42);
+  NSError *activationRefused = [AudioAPIError
+      sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
+                                                  code:560557684
+                                              userInfo:nil]];
+
+  original.onInputNotification(AudioEngineInputNotificationRecoveryFailed, activationRefused);
+
+  XCTAssertEqual(registry->dispatched.size(), 1UL);
+  XCTAssertEqual(registry->dispatched[0].event, AudioEvent::RECORDER_ERROR);
+  XCTAssertEqual(registry->dispatched[0].listenerId, 42ULL);
+  NSString *reason = NSStringFromStdString(registry->dispatched[0].reason);
+  XCTAssertTrue([reason containsString:@"failed to recover the input"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
+
+  recorder->replaceNativeRecorder(original);
+  [original cleanup];
+}
+
+- (void)testConcurrentHardwareChangeArmsInputOnlyAfterOutputsAreReprepared {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
+  _recorder->setRecorderState(RecorderState::Recording);
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  AudioEngineInputNotificationBlock notifyInput =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // The engine notifies a rebuilt graph: this call sees the format change and
+  // is held while re-preparing the outputs.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged, nil);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+
+  // A second starter notifies the same graph and starts it once this returns.
+  dispatch_semaphore_t secondNotificationReturned = dispatch_semaphore_create(0);
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged, nil);
+    dispatch_semaphore_signal(secondNotificationReturned);
+  });
+  dispatch_semaphore_wait(
+      secondNotificationReturned,
+      dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC));
+  dispatch_semaphore_signal(releaseParkedReprepare);
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertFalse(nativeRecorder.armedWhileReprepareParked);
+  XCTAssertTrue(nativeRecorder.lastInputArmed);
+}
+
+- (void)testHardwareChangeOfStoppedSessionFinishesBeforeNextStart {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
+  self.audioEngine.state = AudioEngineStateRunning;
+  XCTAssertTrue(_recorder->start().is_ok());
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  AudioEngineInputNotificationBlock notifyInput =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // A notification for the first session is held while re-preparing its
+  // outputs in the first session's format.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged, nil);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), queue,
+                 ^{
+                   dispatch_semaphore_signal(releaseParkedReprepare);
+                 });
+
+  // The session stops and a new one starts in another format meanwhile.
+  XCTAssertTrue(_recorder->stop().is_ok());
+  nativeRecorder.mockResolvedInputFormat =
+      [[AVAudioFormat alloc] initStandardFormatWithSampleRate:48000
+                                                     channels:2];
+  XCTAssertTrue(_recorder->start().is_ok());
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertEqual(_recorder->streamSampleRate(), 48000.0F);
 }
 
 - (void)testStopReturnsErrorWhileIdle {
@@ -626,6 +891,55 @@ public:
       containsString:@"Failed to prepare callback: Invalid callback"]);
 }
 
+- (void)testAFailedStartClosesTheFileItOpened {
+  self.audioEngine.state = AudioEngineStateRunning;
+  NSString *uuid = [[NSUUID UUID] UUIDString];
+  auto properties = [self validFileProperties];
+  properties->path.fileName =
+      [[NSString stringWithFormat:@"ios-recorder-failed-start-%@", uuid] UTF8String];
+  XCTAssertTrue(_recorder->enableFileOutput(properties).is_ok());
+  // Prepared after the file, so the start fails with the file already open.
+  XCTAssertTrue(_recorder->setOnAudioReadyCallback(0, 256, 2, 99).is_ok());
+
+  auto result = _recorder->start();
+
+  XCTAssertTrue(result.is_err());
+  XCTAssertTrue(_recorder->isIdle());
+  XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
+  XCTAssertFalse(_recorder->fileOutputConfigured());
+  XCTAssertTrue(_recorder->fileOutputEnabledIntent());
+  XCTAssertEqual(_recorder->currentFilePath(), "");
+}
+
+- (void)testStartFailsWhenTheConnectedAdapterNodeIsGone {
+  self.audioEngine.state = AudioEngineStateRunning;
+  _recorder->connect(std::make_shared<utils::graph::NodeHandle>(nullptr));
+
+  auto result = _recorder->start();
+
+  XCTAssertTrue(result.is_err());
+  XCTAssertEqualObjects(
+      NSStringFromStdString(result.unwrap_err()), @"Recorder adapter node is unavailable.");
+  XCTAssertTrue(_recorder->isIdle());
+  XCTAssertEqual(self.nativeRecorder.stopCallCount, 1);
+  XCTAssertFalse(self.nativeRecorder.lastInputArmed);
+}
+
+- (void)testAConnectedRecorderStartsAgainAfterStop {
+  self.audioEngine.state = AudioEngineStateRunning;
+  auto adapterFixture = makeRecorderAdapterFixture();
+  _recorder->connect(adapterFixture.handle);
+  XCTAssertTrue(_recorder->start().is_ok());
+  XCTAssertTrue(_recorder->stop().is_ok());
+  XCTAssertFalse(_recorder->isConnected());
+
+  auto restartResult = _recorder->start();
+
+  XCTAssertTrue(restartResult.is_ok());
+  XCTAssertTrue(_recorder->isConnected());
+  XCTAssertFalse(adapterFixture.adapter()->buff_.empty());
+}
+
 - (void)testConnectWhileActiveInitializesAdapterAndDisconnectClearsIt {
   auto adapterFixture = makeRecorderAdapterFixture();
   auto *adapter = adapterFixture.adapter();
@@ -644,74 +958,6 @@ public:
   _recorder->disconnect();
 
   XCTAssertFalse(_recorder->isConnected());
-}
-
-@end
-
-/// The file type AVAudioFile writes follows the path extension, so the ADTS format is
-/// proven at the byte level: every frame must start with a sync word and its length must
-/// land exactly on the next one.
-@interface IOSEncoderAdtsTests : XCTestCase
-@end
-
-@implementation IOSEncoderAdtsTests
-
-- (void)testAacExtensionWritesSelfDelimitingAdtsFrames {
-  NSString *path = [NSTemporaryDirectory()
-      stringByAppendingPathComponent:@"ios-encoder-adts-test.aac"];
-  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-
-  const AudioLayout layout{.sampleRate = 44100, .channelCount = 1};
-  ios::encoder::IOSEncoder encoder(EncoderSettings{
-      .fileLayout = layout,
-      .encoding =
-          AudioFileProperties::EncodingConfig{
-              .format = AudioFileProperties::FileFormat::ADTS,
-              .bitRate = 64000,
-              .bitDepth = AudioFileProperties::BitDepth::Bit16,
-              .flacCompressionLevel = 0,
-              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
-          },
-  });
-  const EncoderOutputSpec spec =
-      encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::ADTS);
-  XCTAssertEqual(spec.container, AudioContainer::ADTS);
-
-  auto openResult = encoder.open(
-      StreamFormat{.layout = layout, .maxFramesPerBuffer = 1024}, spec, path.UTF8String);
-  XCTAssertTrue(openResult.is_ok(), @"%s",
-                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
-
-  std::vector<float> samples(1024, 0.25f);
-  const float *channels[1] = {samples.data()};
-  for (int block = 0; block < 40; ++block) {
-    XCTAssertTrue(encoder.encode(channels, 1024).is_ok());
-  }
-  XCTAssertTrue(encoder.close().is_ok());
-
-  NSData *data = [NSData dataWithContentsOfFile:path];
-  XCTAssertGreaterThan(data.length, adts::HEADER_SIZE);
-  const auto *bytes = static_cast<const uint8_t *>(data.bytes);
-
-  size_t offset = 0;
-  size_t frames = 0;
-  while (offset + adts::HEADER_SIZE <= data.length) {
-    adts::HeaderBytes header{};
-    std::memcpy(header.data(), bytes + offset, adts::HEADER_SIZE);
-    XCTAssertEqual(header[0], 0xFF, @"frame %zu", frames);
-    XCTAssertEqual(header[1] & 0xF6, 0xF0, @"frame %zu", frames);
-    // 13-bit frame length straddles bytes 3..5; computed here because nothing in the iOS
-    // library references the ADTS helpers, so they are not linked into the test host.
-    const size_t frameLength = ((static_cast<size_t>(header[3]) & 0x3U) << 11) |
-        (static_cast<size_t>(header[4]) << 3) | (static_cast<size_t>(header[5]) >> 5);
-    XCTAssertGreaterThan(frameLength, adts::HEADER_SIZE, @"frame %zu", frames);
-    offset += frameLength;
-    frames += 1;
-  }
-  XCTAssertEqual(offset, data.length);
-  XCTAssertGreaterThan(frames, 0u);
-
-  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
 @end

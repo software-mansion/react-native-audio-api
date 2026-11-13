@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-worklets",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "react-native-worklets integration for react-native-audio-api: WorkletNode for UI-thread audio visualization. Requires React Native New Architecture.",
   "sideEffects": false,
   "exports": {
@@ -138,7 +138,6 @@
         "typescript",
         {
           "project": "tsconfig.json",
-          "tsc": "../../node_modules/.bin/tsc",
           "esm": true,
           "commonjs": true
         }

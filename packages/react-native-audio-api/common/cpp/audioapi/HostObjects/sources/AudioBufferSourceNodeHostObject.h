@@ -37,9 +37,9 @@ class AudioBufferSourceNodeHostObject : public AudioBufferBaseSourceNodeHostObje
   JSI_HOST_FUNCTION_DECL(setBuffer);
 
   [[nodiscard]] size_t getMemoryPressure() const override {
-    // playbackRate + detune params (owned by the base source). The AudioBuffer
-    // itself is tracked separately as an AudioBufferHostObject and re-hinted
-    // via setExternalMemoryPressure in `setBuffer`.
+    // playbackRate + detune params (owned by the base source). The samples are reported
+    // once, by the AudioBuffer's own JS object; a node sharing them must not report them
+    // again (see AudioBufferHostObject::createJsObject).
     return AudioNodeHostObject::getMemoryPressure() + 2 * kAudioParamBytes;
   }
 

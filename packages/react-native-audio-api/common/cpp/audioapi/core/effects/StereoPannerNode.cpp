@@ -52,12 +52,12 @@ void StereoPannerNode::processNode(int framesToProcess) {
 
   auto panParamValues = panParam_->processARateParam(framesToProcess, time)->getChannel(0)->span();
 
-  auto outputLeft = outputBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  auto outputRight = outputBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+  auto outputLeft = outputBuffer_->getChannelByType(ChannelType::LEFT)->span();
+  auto outputRight = outputBuffer_->getChannelByType(ChannelType::RIGHT)->span();
 
   // Input is mono
   if (audioBuffer_->getNumberOfChannels() == 1) {
-    auto inputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelMono)->span();
+    auto inputLeft = audioBuffer_->getChannelByType(ChannelType::MONO)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
@@ -70,8 +70,8 @@ void StereoPannerNode::processNode(int framesToProcess) {
       time += deltaTime;
     }
   } else { // Input is stereo
-    auto inputLeft = audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
-    auto inputRight = audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+    auto inputLeft = audioBuffer_->getChannelByType(ChannelType::LEFT)->span();
+    auto inputRight = audioBuffer_->getChannelByType(ChannelType::RIGHT)->span();
 
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);

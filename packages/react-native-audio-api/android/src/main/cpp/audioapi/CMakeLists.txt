@@ -21,6 +21,11 @@ if (NOT RN_AUDIO_API_FFMPEG_ENABLED)
   list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*FfmpegDecoder\\.cpp$")
 endif()
 
+if (RN_AUDIO_API_AUDIO_RECORDER_DISABLED)
+  list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*AudioRecorderHostObject\\.cpp$")
+  list(FILTER ANDROID_CPP_SOURCES EXCLUDE REGEX ".*AndroidAudioRecorder\\.cpp$")
+endif()
+
 # Debug-only: operator new/delete overrides must not ship in Release.
 list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*AudioThreadGuard\\.cpp$")
 
@@ -28,6 +33,19 @@ set_source_files_properties(
   ${DSP_CPP_SOURCES}
   PROPERTIES
   COMPILE_FLAGS "-O3"
+)
+
+set_source_files_properties(
+  "${ANDROID_CPP_DIR}/audioapi/android/AndroidDecoding.cpp"
+  PROPERTIES
+  COMPILE_FLAGS "-O3 -D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability"
+)
+
+# APerformanceHint (API 33) is weak-linked and guarded the same way.
+set_source_files_properties(
+  "${ANDROID_CPP_DIR}/audioapi/android/ThroughputHintSession.cpp"
+  PROPERTIES
+  COMPILE_FLAGS "-D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability"
 )
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -158,6 +176,13 @@ if (RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED)
     RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1
     MA_NO_LIBOPUS=1
     MA_NO_LIBVORBIS=1
+  )
+endif()
+
+if (RN_AUDIO_API_AUDIO_RECORDER_DISABLED)
+  target_compile_definitions(
+    react-native-audio-api
+    PRIVATE RN_AUDIO_API_AUDIO_RECORDER_DISABLED=1
   )
 endif()
 

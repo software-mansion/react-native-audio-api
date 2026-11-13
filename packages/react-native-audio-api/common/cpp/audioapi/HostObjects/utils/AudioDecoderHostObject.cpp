@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 AudioDecoderHostObject::AudioDecoderHostObject(
@@ -27,14 +28,9 @@ PromiseResolver rejectWithMessage(std::string message) {
   };
 }
 
-/// Wraps @p buffer in an `AudioBuffer` JS object, its sample memory reported to the JS garbage
-/// collector.
 PromiseResolver resolveWithAudioBuffer(std::shared_ptr<AudioBuffer> buffer) {
   return [buffer = std::move(buffer)](jsi::Runtime &runtime) {
-    auto hostObject = std::make_shared<AudioBufferHostObject>(buffer);
-    auto object = jsi::Object::createFromHostObject(runtime, hostObject);
-    object.setExternalMemoryPressure(runtime, hostObject->getSizeInBytes());
-    return object;
+    return AudioBufferHostObject::createJsObject(runtime, buffer);
   };
 }
 
@@ -43,20 +39,21 @@ PromiseResolver resolveWithAudioBuffer(std::shared_ptr<AudioBuffer> buffer) {
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithMemoryBlock) {
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
-  auto *data = arrayBuffer.data(runtime);
-  auto size = static_cast<int>(arrayBuffer.size(runtime));
+  const auto *data = arrayBuffer.data(runtime);
+  const auto size = arrayBuffer.size(runtime);
 
   auto sampleRate = static_cast<float>(args[1].getNumber());
 
-  auto promise = promiseVendor_->createAsyncPromise([data, size, sampleRate]() -> PromiseResolver {
-    auto result = audiodecoding::decodeWithMemoryBlock(data, size, sampleRate);
+  auto promise = promiseVendor_->createAsyncPromise(
+      [bytes = std::vector<uint8_t>(data, data + size), sampleRate]() -> PromiseResolver {
+        auto result = audiodecoding::decodeWithMemoryBlock(bytes.data(), bytes.size(), sampleRate);
 
-    if (result.is_err()) {
-      return rejectWithMessage(result.unwrap_err());
-    }
+        if (result.is_err()) {
+          return rejectWithMessage(result.unwrap_err());
+        }
 
-    return resolveWithAudioBuffer(result.unwrap());
-  });
+        return resolveWithAudioBuffer(result.unwrap());
+      });
   return promise;
 }
 

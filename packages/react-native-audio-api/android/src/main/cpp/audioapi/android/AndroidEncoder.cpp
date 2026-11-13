@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/encoding/AdtsHeader.h>
+#include <audioapi/encoding/ChannelRemixer.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
@@ -25,13 +26,14 @@
 #include <utility>
 #include <vector>
 
-// AMEDIAMUXER_OUTPUT_FORMAT_OGG was added to the NDK at API level 34; fall back
-// to a numeric value so builds against older NDK headers still compile. Runtime
-// availability is still gated by the device OS version.
-// NOLINTBEGIN
+// AMediaMuxer writes Ogg from API level 34 on. The constant arrived in the NDK headers at the
+// same level, so a numeric fallback keeps older NDKs compiling; the device OS still decides at
+// runtime.
 #ifndef AMEDIAMUXER_OUTPUT_FORMAT_OGG
 #define AMEDIAMUXER_OUTPUT_FORMAT_OGG 4
 #endif
+
+// NOLINTBEGIN
 
 namespace audioapi::android::encoder {
 namespace {
@@ -70,9 +72,9 @@ class IEncoderBackend {
       const EncoderOutputSpec &outputSpec,
       AudioLayout &effective) = 0;
 
-  // Encodes frames already in the backend's effective format, one float32 pointer per
-  // channel. Backends interleave while they quantize, so no separate interleave pass exists.
-  virtual std::string encodePlanar(const float *const *planar, int numFrames) = 0;
+  // Encodes the first numFrames frames of a buffer already in the backend's effective format.
+  // Backends interleave while they quantize, so no separate interleave pass exists.
+  virtual std::string encode(const AudioBuffer &frames, int numFrames) = 0;
 
   virtual std::string close() = 0;
 
@@ -123,9 +125,10 @@ class WavBackend : public IEncoderBackend {
     return "";
   }
 
-  std::string encodePlanar(const float *const *planar, int numFrames) override {
-    return writeSamples(
-        numFrames, [planar](size_t frame, size_t channel) { return planar[channel][frame]; });
+  std::string encode(const AudioBuffer &frames, int numFrames) override {
+    return writeSamples(numFrames, [&frames](size_t frame, size_t channel) {
+      return (*frames.getChannel(channel))[frame];
+    });
   }
 
   std::string close() override {
@@ -241,9 +244,10 @@ class WavBackend : public IEncoderBackend {
 
 class MediaCodecBackend : public IEncoderBackend {
  public:
-  std::string encodePlanar(const float *const *planar, int numFrames) override {
-    return queueAndPump(
-        numFrames, [planar](size_t frame, size_t channel) { return planar[channel][frame]; });
+  std::string encode(const AudioBuffer &frames, int numFrames) override {
+    return queueAndPump(numFrames, [&frames](size_t frame, size_t channel) {
+      return (*frames.getChannel(channel))[frame];
+    });
   }
 
   std::string close() override {
@@ -465,7 +469,9 @@ class MediaCodecBackend : public IEncoderBackend {
 };
 
 // ---------------------------------------------------------------------------
-// Muxed backend — AAC / Opus / Vorbis via AMediaMuxer.
+// Muxed backend — AAC in M4A, Opus and Vorbis in WebM, and Opus in Ogg (Android 14 and later)
+// via AMediaMuxer. encoding::createEncoder (EncoderFactory.cpp) sends Opus in Ogg to the bundled
+// encoder instead whenever the build has it, so Ogg reaches this backend only without it.
 // ---------------------------------------------------------------------------
 
 class MuxedBackend : public MediaCodecBackend {
@@ -493,8 +499,11 @@ class MuxedBackend : public MediaCodecBackend {
         if (bitRate <= 0) {
           bitRate = 96000;
         }
-        muxerFormat_ = outputSpec.container == AudioContainer::OGG ? AMEDIAMUXER_OUTPUT_FORMAT_OGG
-                                                                   : AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
+        if (outputSpec.container == AudioContainer::WEBM) {
+          muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
+        } else {
+          muxerFormat_ = AMEDIAMUXER_OUTPUT_FORMAT_OGG;
+        }
         break;
       case AudioCodec::VORBIS:
         mime = "audio/vorbis";
@@ -773,17 +782,12 @@ class AdtsBackend : public MediaCodecBackend {
 
 struct AndroidEncoder::ConversionState {
   ConversionState(const AudioLayout &input, const AudioLayout &output, size_t maxInputFrames)
-      : maxInputFrames(maxInputFrames) {
-    if (input.channelCount != output.channelCount) {
-      inputPlanar =
-          std::make_unique<AudioBuffer>(maxInputFrames, input.channelCount, input.sampleRate);
-      mappedPlanar =
-          std::make_unique<AudioBuffer>(maxInputFrames, output.channelCount, input.sampleRate);
-    }
+      : maxInputFrames(maxInputFrames),
+        remixer(input.channelCount, output.channelCount, maxInputFrames, input.sampleRate) {
     if (input.sampleRate != output.sampleRate) {
       resampler = std::make_unique<r8b::MultiChannelResampler>(
           input.sampleRate, output.sampleRate, output.channelCount, RESAMPLE_MAX_IN_FRAMES);
-      resampledPlanar = std::make_unique<AudioBuffer>(
+      resampled = std::make_unique<AudioBuffer>(
           static_cast<size_t>(std::max(1, resampler->getMaxOutLen())),
           output.channelCount,
           output.sampleRate);
@@ -791,12 +795,10 @@ struct AndroidEncoder::ConversionState {
   }
 
   size_t maxInputFrames;
-  // Channel mapping only: the input is staged in inputPlanar and remixed into mappedPlanar.
-  std::unique_ptr<AudioBuffer> inputPlanar;
-  std::unique_ptr<AudioBuffer> mappedPlanar;
+  ChannelRemixer remixer;
   // Rate conversion only.
   std::unique_ptr<r8b::MultiChannelResampler> resampler;
-  std::unique_ptr<AudioBuffer> resampledPlanar;
+  std::unique_ptr<AudioBuffer> resampled;
 };
 
 // ---------------------------------------------------------------------------
@@ -900,53 +902,29 @@ Result<NoneType, std::string> AndroidEncoder::prepareConversion(const StreamForm
   return Ok(None);
 }
 
-std::string AndroidEncoder::encodeConverted(const float *const *channels, int numFrames) {
+std::string AndroidEncoder::encodeConverted(const AudioBuffer &input, int numFrames) {
   ConversionState &state = *conversion_;
   const auto frames = static_cast<size_t>(numFrames);
   if (frames > state.maxInputFrames) {
     return "Encode input exceeds the buffer size declared at open()";
   }
 
-  std::array<const float *, MAX_CHANNEL_COUNT> planar{};
-  if (state.mappedPlanar != nullptr) {
-    for (int channel = 0; channel < inputFormat_.layout.channelCount; ++channel) {
-      std::memcpy(
-          state.inputPlanar->getChannel(channel)->begin(),
-          channels[channel],
-          frames * sizeof(float));
-    }
-    state.mappedPlanar->copy(*state.inputPlanar, 0, 0, frames);
-    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
-      planar[channel] = state.mappedPlanar->getChannel(channel)->begin();
-    }
-  } else {
-    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
-      planar[channel] = channels[channel];
-    }
-  }
+  const AudioBuffer &remixed = state.remixer.remix(input, frames);
 
   if (state.resampler == nullptr) {
-    return backend_->encodePlanar(planar.data(), numFrames);
-  }
-
-  std::array<float *, MAX_CHANNEL_COUNT> resampled{};
-  for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
-    resampled[channel] = state.resampledPlanar->getChannel(channel)->begin();
+    return backend_->encode(remixed, numFrames);
   }
 
   int consumed = 0;
   while (consumed < numFrames) {
     const int chunk = std::min(numFrames - consumed, RESAMPLE_MAX_IN_FRAMES);
-    std::array<const float *, MAX_CHANNEL_COUNT> chunkChannels{};
-    for (int channel = 0; channel < outputLayout_.channelCount; ++channel) {
-      chunkChannels[channel] = planar[channel] + consumed;
-    }
-    const int produced = state.resampler->process(chunkChannels.data(), chunk, resampled.data());
+    const int produced =
+        state.resampler->process(remixed, static_cast<size_t>(consumed), chunk, *state.resampled);
     consumed += chunk;
     if (produced <= 0) {
       continue;
     }
-    std::string err = backend_->encodePlanar(resampled.data(), produced);
+    std::string err = backend_->encode(*state.resampled, produced);
     if (!err.empty()) {
       return err;
     }
@@ -954,18 +932,18 @@ std::string AndroidEncoder::encodeConverted(const float *const *channels, int nu
   return "";
 }
 
-EncodeResult AndroidEncoder::encode(const float *const *channels, int numFrames) {
+EncodeResult AndroidEncoder::encode(const AudioBuffer &input, int numFrames) {
   if (!isOpen() || backend_ == nullptr) {
     return Err("Encoder is not open");
   }
-  if (channels == nullptr || numFrames <= 0) {
+  if (numFrames <= 0) {
     return Err("Invalid encode input");
   }
 
   // Frames already in the backend's format go straight through; the backend interleaves
   // while it quantizes, so no layout pass happens here (see encodeConverted).
-  std::string err = conversion_ != nullptr ? encodeConverted(channels, numFrames)
-                                           : backend_->encodePlanar(channels, numFrames);
+  std::string err = conversion_ != nullptr ? encodeConverted(input, numFrames)
+                                           : backend_->encode(input, numFrames);
   if (!err.empty()) {
     return Err(err);
   }

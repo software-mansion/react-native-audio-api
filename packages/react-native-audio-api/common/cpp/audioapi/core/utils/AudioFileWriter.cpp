@@ -1,7 +1,7 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
-#include <audioapi/encoding/OSEncoding.h>
+#include <audioapi/encoding/EncoderFactory.h>
 #include <audioapi/encoding/OSFilePath.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/events/AudioEventPayload.h>
@@ -29,7 +29,7 @@ const PlatformFileBackend &osFileBackend() {
   static const PlatformFileBackend backend{
       .resolveOutputSpec = &encoder_capabilities::resolveOutputSpec,
       .resolvePath = &resolveOsFilePath,
-      .createEncoder = &createOsEncoder,
+      .createEncoder = &encoding::createEncoder,
   };
   return backend;
 }
@@ -47,12 +47,12 @@ AudioFileWriter::~AudioFileWriter() {
 }
 
 OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
-  if (isFileOpen()) {
-    return OpenFileResult::Err("file already open");
-  }
-
   {
     std::scoped_lock lock(fileMutex_);
+    if (isSessionOpen_) {
+      return OpenFileResult::Err("file already open");
+    }
+
     sessionStem_ = recording_file_name::sessionStem(fileProperties_);
     sessionFilePaths_.clear();
     openedFileCount_ = 0;
@@ -60,12 +60,20 @@ OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
     finishedFilesDurationSec_ = 0.0;
   }
 
-  return startNextFile(streamFormat);
+  auto opened = startNextFile(streamFormat);
+  if (opened.is_ok()) {
+    std::scoped_lock lock(fileMutex_);
+    isSessionOpen_ = true;
+  }
+  return opened;
 }
 
 CloseFileResult AudioFileWriter::closeFile() {
-  if (!isFileOpen()) {
-    return CloseFileResult::Err("file is not open: " + getFilePath());
+  {
+    std::scoped_lock lock(fileMutex_);
+    if (!isSessionOpen_) {
+      return CloseFileResult::Err("file is not open");
+    }
   }
 
   auto finished = finishCurrentFile();
@@ -74,6 +82,7 @@ CloseFileResult AudioFileWriter::closeFile() {
   }
 
   std::scoped_lock lock(fileMutex_);
+  isSessionOpen_ = false;
   ClosedSession session{
       .filePaths = std::move(sessionFilePaths_),
       .sizeMB = finishedFilesSizeMB_,
@@ -158,6 +167,12 @@ CloseEncoderResult AudioFileWriter::finishCurrentFile() {
   isFileOpen_.store(false, std::memory_order_release);
 
   std::scoped_lock lock(fileMutex_);
+  // Already finished by a failed format change, or by a rotation that could not open the next
+  // file, possibly one the drain above just ran.
+  if (currentEncoder_ == nullptr) {
+    return CloseEncoderResult::Ok({0.0, 0.0});
+  }
+
   auto closeResult = closeCurrentFile();
 
   if (closeResult.is_ok()) {
@@ -403,17 +418,12 @@ void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
   }
   const int numFrames = pending.numFrames;
 
-  std::array<const float *, MAX_CHANNEL_COUNT> channels{};
-  for (int channel = 0; channel < streamFormat_.layout.channelCount; ++channel) {
-    channels[channel] = pending.buffer->getChannel(channel)->begin();
-  }
-
   std::string encodeError;
   bool encoded = false;
   {
     std::scoped_lock lock(fileMutex_);
     if (isFileOpen() && currentEncoder_ != nullptr) {
-      auto result = currentEncoder_->encode(channels.data(), numFrames);
+      auto result = currentEncoder_->encode(*pending.buffer, numFrames);
       if (result.is_ok()) {
         encoded = true;
       } else {

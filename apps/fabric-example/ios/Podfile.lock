@@ -1840,7 +1840,7 @@ PODS:
     - React-utils (= 0.88.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.88.0)
-  - RNAudioAPI (1.0.0):
+  - RNAudioAPI (1.1.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1862,9 +1862,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNAudioAPI/audioapi (= 1.0.0)
+    - RNAudioAPI/audioapi (= 1.1.0)
     - Yoga
-  - RNAudioAPI/audioapi (1.0.0):
+  - RNAudioAPI/audioapi (1.1.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1886,34 +1886,11 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - RNAudioAPI/audioapi/audioapi_dsp (= 1.0.0)
-    - RNAudioAPI/audioapi/ios (= 1.0.0)
-    - RNAudioAPI/audioapi/miniaudio_impl (= 1.0.0)
+    - RNAudioAPI/audioapi/audioapi_dsp (= 1.1.0)
+    - RNAudioAPI/audioapi/ios (= 1.1.0)
+    - RNAudioAPI/audioapi/miniaudio_impl (= 1.1.0)
     - Yoga
-  - RNAudioAPI/audioapi/audioapi_dsp (1.0.0):
-    - hermes-engine
-    - RCTRequired
-    - RCTTypeSafety
-    - React-bridging
-    - React-Core
-    - React-Core-prebuilt
-    - React-cxxstableapi
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/core
-    - ReactNativeDependencies
-    - Yoga
-  - RNAudioAPI/audioapi/ios (1.0.0):
+  - RNAudioAPI/audioapi/audioapi_dsp (1.1.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1936,7 +1913,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNAudioAPI/audioapi/miniaudio_impl (1.0.0):
+  - RNAudioAPI/audioapi/ios (1.1.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1959,7 +1936,30 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNAudioWorklets (1.0.0):
+  - RNAudioAPI/audioapi/miniaudio_impl (1.1.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - RNAudioWorklets (0.1.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2667,8 +2667,8 @@ SPEC CHECKSUMS:
   ReactCodegen: 6b0a01dfedf4d3949c11b9ed9ca17f1407c8b70a
   ReactCommon: 145a14b942b19fc2fe38927f261955ada56978aa
   ReactNativeDependencies: d3b7423ba1e52525e42085c8470109abde583d2e
-  RNAudioAPI: e9856600fc82c85be32ef704e814b7b58296b61c
-  RNAudioWorklets: 191848e65e50c4571f61e4d72f41aebd936585dd
+  RNAudioAPI: e90723a383dc28ce8a22e23ef6489c5af7a5f221
+  RNAudioWorklets: 067cda814a268335c0e3b7272c6472bee5c7941e
   RNGestureHandler: 68686990357a73f5ed0a0db98b4885eb36c4cb77
   RNReanimated: ed309a4f658a5bb0e807df58424c5aea7a7395de
   RNScreens: 1b386604ba6e45b594cb15714a078d7dca096211
@@ -2677,6 +2677,6 @@ SPEC CHECKSUMS:
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871
   Yoga: d1c536142c5ff8ec8cd856ab2a7c227a1d875c8e
 
-PODFILE CHECKSUM: c9697d12234c6c2a5ab29037cc719ef201b7f7b3
+PODFILE CHECKSUM: 8375b20709de511bd5e065273b1c58aecf83ae45
 
 COCOAPODS: 1.17.0

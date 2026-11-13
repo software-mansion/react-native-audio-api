@@ -482,8 +482,11 @@ MA_API ma_result ma_libvorbis_get_length_in_pcm_frames(ma_libvorbis* pVorbis, ma
 
     #if !defined(MA_NO_LIBVORBIS)
     {
-        /* I don't know how to reliably retrieve the length in frames using libvorbis, so returning 0 for now. */
-        *pLength = 0;
+        /* ov_pcm_total() needs a seekable stream; an unseekable one keeps the length unknown (0). */
+        ogg_int64_t length = ov_pcm_total((OggVorbis_File*)pVorbis->vf, -1);
+        if (length > 0) {
+            *pLength = (ma_uint64)length;
+        }
 
         return MA_SUCCESS;
     }
