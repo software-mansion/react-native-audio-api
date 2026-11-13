@@ -1,4 +1,18 @@
-compressionLevel: mixed
+packages:
+  - packages/react-native-audio-api
+  - packages/react-native-audio-worklets
+  - packages/custom-node-generator
+  - packages/test-app-screen
+  - apps/common-app
+  - apps/fabric-example
+
+# 1 Week gate
+minimumReleaseAge: 10080
+
+overrides:
+  typescript: ~6.0.3
+  'react-native-audio-api-monorepo>@typescript-eslint/eslint-plugin': 8.58.1
+  'react-native-audio-api-monorepo>@typescript-eslint/parser': 8.58.1
 
 catalog:
   '@babel/core': '^7.25.2'
@@ -34,12 +48,6 @@ catalog:
   react-test-renderer: '19.3.0'
   typescript: '~6.0.3'
 
-enableGlobalCache: false
-
-enableScripts: true
-
-nodeLinker: node-modules
-
-npmMinimalAgeGate: '1w'
-
-yarnPath: .yarn/releases/yarn-4.18.0.cjs
+# Allow postinstall for git hooks registration
+allowBuilds:
+  '@evilmartians/lefthook': true

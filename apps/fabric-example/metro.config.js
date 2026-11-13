@@ -29,6 +29,15 @@ const config = {
           type: 'sourceFile',
         };
       }
+      // Babel adds @babel/runtime imports to workspace packages compiled from source.
+      // They sit outside the app's node_modules, so resolve the helpers from the app.
+      if (moduleName.startsWith('@babel/runtime/')) {
+        return context.resolveRequest(
+          { ...context, originModulePath: path.join(__dirname, 'index.js') },
+          moduleName,
+          platform
+        );
+      }
       return context.resolveRequest(context, moduleName, platform);
     },
   },
