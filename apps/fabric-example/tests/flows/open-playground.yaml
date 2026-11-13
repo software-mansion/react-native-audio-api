@@ -1,0 +1,16 @@
+executionPrerequisite: FabricExample was just launched
+steps:
+  - await: { visible: { text: Other } }
+  - await: { idle: true, stableFor: 1000 }
+  - echo: Dismiss the LogBox banner that covers the tab bar
+  - when: { visible: { text: Open debugger to view warnings } }
+    steps:
+      - tap: { role: Image, after: { text: Open debugger to view warnings } }
+      - await: { hidden: { text: Open debugger to view warnings } }
+  - echo: Open the Other tab, then the Audio I/O Playground screen
+  - tap: { text: Other }
+  - await: { visible: { text: Audio I/O Playground } }
+  - await: { idle: true }
+  - tap: { text: Audio I/O Playground }
+  - await: { visible: { id: log-clear } }
+  - await: { idle: true }
