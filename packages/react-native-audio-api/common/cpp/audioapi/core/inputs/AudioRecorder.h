@@ -23,16 +23,22 @@ class AudioRecorderCallback;
 class IAudioEventHandlerRegistry;
 class RecorderAdapterNode;
 struct AudioRecorderOptions;
+struct PlatformFileBackend;
 
 /// Platform-independent half of a microphone recorder: subclasses own the platform input
-/// stream; the file writer, the JS callback and the adapter node are managed here.
+/// stream; the file writer, the JS callback and the adapter node are managed here, from
+/// preparing them for a session to closing them once it ends.
 class AudioRecorder {
  public:
+  /// Writes files through @p fileBackend, which must outlive the recorder; nullptr selects the
+  /// platform's (osFileBackend()).
   explicit AudioRecorder(
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-      : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const PlatformFileBackend *fileBackend = nullptr);
   DELETE_COPY_AND_MOVE(AudioRecorder);
-  virtual ~AudioRecorder() = default;
+  /// Closes any output still prepared. A subclass stops its session in its own destructor, so
+  /// normally none is.
+  virtual ~AudioRecorder();
 
   virtual Result<NoneType, std::string> start() = 0;
   virtual Result<FileInfo, std::string> stop() = 0;
@@ -76,12 +82,13 @@ class AudioRecorder {
 
   RecorderState getState() const;
 
-  [[nodiscard]] virtual double getInputLatency() const = 0;
+  /// Seconds between a sample reaching the microphone and the recorder receiving it; 0 while
+  /// idle.
+  [[nodiscard]] double getInputLatency() const;
 
  protected:
   /// @brief Lifecycle of one recorder output: the file writer, the JS callback, or the adapter
-  /// node. Written on the JS thread under that output's mutex; the audio thread reads it
-  /// lock-free to decide whether to feed the output.
+  /// node.
   enum class OutputState : uint8_t {
     /// Not requested.
     Disabled,
@@ -90,6 +97,31 @@ class AudioRecorder {
     Requested,
     /// Prepared for the current stream format; the audio thread may feed it.
     Active,
+  };
+
+  /// One output of the recorder and what guards it.
+  template <typename Target>
+  struct OutputSlot {
+    std::atomic<OutputState> state{OutputState::Disabled};
+    mutable std::mutex mutex;
+    std::shared_ptr<Target> target;
+
+    [[nodiscard]] bool isActive() const {
+      return state.load(std::memory_order_acquire) == OutputState::Active;
+    }
+
+    [[nodiscard]] bool isWanted() const {
+      return state.load(std::memory_order_acquire) != OutputState::Disabled;
+    }
+
+    void set(OutputState newState) {
+      state.store(newState, std::memory_order_release);
+    }
+
+    void deactivate() {
+      auto expected = OutputState::Active;
+      state.compare_exchange_strong(expected, OutputState::Requested, std::memory_order_acq_rel);
+    }
   };
 
   /// Closing these can block, so it happens in finalizeSideEffects() with no mutex held.
@@ -109,64 +141,57 @@ class AudioRecorder {
   /// change and the engine settling on the replacement format.
   [[nodiscard]] virtual Result<StreamFormat, std::string> resolveStreamFormat() const = 0;
 
-  /// The caller must hold fileWriterMutex_.
-  Result<NoneType, std::string> setupFileWriter(
-      const std::shared_ptr<AudioFileProperties> &properties);
+  /// The platform's input latency for a live session. @p callbackSeconds is how long the last
+  /// delivered buffer lasted, or 0 before the first one.
+  [[nodiscard]] virtual double platformInputLatency(double callbackSeconds) const = 0;
 
-  /// The caller must hold adapterNodeMutex_.
+  /// Opens the session's file for @p format. The caller must hold file_.mutex.
+  Result<NoneType, std::string> prepareFileWriter(
+      const std::shared_ptr<AudioFileProperties> &properties,
+      const StreamFormat &format);
+
+  /// The caller must hold adapter_.mutex.
   Result<NoneType, std::string> prepareAdapterNode(const StreamFormat &format);
 
   /// For a session that is starting; a live one follows an input change through
-  /// reprepareOutputs(). The caller must hold callbackMutex_, fileWriterMutex_ and
-  /// adapterNodeMutex_.
+  /// reprepareOutputs(). Stops at the first output that fails, leaving the ones before it
+  /// prepared: a start that fails ends with detachSideEffects() and finalizeSideEffects(), which
+  /// close them again. The caller must hold every output's mutex.
   Result<NoneType, std::string> prepareOutputs(const StreamFormat &format);
 
   /// Follows an input format change mid-session: the file writer keeps its file, the callback
-  /// and the adapter node are rebuilt. Stops at the first output that fails, which stays off
-  /// until the next start(). Nothing may deliver frames in the old format once this runs.
-  /// The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
+  /// and the adapter node are rebuilt. Every output is attempted, so none is left prepared for
+  /// the old format: one that fails stays off until the next start(). Returns the failures,
+  /// joined. Nothing may deliver frames in the old format once this runs.
+  /// The caller must hold every output's mutex.
   Result<NoneType, std::string> reprepareOutputs(const StreamFormat &format);
 
   /// Delivers @p message to the JS error callback, if one is registered.
   void reportError(const std::string &message);
 
   /// Payload of @p handle, or nullptr when not connected. Valid exactly as long as the handle
-  /// is held, so callers keep the handle (or adapterNodeMutex_) for the pointer's lifetime.
+  /// is held, so callers keep the handle (or adapter_.mutex) for the pointer's lifetime.
   static RecorderAdapterNode *adapterNodeOf(
       const std::shared_ptr<utils::graph::NodeHandle> &handle);
 
   /// Stops the audio thread from touching the side effects before they are closed.
-  /// The caller must hold callbackMutex_, fileWriterMutex_ and adapterNodeMutex_.
+  /// The caller must hold every output's mutex.
   DetachedSideEffects detachSideEffects();
 
   /// Must run with no recorder mutex held: closing the writer joins its worker thread. The
   /// file URIs are collected only after that join, once a rotation in flight has reported its file.
-  Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects sideEffects);
-
-  bool wantsCallback() const;
-  bool wantsFileOutput() const;
-  bool wantsConnection() const;
-
-  /// Active becomes Requested; Disabled stays Disabled, so an output that was never requested
-  /// cannot be switched on by a failed prepare.
-  static void deactivate(std::atomic<OutputState> &state);
+  static Result<FileInfo, std::string> finalizeSideEffects(DetachedSideEffects sideEffects);
 
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
-  std::atomic<OutputState> fileOutputState_{OutputState::Disabled};
-  std::atomic<OutputState> callbackOutputState_{OutputState::Disabled};
-  std::atomic<OutputState> connectionState_{OutputState::Disabled};
+  OutputSlot<AudioFileWriter> file_;
+  OutputSlot<AudioRecorderCallback> callback_;
+  /// Its target carries a RecorderAdapterNode; see adapterNodeOf().
+  OutputSlot<utils::graph::NodeHandle> adapter_;
 
-  std::mutex callbackMutex_;
-  mutable std::mutex fileWriterMutex_;
   std::mutex errorCallbackMutex_;
-  mutable std::mutex adapterNodeMutex_;
-
   std::atomic<uint64_t> errorCallbackId_{0};
 
-  std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
-  std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle_ = nullptr;
-  std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioFileProperties> fileProperties_ = nullptr;
   /// Updated on the audio thread from each input callback `numFrames`.
@@ -175,15 +200,17 @@ class AudioRecorder {
   std::atomic<float> streamSampleRate_{0.0F};
 
  private:
-  /// The caller must hold callbackMutex_. A callback already prepared is flushed and torn
+  /// The caller must hold callback_.mutex. A callback already prepared is flushed and torn
   /// down first.
   Result<NoneType, std::string> prepareCallback(const StreamFormat &format);
 
-  /// The caller must hold fileWriterMutex_.
+  /// The caller must hold file_.mutex.
   Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
 
-  /// The caller must hold adapterNodeMutex_.
+  /// The caller must hold adapter_.mutex.
   Result<NoneType, std::string> reprepareAdapterNode(const StreamFormat &format);
+
+  const PlatformFileBackend &fileBackend_;
 };
 
 /// Builds the platform's AudioRecorder.
