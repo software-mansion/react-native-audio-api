@@ -69,13 +69,13 @@ class BaseAudioContextHostObject : public HostObject {
   /// context keeps itself alive until its queued operation has run.
   template <
       std::derived_from<ContextPromiseResolver> Resolver = ContextStateResolver,
-      LifecycleOperation<std::shared_ptr<Resolver>> Operation>
+      LifecycleOperation<std::unique_ptr<Resolver>> Operation>
   jsi::Value createLifecyclePromise(ContextState nextState, Operation &&operation) {
     return promiseVendor_->createAsyncPromise(
         [context = context_, nextState, operation = std::forward<Operation>(operation)](
             Promise &&promise) {
-          auto resolver = std::make_shared<Resolver>(std::move(promise), context, nextState);
-          context->runLifecycleOperation(operation, resolver);
+          auto resolver = std::make_unique<Resolver>(std::move(promise), context, nextState);
+          context->runLifecycleOperation(operation, std::move(resolver));
         });
   }
 

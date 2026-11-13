@@ -36,19 +36,20 @@ class ContextStateResolver;
 class ContextRenderResolver;
 
 /// Settles a state-only lifecycle promise (resume / suspend / close).
-using LifecycleResolver = std::shared_ptr<ContextStateResolver>;
+using LifecycleResolver = std::unique_ptr<ContextStateResolver>;
 /// Settles the offline `startRendering` promise with the rendered buffer.
-using RenderResolver = std::shared_ptr<ContextRenderResolver>;
+using RenderResolver = std::unique_ptr<ContextRenderResolver>;
 
-/// A `shared_ptr` to one of the `ContextPromiseResolver` subclasses.
+/// A `unique_ptr` to one of the `ContextPromiseResolver` subclasses.
 template <typename T>
-concept ContextPromiseResolverPtr = std::same_as<T, std::shared_ptr<typename T::element_type>> &&
+concept ContextPromiseResolverPtr = std::same_as<T, std::unique_ptr<typename T::element_type>> &&
     std::derived_from<typename T::element_type, ContextPromiseResolver>;
 
-/// A lifecycle body: receives the context and the resolver the core method settles. The
-/// resolver type says what the promise resolves with, so a body cannot be handed the wrong one.
+/// A lifecycle body: receives the context and takes over the resolver the core method settles
+/// or keeps for later. The resolver type says what the promise resolves with, so a body cannot
+/// be handed the wrong one.
 template <typename F, typename Resolver = LifecycleResolver>
-concept LifecycleOperation = std::invocable<F, BaseAudioContext &, const Resolver &>;
+concept LifecycleOperation = std::invocable<F, BaseAudioContext &, Resolver>;
 
 class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
  public:
@@ -170,9 +171,9 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   /// queues these on its serial promise lane, so operations on one context run FIFO and never
   /// on the JS thread.
   template <ContextPromiseResolverPtr Resolver, LifecycleOperation<Resolver> F>
-  void runLifecycleOperation(F &&operation, const Resolver &resolver) {
+  void runLifecycleOperation(F &&operation, Resolver resolver) {
     std::scoped_lock lock(driverMutex_);
-    std::forward<F>(operation)(*this, resolver);
+    std::forward<F>(operation)(*this, std::move(resolver));
   }
 
   void processGraph(DSPAudioBuffer *buffer, int numFrames);
