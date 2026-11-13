@@ -5,6 +5,8 @@ on:
     paths:
       - 'packages/internaldocs/**'
       - 'packages/docs-theme/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
 
 jobs:
   build-internaldocs:
@@ -14,16 +16,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+          cache: pnpm
 
-      - name: Setup Yarn
-        uses: mskelton/setup-yarn@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter internaldocs...
 
-      - name: Install dependencies and build
-        run: |
-          cd packages/internaldocs
-          yarn install --immutable
-          yarn build
+      - name: Build
+        run: pnpm --filter internaldocs build

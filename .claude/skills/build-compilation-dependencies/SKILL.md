@@ -102,11 +102,12 @@ Other constraints:
 
 - **`overrides` pins `typescript` literally**; keep it in sync with the catalog entry. It is *not* redundant with the catalog: it forces `@commitlint/load`'s optional `typescript` peer (`^4.6.4 || ^5.2.2`) onto our version, and catalogs only rewrite workspace manifests, never transitive dependencies.
 - **`overrides` pins the root's `@typescript-eslint/*` to 8.58.1**, the version Yarn had resolved; 8.67+ reports 13 `no-unnecessary-type-assertion` errors. Remove it together with ESLint.
-- **`packages/audiodocs` is a separate Yarn 1 project** with its own lockfile and `node_modules`. It is not in `pnpm-workspace.yaml`, so the catalog does not reach it.
+- **The docs sites (`audiodocs`, `internaldocs`, `docs-theme`) are workspace packages.** They take `react` / `react-dom` from the catalog (React requires the two to match exactly) and link `docs-theme` with `workspace:*`. audiodocs pins an exact published `react-native-audio-api` version on purpose: its demos run the npm release, never the workspace source. CI installs them alone with `pnpm install --filter <site>...`, which skips building the library.
+- **Docusaurus is pinned to exactly 3.9.2** in every `@docusaurus/*` entry (a `^` range let one plugin drift to 3.10 and broke the build) because `@swmansion/t-rex-ui` requires 3.9.2. The `webpack: 5.101.3` override exists because Docusaurus 3.9 breaks on webpack ≥ 5.102; drop both once t-rex-ui supports 3.10.
 - **Packing goes through `npm pack`, not `pnpm pack`.** `yarn pack` dropped `development/react/` (a nested `package.json` listed in `files[]`) and stripped the executable bit from 29 prebuilt FFmpeg binaries; `pnpm pack` has not been verified. Do not switch the release pipeline without re-verifying the tarball contents.
 
-Install scripts run only for packages listed under `allowBuilds` (today only lefthook, which
-installs the git hooks). A new dependency with a build script fails `pnpm install` with
+Install scripts run only for packages listed under `allowBuilds` (lefthook, which installs the
+git hooks, and esbuild for the docs; `core-js` is explicitly denied, it only prints a funding message). A new dependency with a build script fails `pnpm install` with
 `ERR_PNPM_IGNORED_BUILDS` until it is allowed (`true`) or explicitly denied (`false`) there.
 
 Supply-chain gate: `minimumReleaseAge: 10080` (minutes) refuses versions published in the
