@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import type BaseAudioContext from '../core/BaseAudioContext';
-import type { IAudioFileSourceNode } from '../jsi-interfaces';
+import type AudioNode from '../core/AudioNode';
 
 export interface AudioURISource {
   uri?: string | undefined;
@@ -39,11 +39,21 @@ export interface AudioTagHandle {
 }
 
 /**
- * Internal handle surface used by MediaElementAudioSourceNode to obtain the
- * underlying file source. Not exported from the package public API.
+ * Internal handle surface MediaElementAudioSourceNode uses to take over where
+ * the tag plays. Not exported from the package public API.
  */
 export interface InternalAudioTagHandle extends AudioTagHandle {
-  getFileSourceNode: () => IAudioFileSourceNode | null;
+  /**
+   * The node the tag plays through, or `null` while it plays straight to the
+   * context destination.
+   */
+  getMediaElementSource: () => AudioNode | null;
+  /**
+   * Plays the tag through `mediaElementSource` instead of the context
+   * destination, for good. The choice outlives the file sources the tag creates
+   * and replaces underneath.
+   */
+  setMediaElementSource: (mediaElementSource: AudioNode) => void;
 }
 
 interface AudioControlProps {
