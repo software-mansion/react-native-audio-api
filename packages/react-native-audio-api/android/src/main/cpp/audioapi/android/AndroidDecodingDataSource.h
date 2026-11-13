@@ -1,10 +1,10 @@
 #pragma once
 
+#include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/decoding/backends/AudioDecoderBackend.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <vector>
 
 struct AMediaExtractor;
 
@@ -37,9 +37,9 @@ class AndroidMemoryDataSource {
   friend decoding::DecoderResult attachMemoryExtractorViaDataSource(
       AMediaExtractor *extractor,
       AndroidMemoryDataSource &dataSource,
-      std::vector<uint8_t> &encodedMemory,
+      decoding::EncodedBytes &encodedMemory,
       MemoryDataSourceContext &memorySourceContext,
-      std::vector<uint8_t> data);
+      decoding::EncodedBytes data);
 
   void *handle_ = nullptr;
 };
@@ -47,8 +47,8 @@ class AndroidMemoryDataSource {
 [[nodiscard]] decoding::DecoderResult attachMemoryExtractorViaDataSource(
     AMediaExtractor *extractor,
     AndroidMemoryDataSource &dataSource,
-    std::vector<uint8_t> &encodedMemory,
+    decoding::EncodedBytes &encodedMemory,
     MemoryDataSourceContext &memorySourceContext,
-    std::vector<uint8_t> data);
+    decoding::EncodedBytes data);
 
 } // namespace audioapi::android::decoder

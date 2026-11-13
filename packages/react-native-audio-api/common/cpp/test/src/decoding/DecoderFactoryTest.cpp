@@ -30,10 +30,10 @@ void writeWavFile(const std::string &path, const std::vector<float> &frames) {
   test::writeFloatWavFile(path, frames, sampleRate, channelCount);
 }
 
-std::vector<uint8_t> readFileBytes(const std::string &path) {
+decoding::EncodedBytes readFileBytes(const std::string &path) {
   std::ifstream input(path, std::ios::binary);
   EXPECT_TRUE(input.is_open());
-  return std::vector<uint8_t>(
+  return decoding::EncodedBytes(
       std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
 }
 
@@ -100,7 +100,7 @@ TEST(DecoderFactoryTest, RejectsUnsupportedLocalFile) {
 }
 
 TEST(DecoderFactoryTest, OpensRawPcmSource) {
-  std::vector<uint8_t> pcmBytes(2);
+  decoding::EncodedBytes pcmBytes(2);
   pcmBytes[0] = 0x00;
   pcmBytes[1] = 0x00;
 
