@@ -15,8 +15,8 @@ jobs:
       - name: Checkout with Node
         uses: ./.github/actions/checkout-with-node
 
-      - name: Setup Yarn
-        uses: ./.github/actions/setup-yarn
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
 
       - name: Setup CMake
         uses: ./.github/actions/setup-cmake
@@ -28,7 +28,7 @@ jobs:
 
       - name: Run C++ coverage
         working-directory: packages/react-native-audio-api
-        run: yarn test:cpp:coverage
+        run: pnpm test:cpp:coverage
 
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v4
