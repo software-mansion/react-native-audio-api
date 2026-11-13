@@ -14,6 +14,7 @@ AudioScheduledSourceNodeHostObject::AudioScheduledSourceNodeHostObject(
     const AudioScheduledSourceNodeOptions &options)
     : AudioNodeHostObject(graph, std::move(node), options),
       scheduledSourceNode_(typedAudioNode<AudioScheduledSourceNode>(node_)) {
+  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioScheduledSourceNodeHostObject, hasEnded));
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioScheduledSourceNodeHostObject, onended));
 
   addFunctions(
@@ -26,6 +27,10 @@ AudioScheduledSourceNodeHostObject::~AudioScheduledSourceNodeHostObject() {
   // underlying source node might still be active and try to call the
   // non-existing callback.
   scheduledSourceNode_->assignOnEndedCallbackId(0);
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioScheduledSourceNodeHostObject, hasEnded) {
+  return {scheduledSourceNode_->hasEnded()};
 }
 
 JSI_PROPERTY_SETTER_IMPL(AudioScheduledSourceNodeHostObject, onended) {

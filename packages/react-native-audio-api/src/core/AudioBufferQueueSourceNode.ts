@@ -3,12 +3,16 @@ import AudioBufferBaseSourceNode from './AudioBufferBaseSourceNode';
 import AudioBuffer from './AudioBuffer';
 import { InvalidStateError, RangeError } from '../errors';
 import type BaseAudioContext from './BaseAudioContext';
-import {
-  AudioBufferQueueSourceOptions,
-  AudioBufferQueueSourceState,
-} from '../types';
+import { AudioBufferQueueSourceOptions } from '../types';
 import { OnBufferEndEventType } from '../events/types';
 import { AudioEventSubscription } from '../events';
+
+// deliberately without stopped, because we read that state from the native
+enum AudioBufferQueueSourceState {
+  IDLE,
+  PLAYING,
+  PAUSED,
+}
 
 export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNode {
   private onbufferendedCallback?: (event: OnBufferEndEventType) => void;
@@ -75,9 +79,15 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
         `when must be a finite non-negative number: ${when}`
       );
     }
-    this.state = AudioBufferQueueSourceState.STOPPED;
-
     (this.node as IAudioBufferQueueSourceNode).stop(when);
+  }
+
+  /**
+   * Ending is the one transition without a JS call, so that one is read from
+   * native.
+   */
+  private get hasEnded(): boolean {
+    return (this.node as IAudioBufferQueueSourceNode).hasEnded;
   }
 
   public get onbufferended():
@@ -107,6 +117,9 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
   }
 
   public pause(): void {
+    if (this.hasEnded) {
+      throw new InvalidStateError('Cannot call pause after the node has ended');
+    }
     if (this.state !== AudioBufferQueueSourceState.PLAYING) {
       throw new InvalidStateError(
         'Cannot call pause when the node is not playing'
@@ -124,6 +137,11 @@ export default class AudioBufferQueueSourceNode extends AudioBufferBaseSourceNod
       );
     }
 
+    if (this.hasEnded) {
+      throw new InvalidStateError(
+        'Cannot call resume after the node has ended'
+      );
+    }
     if (this.state !== AudioBufferQueueSourceState.PAUSED) {
       throw new InvalidStateError(
         'Cannot call resume without calling pause first'

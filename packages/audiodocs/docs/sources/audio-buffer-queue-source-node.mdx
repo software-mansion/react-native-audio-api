@@ -154,6 +154,9 @@ Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`Audio
 Stops audio immediately. Unlike [`stop()`](./audio-scheduled-source-node.mdx#stop), which fully stops playback and clears the queued buffers,
 pause() halts the audio while keeping the current playback position, allowing you to resume from the same point later.
 
+A [`stop()`](./audio-scheduled-source-node.mdx#stop) time is absolute and survives a pause, whether `stop()` was called before or during it.
+If the node is resumed before that time, it plays until then. If it is still paused when that time comes, it ends without playing again.
+
 #### Errors:
 
 | Error type | Description |
