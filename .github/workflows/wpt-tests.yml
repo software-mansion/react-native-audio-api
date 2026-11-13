@@ -34,8 +34,8 @@ jobs:
               - 'packages/react-native-audio-api/scripts/build.sh'
               - 'packages/react-native-audio-api/package.json'
               - 'package.json'
-              - 'yarn.lock'
-              - '.yarnrc.yml'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - '.nvmrc'
               - '.github/actions/**'
               - '.github/workflows/wpt-tests.yml'
@@ -73,8 +73,8 @@ jobs:
       - name: Checkout with Node
         uses: ./.github/actions/checkout-with-node
 
-      - name: Setup Yarn
-        uses: ./.github/actions/setup-yarn
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
 
       - name: Setup CMake
         uses: ./.github/actions/setup-cmake
@@ -90,9 +90,9 @@ jobs:
           # Prefer the dedicated script when present (head / post-merge).
           # Fall back for older base revisions that lack wpt:ci-report / --allow-failures.
           if node -e "const p=require('./package.json'); process.exit(p.scripts?.['wpt:ci-report'] ? 0 : 1)"; then
-            yarn wpt:ci-report
+            pnpm wpt:ci-report
           else
-            yarn wpt:build
+            pnpm wpt:build
             set +e
             node ./wpt_tests/wpt/wpt-harness.mjs --report-json "$REPORT_PATH"
             set -e

@@ -207,6 +207,12 @@ const config = {
             module: {
               rules: [
                 {
+                  // RN packages (e.g. reanimated) ship ESM with extensionless imports of
+                  // platform-split files, which strict ESM rejects.
+                  test: /\.m?js$/,
+                  resolve: { fullySpecified: false },
+                },
+                {
                   test: /\.txt$/,
                   type: 'asset/source',
                 },

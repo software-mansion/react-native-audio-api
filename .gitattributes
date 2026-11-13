@@ -7,6 +7,5 @@ packages/react-native-audio-api/common/cpp/audioapi/libs/** linguist-vendored
 apps/** linguist-vendored
 docs/** linguist-vendored
 .github/** linguist-vendored
-.yarn/** linguist-vendored
 packages/audiodocs/** linguist-documentation
 packages/react-native-audio-api/src/web-core/custom/signalsmithStretch/* linguist-vendored

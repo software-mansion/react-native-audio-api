@@ -2,14 +2,14 @@ pre-commit:
   parallel: true
   commands:
     format_check:
-      run: yarn format:check
+      run: pnpm format:check
     lint:
-      run: yarn lint
+      run: pnpm lint
     types:
       glob: '*.{js,ts,jsx,tsx}'
-      run: yarn typecheck
+      run: pnpm typecheck
 commit-msg:
   parallel: true
   commands:
     commitlint:
-      run: yarn commitlint --edit
+      run: pnpm commitlint --edit

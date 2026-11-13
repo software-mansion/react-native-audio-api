@@ -28,9 +28,8 @@ jobs:
           filters: |
             shared:
               - 'package.json'
-              - 'yarn.lock'
-              - '.yarnrc.yml'
-              - '.yarn/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - '.nvmrc'
               - 'tsconfig.json'
               - '.eslintrc.js'
@@ -49,7 +48,7 @@ jobs:
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Format check
-      run: yarn format:check
+      run: pnpm format:check
 
   lint-audio-api:
     needs: changes
@@ -58,8 +57,8 @@ jobs:
     with:
       name: Lint and typecheck (react-native-audio-api)
       run: |
-        yarn workspace react-native-audio-api run lint
-        yarn workspace react-native-audio-api run typecheck
+        pnpm --filter react-native-audio-api lint
+        pnpm --filter react-native-audio-api typecheck
 
   lint-worklets:
     needs: changes
@@ -68,9 +67,9 @@ jobs:
     with:
       name: Lint and typecheck (react-native-audio-worklets)
       run: |
-        yarn workspace react-native-audio-api build
-        yarn workspace react-native-audio-worklets run lint
-        yarn workspace react-native-audio-worklets run typecheck
+        pnpm --filter react-native-audio-api build
+        pnpm --filter react-native-audio-worklets lint
+        pnpm --filter react-native-audio-worklets typecheck
 
   check-audio-enum-sync:
     needs: changes
@@ -78,7 +77,7 @@ jobs:
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Check enum sync
-      run: yarn check-audio-enum-sync
+      run: pnpm check-audio-enum-sync
 
   build-audio-api:
     needs: changes
@@ -86,7 +85,7 @@ jobs:
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Build (react-native-audio-api)
-      run: yarn workspace react-native-audio-api build
+      run: pnpm --filter react-native-audio-api build
 
   build-worklets:
     needs: changes
@@ -94,4 +93,4 @@ jobs:
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Build (react-native-audio-worklets)
-      run: yarn workspace react-native-audio-worklets build
+      run: pnpm --filter react-native-audio-worklets build

@@ -190,7 +190,7 @@ New test files are picked up automatically by `GLOB_RECURSE` — no CMakeLists e
 
 Run with:
 ```bash
-yarn test   # from repo root
+pnpm test   # from repo root
 ```
 
 #### JS/TS tests (Jest)
@@ -202,7 +202,7 @@ Path: `packages/react-native-audio-api/tests/`
 
 Run with:
 ```bash
-yarn workspace react-native-audio-api test
+pnpm --filter react-native-audio-api test
 ```
 
 #### Example app (fabric-example)
@@ -233,11 +233,11 @@ Cover:
 See the `post-work-checks` skill. At minimum before any PR:
 
 ```bash
-yarn format          # auto-fix formatting
-yarn lint            # JS/TS/C++/Kotlin linting
-yarn typecheck       # TypeScript
-yarn test            # C++ Google Tests
-yarn check-audio-enum-sync  # if you touched AudioEvent enums
+pnpm format          # auto-fix formatting
+pnpm lint            # JS/TS/C++/Kotlin linting
+pnpm typecheck       # TypeScript
+pnpm test            # C++ Google Tests
+pnpm check-audio-enum-sync  # if you touched AudioEvent enums
 ```
 
 ---

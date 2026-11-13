@@ -2,7 +2,7 @@
 
 **Prerequisites**
 
-1. Install dependencies from the monorepo root (`yarn install`).
+1. Install dependencies from the monorepo root (`pnpm install`).
 2. Generate TurboModule codegen headers once (either is enough):
    - Android: `cd packages/react-native-audio-worklets/android && ./gradlew generateCodegenArtifactsFromSchema`
    - iOS: build `apps/fabric-example` once, or run `pod install` in that app

@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "preserveSymlinks": true,
     "target": "es6",
     "module": "NodeNext",
     "jsx": "react-native",

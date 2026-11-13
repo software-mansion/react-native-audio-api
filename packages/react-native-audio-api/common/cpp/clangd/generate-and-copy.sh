@@ -12,7 +12,7 @@ WORKLETS_DB="$REPO_ROOT/packages/react-native-audio-worklets/compile_commands.js
 # regenerating. Slow — only needed after native deps/config actually change.
 if [[ "${1:-}" == "--clean" ]]; then
   (cd "$REPO_ROOT/apps/fabric-example/ios" && pod deintegrate && pod install)
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api run build:android)
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api build:android)
 fi
 
 cmake -B build .
@@ -43,6 +43,7 @@ fi
 # having built the Android app (or opened it in Android Studio) once.
 python3 - <<PY
 import json
+import re
 from pathlib import Path
 
 repo_root = Path("$REPO_ROOT")
@@ -56,17 +57,17 @@ else:
     newest = max(android_dbs, key=lambda p: p.stat().st_mtime)
     entries = json.loads(newest.read_text())
 
-    # Gradle reports the library either through the node_modules symlink or,
+    # Gradle reports the library either through a node_modules symlink or,
     # when autolinking registers the realpath, through packages/ directly.
     # Normalise to the real path so clangd matches the files open in the editor.
-    node_modules_dir = str(repo_root / "node_modules" / "react-native-audio-api")
+    node_modules_dir = re.compile(r"[^\s\"']*/node_modules/react-native-audio-api(?=/)")
     real_dir = str(package_dir)
 
     by_file = {e["file"]: e for e in json.loads(root_db.read_text())}
     merged = 0
     for entry in entries:
-        entry["file"] = entry["file"].replace(node_modules_dir, real_dir)
-        entry["command"] = entry["command"].replace(node_modules_dir, real_dir)
+        entry["file"] = node_modules_dir.sub(real_dir, entry["file"])
+        entry["command"] = node_modules_dir.sub(real_dir, entry["command"])
         if not entry["file"].startswith(real_dir + "/"):
             continue
         by_file[entry["file"]] = entry
