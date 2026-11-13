@@ -50,6 +50,7 @@ export type {
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
+  AudioTimestamp,
 } from './types';
 
 export type {

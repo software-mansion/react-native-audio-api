@@ -113,7 +113,7 @@ Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`)
 ### Partially implemented 🚧
 | Interface | What's available |
 |---|---|
-| `AudioContext` | `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state` |
+| `AudioContext` | `baseLatency`, `outputLatency`, `getOutputTimestamp`, `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state` |
 | `BaseAudioContext` | `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes |
 | `AudioListener` | All nine AudioParams; used by `PannerNode` for 3D spatialization; deprecated `setPosition` / `setOrientation` provided in JS (set AudioParam values) |
 | `PannerNode` | Equal-power spatialization, distance models, cone gain; `panningModel` is `'equalpower'` only |

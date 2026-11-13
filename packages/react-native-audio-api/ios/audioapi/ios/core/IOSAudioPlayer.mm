@@ -2,7 +2,10 @@
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/utils/Macros.h>
 
+#include <mach/mach_time.h>
+
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 #include <audioapi/core/AudioContext.h>
@@ -20,6 +23,29 @@
 namespace audioapi {
 
 namespace {
+
+const mach_timebase_info_data_t kHostTimebase = [] {
+  mach_timebase_info_data_t timebase{};
+  mach_timebase_info(&timebase);
+  return timebase;
+}();
+
+std::int64_t machTicksToNs(std::int64_t ticks)
+{
+  return static_cast<std::int64_t>(
+      static_cast<__int128>(ticks) * kHostTimebase.numer / kHostTimebase.denom);
+}
+
+/// Mach host time stops while the device sleeps, but libc++ `steady_clock` (`CLOCK_MONOTONIC_RAW`)
+/// keeps counting, so the two drift apart by the total sleep. Translating only the distance from
+/// now keeps the drift out.
+std::int64_t hostTimeToSteadyClockNs(UInt64 hostTime)
+{
+  const auto hostNow = mach_absolute_time();
+  const auto steadyNowNs = steadyClockNowNs();
+  return steadyNowNs -
+      machTicksToNs(static_cast<std::int64_t>(hostNow) - static_cast<std::int64_t>(hostTime));
+}
 
 /// In frames of the session's own rate, which may differ from the context's.
 int preferredIOBufferFramesFor(AudioContextLatencyHint latencyHint)
@@ -61,9 +87,10 @@ IOSAudioPlayer::~IOSAudioPlayer()
 
 NativeAudioPlayer *IOSAudioPlayer::createNativePlayer()
 {
-  RenderAudioBlock renderAudioBlock = ^(AudioBufferList *outputData, int numFrames) {
-    deliverOutputBuffers(outputData, numFrames);
-  };
+  RenderAudioBlock renderAudioBlock =
+      ^(AudioBufferList *outputData, int numFrames, const AudioTimeStamp *timestamp) {
+        deliverOutputBuffers(outputData, numFrames, timestamp);
+      };
 
   NativeAudioPlayer *nativePlayer =
       [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
@@ -89,7 +116,10 @@ void IOSAudioPlayer::clearPendingSaved()
   pendingSaved_.zero();
 }
 
-void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFrames)
+void IOSAudioPlayer::deliverOutputBuffers(
+    AudioBufferList *outputData,
+    int numFrames,
+    const AudioTimeStamp *timestamp)
 {
   const CurrentRenderScope renderScope(currentRenders_);
 
@@ -105,6 +135,14 @@ void IOSAudioPlayer::deliverOutputBuffers(AudioBufferList *outputData, int numFr
       std::memset(outputChannel, 0, static_cast<size_t>(numFrames) * sizeof(float));
     }
     return;
+  }
+
+  if (timestamp != nullptr && (timestamp->mFlags & kAudioTimeStampHostTimeValid) != 0) {
+    // Frames left over from the previous quantum play first; they were rendered but not delivered.
+    publishOutputAnchor(
+        {.contextFrame = renderedFrames_ - pendingSavedCount_,
+         .hostTimeNs = hostTimeToSteadyClockNs(timestamp->mHostTime),
+         .isValid = true});
   }
 
   int outPos = 0;
@@ -231,6 +269,21 @@ double IOSAudioPlayer::getOutputLatency() const
 
   AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
   return [sessionManager outputLatencySeconds] + [sessionManager ioBufferDurationSeconds];
+}
+
+std::optional<OutputPresentation> IOSAudioPlayer::getOutputPresentation()
+{
+  const auto anchor = latestOutputAnchor();
+  if (!anchor) {
+    return std::nullopt;
+  }
+
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+  const auto outputLatencyNs =
+      static_cast<std::int64_t>(std::llround([sessionManager outputLatencySeconds] * 1e9));
+  return OutputPresentation{
+      .contextFrame = anchor->contextFrame,
+      .presentationTimeNs = anchor->hostTimeNs + outputLatencyNs};
 }
 
 std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(

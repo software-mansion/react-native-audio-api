@@ -4,7 +4,7 @@ import { AudioTagHandle } from '../Audio/types';
 import { AudioEventEmitter } from '../events';
 import { IAudioContext } from '../jsi-interfaces';
 import AudioManager from '../system';
-import { AudioContextOptions, ContextState } from '../types';
+import { AudioContextOptions, AudioTimestamp, ContextState } from '../types';
 import BaseAudioContext from './BaseAudioContext';
 import MediaElementAudioSourceNode from './MediaElementAudioSourceNode';
 
@@ -42,6 +42,15 @@ export default class AudioContext extends BaseAudioContext {
 
   public get outputLatency(): number {
     return (this.context as IAudioContext).outputLatency;
+  }
+
+  /**
+   * The context time of the sample leaving the output device now, and now on
+   * the `performance.now()` clock. Both are `0` until the context has rendered
+   * its first block.
+   */
+  getOutputTimestamp(): AudioTimestamp {
+    return (this.context as IAudioContext).getOutputTimestamp();
   }
 
   async close(): Promise<undefined> {
