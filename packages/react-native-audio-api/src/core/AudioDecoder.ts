@@ -27,8 +27,14 @@ class AudioDecoder {
     fetchOptions?: RequestInit
   ): Promise<AudioBuffer | null | undefined> {
     const rate = sampleRate ?? 0;
-    const source = await this.loadEncodedSource(input, fetchOptions);
 
+    // Before any await: the native side copies the bytes when it is called, and
+    // the caller may reuse its buffer as soon as this function returns.
+    if (input instanceof ArrayBuffer) {
+      return this.decodeFromArrayBuffer(input, rate);
+    }
+
+    const source = await this.loadEncodedSource(input, fetchOptions);
     if (source instanceof ArrayBuffer) {
       return this.decodeFromArrayBuffer(source, rate);
     }
@@ -59,17 +65,13 @@ class AudioDecoder {
   }
 
   /**
-   * Resolves a decode input to what the native decoder opens: the encoded bytes
-   * held in memory, or the path of a local file.
+   * Resolves a string or asset input to what the native decoder opens: the
+   * encoded bytes held in memory, or the path of a local file.
    */
   private async loadEncodedSource(
-    input: DecodeDataInput,
+    input: number | string,
     fetchOptions?: RequestInit
   ): Promise<EncodedSource> {
-    if (input instanceof ArrayBuffer) {
-      return input;
-    }
-
     const stringSource = this.resolveToStringSource(input);
     assertSupportedDecodeStringSource(stringSource);
 
@@ -126,16 +128,33 @@ class AudioDecoder {
     options: AudioDecodeStreamOptions = {}
   ): Promise<AudioDecodeStream> {
     const sampleRate = options.sampleRate ?? 0;
-    const source = await this.loadEncodedSource(input, options.fetchOptions);
 
-    const stream =
-      source instanceof ArrayBuffer
-        ? await this.decoder.openStreamWithMemoryBlock(
-            // @ts-ignore internal function
-            new Uint8Array(source),
-            sampleRate
-          )
-        : await this.decoder.openStreamWithFilePath(source, sampleRate);
+    // Before any await, for the reason given in decodeAudioDataImplementation.
+    if (input instanceof ArrayBuffer) {
+      return this.openStreamFromArrayBuffer(input, sampleRate);
+    }
+
+    const source = await this.loadEncodedSource(input, options.fetchOptions);
+    if (source instanceof ArrayBuffer) {
+      return this.openStreamFromArrayBuffer(source, sampleRate);
+    }
+
+    const stream = await this.decoder.openStreamWithFilePath(
+      source,
+      sampleRate
+    );
+    return new AudioDecodeStream(stream);
+  }
+
+  private async openStreamFromArrayBuffer(
+    arrayBuffer: ArrayBuffer,
+    sampleRate: number
+  ): Promise<AudioDecodeStream> {
+    const stream = await this.decoder.openStreamWithMemoryBlock(
+      // @ts-ignore internal function
+      new Uint8Array(arrayBuffer),
+      sampleRate
+    );
     return new AudioDecodeStream(stream);
   }
 

@@ -102,13 +102,14 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, openStreamWithMemoryBlock) {
   const auto size = arrayBuffer.size(runtime);
   auto sampleRate = static_cast<float>(args[1].getNumber());
 
+  // Copied here, on the JS thread: the caller may reuse its buffer as soon as this returns.
+  // The copy is then handed over to the stream rather than copied again.
   return promiseVendor_->createAsyncPromise(
       [bytes = std::vector<uint8_t>(data, data + size),
        sampleRate,
-       callInvoker = callInvoker_]() -> PromiseResolver {
+       callInvoker = callInvoker_]() mutable -> PromiseResolver {
         return resolveWithDecodeStream(
-            audiodecoding::AudioDecodeStream::openWithMemoryBlock(
-                bytes.data(), bytes.size(), sampleRate),
+            audiodecoding::AudioDecodeStream::openWithMemoryBlock(std::move(bytes), sampleRate),
             callInvoker);
       });
 }

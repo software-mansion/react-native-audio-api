@@ -193,16 +193,20 @@ Returned by [`openAudioDecodeStream`](./decoding.mdx#openaudiodecodestream).
 #### `read`
 
 Decodes the next frames of the source. Each read continues where the previous one stopped, and reads run one at a time, in the order they were requested.
+Await each read before requesting the next: reads queue behind one another, and requesting dozens at once blocks the JS thread until the decoder catches up.
 
 The chunks of a stream, put end to end, hold exactly the samples [`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns for the same source and sample rate, whatever the chunk size.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `frameCount` | `number` | Number of frames to decode. A positive integer. |
+| `frameCount` | `number` | Number of frames to decode. A positive integer. A few thousand frames is a good chunk; a value larger than what is left returns what is left. |
 
 ##### Returns `Promise<AudioBuffer | null>`
 
 An [`AudioBuffer`](../sources/audio-buffer.mdx) of `frameCount` frames, shorter only when the source ends inside it, and `null` once the source has ended.
+
+A source the decoder fails on midway also ends with `null`, as [`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns what was decoded before the failure.
+Compare the frames read with `duration * sampleRate` to tell a truncated source from a complete one.
 
 ##### Errors
 
@@ -227,14 +231,15 @@ Moves the read position.
 | `RangeError` | `seconds` is negative or not finite. |
 
 :::caution
-Compressed formats seek to the nearest position they can decode from, so the next read may start a few frames away from `seconds`.
-Only sequential reads are sample-exact: to read the same audio twice, prefer reading from the start again over seeking into the middle.
+The next read starts where the decoder can resume, which depends on the format and on the platform: exactly at `seconds` for PCM, and at a nearby position for compressed formats, which can be noticeably earlier or later.
+Only sequential reads are sample-exact: to read the same audio twice, prefer reading from the start again (`seek(0)`) over seeking into the middle.
+Seek within the duration of the source; what a position past its end reads is not specified.
 :::
 
 #### `close`
 
 Releases the decoder once the reads already requested have settled. Reads and seeks requested afterwards reject.
-A stream that is never closed is released when it is garbage collected.
+An open stream holds a decoder and a thread of its own: close it as soon as you are done with it. A stream that is never closed is only released when it is garbage collected.
 
 ##### Returns `undefined`
 

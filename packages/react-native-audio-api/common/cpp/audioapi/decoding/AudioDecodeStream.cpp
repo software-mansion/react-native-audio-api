@@ -20,17 +20,17 @@ AudioDecodeStream::OpenResult AudioDecodeStream::openWithFilePath(
       "Cannot decode file: unsupported or invalid audio format");
 }
 
-AudioDecodeStream::OpenResult
-AudioDecodeStream::openWithMemoryBlock(const void *data, size_t size, float sampleRate) {
+AudioDecodeStream::OpenResult AudioDecodeStream::openWithMemoryBlock(
+    std::vector<uint8_t> encodedBytes,
+    float sampleRate) {
   constexpr auto errorMessage = "Cannot decode audio data: unsupported or invalid audio format";
-  if (data == nullptr || size == 0) {
+  if (encodedBytes.empty()) {
     return Err(errorMessage);
   }
-  const auto *bytes = static_cast<const uint8_t *>(data);
+  const size_t size = encodedBytes.size();
   return open(
       decoding::EncodedMemorySource{
-          .data = std::vector<uint8_t>(bytes, bytes + size),
-          .sampleRate = static_cast<int>(sampleRate)},
+          .data = std::move(encodedBytes), .sampleRate = static_cast<int>(sampleRate)},
       size,
       errorMessage);
 }

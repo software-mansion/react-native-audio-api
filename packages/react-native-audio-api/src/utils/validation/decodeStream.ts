@@ -1,7 +1,7 @@
 import { RangeError } from '../../errors';
 
 export function assertValidDecodeStreamFrameCount(frameCount: number): void {
-  if (!Number.isInteger(frameCount) || frameCount <= 0) {
+  if (!Number.isSafeInteger(frameCount) || frameCount <= 0) {
     throw new RangeError(
       `frameCount must be a positive integer: ${frameCount}`
     );

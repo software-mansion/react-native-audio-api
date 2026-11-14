@@ -6,8 +6,10 @@
 #include <audioapi/utils/Result.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace audioapi::audiodecoding {
 
@@ -23,9 +25,10 @@ class AudioDecodeStream {
 
   /// @param sampleRate Output sample rate; 0 keeps the rate of the source.
   [[nodiscard]] static OpenResult openWithFilePath(const std::string &path, float sampleRate);
-  /// @note Keeps its own copy of the encoded bytes for as long as the stream is open.
-  [[nodiscard]] static OpenResult
-  openWithMemoryBlock(const void *data, size_t size, float sampleRate);
+  /// @note Takes ownership of @p encodedBytes and keeps them for as long as the stream is open.
+  [[nodiscard]] static OpenResult openWithMemoryBlock(
+      std::vector<uint8_t> encodedBytes,
+      float sampleRate);
 
   ~AudioDecodeStream();
   DELETE_COPY_AND_MOVE(AudioDecodeStream);
@@ -33,6 +36,8 @@ class AudioDecodeStream {
   /// @brief Decodes the next @p frameCount frames.
   /// @return A buffer of @p frameCount frames, shorter only when the stream ends inside it;
   /// `nullptr` once the stream has ended. An error after `close`.
+  /// @note The decoder backends report a decoding failure as an end of stream, so a source
+  /// that fails midway also ends with `nullptr`, as it does when decoded whole.
   [[nodiscard]] AudioBufferResult read(size_t frameCount);
 
   /// @brief Moves the read position. How close the decoder lands to @p seconds depends on the

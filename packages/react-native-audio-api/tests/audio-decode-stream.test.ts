@@ -101,6 +101,29 @@ describe('openAudioDecodeStream', () => {
     expect(sampleRate).toBe(0);
   });
 
+  // The native side copies the bytes when it is called: a caller may reuse its
+  // buffer as soon as the function has returned, without awaiting it.
+  it('hands encoded bytes to the decoder before returning', async () => {
+    const decoder = installDecoder(createNativeStream());
+    const { openAudioDecodeStream } = loadAudioDecoder();
+
+    const opening = openAudioDecodeStream(new ArrayBuffer(8));
+
+    expect(decoder.openStreamWithMemoryBlock).toHaveBeenCalledTimes(1);
+    await opening;
+  });
+
+  it('keeps handing encoded bytes to decodeAudioData before returning', async () => {
+    const decoder = installDecoder(createNativeStream());
+    decoder.decodeWithMemoryBlock.mockResolvedValue(createNativeBuffer(8));
+    const { decodeAudioData } = loadAudioDecoder();
+
+    const decoding = decodeAudioData(new ArrayBuffer(8));
+
+    expect(decoder.decodeWithMemoryBlock).toHaveBeenCalledTimes(1);
+    await decoding;
+  });
+
   it('downloads a remote source before opening it', async () => {
     const decoder = installDecoder(createNativeStream());
     const { openAudioDecodeStream } = loadAudioDecoder();
@@ -166,7 +189,7 @@ describe('AudioDecodeStream', () => {
     await expect(stream.read(4096)).resolves.toBeNull();
   });
 
-  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 60])(
     'rejects a read of %p frames without reaching the decoder',
     async (frameCount) => {
       const nativeStream = createNativeStream();

@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -180,6 +181,29 @@ TEST(AudioDecodeStreamTest, ReturnsAShortLastChunkThenNoBuffer) {
   std::remove(path.c_str());
 }
 
+// A request far longer than the source must return the source, whichever branch sizes the
+// buffer: a plain large request, and one past what a duration estimate is trusted for.
+TEST(AudioDecodeStreamTest, ReturnsTheWholeSourceForAnOversizedRequest) {
+  const std::string path = writeRampWavFile("decode-stream-oversized.wav");
+  constexpr size_t tenMinutes = static_cast<size_t>(sampleRate) * 60 * 10;
+
+  for (const size_t request : {tenMinutes, std::numeric_limits<size_t>::max()}) {
+    auto stream = openStream(path);
+    ASSERT_NE(stream, nullptr);
+
+    auto result = stream->read(request);
+    ASSERT_TRUE(result.is_ok());
+    ASSERT_NE(result.unwrap(), nullptr);
+    EXPECT_EQ(result.unwrap()->getSize(), frameCount);
+
+    auto afterEnd = stream->read(request);
+    ASSERT_TRUE(afterEnd.is_ok());
+    EXPECT_EQ(afterEnd.unwrap(), nullptr);
+  }
+
+  std::remove(path.c_str());
+}
+
 TEST(AudioDecodeStreamTest, SeekMovesTheReadPosition) {
   const std::string path = writeRampWavFile("decode-stream-seek.wav");
   auto stream = openStream(path);
@@ -251,8 +275,7 @@ TEST(AudioDecodeStreamTest, ReadsFromAMemoryBlock) {
   const std::string path = writeRampWavFile("decode-stream-memory.wav");
   const auto bytes = readFileBytes(path);
 
-  auto result =
-      audiodecoding::AudioDecodeStream::openWithMemoryBlock(bytes.data(), bytes.size(), 0);
+  auto result = audiodecoding::AudioDecodeStream::openWithMemoryBlock(bytes, 0);
   ASSERT_TRUE(result.is_ok()) << result.unwrap_err();
   auto stream = std::move(result).unwrap();
 
@@ -266,10 +289,8 @@ TEST(AudioDecodeStreamTest, RejectsASourceThatCannotBeDecoded) {
   const std::vector<uint8_t> invalid = {0x00, 0x01, 0x02};
 
   EXPECT_TRUE(audiodecoding::AudioDecodeStream::openWithFilePath("", 0).is_err());
-  EXPECT_TRUE(audiodecoding::AudioDecodeStream::openWithMemoryBlock(nullptr, 0, 0).is_err());
-  EXPECT_TRUE(
-      audiodecoding::AudioDecodeStream::openWithMemoryBlock(invalid.data(), invalid.size(), 0)
-          .is_err());
+  EXPECT_TRUE(audiodecoding::AudioDecodeStream::openWithMemoryBlock({}, 0).is_err());
+  EXPECT_TRUE(audiodecoding::AudioDecodeStream::openWithMemoryBlock(invalid, 0).is_err());
 }
 
 // NOLINTEND

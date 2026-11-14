@@ -1135,7 +1135,7 @@ class AudioDecodeStreamMock {
   }
 
   read(frameCount: number): Promise<AudioBufferMock | null> {
-    if (!Number.isInteger(frameCount) || frameCount <= 0) {
+    if (!Number.isSafeInteger(frameCount) || frameCount <= 0) {
       return Promise.reject(
         new RangeErrorMock(
           `frameCount must be a positive integer: ${frameCount}`
@@ -1397,6 +1397,7 @@ class AudioApiErrorMock extends Error {
 // Export classes with original API names (for compatibility)
 export const AnalyserNode = AnalyserNodeMock;
 export const AudioBuffer = AudioBufferMock;
+export const AudioDecodeStream = AudioDecodeStreamMock;
 export const AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export const AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export const AudioContext = AudioContextMock;

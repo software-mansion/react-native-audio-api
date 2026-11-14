@@ -61,19 +61,23 @@ constexpr size_t GROWTH_DENOMINATOR = 2;
 // allocation stays); more than that is worth an exact-size copy.
 constexpr size_t IN_PLACE_TRIM_SLACK_DIVISOR = 8;
 
-// Frames to allocate before decoding. A request no longer than what a container estimate is
-// trusted for is allocated as asked, so a bounded read never reallocates. A longer one (decoding
-// a whole file asks for everything) starts from the decoder's estimate and grows on demand.
+// A request up to this many frames is allocated as asked: a chunked read then never
+// reallocates, and at 1.4 s of 48 kHz audio it cannot be a large allocation.
+constexpr size_t EAGER_REQUEST_FRAMES = 16 * decoding::AudioDecoderBackend::CHUNK_SIZE;
+
+// Frames to allocate before decoding. A larger request is bounded by the decoder's estimate of
+// the source, so asking for far more than a short source holds (decoding a whole file asks for
+// everything) allocates for the source, not for the request, and grows on demand.
 size_t initialDecodeCapacity(
     size_t requestedFrames,
     size_t estimatedFrames,
     float sampleRate,
     size_t chunkFrames) {
-  const auto maxTrustedEstimate =
-      static_cast<size_t>(std::max(1.0F, sampleRate) * MAX_TRUSTED_ESTIMATE_SECONDS);
-  if (requestedFrames <= maxTrustedEstimate) {
+  if (requestedFrames <= EAGER_REQUEST_FRAMES) {
     return requestedFrames;
   }
+  const auto maxTrustedEstimate =
+      static_cast<size_t>(std::max(1.0F, sampleRate) * MAX_TRUSTED_ESTIMATE_SECONDS);
   const size_t trustedEstimate = std::min(estimatedFrames, maxTrustedEstimate);
   return std::min(
       requestedFrames, trustedEstimate + trustedEstimate / ESTIMATE_HEADROOM_DIVISOR + chunkFrames);
