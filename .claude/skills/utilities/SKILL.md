@@ -235,7 +235,7 @@ RAII mutex wrapper that can hold `nullptr` (no-op). Supports `Locker::tryLock(mu
 
 ### Other `core/utils/` classes
 
-- **`AudioDecoder.h`** — decodes audio files to `AudioBuffer` (FFmpeg, conditional). Read the header.
+- Decoding lives in `common/cpp/audioapi/decoding/`, not here. `AudioDecoding.h` decodes a whole source to an `AudioBuffer` (`decodeWithFilePath`, `decodeWithMemoryBlock`) and exposes the loop both paths share, `audiodecoding::decodeFrames(decoder, maxFrames)`: it reads up to `maxFrames` from the decoder's current position and returns `nullptr` once nothing is left. `AudioDecodeStream.h` keeps a decoder open to pull bounded chunks (`read`, `seek`, `close`); it is not thread-safe, its owner serializes the calls. Reuse `decodeFrames` instead of writing another `readPcmFrames` loop: successive calls are sample-exact with one whole decode, which `AudioDecodeStreamTest` checks for several chunk sizes, with and without resampling.
 - **`AudioFileWriter.h`** — writes PCM to audio files. Read the header.
 - **`AudioRecorderCallback.h`** — callback adapter for the platform recorder. Internal.
 - **`worklets/WorkletsRunner.h`** — manages JS worklet execution on the audio thread. Internal.

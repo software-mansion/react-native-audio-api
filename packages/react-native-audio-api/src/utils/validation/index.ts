@@ -43,3 +43,8 @@ export {
   assertSupportedDecodeStringSource,
   assertUnsupportedDecodeStringFormats,
 } from './decodeSource';
+
+export {
+  assertValidDecodeStreamFrameCount,
+  assertValidDecodeStreamPosition,
+} from './decodeStream';

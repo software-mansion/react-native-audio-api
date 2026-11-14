@@ -400,6 +400,25 @@ export interface IAudioDecoder {
     inputChannelCount: number,
     interleaved?: boolean
   ) => Promise<IAudioBuffer>;
+  openStreamWithMemoryBlock: (
+    arrayBuffer: ArrayBuffer,
+    sampleRate: number
+  ) => Promise<IAudioDecodeStream>;
+  openStreamWithFilePath: (
+    sourcePath: string,
+    sampleRate: number
+  ) => Promise<IAudioDecodeStream>;
+}
+
+export interface IAudioDecodeStream {
+  readonly sampleRate: number;
+  readonly numberOfChannels: number;
+  readonly duration: number;
+
+  /** Resolves with `null` once the source has ended. */
+  read: (frameCount: number) => Promise<IAudioBuffer | null>;
+  seek: (seconds: number) => Promise<void>;
+  close: () => void;
 }
 
 export interface IAudioFileUtils {

@@ -17,8 +17,11 @@ class AudioDecoderHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(decodeWithMemoryBlock);
   JSI_HOST_FUNCTION_DECL(decodeWithFilePath);
   JSI_HOST_FUNCTION_DECL(decodeWithPCMInBase64);
+  JSI_HOST_FUNCTION_DECL(openStreamWithMemoryBlock);
+  JSI_HOST_FUNCTION_DECL(openStreamWithFilePath);
 
  private:
+  std::shared_ptr<react::CallInvoker> callInvoker_;
   std::shared_ptr<PromiseVendor> promiseVendor_;
 };
 } // namespace audioapi

@@ -23,6 +23,15 @@ decodeWithMemoryBlock(const void *data, size_t size, float sampleRate);
     int inputChannelCount,
     bool interleaved);
 
+/// @brief Decodes up to @p maxFrames PCM frames from the current position of @p decoder.
+/// @return A planar buffer holding exactly the frames decoded: @p maxFrames of them unless the
+/// stream ended first. `nullptr` when the decoder has no frame left.
+/// @note Successive calls continue where the previous one stopped, so the buffers of any
+/// sequence of calls, concatenated, hold the same samples as a single unbounded call.
+[[nodiscard]] std::shared_ptr<AudioBuffer> decodeFrames(
+    decoding::AudioDecoderBackend &decoder,
+    size_t maxFrames);
+
 [[nodiscard]] bool pathHasExtension(
     const std::string &path,
     const std::vector<std::string> &extensions);

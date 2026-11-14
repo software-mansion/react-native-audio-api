@@ -97,8 +97,11 @@ HostObjects/
     ├── NodeOptionsParser.h      # Parses JS option objects into C++ structs
     │                            # Use setNumericOption (NumericOption concept) for scalar numbers
     ├── AudioDecoderHostObject.h/.cpp
+    ├── AudioDecodeStreamHostObject.h/.cpp  # Owns a serial lane (see below)
     └── AudioFileUtilsHostObject.h/.cpp
 ```
+
+**A HostObject wrapping an engine object that is not thread-safe owns a lane.** `AudioDecodeStreamHostObject` keeps an open decoder that `read`, `seek` and `close` must never touch concurrently, and whose calls must run in the order JS made them. It owns a `SerialTaskExecutor` and builds its `PromiseVendor` on it (`PromiseVendor(runtime, callInvoker, lane_)`): every promise body runs on that one worker, in call order, with no lock. A call that returns nothing to JS (`close`) is scheduled on the same lane directly, so it stays ordered with the promises. Build such a HostObject on the JS thread — inside the `PromiseResolver` when it is the result of an async open — because a lane takes a single producer. The engine logic itself lives outside `HostObjects/` (`decoding/AudioDecodeStream`), where the C++ tests can reach it.
 
 ---
 
