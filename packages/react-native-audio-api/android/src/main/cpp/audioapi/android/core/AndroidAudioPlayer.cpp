@@ -31,6 +31,14 @@ PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
   return PerformanceMode::LowLatency;
 }
 
+/// Exclusive bypasses the mixer and its effects (echo-cancellation reference included).
+SharingMode sharingModeFor(AudioContextLatencyHint latencyHint, AndroidOutputProfile profile) {
+  return latencyHint == AudioContextLatencyHint::INTERACTIVE &&
+          profile != AndroidOutputProfile::VoiceCommunication
+      ? SharingMode::Exclusive
+      : SharingMode::Shared;
+}
+
 /// About one second of 128-frame callbacks at 48 kHz.
 constexpr uint32_t CALLBACKS_BETWEEN_AFFINITY_CHECKS = 375;
 
@@ -58,7 +66,7 @@ AndroidAudioPlayer::AndroidAudioPlayer(
 bool AndroidAudioPlayer::openAudioStreamLocked() {
   AudioStreamBuilder builder;
 
-  builder.setSharingMode(SharingMode::Exclusive)
+  builder.setSharingMode(sharingModeFor(latencyHint_, outputProfile_))
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(performanceModeFor(latencyHint_))
