@@ -1121,6 +1121,80 @@ const decodeAudioData = (_audioData: ArrayBuffer): Promise<AudioBufferMock> => {
   );
 };
 
+/** Hands out the one second of silence the mocked `decodeAudioData` returns. */
+class AudioDecodeStreamMock {
+  public readonly sampleRate: number = 44100;
+  public readonly numberOfChannels: number = 2;
+  public readonly duration: number = 1;
+
+  private position: number = 0;
+  private closed: boolean = false;
+
+  private get length(): number {
+    return this.duration * this.sampleRate;
+  }
+
+  read(frameCount: number): Promise<AudioBufferMock | null> {
+    if (!Number.isSafeInteger(frameCount) || frameCount <= 0) {
+      return Promise.reject(
+        new RangeErrorMock(
+          `frameCount must be a positive integer: ${frameCount}`
+        )
+      );
+    }
+    if (this.closed) {
+      return Promise.reject(
+        new AudioApiErrorMock('Cannot read from a closed decode stream')
+      );
+    }
+
+    const length = Math.min(frameCount, this.length - this.position);
+    if (length <= 0) {
+      return Promise.resolve(null);
+    }
+
+    this.position += length;
+    return Promise.resolve(
+      new AudioBufferMock({
+        numberOfChannels: this.numberOfChannels,
+        length,
+        sampleRate: this.sampleRate,
+      })
+    );
+  }
+
+  seek(seconds: number): Promise<void> {
+    if (!Number.isFinite(seconds) || seconds < 0) {
+      return Promise.reject(
+        new RangeErrorMock(
+          `seconds must be a non-negative finite number: ${seconds}`
+        )
+      );
+    }
+    if (this.closed) {
+      return Promise.reject(
+        new AudioApiErrorMock('Cannot seek in a closed decode stream')
+      );
+    }
+
+    this.position = Math.min(
+      Math.round(seconds * this.sampleRate),
+      this.length
+    );
+    return Promise.resolve();
+  }
+
+  close(): void {
+    this.closed = true;
+  }
+}
+
+const openAudioDecodeStream = (
+  _input: DecodeDataInput
+): Promise<AudioDecodeStreamMock> => {
+  return Promise.resolve(new AudioDecodeStreamMock());
+};
+
 const decodePCMInBase64 = (_base64Data: string): Promise<AudioBufferMock> => {
   return Promise.resolve(
     new AudioBufferMock({
@@ -1323,6 +1397,7 @@ class AudioApiErrorMock extends Error {
 // Export classes with original API names (for compatibility)
 export const AnalyserNode = AnalyserNodeMock;
 export const AudioBuffer = AudioBufferMock;
+export const AudioDecodeStream = AudioDecodeStreamMock;
 export const AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export const AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export const AudioContext = AudioContextMock;
@@ -1368,6 +1443,7 @@ export {
   decodeAudioData,
   decodePCMInBase64,
   getAudioDuration,
+  openAudioDecodeStream,
   setMockSystemVolume,
   useSystemVolume,
 };
@@ -1375,6 +1451,7 @@ export {
 // Type exports to allow using classes as types
 export type AnalyserNode = AnalyserNodeMock;
 export type AudioBuffer = AudioBufferMock;
+export type AudioDecodeStream = AudioDecodeStreamMock;
 export type AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export type AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export type AudioContext = AudioContextMock;
@@ -1437,6 +1514,7 @@ export {
 export default {
   AnalyserNode: AnalyserNodeMock,
   AudioBuffer: AudioBufferMock,
+  AudioDecodeStream: AudioDecodeStreamMock,
   AudioBufferQueueSourceNode: AudioBufferQueueSourceNodeMock,
   AudioBufferSourceNode: AudioBufferSourceNodeMock,
   AudioContext: AudioContextMock,
@@ -1466,6 +1544,7 @@ export default {
   decodeAudioData,
   decodePCMInBase64,
   getAudioDuration,
+  openAudioDecodeStream,
   changePlaybackSpeed,
   concatAudioFiles,
   useSystemVolume,

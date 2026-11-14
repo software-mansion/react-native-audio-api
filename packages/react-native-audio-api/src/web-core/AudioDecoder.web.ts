@@ -1,7 +1,12 @@
 import { AudioApiError } from '../errors';
-import { AudioDurationInput, DecodeDataInput } from '../types';
+import {
+  AudioDecodeStreamOptions,
+  AudioDurationInput,
+  DecodeDataInput,
+} from '../types';
 import { base64ToArrayBuffer } from '../utils';
 import AudioBuffer from './AudioBuffer.web';
+import AudioDecodeStream from './AudioDecodeStream.web';
 import OfflineAudioContext from './OfflineAudioContext.web';
 
 const MAX_INT16_VALUE = 32768.0;
@@ -77,6 +82,18 @@ export default class AudioDecoder {
     }
 
     return audioBuffer;
+  }
+
+  public async openDecodeStreamInstance(
+    input: DecodeDataInput,
+    options: AudioDecodeStreamOptions = {}
+  ): Promise<AudioDecodeStream> {
+    const decoded = await this.decodeAudioDataInstance(
+      input,
+      options.sampleRate,
+      options.fetchOptions
+    );
+    return new AudioDecodeStream(decoded);
   }
 
   public async decodePCMInBase64Instance(
@@ -215,6 +232,13 @@ export async function decodeAudioData(
     sampleRate,
     fetchOptions
   );
+}
+
+export async function openAudioDecodeStream(
+  input: DecodeDataInput,
+  options?: AudioDecodeStreamOptions
+): Promise<AudioDecodeStream> {
+  return AudioDecoder.getInstance().openDecodeStreamInstance(input, options);
 }
 
 export async function decodePCMInBase64(

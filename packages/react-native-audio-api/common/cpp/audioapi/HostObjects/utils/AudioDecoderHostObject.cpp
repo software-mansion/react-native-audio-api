@@ -1,5 +1,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/AudioDecodeStreamHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
+#include <audioapi/decoding/AudioDecodeStream.h>
 #include <audioapi/decoding/AudioDecoding.h>
 #include <audioapi/jsi/JsiPromise.h>
 
@@ -12,12 +14,15 @@
 namespace audioapi {
 AudioDecoderHostObject::AudioDecoderHostObject(
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker) {
+    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    : callInvoker_(callInvoker) {
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker);
   addFunctions(
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithPCMInBase64),
       JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithFilePath),
-      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithMemoryBlock));
+      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, decodeWithMemoryBlock),
+      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, openStreamWithFilePath),
+      JSI_EXPORT_FUNCTION(AudioDecoderHostObject, openStreamWithMemoryBlock));
 }
 
 namespace {
@@ -31,6 +36,22 @@ PromiseResolver rejectWithMessage(std::string message) {
 PromiseResolver resolveWithAudioBuffer(std::shared_ptr<AudioBuffer> buffer) {
   return [buffer = std::move(buffer)](jsi::Runtime &runtime) {
     return AudioBufferHostObject::createJsObject(runtime, buffer);
+  };
+}
+
+// The host object is built on the JS thread, where the resolver runs: its lane must be fed by
+// that thread only.
+PromiseResolver resolveWithDecodeStream(
+    audiodecoding::AudioDecodeStream::OpenResult &&openResult,
+    const std::shared_ptr<react::CallInvoker> &callInvoker) {
+  if (openResult.is_err()) {
+    return rejectWithMessage(openResult.unwrap_err());
+  }
+
+  std::shared_ptr<audiodecoding::AudioDecodeStream> stream = std::move(openResult).unwrap();
+  return [stream = std::move(stream), callInvoker](jsi::Runtime &runtime) {
+    return AudioDecodeStreamHostObject::createJsObject(
+        runtime, std::make_shared<AudioDecodeStreamHostObject>(&runtime, callInvoker, stream));
   };
 }
 
@@ -72,6 +93,37 @@ JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithFilePath) {
   });
 
   return promise;
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, openStreamWithMemoryBlock) {
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
+  const auto *data = arrayBuffer.data(runtime);
+  const auto size = arrayBuffer.size(runtime);
+  auto sampleRate = static_cast<float>(args[1].getNumber());
+
+  // Copied here, on the JS thread: the caller may reuse its buffer as soon as this returns.
+  // The copy is then handed over to the stream rather than copied again.
+  return promiseVendor_->createAsyncPromise(
+      [bytes = std::vector<uint8_t>(data, data + size),
+       sampleRate,
+       callInvoker = callInvoker_]() mutable -> PromiseResolver {
+        return resolveWithDecodeStream(
+            audiodecoding::AudioDecodeStream::openWithMemoryBlock(std::move(bytes), sampleRate),
+            callInvoker);
+      });
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, openStreamWithFilePath) {
+  auto sourcePath = args[0].getString(runtime).utf8(runtime);
+  auto sampleRate = static_cast<float>(args[1].getNumber());
+
+  return promiseVendor_->createAsyncPromise(
+      [sourcePath, sampleRate, callInvoker = callInvoker_]() -> PromiseResolver {
+        return resolveWithDecodeStream(
+            audiodecoding::AudioDecodeStream::openWithFilePath(sourcePath, sampleRate),
+            callInvoker);
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioDecoderHostObject, decodeWithPCMInBase64) {
