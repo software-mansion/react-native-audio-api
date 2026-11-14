@@ -10,6 +10,7 @@
 
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -81,9 +82,8 @@ void AudioBufferSourceNode::setBuffer(
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
-  if (duration > 0) {
-    AudioScheduledSourceNode::stop(when + duration);
-  }
+  // Spec: `duration` counts buffer content, not context time.
+  remainingDuration_ = duration > 0 ? std::optional(duration) : std::nullopt;
 
   if (buffer_ == nullptr) {
     return;
@@ -152,7 +152,31 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setPosition(vReadIndex_);
   processor_->setEndFrame(static_cast<size_t>(endFrame));
   processor_->setStartFrame(static_cast<size_t>(startFrame));
-  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
+  // renderBlock() copies one buffer frame per output frame whatever the rate.
+  const double bufferFramesPerFrame = interpolate ? std::fabs(playbackRate) : 1.0;
+  const double bufferSampleRate = buffer_->getSampleRate();
+  size_t framesToPlay = offsetLength;
+  if (remainingDuration_) {
+    const double framesLeft =
+        std::round(*remainingDuration_ * bufferSampleRate / bufferFramesPerFrame);
+    if (framesLeft < static_cast<double>(offsetLength)) {
+      framesToPlay = static_cast<size_t>(framesLeft);
+    }
+  }
+
+  processor_->process(processingBuffer, startOffset, framesToPlay, playbackRate, interpolate);
+
+  if (remainingDuration_) {
+    if (framesToPlay < offsetLength) {
+      processingBuffer->zero(startOffset + framesToPlay, offsetLength - framesToPlay);
+      remainingDuration_ = 0.0;
+      playbackState_ = PlaybackState::STOP_SCHEDULED;
+    } else {
+      const double spent =
+          static_cast<double>(framesToPlay) * bufferFramesPerFrame / bufferSampleRate;
+      remainingDuration_ = std::max(0.0, *remainingDuration_ - spent);
+    }
+  }
 
   if (processor_->atBoundary() && processor_->shouldStop()) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;
