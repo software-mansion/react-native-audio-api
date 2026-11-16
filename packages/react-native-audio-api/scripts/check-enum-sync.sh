@@ -1,35 +1,46 @@
 #!/bin/bash
 
-# Verifies that the enums mirrored between C++ and Kotlin stay in sync.
+# Verifies that the enums mirrored from C++ into Kotlin and TypeScript stay in sync.
 #
-# These enums cross the JNI boundary as plain ints: Kotlin maps the value it receives
-# back to its own enum by ordinal, so both declarations have to list the same entries
-# in the same order. Neither compiler can notice when they drift apart — a reordered
-# or inserted entry silently remaps every value after it. Hence this check.
+# These enums cross the JNI and JSI boundaries as plain ints: Kotlin maps the value it
+# receives back to its own enum by ordinal, and C++ static_casts the number it gets from
+# TypeScript. So each mirror has to list the same entries in the same order with the same
+# values. No compiler notices when they drift apart: a reordered or inserted entry
+# silently remaps every value after it. Hence this check.
 #
-# Entries are compared ignoring case and underscores, because the two languages name
-# them differently by convention (C++ `Idle` vs Kotlin `IDLE`).
+# Entry names are compared ignoring case and underscores, because the languages name
+# them differently by convention (C++ `OPUS_OGG` vs TypeScript `OpusOgg`, C++ `Idle` vs
+# Kotlin `IDLE`).
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
 
-# One entry per mirrored enum: <C++ header>|<C++ enum>|<Kotlin file>|<Kotlin enum>
+AUDIO_FILE_PROPERTIES="common/cpp/audioapi/utils/AudioFileProperties.h"
+TYPES="src/types.ts"
+
+# One entry per mirrored enum: <C++ header>|<C++ enum>|<mirror file>|<mirror enum>
 MIRRORED_ENUMS=(
   "common/cpp/audioapi/events/AudioEvent.h|AudioEvent|android/src/main/java/com/swmansion/audioapi/system/AudioEvent.kt|AudioEvent"
   "common/cpp/audioapi/core/inputs/RecorderState.h|RecorderState|android/src/main/java/com/swmansion/audioapi/system/RecorderState.kt|RecorderState"
+  "$AUDIO_FILE_PROPERTIES|FileFormat|$TYPES|FileFormat"
+  "$AUDIO_FILE_PROPERTIES|FileDirectory|$TYPES|FileDirectory"
+  "$AUDIO_FILE_PROPERTIES|BitDepth|$TYPES|BitDepth"
+  "$AUDIO_FILE_PROPERTIES|IOSAudioQuality|$TYPES|IOSAudioQuality"
 )
 
-# Prints one entry name per line, in declaration order. Handles both the multi-line and
-# the single-line enum layouts, drops `= value` initializers, and stops at the `;` that
-# separates Kotlin's entries from the rest of its enum body.
+# Prints "Name=Value" per entry, in declaration order. Handles C++ `enum class`,
+# TypeScript `export enum` and Kotlin `enum class`, in multi-line and single-line
+# layouts, and stops at the `;` that separates Kotlin's entries from the rest of its
+# enum body. An entry without an initializer takes the previous value + 1, which is
+# also how a Kotlin ordinal counts.
 extract_entries() {
   local file="$1" enum_name="$2"
 
   awk -v name="$enum_name" '
     { sub(/\/\/.*/, "") }
-    !inside && $0 ~ "enum class[ \t]+" name "[ \t]*[:{]" {
+    !inside && $0 ~ "enum([ \t]+class)?[ \t]+" name "[ \t]*[:{]" {
       inside = 1
       sub(/.*\{/, "")
     }
@@ -42,8 +53,11 @@ extract_entries() {
     }
   ' "$file" |
     tr ',' '\n' |
-    sed 's/=.*//; s/[[:space:]]//g' |
-    grep -E '^[A-Za-z_][A-Za-z0-9_]*$' || true
+    sed 's/[[:space:]]//g' |
+    awk -F '=' -v value=-1 '
+      $1 !~ /^[A-Za-z_][A-Za-z0-9_]*$/ { next }
+      { value = (NF > 1) ? $2 + 0 : value + 1; print $1 "=" value }
+    '
 }
 
 normalize() {
@@ -53,12 +67,12 @@ normalize() {
 FAILED=0
 
 for mirrored_enum in "${MIRRORED_ENUMS[@]}"; do
-  IFS='|' read -r cpp_path cpp_enum kotlin_path kotlin_enum <<<"$mirrored_enum"
+  IFS='|' read -r cpp_path cpp_enum mirror_path mirror_enum <<<"$mirrored_enum"
 
   CPP_FILE="$PACKAGE_DIR/$cpp_path"
-  KOTLIN_FILE="$PACKAGE_DIR/$kotlin_path"
+  MIRROR_FILE="$PACKAGE_DIR/$mirror_path"
 
-  for file in "$CPP_FILE" "$KOTLIN_FILE"; do
+  for file in "$CPP_FILE" "$MIRROR_FILE"; do
     if [ ! -f "$file" ]; then
       echo "❌ $cpp_enum: file not found: $file"
       FAILED=1
@@ -67,39 +81,36 @@ for mirrored_enum in "${MIRRORED_ENUMS[@]}"; do
   done
 
   CPP_ENTRIES=$(extract_entries "$CPP_FILE" "$cpp_enum")
-  KOTLIN_ENTRIES=$(extract_entries "$KOTLIN_FILE" "$kotlin_enum")
+  MIRROR_ENTRIES=$(extract_entries "$MIRROR_FILE" "$mirror_enum")
 
   if [ -z "$CPP_ENTRIES" ]; then
-    echo "❌ $cpp_enum: no entries found in $CPP_FILE — has the declaration changed shape?"
+    echo "❌ $cpp_enum: found no entries in $cpp_path. Did the declaration change shape?"
     FAILED=1
     continue
   fi
 
-  if [ -z "$KOTLIN_ENTRIES" ]; then
-    echo "❌ $kotlin_enum: no entries found in $KOTLIN_FILE — has the declaration changed shape?"
+  if [ -z "$MIRROR_ENTRIES" ]; then
+    echo "❌ $mirror_enum: found no entries in $mirror_path. Did the declaration change shape?"
     FAILED=1
     continue
   fi
 
-  if [ "$(echo "$CPP_ENTRIES" | normalize)" = "$(echo "$KOTLIN_ENTRIES" | normalize)" ]; then
-    echo "✅ $cpp_enum is in sync ($(echo "$CPP_ENTRIES" | wc -l | tr -d ' ') entries)."
+  if [ "$(echo "$CPP_ENTRIES" | normalize)" = "$(echo "$MIRROR_ENTRIES" | normalize)" ]; then
+    echo "✅ $cpp_enum is in sync with $mirror_path ($(echo "$CPP_ENTRIES" | wc -l | tr -d ' ') entries)."
   else
     FAILED=1
-    echo "❌ $cpp_enum is NOT in sync with $kotlin_enum!"
+    echo "❌ $cpp_enum differs from $mirror_enum in $mirror_path."
     echo ""
     echo "C++ ($cpp_path):"
     echo "$CPP_ENTRIES" | nl
     echo ""
-    echo "Kotlin ($kotlin_path):"
-    echo "$KOTLIN_ENTRIES" | nl
+    echo "Mirror ($mirror_path):"
+    echo "$MIRROR_ENTRIES" | nl
     echo ""
-    echo "Differences (normalized):"
-    diff <(echo "$CPP_ENTRIES" | normalize) <(echo "$KOTLIN_ENTRIES" | normalize) || true
+    echo "Differences (case and underscores ignored):"
+    diff <(echo "$CPP_ENTRIES" | normalize) <(echo "$MIRROR_ENTRIES" | normalize) || true
     echo ""
   fi
 done
-
-# AudioFileProperties enums cross JSI as integers into TypeScript; that check has its own script.
-bash "$SCRIPT_DIR/check-audio-file-properties-enum-sync.sh" || FAILED=1
 
 exit $FAILED
