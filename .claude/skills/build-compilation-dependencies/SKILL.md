@@ -305,11 +305,11 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 
 ### What CI covers vs what validation tiers add
 
-| Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
+| Layer | CI (`ci.yml`) | Local tiers |
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
 | C++ smoke (`run-tests.sh`) | When `common/cpp/`, the lockfile or the library manifest changes (`affected`) | `--fast` (same rule), `--cpp` |
-| C++ coverage (`run-coverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `pnpm test:cpp:coverage` |
+| C++ coverage (`run-coverage.sh`, smoke, Clang) | Manual runs only (`workflow_dispatch`, `cpp-coverage-html` artifact) | `pnpm test:cpp:coverage` |
 | Jest | Yes | `--fast` |
 | Extended C++ by category (e.g. graph) | When the category's paths change (`affected`) | `--fast` (same rule), `--cpp-extended` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
@@ -367,7 +367,7 @@ pnpm --filter react-native-audio-api test:cpp:coverage
 
 `run-coverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
 
-CI runs a `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM through `setup-env`'s `llvm` tool). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. The JS tests and the C++ suites run as react-native-audio-api's `test` script in its `check-package` job (`ci.yml`): `run-tests.sh affected` diffs the pull request's merge commit against its first parent (`fetch-depth: 2`) and runs smoke and each extended category only when their `filters.sh` paths changed. `check-package` sets `TEST_ALL=1` outside pull requests and when shared files change (`ci.yml`'s `shared` filter), which runs every suite. Manual `workflow_dispatch` on `tests.yml` accepts `run_cpp_coverage` (default true); `ready_for_review` is listed explicitly because it is not a default `pull_request` type.
+`ci.yml` runs a `cpp-coverage` job on manual runs (`workflow_dispatch`) only (Clang + LLVM through `setup-env`'s `llvm` tool). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. The JS tests and the C++ suites run as react-native-audio-api's `test` script in its `check-package` job (`ci.yml`): `run-tests.sh affected` diffs the pull request's merge commit against its first parent (`fetch-depth: 2`) and runs smoke and each extended category only when their `filters.sh` paths changed. `check-package` sets `TEST_ALL=1` outside pull requests and when shared files change (`ci.yml`'s `shared` filter), which runs every suite. `ready_for_review` is listed explicitly in `ci.yml`'s triggers because it is not a default `pull_request` type.
 
 > **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
 

@@ -5,7 +5,6 @@ on:
     branches:
       - main
     types: [opened, synchronize, reopened, ready_for_review]
-  # Runs on main fill the caches that pull requests read from.
   push:
     branches:
       - main
@@ -23,33 +22,35 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    # Outside pull requests every package runs.
     outputs:
-      # A change to shared files (CI, toolchain, root config) runs every test suite.
       shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' }}
       audio-api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audio-api == 'true' }}
       worklets: ${{ github.event_name != 'pull_request' || steps.filter.outputs.worklets == 'true' }}
       audiodocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audiodocs == 'true' }}
       internaldocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.internaldocs == 'true' }}
       fabric-example: ${{ github.event_name != 'pull_request' || steps.filter.outputs.fabric-example == 'true' }}
+      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.native == 'true' || steps.filter.outputs.android == 'true' }}
+      ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.native == 'true' || steps.filter.outputs.ios == 'true' }}
+      wpt: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.wpt == 'true' }}
     steps:
-      # A package's filter includes the filters of the workspace packages it depends on.
       - name: Path filter
         id: filter
         if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@v4
         with:
           filters: |
-            shared: &shared
-              - 'package.json'
+            toolchain: &toolchain
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - '.nvmrc'
+              - '.github/actions/setup-env/**'
+            shared: &shared
+              - *toolchain
+              - 'package.json'
               - 'tsconfig.json'
               - '.eslintrc.js'
               - 'prettier.config.js'
               - 'scripts/run-steps.sh'
-              - '.github/actions/setup-env/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/check-package.yml'
             audio-api: &audio-api
@@ -72,6 +73,40 @@ jobs:
               - *worklets
               - 'apps/common-app/**'
               - 'apps/fabric-example/**'
+            native:
+              - *toolchain
+              - 'packages/react-native-audio-api/common/**'
+              - 'packages/react-native-audio-api/src/specs/**'
+              - 'packages/react-native-audio-api/scripts/**'
+              - 'packages/react-native-audio-api/package.json'
+              - 'packages/react-native-audio-worklets/common/**'
+              - 'packages/react-native-audio-worklets/src/specs/**'
+              - 'packages/react-native-audio-worklets/package.json'
+              - 'apps/common-app/package.json'
+              - 'apps/fabric-example/package.json'
+              - '.github/workflows/native-build.yml'
+            android:
+              - 'packages/react-native-audio-api/android/**'
+              - 'packages/react-native-audio-worklets/android/**'
+              - 'packages/react-native-audio-worklets/CMakeLists.txt'
+              - 'apps/fabric-example/android/**'
+            ios:
+              - 'packages/react-native-audio-api/ios/**'
+              - 'packages/react-native-audio-api/RNAudioAPI.podspec'
+              - 'packages/react-native-audio-worklets/ios/**'
+              - 'packages/react-native-audio-worklets/RNAudioWorklets.podspec'
+              - 'apps/fabric-example/ios/**'
+              - 'apps/fabric-example/Gemfile'
+              - 'apps/fabric-example/Gemfile.lock'
+            wpt:
+              - *toolchain
+              - 'package.json'
+              - 'packages/react-native-audio-api/common/**'
+              - 'packages/react-native-audio-api/src/**'
+              - 'packages/react-native-audio-api/wpt_tests/**'
+              - 'packages/react-native-audio-api/scripts/build.sh'
+              - 'packages/react-native-audio-api/package.json'
+              - '.github/workflows/wpt-tests.yml'
 
   react-native-audio-api:
     needs: changes
@@ -113,6 +148,44 @@ jobs:
       directory: apps/fabric-example
       test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
+  native-build:
+    needs: changes
+    if: needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true'
+    uses: ./.github/workflows/native-build.yml
+    with:
+      android: ${{ needs.changes.outputs.android == 'true' }}
+      ios: ${{ needs.changes.outputs.ios == 'true' }}
+
+  wpt:
+    needs: changes
+    if: needs.changes.outputs.wpt == 'true'
+    uses: ./.github/workflows/wpt-tests.yml
+
+  # Manual runs only, until coverage reports to pull requests like WPT does.
+  cpp-coverage:
+    name: C++ coverage
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup
+        uses: ./.github/actions/setup-env
+        with:
+          tools: '["cmake", "llvm"]'
+
+      - name: Run C++ coverage
+        working-directory: packages/react-native-audio-api
+        run: pnpm test:cpp:coverage
+
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v7
+        with:
+          name: cpp-coverage-html
+          path: packages/react-native-audio-api/common/cpp/test/coverage-html
+          retention-days: 14
+
   gate:
     name: Gate
     if: always()
@@ -123,6 +196,9 @@ jobs:
       - audiodocs
       - internaldocs
       - fabric-example
+      - native-build
+      - wpt
+      - cpp-coverage
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if a job failed or was cancelled
