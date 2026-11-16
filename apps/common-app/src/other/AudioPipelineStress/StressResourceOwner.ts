@@ -16,6 +16,14 @@ interface RecorderHostShape {
   isPaused?: unknown;
 }
 
+const FILE_OUTPUT_OPTIONS = {
+  channelCount: 1,
+  directory: FileDirectory.Cache,
+  fileName: 'audio-pipeline-stress',
+  format: FileFormat.M4A,
+  subDirectory: 'AudioPipelineStress',
+};
+
 export default class StressResourceOwner {
   public context: AudioContext | null = null;
   public recorder: AudioRecorder | null = null;
@@ -46,13 +54,7 @@ export default class StressResourceOwner {
       );
     }
 
-    recorder.enableFileOutput({
-      channelCount: 1,
-      directory: FileDirectory.Cache,
-      fileName: 'audio-pipeline-stress',
-      format: FileFormat.M4A,
-      subDirectory: 'AudioPipelineStress',
-    });
+    recorder.enableFileOutput(FILE_OUTPUT_OPTIONS);
 
     recorder.onError((event) => {
       this.lastRecorderError = event.message;
@@ -83,6 +85,14 @@ export default class StressResourceOwner {
       playback: this.playback,
       recorder: this.recorder,
     };
+  }
+
+  /**
+   * Throws while a recording session is active, like
+   * AudioRecorder.enableFileOutput().
+   */
+  enableFileOutput(): void {
+    this.getReadyResources().recorder.enableFileOutput(FILE_OUTPUT_OPTIONS);
   }
 
   configureRecorderTap(): void {

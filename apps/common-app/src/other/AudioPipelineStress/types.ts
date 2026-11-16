@@ -12,6 +12,7 @@ export type ScenarioId =
   | 'playback_session_deactivation_mid_run'
   | 'record_session_deactivation_mid_run'
   | 'wrong_category_then_recover'
+  | 'recorder_torture'
   | 'final_clean_cycle';
 
 export type StepStatus = 'pass' | 'fail' | 'info' | 'skipped';
