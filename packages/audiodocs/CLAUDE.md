@@ -5,9 +5,9 @@ Docusaurus 3 static site. Docs are MDX files in `docs/`. Custom React components
 ## Commands
 
 ```bash
-yarn start   # dev server with hot reload
-yarn build   # production build
-yarn serve   # serve the built site
+pnpm start   # dev server with hot reload
+pnpm build   # production build
+pnpm serve   # serve the built site
 ```
 
 ## Directory Structure
@@ -85,7 +85,7 @@ Parts of `versioned_docs/version-latest/` still use absolute `/docs/...` links, 
 older snapshot. That is harmless there — `Latest` is served at `/docs/`, so those links stay inside
 their own version. Do not "fix" them in the snapshot; fix `docs/` and let the next re-cut carry it.
 
-`onBrokenLinks` and `onBrokenAnchors` are set to `throw`, so `yarn build` catches a bad relative
+`onBrokenLinks` and `onBrokenAnchors` are set to `throw`, so `pnpm build` catches a bad relative
 path — but it cannot catch an absolute link leaking a Next reader into Latest.
 
 An absolute link is also how a `Next`-only anchor breaks the build: the target section exists in
@@ -304,7 +304,7 @@ import { useGainPlayground } from '@site/src/components/InteractivePlayground/Ef
 Pitfall: the web `AnalyserNode` wrapper copies `fftSize` / `smoothingTimeConstant` into plain
 fields, so assigning them does not reach the browser node — the demos rely on the defaults (2048).
 
-Pitfall: `package.json` depends on `react-native-audio-api: latest`, so the docs bundle the
+Pitfall: `package.json` pins an exact `react-native-audio-api` npm version, so the docs bundle the
 **published npm release** from `packages/audiodocs/node_modules/`, not the workspace source. A web
 demo may only call APIs that release ships (e.g. `createChannelSplitter` on the web `AudioContext`
 was missing in 0.13.1, and 0.13.1 ships no web `PannerNode` at all); reach for the browser objects
@@ -363,7 +363,7 @@ Block: `$$formula$$`
 2. Create `docs/<category>/my-node.mdx`.
 3. Use the structure above: frontmatter → imports → Constructor → Example → Properties → Methods → Remarks.
 4. Set `sidebar_position` relative to neighboring files (check their positions first).
-5. Sidebar updates automatically on next `yarn start` / `yarn build`.
+5. Sidebar updates automatically on next `pnpm start` / `pnpm build`.
 
 ## Adding a New Guide / Tutorial
 

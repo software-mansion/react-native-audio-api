@@ -30,6 +30,7 @@ AudioBufferSourceNode::AudioBufferSourceNode(
   };
 
   processor_ = std::make_unique<SingleBufferProcessor>(onLoopEnded);
+  processor_->setLoop(loop_);
 }
 
 void AudioBufferSourceNode::setLoop(bool loop) {

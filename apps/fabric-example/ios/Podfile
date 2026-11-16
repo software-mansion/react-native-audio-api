@@ -13,19 +13,16 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-# Relative path from ios/ to the react-native package, resolved with node so it holds for
-# hoisted and isolated node_modules alike. Must stay relative: react_native_post_install
-# joins it as File.join("${PODS_ROOT}", "..", path), and an absolute path there produces a
-# broken REACT_NATIVE_PATH in the Pods project.
-RN_RELATIVE_PATH = Pathname.new(File.dirname(Pod::Executable.execute_command('node', ['-p',
-  'require.resolve("react-native/package.json", {paths: [process.argv[1]]})', __dir__]).strip))
-  .relative_path_from(Pathname.new(__dir__)).to_s
+# Set by the app target from the RN CLI; the test host (declared after it) and
+# post_install reuse it so every target registers React Native from the same path.
+react_native_path = nil
 
 target 'FabricExample' do
   config = use_native_modules!
+  react_native_path = config[:reactNativePath]
 
   use_react_native!(
-    :path => config[:reactNativePath],
+    :path => react_native_path,
     :hermes_enabled => true,
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/..",
@@ -38,7 +35,7 @@ target 'FabricExampleTestHost' do
   pod 'RNAudioAPI', :path => '../../../packages/react-native-audio-api'
 
   use_react_native!(
-    :path => RN_RELATIVE_PATH,
+    :path => react_native_path,
     :hermes_enabled => true,
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => false
@@ -52,10 +49,19 @@ end
 post_install do |installer|
   react_native_post_install(
     installer,
-    RN_RELATIVE_PATH,
+    react_native_path,
     :mac_catalyst_enabled => false,
     :ccache_enabled => ENV['USE_CCACHE'] == '1'
   )
+
+  # react_native_post_install resolves the path to pnpm's store folder (with its hash)
+  # before writing REACT_NATIVE_PATH. Write the link instead to keep the pbxproj stable.
+  installer.aggregate_targets.map(&:user_project).uniq.each do |project|
+    project.build_configurations.each do |config|
+      config.build_settings['REACT_NATIVE_PATH'] = "${PODS_ROOT}/../#{react_native_path}"
+    end
+    project.save
+  end
 
   # TODO: Remove this loop once a `react-native-svg` release includes
   # software-mansion/react-native-svg#3022 (`:ios => "15.1"` in RNSVG.podspec)
