@@ -23,7 +23,7 @@ endif()
 
 if (RN_AUDIO_API_AUDIO_RECORDER_DISABLED)
   list(FILTER COMMON_CPP_SOURCES EXCLUDE REGEX ".*AudioRecorderHostObject\\.cpp$")
-  list(FILTER ANDROID_CPP_SOURCES EXCLUDE REGEX ".*AndroidAudioRecorder\\.cpp$")
+  list(FILTER ANDROID_CPP_SOURCES EXCLUDE REGEX ".*AndroidRecorderInput\\.cpp$")
 endif()
 
 # Debug-only: operator new/delete overrides must not ship in Release.

@@ -4,6 +4,7 @@
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/inputs/IRecorderInput.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/jsi/JsiUtils.h>
@@ -22,7 +23,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker,
     AudioRecorderOptions options) {
-  audioRecorder_ = createPlatformAudioRecorder(audioEventHandlerRegistry, options);
+  audioRecorder_ = std::make_shared<AudioRecorder>(
+      audioEventHandlerRegistry, createPlatformRecorderInput(options));
 
   lifecycleLane_ = std::make_shared<SerialTaskExecutor>();
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker, lifecycleLane_);
@@ -49,7 +51,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
   // Queued rather than called, so a start() still waiting on the lane cannot outlive this stop.
-  lifecycleLane_->schedule([audioRecorder = audioRecorder_]() {
+  lifecycleLane_->schedule([audioRecorder = audioRecorder_] {
     ActiveRecorderHandle::global().stopAndReturnInfo(audioRecorder);
   });
 }
