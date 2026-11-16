@@ -22,7 +22,8 @@ class AudioContextHostObject : public BaseAudioContextHostObject {
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker,
-      AudioContextLatencyHint latencyHint);
+      AudioContextLatencyHint latencyHint,
+      int renderQuantumSize);
   ~AudioContextHostObject() override;
 
   JSI_HOST_FUNCTION_DECL(close);

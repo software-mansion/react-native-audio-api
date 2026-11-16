@@ -53,6 +53,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, destination),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, listener),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, sampleRate),
+      JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, renderQuantumSize),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime),
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, state));
 
@@ -108,6 +109,10 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, listener) {
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, sampleRate) {
   return {context_->getSampleRate()};
+}
+
+JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, renderQuantumSize) {
+  return {context_->getRenderQuantumSize()};
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {

@@ -23,7 +23,7 @@ AudioNode::AudioNode(
       channelInterpretation_(options.channelInterpretation),
       requiresTailProcessing_(options.requiresTailProcessing) {
   audioBuffer_ = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE, outputChannelNumber_.load(), context->getSampleRate());
+      context->getRenderQuantumSize(), outputChannelNumber_.load(), context->getSampleRate());
 }
 
 bool AudioNode::canBeDestructed() const {

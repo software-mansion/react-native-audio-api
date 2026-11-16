@@ -48,6 +48,7 @@ AndroidAudioPlayer::AndroidAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
+    int renderQuantumSize,
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
@@ -57,6 +58,7 @@ AndroidAudioPlayer::AndroidAudioPlayer(
           renderAudio,
           sampleRate,
           channelCount,
+          renderQuantumSize,
           currentRenders,
           std::move(context),
           driverMutex,
@@ -72,7 +74,7 @@ bool AndroidAudioPlayer::openAudioStreamLocked() {
       ->setPerformanceMode(performanceModeFor(latencyHint_))
       ->setChannelCount(channelCount_)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
-      ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
+      ->setFramesPerDataCallback(renderQuantumSize_)
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this())
       ->setSampleRate(static_cast<int>(sampleRate_));
@@ -198,7 +200,7 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
   int processedFrames = 0;
 
   while (processedFrames < numFrames) {
-    auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
+    auto framesToProcess = std::min(numFrames - processedFrames, renderQuantumSize_);
 
     if (isRunning_.load(std::memory_order_acquire)) {
       renderNormalizedQuantum(framesToProcess);
@@ -330,7 +332,7 @@ double AndroidAudioPlayer::getBaseLatency() const {
     return static_cast<double>(framesPerBurst) / static_cast<double>(sampleRate_);
   }
 
-  return static_cast<double>(RENDER_QUANTUM_SIZE) / static_cast<double>(sampleRate_);
+  return static_cast<double>(renderQuantumSize_) / static_cast<double>(sampleRate_);
 }
 
 double AndroidAudioPlayer::getOutputLatency() const {
@@ -346,8 +348,7 @@ double AndroidAudioPlayer::getOutputLatency() const {
     minBaseLatency = static_cast<double>(callbackFrames) / static_cast<double>(sampleRate_);
   } else if (sampleRate_ > 0.0f) {
     const int32_t framesPerBurst = mStream_->getFramesPerBurst();
-    minBaseLatency =
-        static_cast<double>(framesPerBurst > 0 ? framesPerBurst : RENDER_QUANTUM_SIZE) /
+    minBaseLatency = static_cast<double>(framesPerBurst > 0 ? framesPerBurst : renderQuantumSize_) /
         static_cast<double>(sampleRate_);
   }
 
@@ -362,6 +363,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
+    int renderQuantumSize,
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
@@ -371,6 +373,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
       renderAudio,
       sampleRate,
       channelCount,
+      renderQuantumSize,
       currentRenders,
       std::move(context),
       driverMutex,

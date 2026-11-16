@@ -23,15 +23,17 @@ class AudioPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       int channelCount,
+      int renderQuantumSize,
       std::atomic<uint32_t> &currentRenders,
       std::weak_ptr<AudioContext> context,
       std::mutex *driverMutex,
       AudioContextLatencyHint latencyHint)
       : renderAudio_(renderAudio),
         renderBuffer_(
-            std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate)),
+            std::make_shared<DSPAudioBuffer>(renderQuantumSize, channelCount, sampleRate)),
         sampleRate_(sampleRate),
         channelCount_(channelCount),
+        renderQuantumSize_(renderQuantumSize),
         currentRenders_(currentRenders),
         context_(std::move(context)),
         driverMutex_(driverMutex),
@@ -64,6 +66,8 @@ class AudioPlayer {
   std::shared_ptr<DSPAudioBuffer> renderBuffer_;
   float sampleRate_;
   int channelCount_;
+  /// Frames pulled from the graph per render call; sizes `renderBuffer_`.
+  int renderQuantumSize_;
   std::atomic<uint32_t> &currentRenders_;
   std::weak_ptr<AudioContext> context_;
   /// The owning context's driver mutex; `nullptr` disables stream-failure reporting.
@@ -77,6 +81,7 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     int channelCount,
+    int renderQuantumSize,
     std::atomic<uint32_t> &currentRenders,
     std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,

@@ -1,8 +1,12 @@
 import { InvalidStateError } from '../errors';
-import { assertSupportedSampleRate } from '../utils/validation';
+import {
+  assertSupportedSampleRate,
+  resolveRenderQuantumSize,
+} from '../utils/validation';
 import { AudioTagHandle } from '../Audio/types';
 import { AudioEventEmitter } from '../events';
 import { IAudioContext } from '../jsi-interfaces';
+import { NativeAudioAPIModule } from '../specs';
 import AudioManager from '../system';
 import { AudioContextOptions, ContextState } from '../types';
 import BaseAudioContext from './BaseAudioContext';
@@ -19,12 +23,20 @@ export default class AudioContext extends BaseAudioContext {
     if (options?.sampleRate != null) {
       assertSupportedSampleRate(options.sampleRate);
     }
+    const sampleRate =
+      options?.sampleRate || AudioManager.getDevicePreferredSampleRate();
+    const renderQuantumSize = resolveRenderQuantumSize(
+      options?.renderSizeHint,
+      sampleRate,
+      () => NativeAudioAPIModule.getDeviceBufferDuration() * sampleRate
+    );
 
     super(
       globalThis.createAudioContext(
-        options?.sampleRate || AudioManager.getDevicePreferredSampleRate(),
+        sampleRate,
         options?.latencyHint,
-        options?.androidOutputProfile
+        options?.androidOutputProfile,
+        renderQuantumSize
       )
     );
 

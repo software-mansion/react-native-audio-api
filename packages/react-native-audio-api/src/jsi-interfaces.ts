@@ -43,6 +43,7 @@ export interface IBaseAudioContext {
   readonly destination: IAudioDestinationNode;
   readonly listener: IAudioListener;
   readonly sampleRate: number;
+  readonly renderQuantumSize: number;
   readonly currentTime: number;
   readonly decoder: IAudioDecoder;
 

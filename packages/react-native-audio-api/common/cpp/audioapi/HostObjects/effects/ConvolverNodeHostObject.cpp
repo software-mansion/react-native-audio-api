@@ -3,18 +3,33 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
-#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/Convolver.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <audioapi/utils/ThreadPool.hpp>
 
+#include <algorithm>
+#include <bit>
 #include <memory>
 #include <utility>
 #include <vector>
 
 namespace audioapi {
+
+namespace {
+
+constexpr size_t kMinConvolverBlockSize = 32;
+constexpr size_t kMaxConvolverBlockSize = 8192;
+
+size_t convolverBlockSizeFor(int renderQuantumSize) {
+  return std::clamp(
+      std::bit_ceil(static_cast<size_t>(renderQuantumSize)),
+      kMinConvolverBlockSize,
+      kMaxConvolverBlockSize);
+}
+
+} // namespace
 
 ConvolverNodeHostObject::ConvolverNodeHostObject(
     const std::shared_ptr<BaseAudioContext> &context,
@@ -78,29 +93,27 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<const AudioBuffer>
   }
 
   auto threadPool = context->getConvolverThreadPool();
-  std::vector<std::shared_ptr<Convolver>> convolvers;
+  const auto blockSize = convolverBlockSizeFor(context->getRenderQuantumSize());
+  std::vector<std::unique_ptr<Convolver>> convolvers;
   for (size_t i = 0; i < copiedBuffer->getNumberOfChannels(); ++i) {
     AudioArray channelData(*copiedBuffer->getChannel(i));
-    convolvers.push_back(std::make_shared<Convolver>());
-    convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
+    convolvers.push_back(std::make_unique<Convolver>());
+    convolvers.back()->init(blockSize, channelData, copiedBuffer->getSize());
   }
   if (copiedBuffer->getNumberOfChannels() == 1) {
     // add one more convolver, because right now input is always stereo
     AudioArray channelData(*copiedBuffer->getChannel(0));
-    convolvers.push_back(std::make_shared<Convolver>());
-    convolvers.back()->init(RENDER_QUANTUM_SIZE, channelData, copiedBuffer->getSize());
+    convolvers.push_back(std::make_unique<Convolver>());
+    convolvers.back()->init(blockSize, channelData, copiedBuffer->getSize());
   }
 
-  auto internalBuffer = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE * 2, convolverNode_->getChannelCount(), copiedBuffer->getSampleRate());
   auto intermediateBuffer = std::make_shared<DSPAudioBuffer>(
-      RENDER_QUANTUM_SIZE, convolvers.size(), copiedBuffer->getSampleRate());
+      context->getRenderQuantumSize(), convolvers.size(), copiedBuffer->getSampleRate());
 
   struct SetupData {
     std::shared_ptr<AudioBuffer> buffer;
-    std::vector<std::shared_ptr<Convolver>> convolvers;
+    std::vector<std::unique_ptr<Convolver>> convolvers;
     std::shared_ptr<ConvolverThreadPool> threadPool;
-    std::shared_ptr<DSPAudioBuffer> internalBuffer;
     std::shared_ptr<DSPAudioBuffer> intermediateBuffer;
     float scaleFactor;
   };
@@ -109,7 +122,6 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<const AudioBuffer>
       .buffer = copiedBuffer,
       .convolvers = std::move(convolvers),
       .threadPool = threadPool,
-      .internalBuffer = internalBuffer,
       .intermediateBuffer = intermediateBuffer,
       .scaleFactor = scaleFactor});
 
@@ -118,7 +130,6 @@ void ConvolverNodeHostObject::setBuffer(const std::shared_ptr<const AudioBuffer>
         setupData->buffer,
         std::move(setupData->convolvers),
         setupData->threadPool,
-        setupData->internalBuffer,
         setupData->intermediateBuffer,
         setupData->scaleFactor);
     context.getDisposer()->dispose(std::move(setupData));

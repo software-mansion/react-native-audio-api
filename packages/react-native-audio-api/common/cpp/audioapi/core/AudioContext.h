@@ -21,7 +21,8 @@ class AudioContext : public BaseAudioContext {
       float sampleRate,
       AndroidOutputProfile androidOutputProfile,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      AudioContextLatencyHint latencyHint);
+      AudioContextLatencyHint latencyHint,
+      int renderQuantumSize);
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 

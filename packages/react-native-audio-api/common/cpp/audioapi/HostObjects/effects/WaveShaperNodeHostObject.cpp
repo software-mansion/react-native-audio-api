@@ -70,7 +70,9 @@ JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
   update->type = oversample;
   update->pairs.reserve(channelCount);
   for (size_t i = 0; i < channelCount; ++i) {
-    update->pairs.emplace_back(WaveShaper::makeResamplers(oversample, sampleRate));
+    update->pairs.emplace_back(
+        WaveShaper::makeResamplers(
+            oversample, sampleRate, waveShaperNode_->getContextRenderQuantumSize()));
   }
 
   auto event = [handle, node = waveShaperNode_, update = std::move(update)](
