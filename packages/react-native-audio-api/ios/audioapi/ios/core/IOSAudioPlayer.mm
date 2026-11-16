@@ -35,10 +35,13 @@ int preferredIOBufferFramesFor(AudioContextLatencyHint latencyHint)
   return RENDER_QUANTUM_SIZE;
 }
 
-void reportStreamFailToContext(
+/// @p isStillStopped is re-checked under the driver mutex: the engine may have been started again
+/// between the notification and this call, in which case the context must keep running.
+void reportOutputNotificationToContext(
+    AudioEngineOutputNotification notification,
     std::mutex *driverMutex,
     const std::weak_ptr<AudioContext> &context,
-    const std::function<bool()> &isStillFailed)
+    const std::function<bool()> &isStillStopped)
 {
   auto ctx = context.lock();
   if (driverMutex == nullptr || ctx == nullptr) {
@@ -46,10 +49,15 @@ void reportStreamFailToContext(
   }
 
   std::scoped_lock lock(*driverMutex);
-  if (ctx->isClosed() || !isStillFailed()) {
+  if (ctx->isClosed() || !isStillStopped()) {
     return;
   }
-  ctx->onStreamFail();
+
+  switch (notification) {
+    case AudioEngineOutputNotificationRecoveryFailed:
+      ctx->onStreamFail();
+      return;
+  }
 }
 
 } // namespace
@@ -74,11 +82,13 @@ NativeAudioPlayer *IOSAudioPlayer::createNativePlayer()
   std::mutex *driverMutexForCallback = driverMutex_;
   std::weak_ptr<AudioContext> weakContext = context_;
   IOSAudioPlayer *player = this;
-  nativePlayer.onStreamFail = ^{
-    // Called only once the context, which owns this player, is locked alive.
-    reportStreamFailToContext(driverMutexForCallback, weakContext, [player] {
-      return player->isRunning_.load(std::memory_order_acquire) && !player->isRunning();
-    });
+  auto isStartedButEngineStopped = [player] {
+    return player->isRunning_.load(std::memory_order_acquire) && !player->isRunning();
+  };
+  // Touches the player only once the context, which owns it, is locked alive.
+  nativePlayer.onOutputNotification = ^(AudioEngineOutputNotification notification) {
+    reportOutputNotificationToContext(
+        notification, driverMutexForCallback, weakContext, isStartedButEngineStopped);
   };
 
   return nativePlayer;

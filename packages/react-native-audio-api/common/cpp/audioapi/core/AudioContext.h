@@ -47,6 +47,19 @@ class AudioContext : public BaseAudioContext {
   /// @note This method is called when the audio stream fails.
   void onStreamFail();
 
+  /// @brief Restarts the stream of a context that is meant to be running but whose stream the
+  /// system stopped, e.g. by an audio session interruption. Any other context is left alone.
+  /// @return false only when such a context could not restart its stream.
+  /// @note Takes `driverMutex_`, so the caller must not hold it.
+  bool resumeAfterInterruption();
+
+  /// @brief Suspends a context that is meant to be running, after the system stopped its stream
+  /// and playback should not continue. Any other context is left alone.
+  /// @note Publishes `suspended` with a `statechange`, since no JS promise carries this
+  /// transition. Unlike `onStreamFail`, the context stays usable: `resume()` restarts the stream.
+  /// Takes `driverMutex_`, so the caller must not hold it.
+  void suspendAfterInterruption();
+
   void assignOnErrorCallbackId(uint64_t callbackId);
 
  private:
@@ -71,6 +84,16 @@ class AudioContext : public BaseAudioContext {
   /// Stops the player and releases the driver; shared by `close` and the destructor. Caller
   /// must hold `driverMutex_`.
   void stopDriver();
+
+  /// Stops rendering and hands graph draining back to the producer. Does not change the state.
+  /// Caller must hold `driverMutex_`.
+  void suspendDriver();
+
+  /// The state set by the last acknowledged `resume()`, `suspend()` or driver start. Unlike
+  /// `getState()`, it does not report `suspended` because the driver happens to be stopped.
+  [[nodiscard]] ContextState getControlState() const {
+    return state_.load(std::memory_order_acquire);
+  }
 };
 
 } // namespace audioapi

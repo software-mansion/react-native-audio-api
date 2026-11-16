@@ -3,10 +3,13 @@
 #import <audioapi/events/AudioEvent.h>
 #import <audioapi/ios/AudioAPIModule.h>
 #import <audioapi/ios/system/AudioEngine.h>
-#import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/ios/system/SystemNotificationManager.h>
 #define LOG_MODULE SystemNotificationManager
 #import <audioapi/ios/utils/Log.h>
+
+#include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioContextRegistry.h>
+#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 
 @implementation SystemNotificationManager
 
@@ -126,13 +129,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 - (void)handleWillEnterForeground:(NSNotification *)notification
 {
   AUDIO_LOG_TRACE_FUNCTION();
-  [self retryInterruptedRecordingIfNeeded];
+  [self retryInterruptionRecoveryIfNeeded];
 }
 
 - (void)handleDidBecomeActive:(NSNotification *)notification
 {
   AUDIO_LOG_TRACE_FUNCTION();
-  [self retryInterruptedRecordingIfNeeded];
+  [self retryInterruptionRecoveryIfNeeded];
 }
 
 - (void)emitInterruptionBegan
@@ -161,23 +164,24 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 - (void)handleInterruptionBegin
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
   dispatch_async(dispatch_get_main_queue(), ^{
     AUDIO_LOG_TRACE("handleInterruptionBegin");
-    self.interruptionEndedDelivered = false;
     bool transitioned = [audioEngine onInterruptionBegin];
-    [sessionManager markInactive];
+    // A recovery still pending from an earlier interruption waits for this one to end too.
+    if (transitioned || self.interruptionRecoveryState != InterruptionRecoveryStateNone) {
+      self.interruptionRecoveryState = InterruptionRecoveryStateInterrupted;
+    }
     if (transitioned) {
       self.interruptionShouldResume = nil;
       [self emitInterruptionBegan];
     }
     AUDIO_LOG_DEBUG(
-        "handleInterruptionBegin transitioned=%{public}s emittedToJs=%{public}s engineState=%{public}s sessionActive=%{public}s",
+        "handleInterruptionBegin transitioned=%{public}s emittedToJs=%{public}s recoveryState=%ld engineState=%{public}s",
         logBool(transitioned),
         logBool(transitioned && self.audioInterruptionsObserved),
-        audioEngineStateName([audioEngine getState]),
-        logBool(sessionManager.isActive));
+        (long)self.interruptionRecoveryState,
+        audioEngineStateName([audioEngine getState]));
   });
 }
 
@@ -187,19 +191,58 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 
   dispatch_async(dispatch_get_main_queue(), ^{
     AUDIO_LOG_TRACE("handleInterruptionEnd shouldResume=%{public}s", logBool(shouldResume));
-    self.interruptionEndedDelivered = true;
-    AudioEngineInterruptionEndOutcome outcome = [audioEngine onInterruptionEnd:shouldResume];
-    bool emitted = outcome == AudioEngineInterruptionEndOutcomeRunning ||
-        outcome == AudioEngineInterruptionEndOutcomePaused;
-    if (emitted) {
-      [self emitInterruptionEnded:shouldResume];
+    [audioEngine onInterruptionEnd];
+    if (self.interruptionRecoveryState == InterruptionRecoveryStateNone) {
+      AUDIO_LOG_DEBUG(
+          "handleInterruptionEnd ignored: recoveryState=none engineState=%{public}s",
+          audioEngineStateName([audioEngine getState]));
+      return;
     }
-    AUDIO_LOG_DEBUG(
-        "handleInterruptionEnd outcome=%{public}s emittedToJs=%{public}s engineState=%{public}s",
-        audioEngineInterruptionEndOutcomeName(outcome),
-        logBool(emitted && self.audioInterruptionsObserved),
-        audioEngineStateName([audioEngine getState]));
+    [self restoreAfterInterruption:shouldResume];
   });
+}
+
+/// The resume policy applied when an interruption ends.
+///
+/// `shouldResume` refers to playback only
+/// (https://developer.apple.com/documentation/avfaudio/avaudiosession/interruptionoptions/shouldresume),
+/// so contexts that were playing follow it, while a recording that was in progress always
+/// resumes. Contexts go first, for two reasons: a suspended context detaches its source, so the
+/// recording restarts the engine without playback; and a context that starts playback restarts
+/// the engine, which would cut into a recording that was already capturing.
+/// @return false when a recording or a context meant to continue could not restart.
+- (bool)restoreInterruptedParticipants:(bool)shouldResume
+{
+  bool restored = true;
+
+  for (const auto &context : audioapi::AudioContextRegistry::global().liveContexts()) {
+    if (shouldResume) {
+      restored = context->resumeAfterInterruption() && restored;
+    } else {
+      context->suspendAfterInterruption();
+    }
+  }
+
+  return audioapi::ActiveRecorderHandle::global().resumeIfInterrupted() && restored;
+}
+
+/// Main queue only.
+- (void)restoreAfterInterruption:(bool)shouldResume
+{
+  bool restored = [self restoreInterruptedParticipants:shouldResume];
+  AUDIO_LOG_DEBUG(
+      "restoreAfterInterruption shouldResume=%{public}s restored=%{public}s emittedToJs=%{public}s",
+      logBool(shouldResume),
+      logBool(restored),
+      logBool(restored && self.audioInterruptionsObserved));
+
+  if (!restored) {
+    self.interruptionRecoveryState = InterruptionRecoveryStatePending;
+    return;
+  }
+
+  self.interruptionRecoveryState = InterruptionRecoveryStateNone;
+  [self emitInterruptionEnded:shouldResume];
 }
 
 - (bool)shouldResumeForInterruptionRecovery
@@ -211,29 +254,25 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
   return self.interruptionShouldResume.boolValue;
 }
 
-- (void)retryInterruptedRecordingIfNeeded
+/// Main queue only. The session often cannot be activated while the app is in the background,
+/// so an interruption that ended there is retried once the app is in the foreground again.
+- (void)retryInterruptionRecoveryIfNeeded
 {
   AUDIO_LOG_TRACE_FUNCTION();
-  AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioEngineState engineState = [audioEngine getState];
-  bool retry = self.interruptionEndedDelivered && engineState == AudioEngineStateInterrupted;
-
-  if (!retry) {
+  if (self.interruptionRecoveryState != InterruptionRecoveryStatePending) {
     AUDIO_LOG_TRACE(
-        "retryInterruptedRecordingIfNeeded skipping interruptionEndedDelivered=%{public}s engineState=%{public}s",
-        logBool(self.interruptionEndedDelivered),
-        audioEngineStateName(engineState));
+        "retryInterruptionRecoveryIfNeeded skipping recoveryState=%ld",
+        (long)self.interruptionRecoveryState);
     return;
   }
 
   bool shouldResume = [self shouldResumeForInterruptionRecovery];
   AUDIO_LOG_DEBUG(
-      "retryInterruptedRecordingIfNeeded retrying shouldResume=%{public}s interruptionShouldResume=%{public}s engineState=%{public}s",
+      "retryInterruptionRecoveryIfNeeded retrying shouldResume=%{public}s interruptionShouldResume=%{public}s",
       logBool(shouldResume),
       self.interruptionShouldResume == nil ? "nil"
-                                           : logBool(self.interruptionShouldResume.boolValue),
-      audioEngineStateName(engineState));
-  [self handleInterruptionEnd:shouldResume];
+                                           : logBool(self.interruptionShouldResume.boolValue));
+  [self restoreAfterInterruption:shouldResume];
 }
 
 - (void)handleInterruption:(NSNotification *)notification
@@ -334,30 +373,13 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  if (![audioEngine isInUse] && !sessionManager.isActive) {
-    return;
-  }
-
-  AUDIO_LOG_WARNING("Media services have been reset, tearing down and rebuilding everything.");
-
-  dispatch_async(dispatch_get_main_queue(), ^{
-    bool wasSessionActive = sessionManager.isActive;
-    [sessionManager markInactive];
-
-    if (wasSessionActive) {
-      [sessionManager ensureActive:true error:nil];
-    }
-
-    [audioEngine restartAudioEngine];
-  });
+  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine onMediaServicesReset]; });
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification
 {
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
-  AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
   // Weak, so a queued handler does not keep a replaced engine alive.
   __weak AVAudioEngine *changedEngine = notification.object;
@@ -371,25 +393,7 @@ static NSString *NotificationManagerContext = @"SystemNotificationManagerContext
       return;
     }
 
-    AudioEngineState engineState = [audioEngine getState];
-    // A configuration change is an I/O-unit stop, not a resume trigger. Restarting
-    // while Interrupted races with onInterruptionEnd and the foreground retry: it
-    // marks the session inactive and rebuilds a graph that cannot start. Leave
-    // recovery on those paths; remember the format may have changed so they still
-    // rebuild.
-    if (engineState == AudioEngineStateInterrupted) {
-      AUDIO_LOG_DEBUG(
-          "engine configuration change while interrupted: marking graph for rebuild engineState=%{public}s",
-          audioEngineStateName(engineState));
-      [audioEngine markGraphNeedsRebuild];
-      return;
-    }
-    AUDIO_LOG_DEBUG(
-        "engine configuration change restarting engineState=%{public}s sessionActive=%{public}s",
-        audioEngineStateName(engineState),
-        logBool(sessionManager.isActive));
-    [sessionManager markInactive];
-    [audioEngine restartAudioEngine];
+    [audioEngine onConfigurationChange];
   });
 }
 

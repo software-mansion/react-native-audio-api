@@ -158,7 +158,8 @@ class IOSAudioPlayer : public AudioPlayer {
 - (NSString *)attachSourceNodeWithRenderBlock:(AVAudioSourceNodeRenderBlock)renderBlock
                                    sampleRate:(float)sampleRate
                                  channelCount:(AVAudioChannelCount)channelCount
-                     onOutputRecoveryFailed:(OnOutputRecoveryFailedBlock)onOutputRecoveryFailed
+                       onOutputNotification:
+                           (void (^)(AudioEngineOutputNotification))onOutputNotification
 {
   self.attachSourceNodeCallCount += 1;
   self.lastAttachedRenderBlock = renderBlock;

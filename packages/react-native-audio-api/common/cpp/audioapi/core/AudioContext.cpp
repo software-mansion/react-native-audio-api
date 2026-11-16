@@ -1,4 +1,5 @@
 #include <audioapi/core/AudioContext.h>
+#include <audioapi/core/AudioContextRegistry.h>
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 
@@ -32,6 +33,7 @@ AudioContext::~AudioContext() {
 
 void AudioContext::initialize(const AudioDestinationNode *destination) {
   BaseAudioContext::initialize(destination);
+  AudioContextRegistry::global().add(std::static_pointer_cast<AudioContext>(shared_from_this()));
   audioPlayer_ = createPlatformAudioPlayer(
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
@@ -131,13 +133,7 @@ bool AudioContext::suspend(const std::shared_ptr<ContextStateResolver> &promise)
   }
 
   if (getState() != ContextState::SUSPENDED) {
-    audioPlayer_->suspend();
-    waitForRenderQuiescence();
-
-    // Audio callback is no longer the consumer; enable self-drain so graph
-    // mutations while suspended cannot fill the bounded channel and block.
-    getGraph()->enableProducerSelfDrain();
-    processAudioEvents();
+    suspendDriver();
   }
 
   // Visible SUSPENDED is applied inside the resolver
@@ -200,6 +196,47 @@ void AudioContext::onStreamFail() {
   isInitialized_.store(false, std::memory_order_release);
 
   onErrorEvent_.dispatchEmpty();
+}
+
+bool AudioContext::resumeAfterInterruption() {
+  std::scoped_lock lock(driverMutex_);
+  if (getControlState() != ContextState::RUNNING ||
+      !isInitialized_.load(std::memory_order_acquire) || isDriverRunning()) {
+    return true;
+  }
+
+  getGraph()->disableProducerSelfDrain();
+  if (audioPlayer_->resume()) {
+    return true;
+  }
+
+  getGraph()->enableProducerSelfDrain();
+  return false;
+}
+
+void AudioContext::suspendAfterInterruption() {
+  std::scoped_lock lock(driverMutex_);
+  if (getControlState() != ContextState::RUNNING) {
+    return;
+  }
+
+  suspendDriver();
+  setState(ContextState::SUSPENDED);
+  setPublishedState(ContextState::SUSPENDED);
+  dispatchStateChange(ContextState::SUSPENDED);
+}
+
+void AudioContext::suspendDriver() {
+  assertDriverMutexHeld();
+
+  audioPlayer_->suspend();
+  waitForRenderQuiescence();
+
+  // Audio callback is no longer the consumer; enable self-drain so graph
+  // mutations while suspended cannot fill the bounded channel and block.
+  getGraph()->enableProducerSelfDrain();
+  // safe to call because the driver mutex is held
+  processAudioEvents();
 }
 
 } // namespace audioapi
