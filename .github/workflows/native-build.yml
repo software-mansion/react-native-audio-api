@@ -1,6 +1,6 @@
 name: Build example app
 
-# Builds example app for Android and iOS.
+# Builds the example app for Android and iOS.
 
 on:
   workflow_call:
@@ -48,7 +48,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
 
-      # The tree is unpacked on macOS too, so fetch the darwin variants also
+      # The iOS job unpacks the same tree on macOS, so install the darwin packages too
       - name: Install dependencies for linux and darwin
         if: steps.cache.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --os linux --os darwin --cpu x64 --cpu arm64
@@ -65,7 +65,7 @@ jobs:
             packages/*/node_modules
 
   android:
-    name: Build Android app
+    name: Android
     needs: install
     if: inputs.android
     runs-on: ubuntu-24.04
@@ -112,7 +112,7 @@ jobs:
         run: ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --build-cache
 
   ios:
-    name: Build iOS app
+    name: iOS
     needs: install
     if: inputs.ios
     runs-on: macos-26

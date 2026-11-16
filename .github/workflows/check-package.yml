@@ -1,6 +1,6 @@
 name: Check package
 
-# Runs one workspace package's own validation: its `check` and `test` scripts.
+# Runs a workspace package's `check` and `test` scripts.
 
 on:
   workflow_call:

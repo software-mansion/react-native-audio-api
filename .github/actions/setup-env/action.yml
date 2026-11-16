@@ -1,13 +1,13 @@
 name: Setup environment
 description: >
-  Sets up Node and pnpm, installs the workspace dependencies, and installs the tools a
-  job asks for. Tool versions are pinned here, so a bump touches one line.
+  Sets up Node and pnpm, installs the workspace dependencies and the tools a job asks for.
+  Tool versions are pinned here, one line each.
 
 inputs:
   tools:
     description: >
       JSON array of tools to install, e.g. '["cmake", "clang-format"]'.
-      Known: cmake, cpplint, ktlint, clang-format, llvm (clang + llvm-cov).
+      Known: cmake, cpplint, ktlint, clang-format, llvm (clang + llvm-cov), diff-cover.
     required: false
     default: '[]'
   install:
@@ -27,7 +27,7 @@ runs:
       env:
         TOOLS: ${{ inputs.tools }}
       run: |
-        unknown=$(jq -r '.[] | select(IN("cmake", "cpplint", "ktlint", "clang-format", "llvm") | not)' <<<"$TOOLS")
+        unknown=$(jq -r '.[] | select(IN("cmake", "cpplint", "ktlint", "clang-format", "llvm", "diff-cover") | not)' <<<"$TOOLS")
         if [ -n "$unknown" ]; then
           echo "::error::setup-env: unknown tools: $unknown"
           exit 1
@@ -78,6 +78,11 @@ runs:
         sudo apt-get install -y clang-format-23
         sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-23 200
         clang-format --version
+
+    - name: Install diff-cover
+      if: contains(fromJSON(inputs.tools), 'diff-cover')
+      shell: bash
+      run: pipx install 'diff-cover==11.0.1'
 
     - name: Install Clang and LLVM coverage tools
       if: contains(fromJSON(inputs.tools), 'llvm')

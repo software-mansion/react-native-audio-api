@@ -149,6 +149,7 @@ jobs:
       test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   native-build:
+    name: Example app
     needs: changes
     if: needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true'
     uses: ./.github/workflows/native-build.yml
@@ -157,34 +158,19 @@ jobs:
       ios: ${{ needs.changes.outputs.ios == 'true' }}
 
   wpt:
+    name: WPT
     needs: changes
     if: needs.changes.outputs.wpt == 'true'
     uses: ./.github/workflows/wpt-tests.yml
 
-  # Manual runs only, until coverage reports to pull requests like WPT does.
+  # Coverage only reports to pull requests.
   cpp-coverage:
     name: C++ coverage
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup
-        uses: ./.github/actions/setup-env
-        with:
-          tools: '["cmake", "llvm"]'
-
-      - name: Run C++ coverage
-        working-directory: packages/react-native-audio-api
-        run: pnpm test:cpp:coverage
-
-      - name: Upload coverage HTML
-        uses: actions/upload-artifact@v7
-        with:
-          name: cpp-coverage-html
-          path: packages/react-native-audio-api/common/cpp/test/coverage-html
-          retention-days: 14
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.audio-api == 'true'
+    uses: ./.github/workflows/cpp-coverage.yml
+    with:
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   gate:
     name: Gate

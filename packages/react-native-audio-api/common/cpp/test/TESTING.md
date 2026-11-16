@@ -15,7 +15,7 @@ pnpm test:cpp:extended                 # all categories
 pnpm test:cpp:extended -- graph
 pnpm test:cpp:full
 pnpm test:cpp:affected                 # what `pnpm test` and CI run
-pnpm test:cpp:coverage                 # smoke + llvm-cov HTML
+pnpm test:cpp:coverage                 # smoke + llvm-cov HTML, lcov, totals
 pnpm test:cpp:smoke --ubasan           # Address + UndefinedBehavior sanitizers
 pnpm test:cpp:extended -- graph --tsan
 pnpm test:cpp:extended -- graph --no-ubasan

@@ -1,11 +1,11 @@
-name: WPT Tests
+name: WPT tests
 
 on:
   workflow_call:
 
 jobs:
   wpt-run:
-    name: WPT run (${{ matrix.side }})
+    name: Run (${{ matrix.side }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -32,8 +32,8 @@ jobs:
         with:
           ref: ${{ steps.ref.outputs.ref }}
 
-      # Inline instead of ./.github/actions/setup-env: the base side checks out the base
-      # branch, whose tree may not have that action (or may have an older version of it).
+      # Inline steps, not ./.github/actions/setup-env: the base side checks out the base
+      # branch, which may not have that action or may have an older version of it.
       - name: Install pnpm
         uses: pnpm/action-setup@v6
 
@@ -80,8 +80,8 @@ jobs:
           if-no-files-found: error
 
   wpt-compare:
-    name: WPT compare
-    # Runs even when wpt-run failed, so the PR still gets a report comment explaining why.
+    name: Compare
+    # Runs even when wpt-run failed, so the report can say why.
     if: ${{ !cancelled() }}
     needs: wpt-run
     runs-on: ubuntu-24.04
@@ -110,39 +110,38 @@ jobs:
 
       - name: Compare WPT results
         id: compare
-        # A regression must not skip the upload below; the job fails in its last step instead.
+        # A regression still uploads the report; the last step fails the job.
         continue-on-error: true
         working-directory: packages/react-native-audio-api
         run: >
           node ./wpt_tests/wpt/wpt-compare.mjs
           --baseline ../../wpt-reports/base/latest.json
           --candidate ../../wpt-reports/head/latest.json
-          --markdown-out ../../wpt-comment/report.md
+          --markdown-out ../../pr-report/wpt/report.md
           --baseline-label "${{ github.event.pull_request.base.sha || 'main' }}"
           --candidate-label "${{ github.event.pull_request.head.sha || github.sha }}"
 
-      - name: Assemble PR comment payload
+      # Reports an error when the comparison produced no report.
+      - name: Write the fallback report
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p wpt-comment
-          echo "${{ github.event.pull_request.number }}" > wpt-comment/pr-number.txt
-          if [ ! -s wpt-comment/report.md ]; then
+          mkdir -p pr-report/wpt
+          if [ ! -s pr-report/wpt/report.md ]; then
             {
               echo '## WPT non-regression comparison'
               echo
-              echo '**ERROR** — the comparison did not produce a report; the test run itself likely failed.'
-            } > wpt-comment/report.md
+              echo '**ERROR**: the comparison produced no report, so the test run itself likely failed.'
+            } > pr-report/wpt/report.md
           fi
 
-      - name: Upload PR comment payload
+      - name: Upload the report
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-pr-report
         with:
-          name: wpt-comment
-          path: wpt-comment/
-          if-no-files-found: error
+          name: wpt
+          path: pr-report
 
       - name: Fail on WPT regression
         if: steps.compare.outcome != 'success' || needs.wpt-run.result != 'success'
