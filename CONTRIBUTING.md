@@ -5,7 +5,7 @@
 To contribute by resolving already opened issues, please follow these steps:
 
 1. Fork the repository to your own GitHub account.
-2. Create a new branch for your feature or bug fix.
+2. Create a new branch for your feature or bug fix, starting from the branch you will target (see [Branches and releases](#branches-and-releases)).
 3. Stage your changes and commit them. (Follow [Conventional Commit Specification](https://www.conventionalcommits.org/en/v1.0.0/))
 4. Submit PR for review.
 
@@ -16,10 +16,26 @@ on your PR.
 
 **Contributing by implementing your own feature should be preceded by design doc. It can be any kind of document describing all important api and implementation details.**
 
+## Branches and releases
+
+| Branch          | Holds                                 | Released as                                                 |
+| --------------- | ------------------------------------- | ----------------------------------------------------------- |
+| `main`          | ongoing development                   | the next minor or major version (`X.Y.0`)                   |
+| `release/X.Y.x` | the `X.Y.0` release plus fixes for it | patch versions (`X.Y.1`, `X.Y.2`, …), tagged on this branch |
+
+Only the latest minor version gets a release branch that accepts fixes.
+
+### Where to open your PR
+
+- **Fix for a bug in the released version** (regression, crash, wrong behavior, broken build): target `release/X.Y.x`.
+- **Everything else** (features, refactors, behavior changes, fixes for code that only exists on `main`): target `main`.
+
+A patch release has to stay close to `X.Y.0`, so release branches take only targeted fixes. A fix that needs a refactor first waits for the next minor version.
+
+Squash-merge fix PRs into either branch.
+
 ## Reporting Issues and Feature Requests
 
 If you encounter any bug, please report it [here](https://github.com/software-mansion/react-native-audio-api/issues/new?template=bug_report.yaml).
 
 For feature requests, please submit them [here](https://github.com/software-mansion/react-native-audio-api/issues/new?template=feature_request.yaml). You can also create a [discussion](https://github.com/software-mansion/react-native-audio-api/discussions) first to talk about your idea or join existing one.
-
-
