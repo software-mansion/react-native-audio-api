@@ -1,6 +1,6 @@
 name: WPT report comment
 
-# Runs separately from "WPT Tests" because a pull_request run from a fork gets a read-only
+# Runs separately from CI because a pull_request run from a fork gets a read-only
 # GITHUB_TOKEN and cannot comment. A workflow_run job executes in the context of the base
 # repository, so it can write the comment for fork and same-repo pull requests alike.
 #
@@ -8,14 +8,14 @@ name: WPT report comment
 # here take effect after merging, not on the pull request that introduces them.
 on:
   workflow_run:
-    workflows: ['WPT Tests']
+    workflows: ['CI']
     types: [completed]
 
 jobs:
   comment:
     name: Post WPT report
     if: github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Queued rather than cancelled: two runs commenting at once would both find no existing
     # comment and each create one, which is the duplication this job exists to avoid.
     concurrency:
@@ -25,6 +25,9 @@ jobs:
       actions: read
       pull-requests: write
     steps:
+      # CI runs WPT only when engine code changes. When it runs on a pull request, its
+      # compare job uploads this payload even if the tests fail, so a missing payload means
+      # WPT didn't run (or the run was cancelled) and there is nothing to report.
       - name: Download comment payload
         uses: actions/download-artifact@v8
         continue-on-error: true
@@ -65,14 +68,11 @@ jobs:
               return;
             }
 
-            const reportFile = readPayloadFile('report.md');
-            if (reportFile === null && run.conclusion === 'success') {
-              core.info('WPT was skipped (no engine changes); skipping the WPT comment.');
+            const report = readPayloadFile('report.md');
+            if (report === null) {
+              core.info('WPT did not run in this CI run; skipping the WPT comment.');
               return;
             }
-
-            const report = reportFile ??
-              '## WPT non-regression comparison\n\n**ERROR** — the run produced no report.';
 
             const body = [
               marker,
