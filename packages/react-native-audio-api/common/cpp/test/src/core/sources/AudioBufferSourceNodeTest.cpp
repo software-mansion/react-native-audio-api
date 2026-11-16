@@ -411,4 +411,19 @@ TEST_F(AudioBufferSourceNodeTest, ConnectedSourceStillEndsThroughRenderPath) {
   processGraph(); // `ended` must not fire a second time
 }
 
+/// `loop` passed to the constructor must loop like the setter does.
+TEST_F(AudioBufferSourceNodeTest, LoopFromConstructorOptionsKeepsPlayingPastBufferEnd) {
+  AudioBufferSourceOptions options{BaseAudioBufferSourceOptions()};
+  options.loop = true;
+  auto *node = addNode(std::make_unique<TestableAudioBufferSourceNode>(context, options));
+  node->setBuffer(makeSilentBuffer(2 * QUANTUM), makeOutputBuffer());
+  node->start(0.0);
+
+  for (size_t q = 0; q < NUM_QUANTA; ++q) {
+    processGraph();
+  }
+
+  EXPECT_TRUE(node->isPlaying());
+}
+
 // NOLINTEND

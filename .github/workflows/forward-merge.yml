@@ -1,0 +1,81 @@
+name: Forward merge release branch into main
+
+# Every push to a release branch keeps a `forward-merge/<release branch>` branch and
+# a PR from it into main up to date. The PR goes through a dedicated branch so that
+# resolving conflicts on GitHub (which merges main into the PR head) never touches
+# the release branch itself. Merge the PR with "Create a merge commit" — squash or
+# rebase would leave the merge base behind, see CONTRIBUTING.md#branches-and-releases.
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: forward-merge-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  forward-merge:
+    if: github.repository == 'software-mansion/react-native-audio-api' && startsWith(github.ref_name, 'release/')
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ github.ref_name }}
+      FORWARD_BRANCH: forward-merge/${{ github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update forward-merge branch and PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          unmerged=$(git rev-list --count "origin/main..origin/$RELEASE_BRANCH")
+          if [ "$unmerged" -eq 0 ]; then
+            echo "main already contains $RELEASE_BRANCH, nothing to forward."
+            exit 0
+          fi
+
+          open_pr=$(gh pr list --base main --head "$FORWARD_BRANCH" --state open --json number --jq '.[0].number // empty')
+
+          if [ -n "$open_pr" ]; then
+            # Keep conflict resolutions already pushed to the forward branch: merge the
+            # new release commits into it instead of resetting it.
+            git switch -c forward "origin/$FORWARD_BRANCH"
+            if ! git merge --no-edit "origin/$RELEASE_BRANCH"; then
+              echo "::error::Could not merge $RELEASE_BRANCH into $FORWARD_BRANCH automatically. Merge it locally and push to $FORWARD_BRANCH."
+              exit 1
+            fi
+            git push origin "HEAD:refs/heads/$FORWARD_BRANCH"
+            echo "Updated PR #$open_pr."
+            exit 0
+          fi
+
+          git push --force origin "origin/$RELEASE_BRANCH:refs/heads/$FORWARD_BRANCH"
+
+          cat > "$RUNNER_TEMP/pr-body.md" <<EOF
+          Forward merge of the fixes merged to \`$RELEASE_BRANCH\` ($unmerged commit(s) not yet on main).
+
+          > [!IMPORTANT]
+          > Merge with **Create a merge commit**. Squash or rebase would keep these commits off main's history, and the next forward merge would bring them back.
+
+          - Resolve conflicts on this PR (the GitHub button is fine) or locally on \`$FORWARD_BRANCH\` — never by merging main into \`$RELEASE_BRANCH\`.
+
+          See [Branches and releases](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#branches-and-releases).
+          EOF
+
+          gh pr create \
+            --base main \
+            --head "$FORWARD_BRANCH" \
+            --title "chore: merge $RELEASE_BRANCH into main" \
+            --body-file "$RUNNER_TEMP/pr-body.md"

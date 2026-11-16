@@ -52,26 +52,12 @@ AndroidAudioRecorder::AndroidAudioRecorder(
     AudioRecorderOptions options)
     : AudioRecorder(audioEventHandlerRegistry),
       inputPreset_(options.androidInputPreset),
-      streamDeviceId_(NativeInputRouting::kSystemDefaultDeviceId),
-      captureDeviceId_(NativeInputRouting::kSystemDefaultDeviceId) {}
+      streamDeviceId_(NativeInputRouting::kSystemDefaultDeviceId) {}
 
 /// @brief Destructor ensures that the audio stream and each output type are closed and flushed up remaining data.
 /// callable from the JS thread or handled by audio thread (if js dropped recorder first).
 AndroidAudioRecorder::~AndroidAudioRecorder() {
   stop();
-
-  // stop() leaves an idle recorder alone, but a start() that failed after configuring some of
-  // its side effects leaves those behind on one.
-  DetachedSideEffects leftovers;
-  {
-    std::scoped_lock lock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
-    leftovers = detachSideEffects();
-    callbackOutputState_.store(OutputState::Disabled, std::memory_order_release);
-    fileOutputState_.store(OutputState::Disabled, std::memory_order_release);
-    connectionState_.store(OutputState::Disabled, std::memory_order_release);
-    dataCallback_ = nullptr;
-  }
-  finalizeSideEffects(std::move(leftovers));
 
   // Closing the stream waits for the callback in flight, so nothing is destroyed under it.
   cleanup();
@@ -84,7 +70,7 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
 /// Oboe error thread or the thread AudioInputRouter reroutes on.
 /// @returns Success status or Error status with message.
 Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
-  const int32_t preferredDeviceId = captureDeviceId_;
+  const int32_t preferredDeviceId = route_->value_or(NativeInputRouting::kSystemDefaultDeviceId);
 
   if (mStream_ != nullptr) {
     if (streamDeviceId_ == preferredDeviceId) {
@@ -164,26 +150,38 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
 
   // Acquired before taking the recorder's mutexes: it can wait seconds for a Bluetooth link,
   // and getters called from the JS thread must not be stuck behind that wait.
-  const auto routedDeviceId = NativeInputRouting::acquireInputRoute();
-
-  std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
-
-  if (!isIdle()) {
-    NativeInputRouting::releaseInputRoute();
-    return Err("Recorder is already recording");
-  }
-
-  adoptInputRoute(routedDeviceId);
+  auto route = acquireRoute();
 
   Result<NoneType, std::string> result =
       Err("The selected Bluetooth microphone could not be connected.");
-  if (routedDeviceId.has_value()) {
-    result = startCapture(std::nullopt, RecorderState::Recording);
+  DetachedSideEffects abandoned;
+
+  {
+    std::scoped_lock startLock(callback_.mutex, file_.mutex, adapter_.mutex, streamMutex_);
+
+    if (!isIdle()) {
+      return Err("Recorder is already recording");
+    }
+
+    route_ = std::move(route);
+
+    if (route_->has_value()) {
+      result = startCapture(std::nullopt, RecorderState::Recording);
+    }
+
+    if (result.is_ok()) {
+      return result;
+    }
+
+    // Ended like stop(): the stream opened for this start would otherwise stay open until the
+    // next one.
+    route_ = nullptr;
+    closeStream();
+    abandoned = detachSideEffects();
   }
 
-  if (!result.is_ok()) {
-    releaseInputRoute();
-  }
+  // Closes the outputs prepared before the step that failed, with no recorder mutex held.
+  finalizeSideEffects(std::move(abandoned));
   return result;
 }
 
@@ -229,18 +227,10 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
   return Ok(None);
 }
 
-void AndroidAudioRecorder::adoptInputRoute(std::optional<int32_t> routedDeviceId) {
-  holdsInputRoute_ = true;
-  captureDeviceId_ = routedDeviceId.value_or(NativeInputRouting::kSystemDefaultDeviceId);
-}
-
-void AndroidAudioRecorder::releaseInputRoute() {
-  if (!holdsInputRoute_) {
-    return;
-  }
-
-  holdsInputRoute_ = false;
-  NativeInputRouting::releaseInputRoute();
+RouteLease AndroidAudioRecorder::acquireRoute() {
+  return RouteLease(
+      new std::optional<int32_t>(NativeInputRouting::acquireInputRoute()),
+      RouteReleaser{&NativeInputRouting::releaseInputRoute});
 }
 
 /// @brief Closes the audio stream, releasing the microphone, and finalizes any output (file
@@ -252,14 +242,14 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
   DetachedSideEffects sideEffects;
 
   {
-    std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
+    std::scoped_lock stopLock(callback_.mutex, file_.mutex, adapter_.mutex, streamMutex_);
 
     if (isIdle()) {
       return Err("Recorder is not in recording state.");
     }
 
     state_.store(RecorderState::Idle, std::memory_order_release);
-    releaseInputRoute();
+    route_ = nullptr;
     lastCallbackFrameCount_.store(0, std::memory_order_release);
 
     // There is no stream while restartCapture() is between closing the old one and opening
@@ -376,7 +366,7 @@ bool AndroidAudioRecorder::isIdle() const {
 void AndroidAudioRecorder::cleanup() {
   std::scoped_lock streamLock(streamMutex_);
   state_.store(RecorderState::Idle, std::memory_order_release);
-  releaseInputRoute();
+  route_ = nullptr;
   closeStream();
 }
 
@@ -410,13 +400,13 @@ Result<NoneType, std::string> AndroidAudioRecorder::restartCapture() {
     }
     stateToRestore = state_.load(std::memory_order_acquire);
     closeStream();
-    releaseInputRoute();
+    route_ = nullptr;
   }
 
   // Outside the recorder's mutexes for the same reason as in start(). stop() may run in
   // this window; it finds no stream and finalizes the session.
-  const auto routedDeviceId = NativeInputRouting::acquireInputRoute();
-  if (!routedDeviceId.has_value()) {
+  auto route = acquireRoute();
+  if (!route->has_value()) {
     __android_log_print(
         ANDROID_LOG_WARN,
         "AndroidAudioRecorder",
@@ -425,15 +415,15 @@ Result<NoneType, std::string> AndroidAudioRecorder::restartCapture() {
 
   Result<NoneType, std::string> result = Ok(None);
   {
-    std::scoped_lock restartLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_, streamMutex_);
+    std::scoped_lock restartLock(callback_.mutex, file_.mutex, adapter_.mutex, streamMutex_);
 
-    // Stopped, or stopped and started again, while the route was being acquired.
+    // Stopped, or stopped and started again, while the route was being acquired. The lease
+    // gives the route back.
     if (isIdle() || mStream_ != nullptr) {
-      NativeInputRouting::releaseInputRoute();
       return Ok(None);
     }
 
-    adoptInputRoute(routedDeviceId);
+    route_ = std::move(route);
     result = startCapture(previousFormat, stateToRestore);
   }
 
@@ -469,7 +459,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     }
 
     if (isIdle()) {
-      releaseInputRoute();
+      route_ = nullptr;
       closeStream();
       return;
     }
@@ -478,12 +468,10 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
   restartCapture();
 }
 
-double AndroidAudioRecorder::getInputLatency() const {
+double AndroidAudioRecorder::platformInputLatency(double callbackSeconds) const {
   std::scoped_lock streamLock(streamMutex_);
 
-  const auto sampleRate = streamSampleRate_.load(std::memory_order_acquire);
-
-  if (mStream_ == nullptr || isIdle() || sampleRate <= 0.0F) {
+  if (mStream_ == nullptr) {
     return 0.0;
   }
 
@@ -492,13 +480,13 @@ double AndroidAudioRecorder::getInputLatency() const {
     return latencyResult.value() / 1000.0;
   }
 
-  const int32_t callbackFrames = lastCallbackFrameCount_.load(std::memory_order_acquire);
-  if (callbackFrames > 0) {
-    return static_cast<double>(callbackFrames) / static_cast<double>(sampleRate);
+  if (callbackSeconds > 0.0) {
+    return callbackSeconds;
   }
 
   const int32_t framesPerBurst = mStream_->getFramesPerBurst();
-  if (framesPerBurst > 0) {
+  const int32_t sampleRate = mStream_->getSampleRate();
+  if (framesPerBurst > 0 && sampleRate > 0) {
     return static_cast<double>(framesPerBurst) / static_cast<double>(sampleRate);
   }
 
