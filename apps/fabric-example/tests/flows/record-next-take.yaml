@@ -1,0 +1,6 @@
+executionPrerequisite: Audio I/O Playground is open at or below the Recorder panel, with an active audio session and an idle recorder
+steps:
+  - echo: Start another recording without touching the session or the playback source
+  - scroll-to: { target: { id: recorder-start }, direction: up }
+  - tap: { id: recorder-start }
+  - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }
