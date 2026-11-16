@@ -108,7 +108,10 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
     /// Bumped every time the input is closed, so it identifies one opening of the input.
     uint64_t inputGeneration = 0;
     std::optional<StreamFormat> format;
+    /// Written only by the audio thread, through the armed gate.
     std::atomic<double> lastBufferSeconds{0.0};
+    /// Of the frames delivered while recording, each counted at the sample rate it arrived in.
+    std::atomic<double> recordedSeconds{0.0};
   };
 
   /// Audio thread, through the armed gate only. @p channels holds @p channelCount pointers, each to

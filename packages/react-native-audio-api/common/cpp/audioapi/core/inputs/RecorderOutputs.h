@@ -98,9 +98,6 @@ class RecorderOutputs final {
   void setErrorCallbackId(uint64_t callbackId);
   [[nodiscard]] uint64_t errorCallbackId() const;
 
-  /// Across every file of the session; 0 when no file is being written.
-  [[nodiscard]] double currentFileDuration() const;
-
  private:
   enum class OutputState : uint8_t {
     Disabled,

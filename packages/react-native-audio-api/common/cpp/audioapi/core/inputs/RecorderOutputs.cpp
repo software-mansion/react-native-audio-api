@@ -253,18 +253,6 @@ uint64_t RecorderOutputs::errorCallbackId() const {
   return errorCallbackId_.load(std::memory_order_acquire);
 }
 
-/// Locked because detach() and disableFile() take file_.target away; the lock is held only while
-/// the writer pointer is swapped, never across a file close.
-double RecorderOutputs::currentFileDuration() const {
-  std::scoped_lock fileLock(file_.mutex);
-
-  if (file_.isActive() && file_.target != nullptr) {
-    return file_.target->getCurrentDuration();
-  }
-
-  return 0.0;
-}
-
 Result<NoneType, std::string> RecorderOutputs::prepareFileWriter(const StreamFormat &format) {
   file_.target =
       std::make_shared<AudioFileWriter>(audioEventHandlerRegistry_, fileProperties_, fileBackend_);

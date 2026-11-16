@@ -746,7 +746,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns the current recording duration (`number`) when file output is enabled.
+          Returns how many seconds of audio the current session has recorded (`number`), whether it writes a file, feeds a callback or a connected node. Paused time is not counted, and it is `0` while not recording. Buffers an output drops are still counted, so it can run slightly ahead of the final file's `duration`.
         </div>
         ```tsx
           const duration = audioRecorder.getCurrentDuration();
