@@ -68,7 +68,7 @@ bool AudioContext::tryStartDriver() {
   return false;
 }
 
-void AudioContext::close(const std::shared_ptr<ContextStateResolver> &promise) {
+void AudioContext::close(std::unique_ptr<ContextStateResolver> promise) {
   if (getState() == ContextState::CLOSED) {
     promise->reject("Cannot close a closed audio context.");
     return;
@@ -91,7 +91,7 @@ void AudioContext::stopDriver() {
   audioPlayer_->cleanup();
 }
 
-bool AudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) {
+bool AudioContext::resume(std::unique_ptr<ContextStateResolver> promise) {
   if (getState() == ContextState::CLOSED) {
     promise->reject("Cannot resume a closed audio context.");
     return false;
@@ -123,7 +123,7 @@ bool AudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) 
   return result;
 }
 
-bool AudioContext::suspend(const std::shared_ptr<ContextStateResolver> &promise) {
+bool AudioContext::suspend(std::unique_ptr<ContextStateResolver> promise) {
   // Control-message body: no locking (see `close`).
   if (getState() == ContextState::CLOSED) {
     promise->reject("Cannot suspend a closed audio context.");

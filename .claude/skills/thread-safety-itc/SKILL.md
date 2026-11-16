@@ -219,9 +219,14 @@ is pending — that is what replaced the former in-context `pendingPromisesOfflo
 owner, in which case `~AudioContext` / `~OfflineAudioContext` run on the lane thread, after the
 operation has released `driverMutex_`. The
 offline render thread is likewise owned (`renderThread_` + `stopRendering_` flag, joined in the
-destructor, detach only when the last context reference drops on the render thread itself); the
-render lambda must release its `resumePromise` right after resolving, since the resolver owns
-the context and would otherwise make the render thread its own context's last owner. When
+destructor, detach only when the last context reference drops on the render thread itself). There
+is exactly one render thread per offline context: `startRendering` spawns it and a scheduled
+suspend parks it on the `resumed_` condition variable (paired with `driverMutex_`) until
+`resume()` or the destructor wakes it. `resume()` only stores its promise in `pendingResume_`; the
+render thread resolves it after waking. Both the suspend and the resume promise are resolved by
+the render thread under `driverMutex_`, which is what orders a suspend's `statechange` before the
+answering resume's. `resultPromise_` owns the context for the whole render, so the render
+thread can only become the last owner when it releases that promise as its final statement. When
 the driver is stopped, `scheduleAudioEvent` still drains already-queued SPSC events then runs
 the new event synchronously under `driverMutex_` (FIFO with prior messages). Control-message
 bodies must not re-lock `driverMutex_` or `waitForRenderQuiescence()` while `currentRenders_ > 0`
