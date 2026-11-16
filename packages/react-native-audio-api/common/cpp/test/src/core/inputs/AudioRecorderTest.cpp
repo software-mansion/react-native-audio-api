@@ -585,6 +585,27 @@ TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteStaysConsumable) {
   EXPECT_EQ(recording->paths.size(), 1U);
 }
 
+TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyOutput) {
+  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 0.0);
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  input_->deliverFrames(480);
+  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 480.0 / 48000.0);
+
+  recorder_->pause();
+  input_->deliverFrames(480);
+  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 480.0 / 48000.0);
+  ASSERT_TRUE(recorder_->resume().is_ok());
+
+  input_->format.layout.sampleRate = 24000.0F;
+  input_->events->formatChanged();
+  input_->deliverFrames(480);
+  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 480.0 / 48000.0 + 480.0 / 24000.0);
+
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 0.0);
+}
+
 TEST_F(AudioRecorderTest, InputLatencyIsZeroWhileIdleAndUsesTheLastBufferOtherwise) {
   EXPECT_DOUBLE_EQ(recorder_->getInputLatency(), 0.0);
 
