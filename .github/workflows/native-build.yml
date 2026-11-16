@@ -45,8 +45,8 @@ jobs:
               - 'packages/react-native-audio-worklets/package.json'
               - 'apps/common-app/package.json'
               - 'apps/fabric-example/package.json'
-              - 'yarn.lock'
-              - '.yarnrc.yml'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - '.nvmrc'
               - '.github/workflows/native-build.yml'
               - '.github/actions/checkout-with-node/**'
@@ -78,10 +78,13 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/checkout-with-node
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Compute cache key
         id: key
         run: >
-          echo "value=node-modules-xplat-$(node --version)-${{ hashFiles('yarn.lock', '.yarnrc.yml', '**/package.json', '!**/node_modules/**') }}"
+          echo "value=node-modules-xplat-$(node --version)-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json', '!**/node_modules/**') }}"
           >> "$GITHUB_OUTPUT"
 
       - name: Check for cached node_modules
@@ -95,14 +98,11 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-            .yarn/install-state.gz
 
       # The tree is unpacked on macOS too, so fetch the darwin variants also
       - name: Install dependencies for linux and darwin
         if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          yarn config set supportedArchitectures --json '{"os":["current","linux","darwin"],"cpu":["current","x64","arm64"]}'
-          yarn install --immutable
+        run: pnpm install --frozen-lockfile --os linux --os darwin --cpu x64 --cpu arm64
 
       - name: Save node_modules
         if: steps.cache.outputs.cache-hit != 'true'
@@ -114,7 +114,6 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-            .yarn/install-state.gz
 
   android:
     name: Build Android app
@@ -138,7 +137,6 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-            .yarn/install-state.gz
 
       - name: Cache prebuilt binaries
         uses: actions/cache@v4
@@ -187,7 +185,6 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
-            .yarn/install-state.gz
 
       - name: Cache prebuilt binaries
         uses: actions/cache@v4

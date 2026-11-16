@@ -40,22 +40,22 @@ AudioContextHostObject::~AudioContextHostObject() {
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   return createLifecyclePromise(
-      ContextState::CLOSED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<AudioContext &>(context).close(resolver);
+      ContextState::CLOSED, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<AudioContext &>(context).close(std::move(resolver));
       });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   return createLifecyclePromise(
-      ContextState::RUNNING, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<AudioContext &>(context).resume(resolver);
+      ContextState::RUNNING, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<AudioContext &>(context).resume(std::move(resolver));
       });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   return createLifecyclePromise(
-      ContextState::SUSPENDED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<AudioContext &>(context).suspend(resolver);
+      ContextState::SUSPENDED, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<AudioContext &>(context).suspend(std::move(resolver));
       });
 }
 
