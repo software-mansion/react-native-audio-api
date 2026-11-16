@@ -1,33 +1,44 @@
 name: CI
+
 on:
   pull_request:
     branches:
       - main
-      - 'release/**'
     types: [opened, synchronize, reopened, ready_for_review]
-  merge_group:
-    types:
-      - checks_requested
+  # Runs on main fill the caches that pull requests read from.
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changes:
     name: Detect changes
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: read
+    # Outside pull requests every package runs.
     outputs:
-      audio-api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.audio-api == 'true' }}
-      worklets: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.audio-api == 'true' || steps.filter.outputs.worklets == 'true' }}
+      audio-api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audio-api == 'true' }}
+      worklets: ${{ github.event_name != 'pull_request' || steps.filter.outputs.worklets == 'true' }}
+      audiodocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audiodocs == 'true' }}
+      internaldocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.internaldocs == 'true' }}
+      fabric-example: ${{ github.event_name != 'pull_request' || steps.filter.outputs.fabric-example == 'true' }}
     steps:
+      # A package's filter includes the filters of the workspace packages it depends on.
       - name: Path filter
         id: filter
         if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@v4
         with:
           filters: |
-            shared:
+            shared: &shared
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -35,63 +46,78 @@ jobs:
               - 'tsconfig.json'
               - '.eslintrc.js'
               - 'prettier.config.js'
-              - '.github/actions/**'
+              - 'scripts/run-steps.sh'
+              - '.github/actions/setup-env/**'
               - '.github/workflows/ci.yml'
-              - '.github/workflows/ci-check.yml'
-            audio-api:
+              - '.github/workflows/check-package.yml'
+            audio-api: &audio-api
+              - *shared
               - 'packages/react-native-audio-api/**'
-            worklets:
+            worklets: &worklets
+              - *audio-api
               - 'packages/react-native-audio-worklets/**'
+            docs-theme: &docs-theme
+              - 'packages/docs-theme/**'
+            audiodocs:
+              - *shared
+              - *docs-theme
+              - 'packages/audiodocs/**'
+            internaldocs:
+              - *shared
+              - *docs-theme
+              - 'packages/internaldocs/**'
+            fabric-example:
+              - *worklets
+              - 'apps/common-app/**'
+              - 'apps/fabric-example/**'
 
-  format-check:
-    needs: changes
-    if: needs.changes.outputs.audio-api == 'true' || needs.changes.outputs.worklets == 'true'
-    uses: ./.github/workflows/ci-check.yml
-    with:
-      name: Format check
-      run: pnpm format:check
-
-  lint-audio-api:
+  react-native-audio-api:
     needs: changes
     if: needs.changes.outputs.audio-api == 'true'
-    uses: ./.github/workflows/ci-check.yml
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Lint and typecheck (react-native-audio-api)
-      run: |
-        pnpm --filter react-native-audio-api lint
-        pnpm --filter react-native-audio-api typecheck
+      directory: packages/react-native-audio-api
 
-  lint-worklets:
+  react-native-audio-worklets:
     needs: changes
     if: needs.changes.outputs.worklets == 'true'
-    uses: ./.github/workflows/ci-check.yml
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Lint and typecheck (react-native-audio-worklets)
-      run: |
-        pnpm --filter react-native-audio-api build
-        pnpm --filter react-native-audio-worklets lint
-        pnpm --filter react-native-audio-worklets typecheck
+      directory: packages/react-native-audio-worklets
 
-  check-audio-enum-sync:
+  audiodocs:
     needs: changes
-    if: needs.changes.outputs.audio-api == 'true'
-    uses: ./.github/workflows/ci-check.yml
+    if: needs.changes.outputs.audiodocs == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Check enum sync
-      run: pnpm --filter react-native-audio-api check:enums
+      directory: packages/audiodocs
 
-  build-audio-api:
+  internaldocs:
     needs: changes
-    if: needs.changes.outputs.audio-api == 'true'
-    uses: ./.github/workflows/ci-check.yml
+    if: needs.changes.outputs.internaldocs == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Build (react-native-audio-api)
-      run: pnpm --filter react-native-audio-api build
+      directory: packages/internaldocs
 
-  build-worklets:
+  fabric-example:
     needs: changes
-    if: needs.changes.outputs.worklets == 'true'
-    uses: ./.github/workflows/ci-check.yml
+    if: needs.changes.outputs.fabric-example == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Build (react-native-audio-worklets)
-      run: pnpm --filter react-native-audio-worklets build
+      directory: apps/fabric-example
+
+  gate:
+    name: Gate
+    if: always()
+    needs:
+      - changes
+      - react-native-audio-api
+      - react-native-audio-worklets
+      - audiodocs
+      - internaldocs
+      - fabric-example
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if a job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
