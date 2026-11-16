@@ -128,9 +128,9 @@ void ConvolverNode::processNode(int framesToProcess) {
   if (internalBufferIndex_ < framesToProcess) {
     performConvolution(audioBuffer_); // reads from audioBuffer_, result goes to intermediateBuffer_
     audioBuffer_->zero();
-    const size_t busChannels = audioBuffer_->getNumberOfChannels();
-    if (intermediateBuffer_->getNumberOfChannels() == 4 && busChannels <= 2) {
+    if (intermediateBuffer_->getNumberOfChannels() == 4) {
       // True stereo folds to L = 0 + 2, R = 1 + 3 at unity; a mono bus averages that pair.
+      const size_t busChannels = audioBuffer_->getNumberOfChannels();
       const float gain = busChannels == 1 ? 0.5f : 1.0f;
       for (size_t channel = 0; channel < 4; ++channel) {
         audioBuffer_->getChannel(channel % busChannels)
