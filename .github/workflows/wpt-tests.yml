@@ -24,7 +24,7 @@ jobs:
       - name: Path filter
         id: filter
         if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             wpt:
@@ -66,7 +66,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.ref.outputs.ref }}
 
@@ -101,7 +101,7 @@ jobs:
           test -f "$REPORT_PATH"
 
       - name: Upload WPT report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-${{ matrix.side }}
           path: packages/react-native-audio-api/wpt_tests/results/latest.json
@@ -117,20 +117,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/checkout-with-node
 
       - name: Download base report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: wpt-base
           path: wpt-reports/base
 
       - name: Download head report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: wpt-head
@@ -166,7 +166,7 @@ jobs:
 
       - name: Upload PR comment payload
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-comment
           path: wpt-comment/

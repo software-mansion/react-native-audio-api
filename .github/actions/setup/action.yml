@@ -11,7 +11,7 @@ runs:
       uses: ./.github/actions/setup-cmake
 
     - name: Setup Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v7
 
     - name: Install cpplint
       shell: bash

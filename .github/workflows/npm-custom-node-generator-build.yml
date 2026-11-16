@@ -22,7 +22,7 @@ jobs:
       PACKAGE_DIR: packages/custom-node-generator
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Checkout with Node
         uses: ./.github/actions/checkout-with-node

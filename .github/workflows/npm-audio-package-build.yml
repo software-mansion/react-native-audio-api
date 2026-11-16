@@ -38,7 +38,7 @@ jobs:
       TAG: PLACEHOLDER
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Checkout with Node
         uses: ./.github/actions/checkout-with-node
@@ -102,7 +102,7 @@ jobs:
         run: exit 1 # this should never happen
 
       - name: Upload package to GitHub
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.PACKAGE_NAME }}
           path: ${{ env.AUDIO_API_DIR }}/${{ env.PACKAGE_NAME }}
