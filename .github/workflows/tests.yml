@@ -42,9 +42,8 @@ jobs:
           filters: |
             shared:
               - 'package.json'
-              - 'yarn.lock'
-              - '.yarnrc.yml'
-              - '.yarn/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - '.nvmrc'
               - 'packages/react-native-audio-api/package.json'
               - '.github/actions/**'
@@ -69,14 +68,14 @@ jobs:
     uses: ./.github/workflows/cpp-job.yml
     with:
       name: C++ smoke
-      run: yarn test:cpp:smoke
+      run: pnpm test:cpp:smoke
 
   cpp-extended-graph:
     if: github.event_name == 'pull_request' || inputs.run_cpp_extended_graph
     uses: ./.github/workflows/cpp-job.yml
     with:
       name: C++ extended (graph)
-      run: yarn test:cpp:extended -- graph
+      run: pnpm test:cpp:extended -- graph
       categories: graph
       force: ${{ github.event_name == 'workflow_dispatch' }}
 

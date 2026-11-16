@@ -3,13 +3,13 @@
   "respectGitIgnore": true,
   "permissions": {
     "allow": [
-      "Bash(yarn build)",
-      "Bash(yarn lint*)",
-      "Bash(yarn format*)",
-      "Bash(yarn typecheck)",
-      "Bash(yarn test)",
-      "Bash(yarn check-audio-enum-sync)",
-      "Bash(yarn workspace *)",
+      "Bash(pnpm build)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test)",
+      "Bash(pnpm check-audio-enum-sync)",
+      "Bash(pnpm --filter *)",
       "Bash(git status)",
       "Bash(git diff*)",
       "Bash(git log*)",
@@ -58,7 +58,7 @@
       "Bash(git reset*)",
       "Bash(git checkout *)",
       "Bash(git stash*)",
-      "Bash(yarn clean)"
+      "Bash(pnpm clean)"
     ],
     "deny": [
       "Bash(git push --force*)",
@@ -91,7 +91,7 @@
 
       "Read(**/CMakeFiles/**)",
 
-      "Read(yarn.lock)",
+      "Read(pnpm-lock.yaml)",
       "Read(**/Gemfile.lock)",
       "Read(**/Podfile.lock)",
 

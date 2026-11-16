@@ -14,7 +14,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-interference-size)
 endif()
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
-set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
+set(PACKAGE_DIR ${CMAKE_SOURCE_DIR}/../../..)
+set(REACT_NATIVE_DIR "${PACKAGE_DIR}/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 
 find_package(GTest QUIET)
@@ -33,7 +34,7 @@ endif()
 
 enable_testing()
 
-set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/node_modules/react-native-audio-api")
+set(REACT_NATIVE_AUDIO_API_DIR "${PACKAGE_DIR}")
 
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS

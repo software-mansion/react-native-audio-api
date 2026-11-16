@@ -87,7 +87,7 @@ while [[ $# -gt 0 ]]; do
       SANITIZER=none
       shift
       ;;
-    # Yarn forwards a literal "--" before script args (`yarn cmd -- graph`).
+    # pnpm forwards a literal "--" before script args (`pnpm cmd -- graph`).
     --)
       shift
       ;;

@@ -1,30 +1,21 @@
 {
   "name": "react-native-audio-api-monorepo",
   "version": "0.0.0",
-  "packageManager": "yarn@4.18.0",
+  "packageManager": "pnpm@12.10.1",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "packages/react-native-audio-api",
-      "packages/react-native-audio-worklets",
-      "packages/custom-node-generator",
-      "apps/common-app",
-      "apps/fabric-example"
-    ]
-  },
   "scripts": {
-    "build": "yarn workspace react-native-audio-api run build && yarn workspace react-native-audio-worklets run build",
-    "lint": "yarn workspaces foreach -A -p run lint",
-    "format": "yarn workspaces foreach -A -p run format",
-    "format:check": "yarn workspace react-native-audio-api run format:check && yarn workspace react-native-audio-worklets run format:check",
+    "build": "pnpm --filter react-native-audio-api build && pnpm --filter react-native-audio-worklets build",
+    "lint": "pnpm -r --parallel lint",
+    "format": "pnpm -r --parallel format",
+    "format:check": "pnpm --filter react-native-audio-api format:check && pnpm --filter react-native-audio-worklets format:check",
     "clean": "del-cli packages/**/android/build apps/**/android/build apps/**/android/app/build apps/**/ios/build packages/**/lib node_modules apps/**/node_modules packages/**/node_modules",
-    "typecheck": "yarn workspaces foreach -A -p run typecheck",
-    "test": "yarn workspace react-native-audio-api run test",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm --filter react-native-audio-api test",
     "check-audio-enum-sync": "bash packages/react-native-audio-api/scripts/check-enum-sync.sh",
-    "android": "yarn workspace fabric-example android",
-    "ios": "yarn workspace fabric-example ios",
-    "server": "yarn workspace fabric-example server",
-    "start": "yarn workspace fabric-example start",
+    "android": "pnpm --filter fabric-example android",
+    "ios": "pnpm --filter fabric-example ios",
+    "server": "pnpm --filter fabric-example server",
+    "start": "pnpm --filter fabric-example start",
     "validate:fast": "bash scripts/validate.sh --fast",
     "validate:cpp": "bash scripts/validate.sh --cpp",
     "validate:cpp-extended": "bash scripts/validate.sh --cpp-extended",
@@ -34,8 +25,8 @@
     "validate:full": "bash scripts/validate.sh --full",
     "setup:clangd": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh",
     "setup:clangd:clean": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh --clean",
-    "docs:internal": "bash -c 'cd packages/internaldocs && yarn start'",
-    "docs:internal:build": "bash -c 'cd packages/internaldocs && yarn build'"
+    "docs:internal": "pnpm --filter internaldocs start",
+    "docs:internal:build": "pnpm --filter internaldocs build"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "catalog:",
@@ -45,6 +36,7 @@
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "commitlint": "catalog:",
+    "del-cli": "^5.1.0",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-jsdoc": "^50.2.2",
@@ -54,9 +46,6 @@
     "prettier": "catalog:",
     "prettier-plugin-jsdoc": "^1.3.0",
     "typescript": "catalog:"
-  },
-  "resolutions": {
-    "typescript": "~6.0.3"
   },
   "commitlint": {
     "extends": [
