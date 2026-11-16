@@ -96,7 +96,7 @@
   ],
   "scripts": {
     "test": "pnpm test:js && pnpm test:cpp",
-    "test:js": "jest",
+    "test:js": "jest --config tests/jest.config.json",
     "test:cpp": "bash common/cpp/test/run-tests.sh",
     "test:cpp:smoke": "bash common/cpp/test/run-tests.sh smoke",
     "test:cpp:extended": "bash common/cpp/test/run-tests.sh extended",
@@ -185,6 +185,7 @@
     "@expo/config-types": "^53.0.4",
     "@react-native/babel-preset": "catalog:",
     "@react-native/eslint-config": "catalog:",
+    "@react-native/jest-preset": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
     "@types/babel__core": "^7.20.0",

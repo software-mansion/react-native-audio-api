@@ -194,6 +194,9 @@ catalogs:
     '@react-native/eslint-config':
       specifier: 0.88.0
       version: 0.88.0
+    '@react-native/jest-preset':
+      specifier: 0.88.0
+      version: 0.88.0
     '@react-native/metro-config':
       specifier: 0.88.0
       version: 0.88.0
@@ -788,6 +791,9 @@ importers:
       '@react-native/eslint-config':
         specifier: 'catalog:'
         version: 0.88.0(eslint@8.57.1(supports-color@8.1.1))(jest@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)))(prettier@3.8.2)(supports-color@8.1.1)(typescript@6.0.3)
+      '@react-native/jest-preset':
+        specifier: 'catalog:'
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       '@react-native/metro-config':
         specifier: 'catalog:'
         version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
@@ -2840,6 +2846,10 @@ packages:
       node-notifier:
         optional: true
 
+  '@jest/create-cache-key-function@29.7.0':
+    resolution: {integrity: sha512-4QqS3LY5PBmTRHj9sAg1HLoPzqAI0uOX6wI/TRqHIcOxlFidy6YEmCQJk6FSZjNLGCeubDMfmkWL+qaLKhSGQA==}
+    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+
   '@jest/environment@29.7.0':
     resolution: {integrity: sha512-aQIfHDq33ExsN4jP1NWGXhxgQ/wixs60gDiKO+XVMd8Mn0NWPWgc34ZQDTb2jKaUWQ7MuwoitXAsN2XVXNMpAw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -3350,6 +3360,12 @@ packages:
   '@react-native/gradle-plugin@0.88.0':
     resolution: {integrity: sha512-4jPSKslOfJj8NKY/jv9qmWkxZYmqPyamoS3Vs0JOFxw9t4PM6L/ea0fUsjNV0LxC9zJlvWilPJOCTOf7h8wlyw==}
     engines: {node: ^22.13.0 || ^24.3.0 || >= 26.0.0}
+
+  '@react-native/jest-preset@0.88.0':
+    resolution: {integrity: sha512-dN97NNqBsShAcxGH8/mNSBgYYc7Xk8q+Hez9qG9iockB4GPir5/Aw45e14sn7iLYTu2HkY0Uq2h3WlMY+ekRxw==}
+    engines: {node: '>= 22.13.0'}
+    peerDependencies:
+      react: ^19.2.3
 
   '@react-native/js-polyfills@0.88.0':
     resolution: {integrity: sha512-Iq6v4+EWdOLv0M1+BpADQJBVfInl6FkABXCIBSi0FbvHahEYT+Y4UJ7Cm96p18gbEN1VKzqz3nbBbwLA6bx0rQ==}
@@ -14399,6 +14415,10 @@ snapshots:
       - supports-color
       - ts-node
 
+  '@jest/create-cache-key-function@29.7.0':
+    dependencies:
+      '@jest/types': 29.6.3
+
   '@jest/environment@29.7.0':
     dependencies:
       '@jest/fake-timers': 29.7.0
@@ -15242,6 +15262,18 @@ snapshots:
   '@react-native/eslint-plugin@0.88.0': {}
 
   '@react-native/gradle-plugin@0.88.0': {}
+
+  '@react-native/jest-preset@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)':
+    dependencies:
+      '@jest/create-cache-key-function': 29.7.0
+      '@react-native/js-polyfills': 0.88.0
+      babel-jest: 29.7.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
+      jest-environment-node: 29.7.0
+      react: 19.3.0
+      regenerator-runtime: 0.13.11
+    transitivePeerDependencies:
+      - '@babel/core'
+      - supports-color
 
   '@react-native/js-polyfills@0.88.0': {}
 
