@@ -108,12 +108,13 @@ size_t computeNumberOfChannels(const HostGraph::HostVertex *node) {
 /// @brief If `node` needs a newly negotiated channel layout, allocates a
 /// replacement `DSPAudioBuffer` on the host thread, records its width as
 /// pending, and returns it. Returns `nullptr` when no swap is needed (no audio
-/// payload, or the pending buffer already has `computedNumberOfChannels`).
+/// payload, a source, or the pending buffer already has
+/// `computedNumberOfChannels`).
 std::shared_ptr<audioapi::DSPAudioBuffer> buildNegotiatedBufferIfNeeded(
     HostGraph::HostVertex *node,
     size_t computedNumberOfChannels) {
   auto *audio = audioNodeOf(node);
-  if (audio == nullptr) {
+  if (audio == nullptr || ownsOutputBuffer(node)) {
     return nullptr;
   }
 
@@ -321,10 +322,10 @@ auto HostGraph::addEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, Gra
     return Err(GraphError::CYCLE_DETECTED);
   }
 
-  // `connect()` already rejects a source as destination; negotiation below
-  // would otherwise build a buffer narrower than the content the source
-  // writes into it.
-  assert(!ownsOutputBuffer(to));
+  // `connect()` rejects a source as destination, so only the bridge of one of
+  // its AudioParams (no audio payload) reaches it, to order the param before
+  // its owner.
+  assert(!ownsOutputBuffer(to) || audioNodeOf(from) == nullptr);
 
   from->outputs.push_back(to);
   to->inputs.push_back(from);
