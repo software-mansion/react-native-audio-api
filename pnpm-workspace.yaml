@@ -1,4 +1,24 @@
-compressionLevel: mixed
+packages:
+  - packages/react-native-audio-api
+  - packages/react-native-audio-worklets
+  - packages/custom-node-generator
+  - packages/audiodocs
+  - packages/internaldocs
+  - packages/docs-theme
+  - packages/test-app-screen
+  - apps/common-app
+  - apps/fabric-example
+
+# 1 Week gate
+minimumReleaseAge: 10080
+
+overrides:
+  typescript: ~6.0.3
+  # temporary until oxidation migration
+  'react-native-audio-api-monorepo>@typescript-eslint/eslint-plugin': 8.58.1
+  'react-native-audio-api-monorepo>@typescript-eslint/parser': 8.58.1
+  # needed as swm/t-rex-ui pins docusaurus at 3.9.2 which is not compatible with webpack >=
+  webpack: 5.101.3
 
 catalog:
   '@babel/core': '^7.25.2'
@@ -25,6 +45,7 @@ catalog:
   jest: '^29.7.0'
   prettier: '^3.3.3'
   react: '19.3.0'
+  react-dom: '19.3.0'
   react-native: '0.88.0'
   react-native-builder-bob: '0.33.1'
   react-native-reanimated: '4.7.1'
@@ -33,12 +54,13 @@ catalog:
   react-test-renderer: '19.3.0'
   typescript: '~6.0.3'
 
-enableGlobalCache: false
+# Allow postinstall for git hooks registration
+allowBuilds:
+  '@evilmartians/lefthook': true
+  esbuild: true
+  core-js: false
+  core-js-pure: false
 
-enableScripts: true
-
-nodeLinker: node-modules
-
-npmMinimalAgeGate: '1w'
-
-yarnPath: .yarn/releases/yarn-4.18.0.cjs
+# RN 0.88's header layout no longer resolves the quoted "RCTBridge.h" import
+patchedDependencies:
+  '@react-native-menu/menu@2.0.0': patches/@react-native-menu__menu@2.0.0.patch

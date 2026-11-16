@@ -3,6 +3,8 @@ package com.swmansion.audioapi.system.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.view.KeyEvent
+import androidx.core.content.IntentCompat
 import com.swmansion.audioapi.AudioAPIModule
 import com.swmansion.audioapi.system.AudioEvent
 
@@ -50,6 +52,20 @@ class PlaybackNotificationReceiver : BroadcastReceiver() {
           )
         val body = HashMap<String, Any>().apply { put("value", skipInterval) }
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody(AudioEvent.PLAYBACK_NOTIFICATION_SKIP_BACKWARD.ordinal, body)
+      }
+
+      PlaybackNotification.MEDIA_BUTTON -> {
+        val keyEvent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+        val audioEvent =
+          when (keyEvent?.keyCode) {
+            KeyEvent.KEYCODE_MEDIA_PLAY -> AudioEvent.PLAYBACK_NOTIFICATION_PLAY
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> AudioEvent.PLAYBACK_NOTIFICATION_PAUSE
+            KeyEvent.KEYCODE_MEDIA_STOP -> AudioEvent.PLAYBACK_NOTIFICATION_STOP
+            KeyEvent.KEYCODE_MEDIA_NEXT -> AudioEvent.PLAYBACK_NOTIFICATION_NEXT_TRACK
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> AudioEvent.PLAYBACK_NOTIFICATION_PREVIOUS_TRACK
+            else -> return
+          }
+        audioAPIModule?.invokeHandlerWithEventNameAndEventBody(audioEvent.ordinal, mapOf())
       }
     }
   }

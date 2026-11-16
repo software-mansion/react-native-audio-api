@@ -335,7 +335,7 @@ if (status !== 'Granted') return;
 
 ### Voice Chat token server
 
-The Voice Chat demo never holds the OpenAI key. `yarn server` (repository root) runs `apps/fabric-example/server/realtime-token-server.mjs`, which reads `OPENAI_API_KEY` from the git-ignored `apps/fabric-example/.env.local` and serves short-lived secrets on port 8787. The app requests `/token` from the host that served its bundle. A USB-connected Android device loads the bundle from `localhost` through `adb reverse`, so it also needs `adb reverse tcp:8787 tcp:8787`; re-run it after reconnecting the cable.
+The Voice Chat demo never holds the OpenAI key. `pnpm server` (repository root) runs `apps/fabric-example/server/realtime-token-server.mjs`, which reads `OPENAI_API_KEY` from the git-ignored `apps/fabric-example/.env.local` and serves short-lived secrets on port 8787. The app requests `/token` from the host that served its bundle. A USB-connected Android device loads the bundle from `localhost` through `adb reverse`, so it also needs `adb reverse tcp:8787 tcp:8787`; re-run it after reconnecting the cable.
 
 ### Interruption handling
 
@@ -384,19 +384,21 @@ The icon font has no `power` glyph; `PedalShell` draws Lucide's power symbol inl
 
 Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents; animate transforms, not opacity, on wrappers.
 
-`@react-native-menu/menu` 2.0.0 is patched (`.yarn/patches/`) to import `<React/RCTBridge.h>` instead of the quoted `"RCTBridge.h"`, which RN 0.88's header layout no longer resolves.
+`@react-native-menu/menu` 2.0.0 is patched (`patches/`, registered under `patchedDependencies` in `pnpm-workspace.yaml`) to import `<React/RCTBridge.h>` instead of the quoted `"RCTBridge.h"`, which RN 0.88's header layout no longer resolves.
 
 ## Type Checking
 
 `common-app` resolves `react-native-audio-api` types from the library's built `lib/typescript`, not from `src`. After switching branches, rebuild before checking the app, or `tsc` checks against another branch's API:
 
 ```bash
-yarn workspace react-native-audio-api build
-npx tsc --noEmit -p apps/common-app
+pnpm --filter react-native-audio-api build
+pnpm exec tsc --noEmit -p apps/common-app
 ```
 
 ## Metro Config Notes
 
 `fabric-example/metro.config.js` sets `watchFolders: [monorepoRoot, appsRoot]` so Metro hot-reloads changes in `common-app` and `packages/react-native-audio-api` without restarting.
+
+Its `resolveRequest` also resolves `@babel/runtime/*` from the app. The Babel preset injects those helper imports into workspace packages Metro compiles from source (`packages/*`), which sit outside the app's `node_modules` and don't declare `@babel/runtime`; under pnpm's isolated layout they would otherwise fail to resolve. Don't add `@babel/runtime` to the root or to those packages instead.
 
 If you add a new workspace package that the app depends on, add its root to `watchFolders`.

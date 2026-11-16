@@ -12,7 +12,7 @@
   "dependencies": {
     "@callstack/liquid-glass": "0.8.2",
     "@react-native-community/slider": "5.2.2",
-    "@react-native-menu/menu": "patch:@react-native-menu/menu@npm%3A2.0.0#~/.yarn/patches/@react-native-menu-menu-npm-2.0.0-15e1fd477a.patch",
+    "@react-native-menu/menu": "2.0.0",
     "@react-navigation/bottom-tabs": "8.0.0-alpha.57",
     "@react-navigation/elements": "3.0.0-alpha.55",
     "@react-navigation/native": "8.0.0-alpha.51",

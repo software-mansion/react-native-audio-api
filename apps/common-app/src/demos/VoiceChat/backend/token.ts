@@ -19,7 +19,7 @@ function tokenUrl(): string {
  * reverse`, so the token server's port needs forwarding as well.
  */
 function unreachableMessage(url: string): string {
-  const start = `Could not reach the token server at ${url}. Start it with \`yarn server\` from the repository root.`;
+  const start = `Could not reach the token server at ${url}. Start it with \`pnpm server\` from the repository root.`;
   const viaAdbReverse =
     Platform.OS === 'android' &&
     /^http:\/\/(localhost|127\.0\.0\.1):/.test(url);

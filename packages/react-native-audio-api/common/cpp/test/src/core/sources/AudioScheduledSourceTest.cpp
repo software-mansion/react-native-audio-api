@@ -131,6 +131,99 @@ TEST_F(AudioScheduledSourceTest, IsFinishedStateSetCorrectly) {
   EXPECT_TRUE(sourceNode.isFinished());
 }
 
+TEST_F(AudioScheduledSourceTest, PauseSuspendsPlaybackUntilResumed) {
+  auto sourceNode = TestableAudioScheduledSourceNode(context);
+  sourceNode.start(0);
+  sourceNode.playFrames(RENDER_QUANTUM);
+  ASSERT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PLAYING);
+
+  sourceNode.pause();
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PAUSED);
+  EXPECT_FALSE(sourceNode.hasEnded());
+
+  sourceNode.resume(0);
+  EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::SCHEDULED);
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PLAYING);
+}
+
+TEST_F(AudioScheduledSourceTest, PauseLeavesANodeThatWasNeverStartedAlone) {
+  auto sourceNode = TestableAudioScheduledSourceNode(context);
+  sourceNode.pause();
+  EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::UNSCHEDULED);
+}
+
+/// The stop time lies mid-quantum so that frame rounding cannot move it across
+/// a quantum boundary.
+TEST_F(AudioScheduledSourceTest, PausedNodeFinishesAtItsStopTime) {
+  for (const bool isResumeRequestedAfterStopTime : {false, true}) {
+    SCOPED_TRACE(isResumeRequestedAfterStopTime ? "resume() later than the stop" : "no resume()");
+    auto sourceNode = TestableAudioScheduledSourceNode(context);
+    sourceNode.start(0);
+    sourceNode.playFrames(RENDER_QUANTUM);
+
+    // Both cases share the context clock, so times are relative to it.
+    const double now = context->getCurrentTime();
+    sourceNode.pause();
+    sourceNode.stop(now + 2.5 * RENDER_QUANTUM_TIME);
+    if (isResumeRequestedAfterStopTime) {
+      sourceNode.resume(now + 4 * RENDER_QUANTUM_TIME);
+    }
+
+    sourceNode.playFrames(RENDER_QUANTUM);
+    sourceNode.playFrames(RENDER_QUANTUM);
+    EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PAUSED);
+    EXPECT_FALSE(sourceNode.hasEnded());
+
+    sourceNode.playFrames(RENDER_QUANTUM); // the quantum holding the stop time
+    EXPECT_TRUE(sourceNode.isFinished());
+    EXPECT_TRUE(sourceNode.hasEnded());
+  }
+}
+
+TEST_F(AudioScheduledSourceTest, ResumedNodeKeepsItsStopTime) {
+  auto sourceNode = TestableAudioScheduledSourceNode(context);
+  sourceNode.start(0);
+  sourceNode.stop(3.5 * RENDER_QUANTUM_TIME);
+  sourceNode.playFrames(RENDER_QUANTUM);
+
+  sourceNode.pause();
+  sourceNode.resume(0);
+  sourceNode.playFrames(RENDER_QUANTUM);
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_EQ(sourceNode.getPlaybackState(), AudioScheduledSourceNode::PlaybackState::PLAYING);
+
+  sourceNode.playFrames(RENDER_QUANTUM); // the quantum holding the stop time
+  sourceNode.playFrames(RENDER_QUANTUM);
+  EXPECT_TRUE(sourceNode.isFinished());
+}
+
+TEST_F(AudioScheduledSourceTest, StopOnFinishedNodeDoesNotEndItAgain) {
+  static constexpr uint64_t ENDED_CALLBACK_ID = 43;
+  auto sourceNode = TestableAudioScheduledSourceNode(context);
+  sourceNode.assignOnEndedCallbackId(ENDED_CALLBACK_ID);
+
+  sourceNode.start(2 * RENDER_QUANTUM_TIME);
+  sourceNode.stop(RENDER_QUANTUM_TIME);
+  ASSERT_TRUE(sourceNode.isFinished());
+  sourceNode.stop(0); // if honoured, its ended would be due at once
+
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .Times(0);
+  sourceNode.playFrames(RENDER_QUANTUM); // context time is still before the first stop time
+
+  EXPECT_CALL(
+      *eventRegistry,
+      dispatchEventFromAudioThread(testing::_, AudioEvent::ENDED, ENDED_CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+  sourceNode.playFrames(RENDER_QUANTUM);
+
+  EXPECT_CALL(*eventRegistry, unregisterHandler(AudioEvent::ENDED, ENDED_CALLBACK_ID)).Times(1);
+}
+
 TEST_F(AudioScheduledSourceTest, StopBeforeStartFiresEndedWhenContextTimeReachesStopTime) {
   static constexpr uint64_t ENDED_CALLBACK_ID = 42;
   auto sourceNode = TestableAudioScheduledSourceNode(context);
@@ -139,6 +232,7 @@ TEST_F(AudioScheduledSourceTest, StopBeforeStartFiresEndedWhenContextTimeReaches
   sourceNode.start(2 * RENDER_QUANTUM_TIME);
   sourceNode.stop(RENDER_QUANTUM_TIME);
   EXPECT_TRUE(sourceNode.isFinished());
+  EXPECT_TRUE(sourceNode.hasEnded()) << "the node never plays, so it has ended already";
 
   EXPECT_CALL(
       *eventRegistry,

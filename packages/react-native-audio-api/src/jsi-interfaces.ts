@@ -201,6 +201,8 @@ export interface IAudioListener {
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when: number): void;
   stop: (when: number) => void;
+  /** Set on the audio thread when the node finishes; never cleared. */
+  readonly hasEnded: boolean;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onended: string;

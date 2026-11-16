@@ -79,11 +79,11 @@ class FakeAudioRecorder : public AudioRecorder {
     return state_ == RecorderState::Idle;
   }
 
-  [[nodiscard]] double getInputLatency() const override {
+ protected:
+  [[nodiscard]] double platformInputLatency(double /*callbackSeconds*/) const override {
     return 0.0;
   }
 
- protected:
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override {
     return Ok(StreamFormat{});
   }

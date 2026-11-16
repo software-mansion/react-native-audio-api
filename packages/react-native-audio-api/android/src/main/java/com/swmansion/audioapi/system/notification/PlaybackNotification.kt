@@ -313,6 +313,8 @@ class PlaybackNotification(
     updatePlaybackState(playbackStateVal)
 
     publishMetadata()
+    // Android 10 and below render the notification's own text, not the session metadata.
+    notificationBuilder?.setContentTitle(title)?.setContentText(artist)
 
     updateNotificationsActions()
   }
@@ -428,61 +430,34 @@ class PlaybackNotification(
 
     val context = reactContext.get() ?: return
 
-    var index = 0
-    val actionsList = mutableListOf<Int>()
+    var actionCount = 0
 
-    if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)) {
-      notificationBuilder?.addAction(
-        createAction("previousTrack", "Previous track", PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS),
-      )
-      actionsList.add(index++)
+    fun addActionIfEnabled(
+      name: String,
+      label: String,
+      control: Long,
+    ): Int? {
+      if (!hasControl(control)) return null
+      notificationBuilder?.addAction(createAction(name, label, control))
+      return actionCount++
     }
 
-    if (hasControl(PlaybackStateCompat.ACTION_REWIND)) {
-      notificationBuilder?.addAction(
-        createAction("skip_backward", "Skip Backward", PlaybackStateCompat.ACTION_REWIND),
-      )
-      actionsList.add(index++)
-    }
-
-    if (isPlaying) {
-      if (hasControl(PlaybackStateCompat.ACTION_PAUSE)) {
-        notificationBuilder?.addAction(
-          createAction("pause", "Pause", PlaybackStateCompat.ACTION_PAUSE),
-        )
-        actionsList.add(index++)
-      } else if (hasControl(PlaybackStateCompat.ACTION_STOP)) {
-        notificationBuilder?.addAction(
-          createAction("stop", "Stop", PlaybackStateCompat.ACTION_STOP),
-        )
-        actionsList.add(index++)
+    val previousTrack = addActionIfEnabled("previousTrack", "Previous track", PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
+    val skipBackward = addActionIfEnabled("skip_backward", "Skip Backward", PlaybackStateCompat.ACTION_REWIND)
+    val playbackToggle =
+      if (isPlaying) {
+        addActionIfEnabled("pause", "Pause", PlaybackStateCompat.ACTION_PAUSE)
+          ?: addActionIfEnabled("stop", "Stop", PlaybackStateCompat.ACTION_STOP)
+      } else {
+        addActionIfEnabled("play", "Play", PlaybackStateCompat.ACTION_PLAY)
       }
-    } else {
-      if (hasControl(PlaybackStateCompat.ACTION_PLAY)) {
-        notificationBuilder?.addAction(createAction("play", "Play", PlaybackStateCompat.ACTION_PLAY))
-        actionsList.add(index++)
-      }
-    }
+    val skipForward = addActionIfEnabled("skip_forward", "Skip Forward", PlaybackStateCompat.ACTION_FAST_FORWARD)
+    val nextTrack = addActionIfEnabled("nextTrack", "Next track", PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
 
-    if (hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)) {
-      notificationBuilder?.addAction(
-        createAction("skip_forward", "Skip Forward", PlaybackStateCompat.ACTION_FAST_FORWARD),
-      )
-      actionsList.add(index++)
-    }
-
-    if (hasControl(PlaybackStateCompat.ACTION_SKIP_TO_NEXT)) {
-      notificationBuilder?.addAction(
-        createAction("nextTrack", "Next track", PlaybackStateCompat.ACTION_SKIP_TO_NEXT),
-      )
-      actionsList.add(index++)
-    }
-
-    if (actionsList.size > 3) {
-      style.setShowActionsInCompactView(actionsList[0], actionsList[1], actionsList[2])
-    } else {
-      style.setShowActionsInCompactView(*actionsList.toIntArray())
-    }
+    // The collapsed notification fits three actions; track changes take precedence over skips.
+    style.setShowActionsInCompactView(
+      *listOfNotNull(previousTrack ?: skipBackward, playbackToggle, nextTrack ?: skipForward).toIntArray(),
+    )
 
     notificationBuilder?.setStyle(style)
   }
@@ -538,8 +513,8 @@ class PlaybackNotification(
       "stop" -> R.drawable.stop
       "nextTrack" -> android.R.drawable.ic_media_next
       "previousTrack" -> android.R.drawable.ic_media_previous
-      "skip_forward" -> skipForwardIcon()
-      "skip_backward" -> skipBackwardIcon()
+      "skip_forward" -> android.R.drawable.ic_media_ff
+      "skip_backward" -> android.R.drawable.ic_media_rew
       else -> 0
     }
 

@@ -44,12 +44,11 @@ class IOSAudioRecorder : public AudioRecorder {
   bool isPaused() const override;
   bool isIdle() const override;
 
-  [[nodiscard]] double getInputLatency() const override;
-
  protected:
   /// The engine resolves the input format asynchronously, so it is read fresh on every call:
   /// between a route change and the engine settling there is no usable format at all.
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override;
+  [[nodiscard]] double platformInputLatency(double callbackSeconds) const override;
 
   NativeAudioRecorder *nativeRecorder_;
 
