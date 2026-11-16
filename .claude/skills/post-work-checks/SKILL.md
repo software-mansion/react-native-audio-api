@@ -50,11 +50,12 @@ Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `pnpm v
 ## Quick Reference — Individual Commands
 
 ```bash
+pnpm check                   # every package's `check`, as CI runs it (builds workspace deps first)
+pnpm test                    # every package's `test` (library: JS + C++ smoke)
 pnpm format                  # auto-fix all formatting
 pnpm lint                    # lint all workspaces
 pnpm typecheck               # TypeScript type checking
-pnpm test                    # C++ + JS tests (library workspace)
-pnpm check-audio-enum-sync   # only if a C++/Kotlin mirrored enum touched
+pnpm --filter react-native-audio-api check:enums   # only if a mirrored enum touched
 ```
 
 ---
@@ -126,7 +127,7 @@ pnpm test   # from monorepo root — runs test:js + test:cpp
 ### Native enum sync check
 
 ```bash
-pnpm check-audio-enum-sync
+pnpm --filter react-native-audio-api check:enums
 ```
 
 Runs `packages/react-native-audio-api/scripts/check-enum-sync.sh`, which compares every

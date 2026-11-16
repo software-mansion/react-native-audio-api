@@ -237,7 +237,7 @@ pnpm format          # auto-fix formatting
 pnpm lint            # JS/TS/C++/Kotlin linting
 pnpm typecheck       # TypeScript
 pnpm test            # C++ Google Tests
-pnpm check-audio-enum-sync  # if you touched AudioEvent enums
+pnpm --filter react-native-audio-api check:enums  # if you touched a mirrored enum
 ```
 
 ---

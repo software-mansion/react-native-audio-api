@@ -78,7 +78,7 @@ jobs:
     uses: ./.github/workflows/ci-check.yml
     with:
       name: Check enum sync
-      run: pnpm check-audio-enum-sync
+      run: pnpm --filter react-native-audio-api check:enums
 
   build-audio-api:
     needs: changes

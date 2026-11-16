@@ -123,8 +123,8 @@ run_fast() {
   log_step "pnpm typecheck"
   (cd "$REPO_ROOT" && pnpm typecheck)
 
-  log_step "pnpm check-audio-enum-sync"
-  (cd "$REPO_ROOT" && pnpm check-audio-enum-sync)
+  log_step "pnpm --filter react-native-audio-api check:enums"
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api check:enums)
 
   log_step "pnpm build"
   (cd "$REPO_ROOT" && pnpm build)

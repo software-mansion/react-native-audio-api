@@ -95,6 +95,8 @@
     "app.plugin.js"
   ],
   "scripts": {
+    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck check:enums build",
+    "check:enums": "bash scripts/check-enum-sync.sh",
     "test": "pnpm test:js && pnpm test:cpp",
     "test:js": "jest --config tests/jest.config.json",
     "test:cpp": "bash common/cpp/test/run-tests.sh",
@@ -141,6 +143,14 @@
     "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"
+  },
+  "ci": {
+    "tools": [
+      "cmake",
+      "cpplint",
+      "ktlint",
+      "clang-format"
+    ]
   },
   "keywords": [
     "react-native",
@@ -222,7 +232,6 @@
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-builder-bob": "catalog:",
-    "turbo": "^1.10.7",
     "typescript": "catalog:",
     "wpt-runner": "^7.0.0"
   },
