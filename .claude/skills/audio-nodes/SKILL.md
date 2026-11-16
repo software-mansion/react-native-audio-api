@@ -153,31 +153,47 @@ classDiagram
 
 ### AudioRecorder (not an AudioNode)
 
-`core/inputs/AudioRecorder` is a standalone base class, not part of the `AudioNode` hierarchy — it
+`core/inputs/AudioRecorder` is a standalone `final` class, not part of the `AudioNode` hierarchy — it
 feeds the graph through a `RecorderAdapterNode` instead of being processed by it.
 
-The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
-that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
-`prepareFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
-subclasses own only the platform input stream. Each output is one `OutputSlot` (`file_`, `callback_`,
-`adapter_`: state, mutex, target); a subclass locks the slot mutexes and calls the base, and never
-reads or writes a slot's state or target itself. A platform `start()` prepares the outputs only
-through `prepareOutputs()`, and when anything fails after that it ends like `stop()`: detach under
-the slot mutexes, finalize without them, so no file stays open. `detachSideEffects()` moves the file
-writer out (a new one each session) but copies the callback and the adapter handle, which stay
-registered: JS `connect()` creates its adapter once, so moving the handle out made every later
-`start()` fail with "Recorder adapter node is unavailable.". The one thing the base needs from the platform is
-`resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
-it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
-cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
-state only one platform touches (Android's `streamMutex_`, iOS's `inputChannelCount_`) lives in
-that subclass. State a consumer already owns stays with the consumer: the adapter node's ring
-layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
-`AudioFileWriter::closeFile()`) are not mirrored in the recorder.
+It owns the session state machine: an explicit `Phase` (`Idle`, `Recording`, `Paused`, `Rerouting`;
+the table of what holds in each is in `AudioRecorder.h`) that only `enterPhase()` changes; it arms the
+gate exactly for `Recording`, and `repointOutputsAt()`, which disarms the gate while the outputs
+follow a new format, re-arms it only when the phase is `Recording`. `start`/`stop`/`pause`/`resume`/`rerouteInput` are a `switch`
+over the phase, serialized by `controlMutex_`; add a phase rather than a flag when the session gains
+a state. A reroute that cannot reopen the input ends the session through `ActiveRecorderHandle`, so
+what it recorded stays consumable. Session state lives in one `SessionState` (phase, input
+generation, stream format; guarded by `controlMutex_`); put new session state there. Everything that
+happens to recorded frames lives in `RecorderOutputs` (`core/inputs/RecorderOutputs.h`, the
+recorder's `outputs_`): one `OutputSlot` per output (`file_`, `callback_`, `adapter_`: state, mutex,
+target), `prepare` at start, `follow` on a format change, `detach`/`finalize` at the end, the
+setters, and the error callback id. Put a new output in a slot of its own there. `RecorderOutputs`
+does not synchronize its control calls: `AudioRecorder` calls it only under `controlMutex_`, and
+disarms the gate before `follow()`. When anything fails after `start()` opened the input it ends the
+session like `stop()`: detach under the slot mutexes, finalize without them, so no file stays open.
+`detach()` moves the file writer out (a new one each session) but copies the callback and the
+adapter handle, which stay registered: JS `connect()` creates its adapter once, so moving the handle
+out made every later `start()` fail with "Recorder adapter node is unavailable."; `disableFile()` and
+`disconnect()` hand their output over the same way. Test outputs through `RecorderOutputs`'s public
+API (`RecorderOutputsTest.cpp`), not through a friend of the recorder.
 
-Pitfall: never redeclare a base member (`streamSampleRate_`, `file_`,
-`lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
-audio-thread fan-out reads its own member and silently drops that output.
+The platform's part is only the capture stream behind `IRecorderInput` (`AndroidRecorderInput`,
+`IOSRecorderInput`; created by `createPlatformRecorderInput()`, defined next to each). The input
+reports its `StreamFormat` through `getCurrentFormat()`, which the recorder reads only after
+`start()` (starting can reconfigure the input: the iOS engine rebuilds first when the hardware
+changed). On iOS, attaching the input node needs the engine stopped and started again right
+after, so `IOSRecorderInput::open()` stops, attaches and starts, rolling all of it back when it
+fails, and `start()` only makes sure the engine runs (`startIfNecessary:`). Keep it that way when
+`AudioEngine` takes over the stop-around-attach rule: `open()` then only attaches, and `start()`
+is what starts an engine playback was not already running. The input hands frames to the
+`RecorderInputGate` it was given (the recorder arms it only while recording and disarms it before
+changing anything the audio thread reads), and reports what it did not cause through
+`RecorderInputEvents` (`formatChanged` for an iOS route change, `lost` for an Android disconnect,
+`failed`); events carry the generation of the opening they come from and are dropped once that
+opening has ended. Add shared recorder behavior to `AudioRecorder`, not to one input. State a
+consumer already owns stays with the consumer: the adapter node's ring layout
+(`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
+`AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
 ---
 
@@ -191,7 +207,6 @@ enum class PlaybackState {
   UNSCHEDULED,      // before start() called
   SCHEDULED,        // start() called, waiting for startTime_
   PLAYING,          // actively producing audio
-  PAUSED,           // silent, position kept; stopTime_ still applies
   STOP_SCHEDULED,   // stop() called, waiting for stopTime_
   FINISHED          // done, node will be disabled
 };
@@ -211,11 +226,10 @@ Subclasses call `updatePlaybackInfo(currentTime, framesToProcess)` at the top of
 
 When the node finishes, `AudioScheduledSourceNode::disable()` fires `ENDED` through its `EventCaller` (`dispatchEmptyFromAudioThread`); a node that will never render (stop-before-start) defers it with `EventCaller::deferEmpty` instead — see `thread-safety-itc`.
 
-A source only advances its state machine while it is being pulled. Once disconnected (no processable consumer) it is skipped by `iter()`, so a stop frame that has not rendered yet would never be observed and the node would stay PLAYING, never fire `ended` and never satisfy `canBeDestructed()` — the graph then keeps it forever (stretcher queues, params, scratch buffers). `GraphObject::advanceWithoutRender(currentSampleFrame)` closes that gap: `Graph::advanceUnpulledNodes` calls it each quantum for every node left out of the processable set, and `AudioScheduledSourceNode` overrides it to finish once the stop frame is strictly before the quantum (same transition as the render path's "first silent quantum" branch; Chromium does the same in `AudioScheduledSourceHandler::HandleStoppableSourceNode`). Keep the render path authoritative: the graph never calls this hook on a pulled node. The one caller besides the graph is `AudioBufferBaseSourceNode::processNode`, for a pulled source with nothing to render (empty queue): it returns before `updatePlaybackInfo`, so without the call a stop time would never be reached. A disconnected source that was never stopped still has no stop frame and stays alive until `stop()` or the JS wrapper dies.
+A source only advances its state machine while it is being pulled. Once disconnected (no processable consumer) it is skipped by `iter()`, so a stop frame that has not rendered yet would never be observed and the node would stay PLAYING, never fire `ended` and never satisfy `canBeDestructed()` — the graph then keeps it forever (stretcher queues, params, scratch buffers). `GraphObject::advanceWithoutRender(currentSampleFrame)` closes that gap: `Graph::advanceUnpulledNodes` calls it each quantum for every node left out of the processable set, and `AudioScheduledSourceNode` overrides it to finish once the stop frame is strictly before the quantum (same transition as the render path's "first silent quantum" branch; Chromium does the same in `AudioScheduledSourceHandler::HandleStoppableSourceNode`). Keep the render path authoritative: pulled nodes must not be touched by this hook. A disconnected source that was never stopped still has no stop frame and stays alive until `stop()` or the JS wrapper dies.
 
 Pitfalls:
 - `start(double)` in this base class is a separate overload from `AudioBufferSourceNode::start(when, offset, duration)`. Calling `node->start(when)` on an ABSN skips the derived logic; the HostObject always passes three arguments, and so must tests.
-- `stop()` on a `FINISHED` node is ignored. JS does not guard a repeated `stop()`, and honouring it would take the stop-before-start branch again and fire a second `ended`.
 - `AudioBufferBaseSourceNode::processNode` is `final` and returns early on `isEmpty()`. Whether a started-but-empty source ends there (`ended` fires) is `endsWhenStartedEmpty()`: the base default is true (spec: a null buffer forces `stop = currentTime`); `AudioBufferQueueSourceNode` overrides it to false because an empty queue is waiting for the next enqueue. The check runs per quantum on the audio thread on purpose, because the buffer setter legitimately acquires content assigned after `start()` but before the first render.
 
 ---
