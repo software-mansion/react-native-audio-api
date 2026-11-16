@@ -11,4 +11,4 @@ Review this skill when `pre-push-update` reports changes in:
 | `lefthook.yml` | Pre-commit / commit-msg hook changes |
 | `scripts/validate.sh` | Tier behavior (`--fast` / `--cpp-extended` / `--android` / `--ios` / `--full`), skip rules |
 | `packages/react-native-audio-api/scripts/check-enum-sync.sh` | Enum sync check details (Kotlin + TypeScript mirrors) |
-| `.github/workflows/ci.yml`, `tests.yml`, `cpp-job.yml` | What CI covers vs local validation tiers |
+| `.github/workflows/ci.yml`, `check-package.yml`, `tests.yml` | What CI covers vs local validation tiers |

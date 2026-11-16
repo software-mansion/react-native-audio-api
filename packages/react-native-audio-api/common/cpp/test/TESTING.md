@@ -7,12 +7,14 @@
 | **smoke** | Fast suites (PR + coverage). Disjoint from extended. | `tests` |
 | **extended** | Slow suites by **category** | `tests_asan` (ASan+UBSan) |
 | **full** | smoke, then all extended categories | each mode’s default |
+| **affected** | the suites whose paths (in `filters.sh`) your changes touch; nothing if none | each mode’s default |
 
 ```bash
 pnpm test:cpp                          # smoke
 pnpm test:cpp:extended                 # all categories
 pnpm test:cpp:extended -- graph
 pnpm test:cpp:full
+pnpm test:cpp:affected                 # what `pnpm test` and CI run
 pnpm test:cpp:coverage                 # smoke + llvm-cov HTML
 pnpm test:cpp:smoke --ubasan           # Address + UndefinedBehavior sanitizers
 pnpm test:cpp:extended -- graph --tsan
@@ -24,15 +26,17 @@ bash common/cpp/test/run-tests.sh --help
 
 Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
+`affected` diffs against `CPP_TEST_BASE` if set, `HEAD^1` on a pull request in GitHub Actions (the checkout is a merge commit whose first parent is the base branch), and otherwise the merge-base with `origin/main`, counting uncommitted and untracked files. `TEST_ALL=1` runs every suite; CI sets it outside pull requests, and `validate.sh --full` sets it too. If the base can't be resolved, every suite runs.
+
 ### Categories
 
 | Category | Contents | CI |
 | --- | --- | --- |
-| `graph` | Slow graph (`AudioGraph*`, `Graph*`, `HostGraph*`, `Seeds/*`, …) | path filter + manual dispatch in `tests.yml` |
+| `graph` | Slow graph (`AudioGraph*`, `Graph*`, `HostGraph*`, `Seeds/*`, …) | `affected`, when graph code or tests change |
 
 **`GraphNodeGrowthTest` is smoke**, not `graph`: it is short (~100–200 ms) and needs unsanitized `AudioThreadGuard` (asserts `GTEST_SKIP` under ASan/TSan).
 
-**Add a category:** (1) gtest filter and CI path globs in `filters.sh`, (2) append the name to `CPP_TEST_EXTENDED_CATEGORIES`, (3) in `tests.yml` add a `workflow_dispatch` boolean and one `cpp-extended-*` job that calls `cpp-job.yml` with `run: pnpm test:cpp:extended -- <category>`, `categories: <category>`, and `force`.
+**Add a category:** in `filters.sh`, (1) add its gtest filter to `cpp_test_extended_filter_for_category` and its paths to `cpp_test_paths_for_suite`, (2) append the name to `CPP_TEST_EXTENDED_CATEGORIES`. `affected` then runs it in CI when those paths change; no workflow edit is needed.
 
 ### Docker (Linux leak / ASan)
 

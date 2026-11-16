@@ -19,7 +19,7 @@ Run these checks after any code change and before opening a PR.
 
 ## Quick Reference — Local Validation Tiers
 
-CI always runs the **fast** tier (format, lint, typecheck, enum sync, TS build, C++ smoke + JS tests). Extended C++ categories (e.g. graph) run from `tests.yml` when matching paths change, or via `workflow_dispatch` booleans. CI does **not** build Android Gradle, iOS pods, or example apps. Use `validate.sh` locally to close that gap:
+CI runs each changed package's `check` and `test` scripts (`ci.yml`). The library's `test` runs Jest and only the C++ suites whose paths your changes touch (`run-tests.sh affected`: smoke for `common/cpp/`, graph for graph code); outside pull requests it runs all of them. CI also builds the example app for Android and iOS when native code changes (`native-build.yml`). Use `validate.sh` locally for the same checks before pushing:
 
 ```bash
 pnpm validate:fast          # CI parity — always run before opening a PR
@@ -27,7 +27,7 @@ pnpm validate:cpp           # C++ smoke
 pnpm validate:cpp-extended  # C++ extended (all categories)
 pnpm validate:android       # Android native build (requires ANDROID_HOME)
 pnpm validate:ios           # iOS native build (macOS only)
-pnpm validate:full          # --fast + C++ extended + --android + --ios
+pnpm validate:full          # --fast with every C++ suite + --android + --ios
 ```
 
 Equivalent: `./scripts/validate.sh --fast` (etc.)
@@ -51,7 +51,7 @@ Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `pnpm v
 
 ```bash
 pnpm check                   # every package's `check`, as CI runs it (builds workspace deps first)
-pnpm test                    # every package's `test` (library: JS + C++ smoke)
+pnpm test                    # every package's `test` (library: Jest + affected C++ suites)
 pnpm format                  # auto-fix all formatting
 pnpm lint                    # lint all workspaces
 pnpm typecheck               # TypeScript type checking
@@ -94,7 +94,7 @@ pnpm validate:fast
 ```bash
 pnpm validate:android   # pnpm --filter … build:android (~3–4 min)
 pnpm validate:ios       # pnpm --filter … build:ios (macOS only)
-pnpm validate:full      # --fast + C++ extended + --android + --ios
+pnpm validate:full      # --fast with every C++ suite + --android + --ios
 ```
 
 Autolinking registers workspace packages under their real `packages/` path (`apps/common-app/scripts/dependencies.js` follows the `node_modules` symlink), so Gradle and CocoaPods build local edits in `packages/react-native-audio-api/` directly.

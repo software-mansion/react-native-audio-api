@@ -9,6 +9,11 @@ on:
         description: Package directory, e.g. packages/react-native-audio-api
         required: true
         type: string
+      test-all:
+        description: Run every test suite, not only the ones the changes touch
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -17,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
 
       - name: Read package manifest
         id: manifest
@@ -45,4 +52,5 @@ jobs:
       - name: Test
         env:
           PACKAGE: ${{ steps.manifest.outputs.name }}
+          TEST_ALL: ${{ (github.event_name != 'pull_request' || inputs.test-all) && '1' || '' }}
         run: pnpm --filter "$PACKAGE" run test

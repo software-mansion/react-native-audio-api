@@ -25,6 +25,8 @@ jobs:
       pull-requests: read
     # Outside pull requests every package runs.
     outputs:
+      # A change to shared files (CI, toolchain, root config) runs every test suite.
+      shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' }}
       audio-api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audio-api == 'true' }}
       worklets: ${{ github.event_name != 'pull_request' || steps.filter.outputs.worklets == 'true' }}
       audiodocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audiodocs == 'true' }}
@@ -77,6 +79,7 @@ jobs:
     uses: ./.github/workflows/check-package.yml
     with:
       directory: packages/react-native-audio-api
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   react-native-audio-worklets:
     needs: changes
@@ -84,6 +87,7 @@ jobs:
     uses: ./.github/workflows/check-package.yml
     with:
       directory: packages/react-native-audio-worklets
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   audiodocs:
     needs: changes
@@ -91,6 +95,7 @@ jobs:
     uses: ./.github/workflows/check-package.yml
     with:
       directory: packages/audiodocs
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   internaldocs:
     needs: changes
@@ -98,6 +103,7 @@ jobs:
     uses: ./.github/workflows/check-package.yml
     with:
       directory: packages/internaldocs
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   fabric-example:
     needs: changes
@@ -105,6 +111,7 @@ jobs:
     uses: ./.github/workflows/check-package.yml
     with:
       directory: apps/fabric-example
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
   gate:
     name: Gate

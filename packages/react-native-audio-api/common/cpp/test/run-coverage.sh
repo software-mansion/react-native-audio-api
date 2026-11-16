@@ -63,10 +63,6 @@ require_llvm_tools() {
   }
 }
 
-parallel_job_count() {
-  sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 10
-}
-
 # ENABLE_COVERAGE requires Clang; default to clang/clang++ when unset so Linux
 # CI (and local shells that still point CC/CXX at GCC) configure correctly.
 export CC="${CC:-clang}"

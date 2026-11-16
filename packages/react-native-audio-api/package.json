@@ -97,10 +97,11 @@
   "scripts": {
     "check": "bash ../../scripts/run-steps.sh format:check lint typecheck check:enums build",
     "check:enums": "bash scripts/check-enum-sync.sh",
-    "test": "pnpm test:js && pnpm test:cpp",
+    "test": "bash ../../scripts/run-steps.sh test:js test:cpp:affected",
     "test:js": "jest --config tests/jest.config.json",
     "test:cpp": "bash common/cpp/test/run-tests.sh",
     "test:cpp:smoke": "bash common/cpp/test/run-tests.sh smoke",
+    "test:cpp:affected": "bash common/cpp/test/run-tests.sh affected",
     "test:cpp:extended": "bash common/cpp/test/run-tests.sh extended",
     "test:cpp:full": "bash common/cpp/test/run-tests.sh full",
     "test:cpp:coverage": "bash common/cpp/test/run-coverage.sh",

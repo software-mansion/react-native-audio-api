@@ -42,7 +42,7 @@ react-native-audio-api/
 │   │       └── include_ffmpeg/         # FFmpeg headers (downloaded, FFmpeg builds only)
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
-│   │   ├── run-tests.sh / filters.sh    # smoke|extended|full (+ categories, CI path filters)
+│   │   ├── run-tests.sh / filters.sh    # smoke|extended|full|affected (+ categories, suite paths)
 │   │   └── src/                        # Google Test files
 │   ├── RNAudioAPI.podspec              # CocoaPods spec for iOS
 │   ├── Package.swift                   # SwiftPM manifest for RN's `react-native spm` mode
@@ -290,15 +290,15 @@ rm -rf packages/react-native-audio-api/android/.cxx
 
 ## Local Full Validation
 
-CI intentionally skips native Android/iOS builds (expensive). Use the tiered local validation script for pre-PR checks:
+CI builds the example app for Android and iOS only when native code changes (`native-build.yml`). Use the tiered local validation script for pre-PR checks:
 
 ```bash
-pnpm validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
+pnpm validate:fast      # CI parity: library + worklets `check` and `test` (affected C++ suites)
 pnpm validate:cpp       # C++ smoke
 pnpm validate:cpp-extended  # C++ extended (all categories)
 pnpm validate:android   # pnpm workspace … build:android
 pnpm validate:ios       # pnpm workspace … build:ios (macOS only)
-pnpm validate:full      # --fast + C++ extended + --android + --ios
+pnpm validate:full      # --fast with every C++ suite + --android + --ios
 ```
 
 Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
@@ -308,10 +308,10 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
-| C++ smoke (`run-tests.sh`) | Yes | `--fast` |
+| C++ smoke (`run-tests.sh`) | When `common/cpp/`, the lockfile or the library manifest changes (`affected`) | `--fast` (same rule), `--cpp` |
 | C++ coverage (`run-coverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `pnpm test:cpp:coverage` |
 | Jest | Yes | `--fast` |
-| Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` |
+| Extended C++ by category (e.g. graph) | When the category's paths change (`affected`) | `--fast` (same rule), `--cpp-extended` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
 | Android JNI C++ + Kotlin | **No** | `--android` |
 | iOS ObjC++ | **No** | `--ios` |
@@ -334,7 +334,7 @@ Android (NDK) and iOS (Clang) cannot share object files — reuse is at the preb
 
 - `--ios` on Linux → skip with message (exit 0)
 - `--android` without `ANDROID_HOME` → fail on explicit `--android`; skip with warning inside `--full`
-- `--full` includes C++ extended (all categories) after `--fast`’s smoke, so local full covers C++ full + native builds
+- `--full` runs `--fast` with `TEST_ALL=1`, so every C++ suite runs, then the native builds
 
 ### Which tier to run
 
@@ -349,12 +349,12 @@ See the decision table in [post-work-checks](../post-work-checks/SKILL.md).
 
 ### How to run
 ```bash
-pnpm test   # Jest + C++ smoke
-pnpm --filter react-native-audio-api test:cpp:smoke|extended|full
+pnpm test   # Jest + the C++ suites your changes touch
+pnpm --filter react-native-audio-api test:cpp:smoke|extended|full|affected
 pnpm --filter react-native-audio-api test:cpp:extended -- graph
 ```
 
-`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
+`run-tests.sh [smoke|extended|full|affected] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. `affected` picks suites by matching changed files against `cpp_test_paths_for_suite`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 > **Sanitizer binaries compile every engine translation unit with that sanitizer.** `add_sanitized_tests(<name> <compile-flags> <link-flags>)` builds `tests_<name>` plus `rnaudioapi_<name>` and `rnaudioapi_libs_<name>`. `tsan` uses `-fsanitize=thread`; `asan` uses `-fsanitize=address,undefined`. The plain `rnaudioapi` pair is only for `tests` and the coverage build. TSan misses release/acquire pairs in uninstrumented code, so an uninstrumented engine turns every SPSC hand-off into a false race (`<null>` frames, "As if synchronized via sleep"). ASan and UBSan simply never check a translation unit they did not compile. `AudioThreadGuard.cpp` is compiled into the executable, not the static lib, so its `__SANITIZE_*` macros match that binary. GoogleTest stays the shared uninstrumented target: one gtest cannot be compiled with both sanitizers and with neither.
 
@@ -367,7 +367,7 @@ pnpm --filter react-native-audio-api test:cpp:coverage
 
 `run-coverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
 
-CI runs a `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM through `setup-env`'s `llvm` tool). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. C++ smoke and the JS tests run as react-native-audio-api's `test` script in its `check-package` job (`ci.yml`). Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_extended_graph` (default false) and `run_cpp_coverage` (default true); `ready_for_review` is listed explicitly because it is not a default `pull_request` type. Extended categories share `cpp-job.yml` and pass `categories`; path-filter YAML is generated by `filters.sh path-filters`.
+CI runs a `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM through `setup-env`'s `llvm` tool). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. The JS tests and the C++ suites run as react-native-audio-api's `test` script in its `check-package` job (`ci.yml`): `run-tests.sh affected` diffs the pull request's merge commit against its first parent (`fetch-depth: 2`) and runs smoke and each extended category only when their `filters.sh` paths changed. `check-package` sets `TEST_ALL=1` outside pull requests and when shared files change (`ci.yml`'s `shared` filter), which runs every suite. Manual `workflow_dispatch` on `tests.yml` accepts `run_cpp_coverage` (default true); `ready_for_review` is listed explicitly because it is not a default `pull_request` type.
 
 > **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
 

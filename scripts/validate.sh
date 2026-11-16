@@ -7,14 +7,15 @@ Usage: ./scripts/validate.sh [tiers…]
 Local-only validation (not run in CI). Combine flags as needed.
 
 Tiers:
-  --fast           CI parity: format, lint, typecheck, enum sync, build, C++ smoke + JS
+  --fast           CI parity: the library's and worklets' check and test scripts
+                   (C++ suites only for what your changes touch)
   --cpp            C++ smoke only
   --cpp-extended   C++ extended (all registered categories)
   --cpp-full       C++ full (smoke, then all extended categories)
   --android        Android native build (requires ANDROID_HOME)
   --ios            iOS native build (macOS only)
-  --full           --fast + C++ extended (all categories) + --android + --ios
-                   (C++ full = smoke from --fast + extended; skips unavailable platforms)
+  --full           --fast with every C++ suite + --android + --ios
+                   (skips unavailable platforms)
 
 Examples:
   pnpm validate:fast
@@ -41,6 +42,10 @@ RUN_CPP_FULL=false
 RUN_ANDROID=false
 RUN_IOS=false
 RUN_FULL=false
+
+# The packages whose check and test scripts --fast runs, the same ones CI checks for
+# a library change. The docs builds are left out to keep it fast.
+FAST_PACKAGES=(--filter react-native-audio-api --filter react-native-audio-worklets)
 
 PREBUILD_CORE_DONE=false
 
@@ -114,26 +119,11 @@ run_fast() {
   log_step "pnpm install --frozen-lockfile"
   (cd "$REPO_ROOT" && pnpm install --frozen-lockfile)
 
-  log_step "pnpm format:check"
-  (cd "$REPO_ROOT" && pnpm format:check)
+  log_step "pnpm ${FAST_PACKAGES[*]} run check"
+  (cd "$REPO_ROOT" && pnpm "${FAST_PACKAGES[@]}" run check)
 
-  log_step "pnpm lint"
-  (cd "$REPO_ROOT" && pnpm lint)
-
-  log_step "pnpm typecheck"
-  (cd "$REPO_ROOT" && pnpm typecheck)
-
-  log_step "pnpm --filter react-native-audio-api check:enums"
-  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api check:enums)
-
-  log_step "pnpm build"
-  (cd "$REPO_ROOT" && pnpm build)
-
-  log_step "pnpm --filter react-native-audio-api test:cpp"
-  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:cpp)
-
-  log_step "pnpm --filter react-native-audio-api test:js"
-  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:js)
+  log_step "pnpm ${FAST_PACKAGES[*]} run test"
+  (cd "$REPO_ROOT" && pnpm "${FAST_PACKAGES[@]}" run test)
 
   PREBUILD_CORE_DONE=true
 }
@@ -210,10 +200,8 @@ run_ios() {
 
 run_full() {
   log_step "Full local validation (--full)"
+  export TEST_ALL=1
   run_fast
-  # --fast already ran C++ smoke; extended completes C++ full without re-running smoke.
-  log_step "C++ extended all categories (remainder of C++ full)"
-  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:cpp:extended)
   run_android true
   run_ios true
 }
