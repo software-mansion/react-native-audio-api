@@ -18,18 +18,18 @@ This directory contains the Node.js bootstrap for running Web Audio WPT against
 
 - Node.js 22+
 - CMake 3.14+
-- Monorepo dependencies installed (`yarn install` at repo root)
+- Monorepo dependencies installed (`pnpm install` at repo root)
 
 ## Local workflow
 
 From `packages/react-native-audio-api`:
 
 1. Build JS + native addon:
-   - `yarn wpt:build`
+   - `pnpm wpt:build`
 2. List selected smoke tests:
-   - `yarn wpt:list`
+   - `pnpm wpt:list`
 3. Run smoke WPT:
-   - `yarn wpt`
+   - `pnpm wpt`
 4. Run filtered subset:
    - `node ./wpt_tests/wpt/wpt-harness.mjs --filter gain`
 
@@ -38,7 +38,7 @@ From `packages/react-native-audio-api`:
 Set `RN_AUDIO_API_APP_ROOT` to an app directory to load the `react-native-audio-api` JS wrappers the way a `require()` from that app would resolve them (its `node_modules`, or a hoisted ancestor copy in a monorepo) instead of the workspace `lib/commonjs`:
 
 ```bash
-RN_AUDIO_API_APP_ROOT=/path/to/app yarn wpt:only
+RN_AUDIO_API_APP_ROOT=/path/to/app pnpm wpt:only
 ```
 
 Classes missing from an older version are skipped with a warning, so tests using them fail at runtime rather than crashing the harness. The native addon is not affected — it is always built from the workspace C++ sources.
@@ -53,16 +53,16 @@ A full smoke run completes in well under 5 minutes and is deterministic: the sam
 run always produces identical, complete numbers.
 
 1. Build once:
-   - `yarn wpt:build`
+   - `pnpm wpt:build`
 2. Run the report profile and write artifacts:
-   - `yarn wpt:report`
+   - `pnpm wpt:report`
    - writes `wpt_tests/results/latest.json`
    - writes `wpt_tests/results/latest.md`
 3. Update the docs summary in one step:
-   - `yarn wpt:report:docs`
+   - `pnpm wpt:report:docs`
    - runs the suite twice — once against the workspace build (`main`) and once
      against the stable release installed in `apps/common-app`
-     (`yarn wpt:report:stable`, writes `wpt_tests/results/stable.json`)
+     (`pnpm wpt:report:stable`, writes `wpt_tests/results/stable.json`)
    - regenerates the WPT summary block in
      `packages/audiodocs/docs/other/web-audio-api-coverage.mdx` as a
      side-by-side latest-release vs `main` table
@@ -70,8 +70,8 @@ run always produces identical, complete numbers.
 
 CI helpers:
 
-- `yarn wpt:ci-report`: build + smoke run with `--allow-failures` (always writes JSON)
-- `yarn wpt:compare --baseline <base.json> --candidate <head.json>`: non-regression gate.
+- `pnpm wpt:ci-report`: build + smoke run with `--allow-failures` (always writes JSON)
+- `pnpm wpt:compare --baseline <base.json> --candidate <head.json>`: non-regression gate.
   When both reports carry per-file data (`files` array, including failing subtest
   names), the gate is exact: it also fails on new failing subtests hidden behind
   unchanged pass counts, and on files that crashed, hung, or disappeared. Older
@@ -88,7 +88,7 @@ Useful flags:
 - `--inactivity-timeout <seconds>`: kill a worker that emits no events for this
   long, record the stuck file as `timeout`, and resume after it (default 120)
 - `--update-docs`: rewrite the summary block in the audiodocs coverage page
-- `yarn wpt:markdown`: regenerate markdown from an existing JSON report
+- `pnpm wpt:markdown`: regenerate markdown from an existing JSON report
 
 The published conformance summary lives in the docs, not here:
 `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
@@ -96,7 +96,7 @@ The published conformance summary lives in the docs, not here:
 ## Troubleshooting
 
 - **Native addon fails to load**
-  - Rebuild with `yarn node:build`.
+  - Rebuild with `pnpm node:build`.
 - **Device-related instability in CI**
   - Node test backend is sink-less; keep tests within the smoke profile.
 - **Runner appears hung**
@@ -108,7 +108,7 @@ The published conformance summary lives in the docs, not here:
   - Kill stale processes: `pkill -f wpt-harness.mjs; pkill -f wpt-worker.mjs`
   - Some tests are excluded in `wpt/skip-list.json` (crashtests, AudioWorklet, known engine hangs).
 - **Subset runs**
-  - `yarn wpt --filter gain` or `node ./wpt_tests/wpt/wpt-harness.mjs --filter the-analysernode-interface`
+  - `pnpm wpt --filter gain` or `node ./wpt_tests/wpt/wpt-harness.mjs --filter the-analysernode-interface`
 
 ## Scope
 

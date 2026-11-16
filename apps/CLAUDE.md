@@ -320,12 +320,14 @@ All in `apps/common-app/src/components/`:
 `common-app` resolves `react-native-audio-api` types from the library's built `lib/typescript`, not from `src`. After switching branches, rebuild before checking the app, or `tsc` checks against another branch's API:
 
 ```bash
-yarn workspace react-native-audio-api build
-npx tsc --noEmit -p apps/common-app
+pnpm --filter react-native-audio-api build
+pnpm exec tsc --noEmit -p apps/common-app
 ```
 
 ## Metro Config Notes
 
 `fabric-example/metro.config.js` sets `watchFolders: [monorepoRoot, appsRoot]` so Metro hot-reloads changes in `common-app` and `packages/react-native-audio-api` without restarting.
+
+Its `resolveRequest` also resolves `@babel/runtime/*` from the app. The Babel preset injects those helper imports into workspace packages Metro compiles from source (`packages/*`), which sit outside the app's `node_modules` and don't declare `@babel/runtime`; under pnpm's isolated layout they would otherwise fail to resolve. Don't add `@babel/runtime` to the root or to those packages instead.
 
 If you add a new workspace package that the app depends on, add its root to `watchFolders`.
