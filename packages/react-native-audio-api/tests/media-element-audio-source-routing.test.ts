@@ -135,8 +135,18 @@ describe('AudioFileSourceNode output', () => {
     fileSource.setOutput(mediaElementSource);
     expect(nativeFileSource.destinations).toEqual([mediaElementSourceNative]);
 
-    fileSource.setOutput(null);
+    fileSource.setOutput(context.destination);
     expect(nativeFileSource.destinations).toEqual([context.destinationNative]);
+  });
+
+  it('leaves a playing source unconnected when the output is null', () => {
+    fileSource.play();
+
+    fileSource.setOutput(null);
+    expect(nativeFileSource.destinations).toEqual([]);
+
+    fileSource.setOutput(mediaElementSource);
+    expect(nativeFileSource.destinations).toEqual([mediaElementSourceNative]);
   });
 
   it('connects once across repeated play calls', () => {
