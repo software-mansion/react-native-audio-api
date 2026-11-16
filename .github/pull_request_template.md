@@ -5,7 +5,7 @@ Closes #
 <!--
 Target branch:
 - `main` for features, refactors and fixes found during development.
-- `release/X.Y.x` only for a fix to a bug in the released X.Y version: no features, refactors or behavior changes.
+- `release/X.Y` only for a fix to a bug in the released X.Y version: no features, refactors or behavior changes.
 See https://github.com/software-mansion/react-native-audio-api/blob/main/CONTRIBUTING.md#branches-and-releases
 -->
 
@@ -26,7 +26,7 @@ See https://github.com/software-mansion/react-native-audio-api/blob/main/CONTRIB
 <!-- Make sure all of these are complete -->
 
 - [ ] Linked relevant issue
-- [ ] Targets the right branch (`release/X.Y.x` only for fixes to the released version)
+- [ ] Targets the right branch (`release/X.Y` only for fixes to the released version)
 - [ ] Updated relevant documentation
 - [ ] Added/Conducted relevant tests
 - [ ] Performed self-review of the code

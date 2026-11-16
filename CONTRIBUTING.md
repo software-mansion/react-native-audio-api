@@ -18,16 +18,16 @@ on your PR.
 
 ## Branches and releases
 
-| Branch          | Holds                                 | Released as                                                 |
-| --------------- | ------------------------------------- | ----------------------------------------------------------- |
-| `main`          | ongoing development                   | the next minor or major version (`X.Y.0`)                   |
-| `release/X.Y.x` | the `X.Y.0` release plus fixes for it | patch versions (`X.Y.1`, `X.Y.2`, …), tagged on this branch |
+| Branch        | Holds                                                                            | Released as                                                 |
+| ------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `main`        | ongoing development                                                              | the next minor or major version (`X.Y.0`)                   |
+| `release/X.Y` | the latest `X.Y.Z` patch (its `package.json` version) and fixes for the next one | patch versions (`X.Y.1`, `X.Y.2`, …), tagged on this branch |
 
-Only the latest minor version gets a release branch that accepts fixes.
+Each minor version has a single release branch that every patch is released from, e.g. `release/1.0` holds `1.0.2` once that patch ships. Only the latest minor version's branch accepts fixes.
 
 ### Where to open your PR
 
-- **Fix for a bug in the released version** (regression, crash, wrong behavior, broken build): target `release/X.Y.x`.
+- **Fix for a bug in the released version** (regression, crash, wrong behavior, broken build): target `release/X.Y`.
 - **Everything else** (features, refactors, behavior changes, fixes for code that only exists on `main`): target `main`.
 
 A patch release has to stay close to `X.Y.0`, so release branches take only targeted fixes. A fix that needs a refactor first waits for the next minor version.
