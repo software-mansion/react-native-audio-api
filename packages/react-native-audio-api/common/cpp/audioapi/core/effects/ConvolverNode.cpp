@@ -91,6 +91,10 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   power = 1 / power;
   power *= std::pow(10, GAIN_CALIBRATION * 0.05f);
   power *= gainCalibrationSampleRate_ / buffer->getSampleRate();
+  // True-stereo compensation, as in Chrome.
+  if (numberOfChannels == 4) {
+    power *= 0.5f;
+  }
 
   return power;
 }
@@ -124,7 +128,17 @@ void ConvolverNode::processNode(int framesToProcess) {
   if (internalBufferIndex_ < framesToProcess) {
     performConvolution(audioBuffer_); // reads from audioBuffer_, result goes to intermediateBuffer_
     audioBuffer_->zero();
-    audioBuffer_->sum(*intermediateBuffer_);
+    const size_t busChannels = audioBuffer_->getNumberOfChannels();
+    if (intermediateBuffer_->getNumberOfChannels() == 4 && busChannels <= 2) {
+      // True stereo folds to L = 0 + 2, R = 1 + 3 at unity; a mono bus averages that pair.
+      const float gain = busChannels == 1 ? 0.5f : 1.0f;
+      for (size_t channel = 0; channel < 4; ++channel) {
+        audioBuffer_->getChannel(channel % busChannels)
+            ->sum(*intermediateBuffer_->getChannel(channel), 0, 0, RENDER_QUANTUM_SIZE, gain);
+      }
+    } else {
+      audioBuffer_->sum(*intermediateBuffer_);
+    }
 
     internalBuffer_->copy(*audioBuffer_, 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
