@@ -43,10 +43,7 @@ export interface AudioTagHandle {
  * the tag plays. Not exported from the package public API.
  */
 export interface InternalAudioTagHandle extends AudioTagHandle {
-  /**
-   * The node the tag plays through, or `null` while it plays straight to the
-   * context destination.
-   */
+  /** The tag's media element node, or `null` until one is created. */
   getMediaElementSource: () => AudioNode | null;
   /**
    * Plays the tag through `mediaElementSource` instead of the context

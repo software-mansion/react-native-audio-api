@@ -23,9 +23,9 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   private positionSubscription: AudioEventSubscription | null = null;
   private bufferingSubscription: AudioEventSubscription | null = null;
 
-  /** `null` stands for the context destination. */
-  private output: AudioNode | null = null;
-  private isConnectedToOutput = false;
+  /** `null` leaves this source unconnected. */
+  private output: AudioNode | null = this.context.destination;
+  private isRoutedToOutput = false;
 
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
@@ -49,13 +49,15 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   }
 
   /**
-   * Sends this source to `output` instead of the context destination; `null`
-   * restores the destination.
+   * Routes this source to `output`, the context destination by default.
+   *
+   * @param output - Node to send this source to, or `null` to leave it
+   *   unconnected.
    */
   setOutput(output: AudioNode | null): void {
     this.output = output;
 
-    if (this.isConnectedToOutput) {
+    if (this.isRoutedToOutput) {
       this.disconnectFromOutput();
       this.connectToOutput();
     }
@@ -168,15 +170,17 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   }
 
   private connectToOutput(): void {
-    if (this.isConnectedToOutput) {
+    if (this.isRoutedToOutput) {
       return;
     }
-    this.connect(this.output ?? this.context.destination);
-    this.isConnectedToOutput = true;
+    if (this.output) {
+      this.connect(this.output);
+    }
+    this.isRoutedToOutput = true;
   }
 
   private disconnectFromOutput(): void {
-    this.node.disconnect(undefined);
-    this.isConnectedToOutput = false;
+    this.node.disconnect();
+    this.isRoutedToOutput = false;
   }
 }

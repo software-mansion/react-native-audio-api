@@ -44,7 +44,7 @@ type UseAudioSourceLoaderParams = {
 
 type UseAudioSourceLoaderResult = {
   fileSourceRef: RefObject<AudioFileSourceNode | null>;
-  /** The node the tag plays through; `null` stands for the context destination. */
+  /** The tag's media element node, or `null` until one is created. */
   mediaElementSourceRef: RefObject<AudioNode | null>;
   setMediaElementSource: (mediaElementSource: AudioNode) => void;
   ready: boolean;
@@ -145,7 +145,7 @@ export function useAudioSourceLoader({
     fileSource.setVolume(initialVolume);
     fileSource.setPlaybackRate(initialPlaybackRate);
     fileSource.setPreservesPitch(initialPreservesPitch);
-    fileSource.setOutput(mediaElementSourceRef.current);
+    fileSource.setOutput(mediaElementSourceRef.current ?? context.destination);
     fileSourceRef.current = fileSource;
     setDuration(nextDuration);
     onLoadRef.current();

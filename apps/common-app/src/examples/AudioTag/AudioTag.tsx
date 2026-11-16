@@ -37,9 +37,6 @@ const AudioTag: React.FC = () => {
     };
   }, []);
 
-  // The tag is heard only through its media element node once one exists, so
-  // the node is created once and the toggle only moves its connection between
-  // the filter and the destination.
   const handleMediaElementRouteChange = useCallback(() => {
     const ctx = audioContextRef.current;
     if (!mediaElementSourceRef.current) {

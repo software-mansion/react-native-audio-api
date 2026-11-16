@@ -5,13 +5,11 @@
 
 namespace audioapi {
 
-/// @brief The point where an `<Audio>` element enters the audio graph.
+/// @brief Represents an audio source from an `<Audio>` element.
 ///
 /// The element's file source is connected to this node's input like any other
 /// node, so the node only forwards what the graph already mixed into its
-/// buffer. It exists to give the application one stable node to connect from
-/// while the element replaces its file source underneath (after every
-/// playthrough, or when its `source` changes).
+/// buffer.
 class MediaElementAudioSourceNode : public AudioNode {
  public:
   explicit MediaElementAudioSourceNode(const std::shared_ptr<BaseAudioContext> &context);
