@@ -31,7 +31,7 @@ export async function fetchEphemeralKey(
           throw error;
         }
         throw new Error(
-          `Could not reach the token server at ${url}. Start it with \`yarn server\` from the repository root.`
+          `Could not reach the token server at ${url}. Start it with \`pnpm server\` from the repository root.`
         );
       }
     );

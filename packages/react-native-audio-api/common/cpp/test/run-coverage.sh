@@ -8,7 +8,7 @@ Build the C++ gtest suite with Clang LLVM source-based coverage and emit an
 llvm-cov HTML report under coverage-html/. Always uses the smoke filter
 (unsanitized). Override with GTEST_FILTER if needed.
 
-  yarn test:cpp:coverage
+  pnpm test:cpp:coverage
 
 Options:
   --help, -h  Show this help.
