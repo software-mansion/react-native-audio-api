@@ -64,15 +64,12 @@ jobs:
           git push --force origin "origin/$RELEASE_BRANCH:refs/heads/$FORWARD_BRANCH"
 
           cat > "$RUNNER_TEMP/pr-body.md" <<EOF
-          Forward merge of the fixes released from \`$RELEASE_BRANCH\` ($unmerged commit(s) not yet on main).
+          Forward merge of the fixes merged to \`$RELEASE_BRANCH\` ($unmerged commit(s) not yet on main).
 
           > [!IMPORTANT]
           > Merge with **Create a merge commit**. Squash or rebase would keep these commits off main's history, and the next forward merge would bring them back.
 
-          CI does not start on its own for PRs opened by this workflow: **close and reopen this PR** to run the checks, and again after the workflow pushes new release commits here.
-
           - Resolve conflicts on this PR (the GitHub button is fine) or locally on \`$FORWARD_BRANCH\` — never by merging main into \`$RELEASE_BRANCH\`.
-          - A clean merge can still leave main-only code unfixed; check CI and whether the fix also applies to code that exists only on main.
 
           See [Branches and releases](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#branches-and-releases).
           EOF
