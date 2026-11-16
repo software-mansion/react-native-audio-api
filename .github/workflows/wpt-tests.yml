@@ -70,14 +70,24 @@ jobs:
         with:
           ref: ${{ steps.ref.outputs.ref }}
 
-      - name: Checkout with Node
-        uses: ./.github/actions/checkout-with-node
+      # Inline instead of ./.github/actions/setup-env: the base side checks out the base
+      # branch, whose tree may not have that action (or may have an older version of it).
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
-      - name: Setup pnpm
-        uses: ./.github/actions/setup-pnpm
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Setup CMake
-        uses: ./.github/actions/setup-cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.0.x'
 
       - name: Run WPT CI report
         working-directory: packages/react-native-audio-api
@@ -119,8 +129,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: ./.github/actions/checkout-with-node
+      - name: Setup Node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Download base report
         uses: actions/download-artifact@v8

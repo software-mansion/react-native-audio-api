@@ -1,0 +1,87 @@
+name: Setup environment
+description: >
+  Sets up Node and pnpm, installs the workspace dependencies, and installs the tools a
+  job asks for. Tool versions are pinned here, so a bump touches one line.
+
+inputs:
+  tools:
+    description: >
+      JSON array of tools to install, e.g. '["cmake", "clang-format"]'.
+      Known: cmake, cpplint, ktlint, clang-format, llvm (clang + llvm-cov).
+    required: false
+    default: '[]'
+  install:
+    description: Install the workspace dependencies ('false' sets up only Node and pnpm).
+    required: false
+    default: 'true'
+  install-args:
+    description: Extra arguments for `pnpm install`, e.g. '--filter audiodocs...'.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Check requested tools
+      shell: bash
+      env:
+        TOOLS: ${{ inputs.tools }}
+      run: |
+        unknown=$(jq -r '.[] | select(IN("cmake", "cpplint", "ktlint", "clang-format", "llvm") | not)' <<<"$TOOLS")
+        if [ -n "$unknown" ]; then
+          echo "::error::setup-env: unknown tools: $unknown"
+          exit 1
+        fi
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+
+    - name: Setup Node
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: .nvmrc
+        cache: ${{ inputs.install == 'true' && 'pnpm' || '' }}
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile ${{ inputs.install-args }}
+
+    - name: Setup CMake
+      if: contains(fromJSON(inputs.tools), 'cmake')
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '4.0.x'
+
+    - name: Install cpplint
+      if: contains(fromJSON(inputs.tools), 'cpplint')
+      shell: bash
+      run: pipx install 'cpplint==2.0.2'
+
+    - name: Install ktlint
+      if: contains(fromJSON(inputs.tools), 'ktlint')
+      shell: bash
+      run: |
+        set -euo pipefail
+        curl -fsSL --retry 5 --retry-all-errors -o ktlint \
+          https://github.com/pinterest/ktlint/releases/download/1.7.0/ktlint
+        chmod a+x ktlint
+        sudo mv ktlint /usr/local/bin/
+        ktlint --version
+
+    - name: Install clang-format 23
+      if: contains(fromJSON(inputs.tools), 'clang-format')
+      shell: bash
+      run: |
+        set -euo pipefail
+        curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
+        sudo apt-get install -y clang-format-23
+        sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-23 200
+        clang-format --version
+
+    - name: Install Clang and LLVM coverage tools
+      if: contains(fromJSON(inputs.tools), 'llvm')
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang llvm

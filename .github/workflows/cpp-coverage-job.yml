@@ -12,19 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Checkout with Node
-        uses: ./.github/actions/checkout-with-node
-
-      - name: Setup pnpm
-        uses: ./.github/actions/setup-pnpm
-
-      - name: Setup CMake
-        uses: ./.github/actions/setup-cmake
-
-      - name: Install Clang and LLVM coverage tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang llvm
+      - name: Setup
+        uses: ./.github/actions/setup-env
+        with:
+          tools: '["cmake", "llvm"]'
 
       - name: Run C++ coverage
         working-directory: packages/react-native-audio-api

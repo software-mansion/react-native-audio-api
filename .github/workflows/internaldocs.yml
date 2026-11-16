@@ -16,17 +16,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
+      - name: Setup
+        uses: ./.github/actions/setup-env
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter internaldocs...
+          install-args: --filter internaldocs...
 
       - name: Build
         run: pnpm --filter internaldocs build

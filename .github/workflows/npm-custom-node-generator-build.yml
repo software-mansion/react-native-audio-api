@@ -24,8 +24,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Checkout with Node
-        uses: ./.github/actions/checkout-with-node
+      - name: Setup Node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Update NPM
         run: npm install -g npm@latest
