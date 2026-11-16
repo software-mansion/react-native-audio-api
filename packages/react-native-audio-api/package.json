@@ -95,7 +95,7 @@
     "app.plugin.js"
   ],
   "scripts": {
-    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck check:enums build",
+    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck check:enums",
     "check:enums": "bash scripts/check-enum-sync.sh",
     "test": "bash ../../scripts/run-steps.sh test:js test:cpp:affected",
     "test:js": "jest --config tests/jest.config.json",

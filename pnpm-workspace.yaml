@@ -63,10 +63,6 @@ allowBuilds:
   core-js: false
   core-js-pure: false
 
-# Workspace dependencies are built before a package's `check` (worklets typechecks
-# against react-native-audio-api's lib/). Applies to recursive runs (`pnpm check`);
-# `--parallel` ignores it. Once a task has an entry here, an omitted `dependsOn`
-# means none, not the default `^<task>`.
 tasks:
   check:
-    dependsOn: ['^build']
+    dependsOn: ['^build', 'build']

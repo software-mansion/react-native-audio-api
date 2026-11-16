@@ -39,10 +39,10 @@ jobs:
           tools: ${{ steps.manifest.outputs.tools }}
           install-args: --filter "${{ steps.manifest.outputs.name }}..."
 
-      - name: Build workspace dependencies
+      - name: Build
         env:
           PACKAGE: ${{ steps.manifest.outputs.name }}
-        run: pnpm -r --if-present --filter "$PACKAGE^..." run build
+        run: pnpm -r --if-present --filter "$PACKAGE..." run build
 
       - name: Check
         env:

@@ -50,7 +50,7 @@
     "ios/spm/include/.gitkeep"
   ],
   "scripts": {
-    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck build",
+    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck",
     "test": "exit 0",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm lint:js && pnpm lint:cpp && pnpm lint:ios && pnpm lint:kotlin",

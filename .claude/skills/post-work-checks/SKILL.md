@@ -50,7 +50,7 @@ Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `pnpm v
 ## Quick Reference — Individual Commands
 
 ```bash
-pnpm check                   # every package's `check`, as CI runs it (builds workspace deps first)
+pnpm check                   # build every package, then its `check`, as CI runs it
 pnpm test                    # every package's `test` (library: Jest + affected C++ suites)
 pnpm format                  # auto-fix all formatting
 pnpm lint                    # lint all workspaces
