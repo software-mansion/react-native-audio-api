@@ -98,14 +98,25 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// | Phase                | input                    | gate     | outputs                           |
   /// |----------------------|--------------------------|----------|-----------------------------------|
   /// | Idle                 | closed                   | disarmed | not prepared                      |
+  /// | StartingToRecording  | closed, route on its way | disarmed | not prepared                      |
+  /// | StartingToPaused     | closed, route on its way | disarmed | not prepared                      |
   /// | Recording            | open, started            | armed    | prepared for SessionState::format |
   /// | Paused               | open, stopped by pause() | disarmed | prepared for SessionState::format |
   /// | ReroutingToRecording | closed, route on its way | disarmed | prepared for the old format       |
   /// | ReroutingToPaused    | closed, route on its way | disarmed | prepared for the old format       |
   ///
-  /// A reroute comes back as the phase its name ends in; pause() during it turns
-  /// ReroutingToRecording into ReroutingToPaused.
-  enum class Phase : uint8_t { Idle, Recording, Paused, ReroutingToRecording, ReroutingToPaused };
+  /// Starting and rerouting end in the phase their name ends in, once the input is open; pause()
+  /// meanwhile turns ...ToRecording into ...ToPaused. Starting already holds the session's claim,
+  /// so only the start that won it acquires a route.
+  enum class Phase : uint8_t {
+    Idle,
+    StartingToRecording,
+    StartingToPaused,
+    Recording,
+    Paused,
+    ReroutingToRecording,
+    ReroutingToPaused,
+  };
 
   struct SessionState {
     std::atomic<Phase> phase{Phase::Idle};

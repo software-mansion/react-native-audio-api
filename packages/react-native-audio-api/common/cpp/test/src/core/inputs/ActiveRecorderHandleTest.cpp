@@ -210,6 +210,26 @@ TEST(ActiveRecorderHandleTest, StartingARecordingRecorderAgainIsRefused) {
   EXPECT_EQ(handle->currentState(), RecorderState::Recording);
 }
 
+// A native stop (a notification action, a session deactivation) must find a start still waiting
+// for its route, and that start must not record once the route arrives.
+TEST(ActiveRecorderHandleTest, ANativeStopWhileAStartWaitsForItsRouteCancelsTheStart) {
+  auto handle = std::make_shared<ActiveRecorderHandle>();
+  auto input = std::make_shared<FakeRecorderInput>();
+  auto recorder = makeRecorder(handle, input);
+  input->duringAcquireRoute = [&handle] {
+    EXPECT_EQ(handle->currentState(), RecorderState::Recording);
+    EXPECT_EQ(handle->stopAndReturnState(), RecorderState::Idle);
+  };
+
+  EXPECT_TRUE(recorder->start().is_err());
+
+  EXPECT_TRUE(recorder->isIdle());
+  EXPECT_TRUE(input->openPurposes.empty());
+  EXPECT_EQ(input->routesReleased.load(), input->routesAcquired.load());
+  EXPECT_FALSE(handle->isRecordingOngoing());
+  EXPECT_FALSE(handle->consumeLastRecordingResult().has_value());
+}
+
 TEST(ActiveRecorderHandleTest, AStartThatCannotOpenTheInputFreesTheSlot) {
   auto handle = std::make_shared<ActiveRecorderHandle>();
   auto input = std::make_shared<FakeRecorderInput>();
