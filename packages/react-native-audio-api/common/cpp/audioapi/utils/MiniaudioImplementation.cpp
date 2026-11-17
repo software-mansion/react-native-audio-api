@@ -5,10 +5,8 @@
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_DEBUG_OUTPUT
 
-// MiniAudio only decodes, as the fallback behind the OS decoder: Ogg Vorbis and Opus through
-// the bundled libvorbis/libopus backends, plus WAV. The OS decoder covers MP3 and FLAC, and
-// every encoder is a system one.
-#define MA_NO_MP3
+// MiniAudio only decodes: Ogg Vorbis and Opus through the bundled libvorbis/libopus backends,
+// plus MP3 and WAV. Android tries it before MediaCodec; iOS keeps it behind the OS decoder.
 #define MA_NO_FLAC
 #define MA_NO_ENCODING
 #define MA_NO_DEVICE_IO
