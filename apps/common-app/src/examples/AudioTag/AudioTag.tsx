@@ -38,25 +38,28 @@ const AudioTag: React.FC = () => {
   }, []);
 
   const handleMediaElementRouteChange = useCallback(() => {
-    if (!mediaElementRoute) {
+    const ctx = audioContextRef.current;
+    if (!mediaElementSourceRef.current) {
       if (!audioRef.current) {
         throw new Error('Audio tag handle is not ready yet.');
       }
-
-      const ctx = audioContextRef.current;
       mediaElementSourceRef.current = ctx.createMediaElementSource(
         audioRef.current
       );
-
       biquadRef.current = ctx.createBiquadFilter();
       biquadRef.current.type = 'lowpass';
       biquadRef.current.frequency.value = 750;
-      mediaElementSourceRef.current.connect(biquadRef.current);
       biquadRef.current.connect(ctx.destination);
+    }
+
+    const mediaElementSource = mediaElementSourceRef.current;
+    const filter = biquadRef.current!;
+    if (!mediaElementRoute) {
+      mediaElementSource.disconnect();
+      mediaElementSource.connect(filter);
     } else {
-      if (biquadRef.current) {
-        mediaElementSourceRef.current?.disconnect(biquadRef.current);
-      }
+      mediaElementSource.disconnect();
+      mediaElementSource.connect(ctx.destination);
     }
     setMediaElementRoute(!mediaElementRoute);
   }, [mediaElementRoute]);
@@ -168,8 +171,8 @@ const AudioTag: React.FC = () => {
         <Button
           title={
             !mediaElementRoute
-              ? 'Route via MediaElement node'
-              : 'Route without MediaElement node'
+              ? 'Route through low-pass filter'
+              : 'Route without filter'
           }
           onPress={handleMediaElementRouteChange}
           width={screenWidth * 0.8}
