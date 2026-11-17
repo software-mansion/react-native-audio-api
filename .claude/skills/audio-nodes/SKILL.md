@@ -156,12 +156,12 @@ classDiagram
 `core/inputs/AudioRecorder` is a standalone `final` class, not part of the `AudioNode` hierarchy — it
 feeds the graph through a `RecorderAdapterNode` instead of being processed by it.
 
-It owns the session state machine: an explicit `Phase` (`Idle`, `Recording`, `Paused`, `Rerouting`;
-the table of what holds in each is in `AudioRecorder.h`) that only `enterPhase()` changes; it arms the
+It owns the session state machine: an explicit `Phase` (`Idle`, `Starting`, `Recording`, `Paused`,
+`Rerouting`; the table of what holds in each is in `AudioRecorder.h`) that only `enterPhase()` changes; it arms the
 gate exactly for `Recording`, and `repointOutputsAt()`, which disarms the gate while the outputs
 follow a new format, re-arms it only when the phase is `Recording`. `start`/`stop`/`pause`/`resume`/`rerouteInput` are a `switch`
 over the phase, serialized by `controlMutex_`; add a phase rather than a flag when the session gains
-a state. A reroute that cannot reopen the input ends the session with a plain `stop()`; the session
+a state. `start()` claims the session in the registry and enters `Starting` before it acquires a route, so a start that cannot claim never touches routing (on Android that can bring the shared Bluetooth link up and down); everything that waits for a route (`Starting`, `Rerouting`) records what to become in `phaseAfterOpening` and re-checks the phase and session id once the route is in. A reroute that cannot reopen the input ends the session with a plain `stop()`; the session
 registry keeps what it recorded, as for every stop. Session state lives in one `SessionState` (phase, input
 generation, stream format; guarded by `controlMutex_`); put new session state there. Everything that
 happens to recorded frames lives in `RecorderOutputs` (`core/inputs/RecorderOutputs.h`, the

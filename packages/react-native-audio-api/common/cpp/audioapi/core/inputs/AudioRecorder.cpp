@@ -33,16 +33,7 @@ AudioRecorder::~AudioRecorder() {
 }
 
 Result<NoneType, std::string> AudioRecorder::start() {
-  if (!isIdle()) {
-    return Err("Recorder is already recording");
-  }
-
-  // Taken before the control mutex: it can wait seconds for a Bluetooth link, and every other
-  // control path would wait behind it.
-  auto route = input_->acquireRoute();
-
-  Result<NoneType, std::string> startResult = Ok(None);
-  RecorderOutputs::Detached abandoned;
+  RecordingSessionId startingSession = 0;
 
   {
     std::scoped_lock controlLock(controlMutex_);
@@ -55,19 +46,38 @@ Result<NoneType, std::string> AudioRecorder::start() {
     if (claimResult.is_err()) {
       return Err(claimResult.unwrap_err());
     }
-    session_.id = claimResult.unwrap();
+    startingSession = session_.id = claimResult.unwrap();
+    session_.phaseAfterOpening.store(Phase::Recording, std::memory_order_release);
+    enterPhase(Phase::Starting);
+  }
 
-    auto openResult = input_->open(
+  // With the control mutex released: it can wait seconds for a Bluetooth link, and every other
+  // control path would wait behind it.
+  auto route = input_->acquireRoute();
+
+  Result<NoneType, std::string> startResult = Ok(None);
+  RecorderOutputs::Detached abandoned;
+
+  {
+    std::scoped_lock controlLock(controlMutex_);
+
+    // Stopped, or stopped and started again, while the route was on its way.
+    if (session_.phase.load(std::memory_order_acquire) != Phase::Starting ||
+        session_.id != startingSession) {
+      return Err("Recorder was stopped before it started");
+    }
+
+    startResult = input_->open(
         std::move(route),
         InputOpenPurpose::StartSession,
         inputGate_,
         RecorderInputEvents(weak_from_this(), session_.inputGeneration));
-    if (openResult.is_err()) {
-      sessionRegistry_->release(weak_from_this());
-      return openResult;
-    }
 
-    startResult = input_->start();
+    // Paused while the route was on its way: the input opens stopped, as after a reroute.
+    const Phase phaseToEnter = session_.phaseAfterOpening.load(std::memory_order_acquire);
+    if (startResult.is_ok() && phaseToEnter == Phase::Recording) {
+      startResult = input_->start();
+    }
 
     if (startResult.is_ok()) {
       auto formatResult = input_->getCurrentFormat();
@@ -80,7 +90,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
     }
 
     if (startResult.is_ok()) {
-      enterPhase(Phase::Recording);
+      enterPhase(phaseToEnter);
       return Ok(None);
     }
 
@@ -122,10 +132,11 @@ Result<NoneType, std::string> AudioRecorder::resume() {
   switch (session_.phase.load(std::memory_order_acquire)) {
     case Phase::Idle:
       return Err("Recorder is not in recording state.");
+    case Phase::Starting:
     case Phase::Rerouting:
-      // The reroute reopens a paused session's input stopped, so this resume would be lost.
-      if (session_.phaseAfterReroute.load(std::memory_order_acquire) == Phase::Paused) {
-        return Err("Cannot resume while the input stream is restarting");
+      // The input of a session paused meanwhile opens stopped, so this resume would be lost.
+      if (session_.phaseAfterOpening.load(std::memory_order_acquire) == Phase::Paused) {
+        return Err("Cannot resume while the input stream is opening");
       }
       return Ok(None);
     case Phase::Recording:
@@ -182,8 +193,9 @@ void AudioRecorder::pause() {
         input_->pause();
       }
       return;
+    case Phase::Starting:
     case Phase::Rerouting:
-      session_.phaseAfterReroute.store(Phase::Paused, std::memory_order_release);
+      session_.phaseAfterOpening.store(Phase::Paused, std::memory_order_release);
       return;
     case Phase::Idle:
     case Phase::Paused:
@@ -323,9 +335,10 @@ RecorderState AudioRecorder::getState() const {
     case Phase::Recording:
       // An input the system stopped (an interrupted iOS session) reads as paused.
       return input_->isRunning() ? RecorderState::Recording : RecorderState::Paused;
+    case Phase::Starting:
     case Phase::Rerouting:
-      // Reads as what the session comes back as once the input is reopened.
-      return session_.phaseAfterReroute.load(std::memory_order_acquire) == Phase::Paused
+      // Reads as what the session becomes once the input is open.
+      return session_.phaseAfterOpening.load(std::memory_order_acquire) == Phase::Paused
           ? RecorderState::Paused
           : RecorderState::Recording;
   }
@@ -392,16 +405,17 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
   {
     std::scoped_lock controlLock(controlMutex_);
 
+    // A start still waiting for its route opens the input itself, as when it read as idle.
+    const Phase phase = session_.phase.load(std::memory_order_acquire);
     const bool isStaleOpening =
         openedGeneration.has_value() && *openedGeneration != session_.inputGeneration;
-    if (isIdle() || isStaleOpening) {
+    if (phase == Phase::Idle || phase == Phase::Starting || isStaleOpening) {
       return Ok(None);
     }
 
     // A reroute that arrives while another waits for its route takes over from it.
-    const Phase phase = session_.phase.load(std::memory_order_acquire);
     if (phase != Phase::Rerouting) {
-      session_.phaseAfterReroute.store(phase, std::memory_order_release);
+      session_.phaseAfterOpening.store(phase, std::memory_order_release);
       enterPhase(Phase::Rerouting);
     }
 
@@ -430,7 +444,7 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
     return openResult;
   }
 
-  const Phase phaseToRestore = session_.phaseAfterReroute.load(std::memory_order_acquire);
+  const Phase phaseToRestore = session_.phaseAfterOpening.load(std::memory_order_acquire);
   if (phaseToRestore == Phase::Recording) {
     auto startResult = input_->start();
     if (startResult.is_err()) {

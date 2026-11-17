@@ -304,12 +304,17 @@ class AudioInputRouter(
     val input = automaticInput() ?: return null
 
     if (!prepareCaptureRouting(input)) {
-      bluetoothScoLink.tearDown()
+      // Another route still held may be capturing over this link; the last release tears it down.
+      if (isOnlyAcquiredRoute()) {
+        bluetoothScoLink.tearDown()
+      }
       return null
     }
 
     return input.id
   }
+
+  private fun isOnlyAcquiredRoute(): Boolean = synchronized(inputSelectionLock) { acquiredInputRouteCount == 1 }
 
   @RequiresApi(Build.VERSION_CODES.M)
   private fun prepareCaptureRouting(input: AudioDeviceInfo): Boolean {

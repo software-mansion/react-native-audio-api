@@ -100,15 +100,19 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// | Phase     | input                    | gate     | outputs                           |
   /// |-----------|--------------------------|----------|-----------------------------------|
   /// | Idle      | closed                   | disarmed | not prepared                      |
+  /// | Starting  | closed, route on its way | disarmed | not prepared                      |
   /// | Recording | open, started            | armed    | prepared for SessionState::format |
   /// | Paused    | open, stopped by pause() | disarmed | prepared for SessionState::format |
   /// | Rerouting | closed, route on its way | disarmed | prepared for the old format       |
-  enum class Phase : uint8_t { Idle, Recording, Paused, Rerouting };
+  ///
+  /// Starting already holds the session's claim, so only the start that won it acquires a route.
+  enum class Phase : uint8_t { Idle, Starting, Recording, Paused, Rerouting };
 
   struct SessionState {
     std::atomic<Phase> phase{Phase::Idle};
-    /// Recording or Paused: what a reroute brings the session back as.
-    std::atomic<Phase> phaseAfterReroute{Phase::Recording};
+    /// Recording or Paused: what Starting or Rerouting brings the session to once the input is
+    /// open.
+    std::atomic<Phase> phaseAfterOpening{Phase::Recording};
 
     /// The session registry's id for the current session; set by start().
     RecordingSessionId id = 0;
