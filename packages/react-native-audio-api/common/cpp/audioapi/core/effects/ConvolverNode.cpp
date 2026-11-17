@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -181,13 +182,14 @@ void ConvolverNode::scheduleTails() {
     return;
   }
   for (const auto &convolver : convolvers_) {
-    if (!convolver->hasTail()) {
+    const std::optional<size_t> completedBlock = convolver->takeCompletedTailBlock();
+    if (!completedBlock.has_value()) {
       continue;
     }
     // A full queue means the workers are starved; the tail is then simply never published
     // and process() computes it inline when that block comes up.
     (void)threadPool_->trySchedule(
-        [convolver, block = convolver->nextTailBlock()] { convolver->computeTail(block); });
+        [convolver, block = *completedBlock] { convolver->computeTail(block); });
   }
 }
 } // namespace audioapi
