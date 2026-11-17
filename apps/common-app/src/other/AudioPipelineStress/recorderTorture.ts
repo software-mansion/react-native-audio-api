@@ -233,11 +233,15 @@ export async function runRecorderTorture({
 
       await timed.pause();
       const atPause = timed.getCurrentDuration();
+      check(
+        atPause >= afterRecording,
+        `Duration dropped on pause() (${afterRecording}s -> ${atPause}s)`
+      );
       await sleep(TORTURE_DURATION_WINDOW_MS);
       const whilePaused = timed.getCurrentDuration();
       check(
-        whilePaused - atPause <= PAUSED_DURATION_TOLERANCE_SECONDS,
-        `Duration kept growing while paused (${atPause}s -> ${whilePaused}s)`
+        Math.abs(whilePaused - atPause) <= PAUSED_DURATION_TOLERANCE_SECONDS,
+        `Duration changed while paused (${atPause}s -> ${whilePaused}s)`
       );
 
       await timed.resume();

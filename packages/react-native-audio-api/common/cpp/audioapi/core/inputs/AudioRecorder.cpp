@@ -82,7 +82,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
   return startResult;
 }
 
-Result<FileInfo, std::string> AudioRecorder::stop() {
+Result<FileInfo, std::string> AudioRecorder::stop(std::optional<uint64_t> openedGeneration) {
   RecorderOutputs::Detached detached;
 
   {
@@ -90,6 +90,9 @@ Result<FileInfo, std::string> AudioRecorder::stop() {
 
     if (isIdle()) {
       return Err("Recorder is not in recording state.");
+    }
+    if (openedGeneration.has_value() && *openedGeneration != session_.inputGeneration) {
+      return Err("Recorder input was reopened since.");
     }
 
     detached = endSession();
@@ -175,14 +178,18 @@ void AudioRecorder::pause() {
 
 Result<NoneType, std::string> AudioRecorder::rerouteInput(
     std::optional<uint64_t> openedGeneration) {
-  auto reopenResult = reopenInput(openedGeneration);
+  uint64_t failedGeneration = 0;
+  auto reopenResult = reopenInput(openedGeneration, failedGeneration);
 
   if (reopenResult.is_err()) {
     // Through the handle, which keeps the file info for consumeLastRecordingResult(), so what
-    // was recorded so far is not lost. The handle only stops the session it started.
-    if (ActiveRecorderHandle::global().stopAndReturnInfo(shared_from_this()).is_err() &&
-        !isIdle()) {
-      stop();
+    // was recorded so far is not lost. The handle only stops the session it started. Both stops
+    // are bound to the failed opening: the control mutex was released on the way here, and a
+    // later reroute may have reopened the input since.
+    if (ActiveRecorderHandle::global()
+            .stopAndReturnInfo(shared_from_this(), failedGeneration)
+            .is_err()) {
+      stop(failedGeneration);
     }
     reportError("Recorder input could not be reopened: " + reopenResult.unwrap_err());
   }
@@ -368,7 +375,9 @@ Result<NoneType, std::string> AudioRecorder::repointOutputsAt(const StreamFormat
   return followResult;
 }
 
-Result<NoneType, std::string> AudioRecorder::reopenInput(std::optional<uint64_t> openedGeneration) {
+Result<NoneType, std::string> AudioRecorder::reopenInput(
+    std::optional<uint64_t> openedGeneration,
+    uint64_t &reopenedGeneration) {
   uint64_t closedGeneration = 0;
 
   {
@@ -390,6 +399,7 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(std::optional<uint64_t>
     input_->close();
     closedGeneration = ++session_.inputGeneration;
   }
+  reopenedGeneration = closedGeneration;
 
   // With the control mutex released, for the same reason as in start().
   auto route = input_->acquireRoute();

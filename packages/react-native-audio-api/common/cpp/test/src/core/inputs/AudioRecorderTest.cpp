@@ -585,6 +585,25 @@ TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteStaysConsumable) {
   EXPECT_EQ(recording->paths.size(), 1U);
 }
 
+// The cleanup of a failed reroute runs after the control mutex is released, so a later reroute
+// can reopen the input first; that cleanup must not end the session the later reroute restored.
+TEST_F(AudioRecorderTest, AStopBoundToAnOpeningARerouteMovedPastLeavesTheSessionRecording) {
+  enableFileOutput();
+  auto &handle = ActiveRecorderHandle::global();
+  ASSERT_TRUE(handle.tryStart(recorder_).is_ok());
+  // start() opens the input at the recorder's first generation.
+  constexpr uint64_t FIRST_OPENING = 0;
+  ASSERT_TRUE(recorder_->rerouteInput().is_ok());
+
+  EXPECT_TRUE(handle.stopAndReturnInfo(recorder_, FIRST_OPENING).is_err());
+  EXPECT_TRUE(recorder_->stop(FIRST_OPENING).is_err());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_TRUE(handle.isRecordingOngoing());
+  EXPECT_EQ(log_.closedFiles.load(), 0);
+  EXPECT_TRUE(handle.stopAndReturnInfo(recorder_).is_ok());
+}
+
 TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyOutput) {
   EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 0.0);
   ASSERT_TRUE(recorder_->start().is_ok());

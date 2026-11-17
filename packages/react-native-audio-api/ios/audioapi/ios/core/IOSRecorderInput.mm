@@ -131,10 +131,11 @@ Result<NoneType, std::string> IOSRecorderInput::open(
 
   AVAudioSinkNodeReceiverBlock receiverBlock = ^OSStatus(
       const AudioTimeStamp *, AVAudioFrameCount frameCount, const AudioBufferList *input) {
+    const auto pass = gate->enter();
     std::array<const float *, MAX_CHANNEL_COUNT> channels{};
     int channelCount = 0;
-    if (collectChannels(input, static_cast<int>(frameCount), channels, channelCount)) {
-      gate->deliver(channels.data(), channelCount, static_cast<int>(frameCount));
+    if (pass && collectChannels(input, static_cast<int>(frameCount), channels, channelCount)) {
+      pass.deliver(channels.data(), channelCount, static_cast<int>(frameCount));
     }
     return noErr;
   };
@@ -222,9 +223,12 @@ Result<NoneType, std::string> IOSRecorderInput::start()
   NSError *startError = nil;
   BOOL didStart = NO;
 
-  {
+  @try {
     EngineCallScope engineCall(engineCallThread_);
     didStart = [[AudioEngine sharedInstance] startIfNecessary:&startError];
+  } @catch (NSException *exception) {
+    return Err(
+        withInputDiagnostics(describeException("Failed to start native recorder", exception)));
   }
 
   if (!didStart) {
