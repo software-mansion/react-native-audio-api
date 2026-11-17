@@ -166,7 +166,7 @@ static AudioEngine *_sharedInstance = nil;
 - (void)cleanup
 {
   // outside of lock because it locks on its own
-  (void)audioapi::ActiveRecorderHandle::global().stopAndReturnInfo();
+  (void)audioapi::ActiveRecorderHandle::global()->stopAndReturnInfo();
 
   std::scoped_lock lock(_engineLock);
   [self destroyAudioEngine];

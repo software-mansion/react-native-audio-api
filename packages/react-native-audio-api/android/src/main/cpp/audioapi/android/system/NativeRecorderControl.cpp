@@ -23,19 +23,19 @@ void NativeRecorderControl::registerNatives() {
 }
 
 jint NativeRecorderControl::stopActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().stopAndReturnState());
+  return toOrdinal(ActiveRecorderHandle::global()->stopAndReturnState());
 }
 
 jint NativeRecorderControl::pauseActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().pause());
+  return toOrdinal(ActiveRecorderHandle::global()->pause());
 }
 
 jint NativeRecorderControl::resumeActiveRecording(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().resume());
+  return toOrdinal(ActiveRecorderHandle::global()->resume());
 }
 
 jint NativeRecorderControl::currentRecorderState(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return toOrdinal(ActiveRecorderHandle::global().currentState());
+  return toOrdinal(ActiveRecorderHandle::global()->currentState());
 }
 
 } // namespace audioapi

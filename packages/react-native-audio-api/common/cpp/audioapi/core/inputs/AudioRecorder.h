@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/inputs/FileInfo.h>
+#include <audioapi/core/inputs/IRecordingSessionRegistry.h>
 #include <audioapi/core/inputs/RecorderOutputs.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
@@ -29,11 +30,13 @@ struct PlatformFileBackend;
 /// platform's part is the capture stream behind IRecorderInput.
 class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
  public:
-  /// Writes files through @p fileBackend, which must outlive the recorder; nullptr selects the
-  /// platform's (osFileBackend()).
+  /// Reports its sessions to @p sessionRegistry (ActiveRecorderHandle::global() for the app's
+  /// recorders). Writes files through @p fileBackend, which must outlive the recorder; nullptr
+  /// selects the platform's (osFileBackend()).
   AudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       std::shared_ptr<IRecorderInput> input,
+      std::shared_ptr<IRecordingSessionRegistry> sessionRegistry,
       const PlatformFileBackend *fileBackend = nullptr);
 
   DELETE_COPY_AND_MOVE(AudioRecorder);
@@ -107,6 +110,8 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   struct SessionState {
     std::atomic<Phase> phase{Phase::Idle};
 
+    /// The session registry's id for the current session; set by start().
+    RecordingSessionId id = 0;
     /// Bumped every time the input is closed, so it identifies one opening of the input.
     uint64_t inputGeneration = 0;
     std::optional<StreamFormat> format;
@@ -136,9 +141,9 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
       std::optional<uint64_t> openedGeneration,
       uint64_t &reopenedGeneration);
 
-  /// Ends the session from any phase: closes the input and takes the outputs away from the audio
-  /// thread; RecorderOutputs::finalize() on the result is the caller's, with no mutex held. The
-  /// caller holds controlMutex_.
+  /// Ends the session from any phase: closes the input, releases the session's claim and takes
+  /// the outputs away from the audio thread; RecorderOutputs::finalize() on the result is the
+  /// caller's, with no mutex held. The caller holds controlMutex_.
   RecorderOutputs::Detached endSession();
 
   /// Delivers @p message to the JS error callback, if one is registered. Any thread.
@@ -150,6 +155,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   std::shared_ptr<RecorderInputGate> inputGate_;
   RecorderOutputs outputs_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<IRecordingSessionRegistry> sessionRegistry_;
 };
 
 } // namespace audioapi
