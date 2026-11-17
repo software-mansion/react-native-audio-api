@@ -84,10 +84,8 @@ void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
   if (duration > 0 && std::isfinite(duration)) {
-    // A buffer assigned after start() is taken to run at the context rate.
-    const float sampleRate = buffer_ != nullptr ? buffer_->getSampleRate() : getContextSampleRate();
     // Spec: `duration` counts buffer content, not context time.
-    processor_->setFrameBudget(dsp::timeToSampleFrame(duration, sampleRate));
+    processor_->setDurationBudget(duration);
   }
 
   if (buffer_ == nullptr) {

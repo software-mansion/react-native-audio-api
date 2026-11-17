@@ -1,11 +1,32 @@
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
+#include <audioapi/dsp/AudioUtils.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
+
+void SingleBufferProcessor::setBuffer(std::shared_ptr<const AudioBuffer> buffer) {
+  buffer_ = std::move(buffer);
+  startFrameBudgetOnceBufferIsSet();
+}
+
+void SingleBufferProcessor::setDurationBudget(double seconds) {
+  durationAwaitingBuffer_ = seconds;
+  startFrameBudgetOnceBufferIsSet();
+}
+
+void SingleBufferProcessor::startFrameBudgetOnceBufferIsSet() {
+  if (!durationAwaitingBuffer_ || buffer_ == nullptr) {
+    return;
+  }
+  frameBudget_ = static_cast<double>(
+      dsp::timeToSampleFrame(*durationAwaitingBuffer_, buffer_->getSampleRate()));
+  durationAwaitingBuffer_.reset();
+}
 
 CursorState SingleBufferProcessor::advance(double rate) {
   if (isFrameBudgetSpent()) {

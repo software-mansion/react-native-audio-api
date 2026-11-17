@@ -499,6 +499,34 @@ TEST_F(AudioBufferSourceNodeTest, StartDurationCountsBufferTimeWithPitchCorrecti
   EXPECT_DOUBLE_EQ(node->getCurrentPosition(), static_cast<double>(DURATION_FRAMES) / SAMPLE_RATE);
 }
 
+/// Spec: start() keeps `duration` for a buffer assigned later, and counts that buffer's content.
+TEST_F(AudioBufferSourceNodeTest, StartDurationCountsContentOfBufferAssignedAfterStart) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  auto *node = addNode(makeNodeWithoutBuffer());
+
+  constexpr size_t DURATION_FRAMES = QUANTUM + QUANTUM / 2;
+  node->start(0.0, 0.0, static_cast<double>(DURATION_FRAMES) / BUFFER_SAMPLE_RATE);
+
+  auto buffer =
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE));
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  size_t played = 0;
+  for (int q = 0; q < 4; ++q) {
+    context->processGraph(out.get(), QUANTUM);
+    for (float sample : out->getChannel(0)->span()) {
+      played += sample != 0.0f ? 1 : 0;
+    }
+  }
+
+  EXPECT_EQ(played, DURATION_FRAMES);
+  EXPECT_TRUE(node->isFinished());
+}
+
 /// `loop` passed to the constructor must loop like the setter does.
 TEST_F(AudioBufferSourceNodeTest, LoopFromConstructorOptionsKeepsPlayingPastBufferEnd) {
   AudioBufferSourceOptions options{BaseAudioBufferSourceOptions()};

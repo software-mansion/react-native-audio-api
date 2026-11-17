@@ -42,15 +42,11 @@ class SingleBufferProcessor : public BufferProcessorBase {
   }
 
   /// @brief Set the audio buffer to process.
-  void setBuffer(std::shared_ptr<const AudioBuffer> buffer) {
-    buffer_ = std::move(buffer);
-  }
+  void setBuffer(std::shared_ptr<const AudioBuffer> buffer);
 
-  /// @brief Limit playback to this many buffer frames, counted across loop iterations.
+  /// @brief Limit playback to this many seconds of buffer content, counted across loop iterations.
   /// @note A spent budget is a boundary the processor stops at, even when looping.
-  void setFrameBudget(size_t frames) {
-    frameBudget_ = static_cast<double>(frames);
-  }
+  void setDurationBudget(double seconds);
 
  protected:
   CursorState advance(double rate) override;
@@ -67,8 +63,12 @@ class SingleBufferProcessor : public BufferProcessorBase {
   bool loop_ = false;
   size_t startFrame_ = 0;
   size_t endFrame_ = 0;
+  /// Seconds only become frames at the buffer's own sample rate.
+  std::optional<double> durationAwaitingBuffer_;
   /// Fractional, because interpolated playback spends `|rate|` buffer frames per output frame.
   std::optional<double> frameBudget_;
+
+  void startFrameBudgetOnceBufferIsSet();
 
   [[nodiscard]] bool isFrameBudgetSpent() const {
     return frameBudget_ && *frameBudget_ <= 0.0;
