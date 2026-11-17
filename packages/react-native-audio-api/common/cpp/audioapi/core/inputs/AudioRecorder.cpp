@@ -1,9 +1,9 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 
 #include <audioapi/core/inputs/IRecorderInput.h>
-#include <audioapi/core/inputs/IRecordingSessionRegistry.h>
 #include <audioapi/core/inputs/RecorderInputEvents.h>
 #include <audioapi/core/inputs/RecorderInputGate.h>
+#include <audioapi/core/inputs/RecordingSessionRegistry.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
@@ -17,7 +17,7 @@ namespace audioapi {
 AudioRecorder::AudioRecorder(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     std::shared_ptr<IRecorderInput> input,
-    std::shared_ptr<IRecordingSessionRegistry> sessionRegistry,
+    std::shared_ptr<RecordingSessionRegistry> sessionRegistry,
     const PlatformFileBackend *fileBackend)
     : input_(std::move(input)),
       inputGate_(std::make_shared<RecorderInputGate>(this)),
