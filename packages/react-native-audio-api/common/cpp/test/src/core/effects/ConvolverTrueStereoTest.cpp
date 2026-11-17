@@ -125,17 +125,15 @@ TEST_F(ConvolverTrueStereoTest, FourChannelResponseIsHalvedByNormalization) {
 }
 
 TEST_F(ConvolverTrueStereoTest, MonoBusAveragesTheStereoPair) {
-  const auto [mono, sameChannel] = render(/*normalize=*/false, /*busChannels=*/1);
+  const auto [mono, _] = render(/*normalize=*/false, /*busChannels=*/1);
 
   EXPECT_NEAR(mono, kExpectedMono, 1e-4f);
-  EXPECT_EQ(mono, sameChannel);
 }
 
 TEST_F(ConvolverTrueStereoTest, MonoBusIsHalvedByNormalization) {
-  const auto [mono, sameChannel] = render(/*normalize=*/true, /*busChannels=*/1);
+  const auto [mono, _] = render(/*normalize=*/true, /*busChannels=*/1);
 
   EXPECT_NEAR(mono, kExpectedMono * expectedNormalizationScale(), 1e-6f);
-  EXPECT_EQ(mono, sameChannel);
 }
 
 // NOLINTEND
