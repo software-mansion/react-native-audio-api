@@ -31,6 +31,8 @@ Constructors copy data — `AudioArray` always owns its buffer.
 
 Holds N channels of `AudioArrayBuffer`. Handles up/down-mixing automatically on `sum()` and `copy()`.
 
+`sum()` and `copy()` between different channel counts apply the speaker mixing gains (4 → 2 halves, 4 → 1 quarters). When the extra channels are a node's own intermediate results and not a speaker layout (`ConvolverNode` true stereo), sum channel by channel with `getChannel(i)->sum(...)`.
+
 Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
 
 Channel layout constants: `ChannelType` (namespace scope, shared by every alignment): `MONO=0`, `LEFT=0`, `RIGHT=1`, `CENTER=2`, `LFE=3`, `SURROUND_LEFT=4`, `SURROUND_RIGHT=5`.
