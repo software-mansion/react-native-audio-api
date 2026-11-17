@@ -168,7 +168,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   assert(audioEngine != nil);
 
   self.inputArmed = NO;
-  [audioEngine pauseIfNecessary];
+  [audioEngine suspendInput];
 }
 
 - (BOOL)resume
@@ -176,7 +176,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
-  return [audioEngine startIfNecessary];
+  return [audioEngine resumeInput];
 }
 
 - (void)cleanup

@@ -4,6 +4,7 @@
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/types/NodeOptions.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -17,12 +18,15 @@ class AudioScheduledSourceNode : public AudioNode {
   // UNSCHEDULED: The node is not scheduled to play.
   // SCHEDULED: The node is scheduled to play at a specific time.
   // PLAYING: The node is currently playing.
+  // PAUSED: The node renders silence and keeps its position until resumed. Its stop time
+  //         still applies: a node that is still paused at that time finishes without playing again.
   // STOP_SCHEDULED: The node is scheduled to stop at a specific time, but is still playing.
   // FINISHED: The node has finished playing.
   enum class PlaybackState : std::uint8_t {
     UNSCHEDULED,
     SCHEDULED,
     PLAYING,
+    PAUSED,
     STOP_SCHEDULED,
     FINISHED
   };
@@ -32,6 +36,14 @@ class AudioScheduledSourceNode : public AudioNode {
 
   virtual void start(double when);
   virtual void stop(double when);
+
+  /// @brief Suspends a scheduled or playing node; any other state is left alone.
+  /// @note Audio Thread only
+  virtual void pause();
+
+  /// @brief Schedules a paused node to continue at `when`, keeping its stop time.
+  /// @note Audio Thread only
+  void resume(double when);
 
   /// @note Audio Thread only
   bool isUnscheduled() const;
@@ -43,10 +55,17 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isPlaying() const;
 
   /// @note Audio Thread only
+  bool isPaused() const;
+
+  /// @note Audio Thread only
   bool isFinished() const;
 
   /// @note Audio Thread only
   bool isStopScheduled() const;
+
+  /// @brief Whether the node has finished for good. Unlike playbackState_, safe
+  /// to read from any thread; set before `ended` is dispatched.
+  [[nodiscard]] bool hasEnded() const;
 
   void disable() override;
 
@@ -70,6 +89,9 @@ class AudioScheduledSourceNode : public AudioNode {
 
   PlaybackState playbackState_;
 
+  /// @note Audio Thread only
+  void markEnded();
+
   void updatePlaybackInfo(
       const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
       int framesToProcess,
@@ -82,6 +104,9 @@ class AudioScheduledSourceNode : public AudioNode {
 
  private:
   EventCaller<AudioEvent::ENDED> onEndedEvent_;
+  std::atomic<bool> hasEnded_{false};
+
+  void finishIfStopFrameReached(size_t stopFrame, size_t lastFrame);
 };
 
 } // namespace audioapi

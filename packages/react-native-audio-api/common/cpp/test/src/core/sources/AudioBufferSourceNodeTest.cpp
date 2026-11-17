@@ -499,4 +499,19 @@ TEST_F(AudioBufferSourceNodeTest, StartDurationCountsBufferTimeWithPitchCorrecti
   EXPECT_DOUBLE_EQ(node->getCurrentPosition(), static_cast<double>(DURATION_FRAMES) / SAMPLE_RATE);
 }
 
+/// `loop` passed to the constructor must loop like the setter does.
+TEST_F(AudioBufferSourceNodeTest, LoopFromConstructorOptionsKeepsPlayingPastBufferEnd) {
+  AudioBufferSourceOptions options{BaseAudioBufferSourceOptions()};
+  options.loop = true;
+  auto *node = addNode(std::make_unique<TestableAudioBufferSourceNode>(context, options));
+  node->setBuffer(makeSilentBuffer(2 * QUANTUM), makeOutputBuffer());
+  node->start(0.0);
+
+  for (size_t q = 0; q < NUM_QUANTA; ++q) {
+    processGraph();
+  }
+
+  EXPECT_TRUE(node->isPlaying());
+}
+
 // NOLINTEND

@@ -86,7 +86,8 @@
 @property(nonatomic, assign) NSInteger detachInputNodeCallCount;
 @property(nonatomic, assign) NSInteger stopIfPossibleCallCount;
 @property(nonatomic, assign) NSInteger restartAudioEngineCallCount;
-@property(nonatomic, assign) NSInteger pauseIfNecessaryCallCount;
+@property(nonatomic, assign) NSInteger suspendInputCallCount;
+@property(nonatomic, assign) NSInteger resumeInputCallCount;
 @property(nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
 @property(nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
 @property(nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
@@ -159,10 +160,15 @@
   self.restartAudioEngineCallCount += 1;
 }
 
-- (void)pauseIfNecessary
+- (void)suspendInput
 {
-  self.pauseIfNecessaryCallCount += 1;
-  self.state = AudioEngineStatePaused;
+  self.suspendInputCallCount += 1;
+}
+
+- (bool)resumeInput
+{
+  self.resumeInputCallCount += 1;
+  return [self startIfNecessary];
 }
 
 @end
@@ -316,6 +322,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(receivedFrames, 0);
 
   [recorder setInputArmed:YES];
+  recorder.expectedBufferCount = input.bufferList()->mNumberBuffers;
   status = recorder.receiverSinkBlock(&timestamp, 8, input.bufferList());
 
   XCTAssertEqual(status, (OSStatus)kAudioServicesNoError);
@@ -437,8 +444,8 @@ static void ClearFakeRecorderSharedAudioSession(void)
   [recorder pause];
   XCTAssertTrue([recorder resume]);
 
-  XCTAssertEqual(self.audioEngine.pauseIfNecessaryCallCount, 1);
-  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
+  XCTAssertEqual(self.audioEngine.suspendInputCallCount, 1);
+  XCTAssertEqual(self.audioEngine.resumeInputCallCount, 1);
   // Re-arming is the owner's decision, taken in the HardwareChanged handler.
   XCTAssertFalse(recorder.inputArmed);
 }

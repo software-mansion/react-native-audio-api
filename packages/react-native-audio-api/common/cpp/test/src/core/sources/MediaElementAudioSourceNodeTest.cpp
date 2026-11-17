@@ -2,6 +2,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
 #include <audioapi/core/sources/MediaElementAudioSourceNode.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
@@ -162,6 +163,59 @@ TEST_F(MediaElementAudioSourceNodeTest, StaleMediaNodeOutputsSilence) {
   for (int i = 0; i < kFrames; ++i) {
     EXPECT_FLOAT_EQ((*out->getChannel(0))[i], 0.0f);
   }
+}
+
+/// The graph may drop an orphaned media element node only while playback is
+/// paused; a source still waiting for its first start() must keep it.
+TEST_F(MediaElementAudioSourceNodeTest, IsDestructibleOnlyWhileItsFileSourceIsPaused) {
+  auto fileSource = createFileSource();
+  ASSERT_NE(fileSource, nullptr);
+  auto media = std::make_shared<MediaElementAudioSourceNode>(
+      context,
+      fileSource.get(),
+      MediaElementAudioSourceOptions(
+          static_cast<int>(fileSource->getOutputChannelNumber().value())));
+
+  EXPECT_FALSE(media->canBeDestructed()) << "never started, never paused";
+
+  fileSource->pause();
+  EXPECT_TRUE(media->canBeDestructed()) << "paused before the first start()";
+
+  fileSource->start(0);
+  EXPECT_FALSE(media->canBeDestructed()) << "started";
+
+  fileSource->pause();
+  EXPECT_TRUE(media->canBeDestructed()) << "paused after start()";
+}
+
+/// A stop time that comes while the source is paused ends it then; the pause
+/// must not hide the stop from the render path.
+TEST_F(MediaElementAudioSourceNodeTest, PausedFileSourceFinishesAtItsStopTime) {
+  auto fileSource = createFileSource();
+  ASSERT_NE(fileSource, nullptr);
+  auto media = std::make_shared<TestableMediaElementAudioSourceNode>(
+      context,
+      fileSource.get(),
+      MediaElementAudioSourceOptions(
+          static_cast<int>(fileSource->getOutputChannelNumber().value())));
+  auto clockBuffer = std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 2, (float)kSampleRate);
+  auto renderQuantum = [&] {
+    media->processForTest(RENDER_QUANTUM_SIZE);
+    context->processGraph(clockBuffer.get(), RENDER_QUANTUM_SIZE);
+  };
+
+  fileSource->start(0);
+  fileSource->pause();
+  // Mid-quantum, so frame rounding cannot move the stop across a quantum boundary.
+  fileSource->stop(2.5 * RENDER_QUANTUM_SIZE / kSampleRate);
+
+  renderQuantum();
+  renderQuantum();
+  EXPECT_FALSE(fileSource->hasEnded());
+
+  renderQuantum(); // the quantum holding the stop time
+  EXPECT_TRUE(fileSource->hasEnded());
+  EXPECT_TRUE(fileSource->isFinished());
 }
 
 // NOLINTEND

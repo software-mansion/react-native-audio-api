@@ -243,7 +243,8 @@ void AndroidAudioRecorder::releaseInputRoute() {
   NativeInputRouting::releaseInputRoute();
 }
 
-/// @brief Stops the audio stream and finalizes any output (file writing, callback, adapter node).
+/// @brief Closes the audio stream, releasing the microphone, and finalizes any output (file
+/// writing, callback, adapter node). The next start() opens a new stream.
 /// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 /// @returns On success, returns the file URI, size in MB and duration in seconds of the recorded file (if file output is enabled).
 /// NOTE: due to the file access nature on Android, the size might sometimes be zeroed (really long files).
@@ -262,10 +263,9 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
     lastCallbackFrameCount_.store(0, std::memory_order_release);
 
     // There is no stream while restartCapture() is between closing the old one and opening
-    // the new one; the outputs are finalized all the same.
-    if (mStream_ != nullptr) {
-      mStream_->requestStop();
-    }
+    // the new one; the outputs are finalized all the same. Closing waits for the callback in
+    // flight, which only try-locks the output mutexes held here.
+    closeStream();
 
     sideEffects = detachSideEffects();
   }
@@ -273,8 +273,8 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
   return finalizeSideEffects(std::move(sideEffects));
 }
 
-/// @brief Pauses the audio recording stream.
-/// For session without active file output, this method acts same as stop().
+/// @brief Stops the capture stream and keeps it open, along with the outputs, for resume().
+/// AAudio cannot pause an input stream, so a stopped one is what lets the microphone go idle.
 /// Control lane, or any thread holding the ActiveRecorderHandle mutex.
 void AndroidAudioRecorder::pause() {
   std::scoped_lock streamLock(streamMutex_);
@@ -282,8 +282,9 @@ void AndroidAudioRecorder::pause() {
     return;
   }
 
-  mStream_->pause(0);
+  // Published first, so a callback that runs before the stream settles drops its frames.
   state_.store(RecorderState::Paused, std::memory_order_release);
+  mStream_->stop();
 }
 
 /// @brief Resumes the audio recording stream if it was previously paused.
@@ -295,7 +296,18 @@ void AndroidAudioRecorder::resume() {
     return;
   }
 
-  mStream_->start(0);
+  // The stream was stopped by pause(), so a failed start leaves nothing capturing: stay paused
+  // rather than report a recording that receives no frames.
+  auto result = mStream_->start();
+  if (result != oboe::Result::OK) {
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AndroidAudioRecorder",
+        "Failed to resume the capture stream: %s",
+        oboe::convertToText(result));
+    return;
+  }
+
   state_.store(RecorderState::Recording, std::memory_order_release);
 }
 

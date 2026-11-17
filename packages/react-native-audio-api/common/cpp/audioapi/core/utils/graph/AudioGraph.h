@@ -103,6 +103,16 @@ class AudioGraph {
   /// @brief Access node by flat-vector index (const).
   [[nodiscard]] const Vertex &operator[](std::uint32_t index) const;
 
+  /// @brief Access the node a handle refers to, at its current position.
+  [[nodiscard]] Vertex &operator[](const NodeHandle &handle);
+
+  /// @brief Access the node a handle refers to, at its current position (const).
+  [[nodiscard]] const Vertex &operator[](const NodeHandle &handle) const;
+
+  /// @brief Current flat-vector position of the handle's node.
+  /// @note Valid only until the next sortAndCompact(); never cache it across threads.
+  [[nodiscard]] std::uint32_t indexOf(const NodeHandle &handle) const;
+
   /// @brief Number of live nodes in the graph.
   [[nodiscard]] size_t size() const;
 

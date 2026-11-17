@@ -14,6 +14,8 @@
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/encoding/AdtsHeader.h>
 #import <audioapi/encoding/EncoderCapabilities.h>
+#import <audioapi/events/AudioEventProducer.h>
+#import <audioapi/events/IAudioEventHandlerRegistry.h>
 #import <audioapi/ios/core/utils/IOSEncoder.h>
 #import <audioapi/utils/AudioFileProperties.h>
 
@@ -31,6 +33,42 @@ static NSString *NSStringFromStdString(const std::string &value) {
 
 namespace audioapi {
 
+/// Contexts take an event producer from their registry on construction, so tests need a
+/// registry even when no event is ever dispatched.
+class NullAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
+ public:
+  uint64_t registerHandler(
+      AudioEvent eventName,
+      const std::shared_ptr<facebook::jsi::Function> &handler) override {
+    return 0;
+  }
+
+  void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
+
+  bool dispatchEvent(
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return false;
+  }
+
+  bool dispatchEventFromAudioThread(
+      AudioEventProducer &producer,
+      AudioEvent eventName,
+      uint64_t listenerId,
+      AudioEventPayload &&payload) noexcept override {
+    return false;
+  }
+
+  std::shared_ptr<AudioEventProducer> createAudioEventProducer() override {
+    return std::make_shared<AudioEventProducer>(producerQueue_);
+  }
+
+ private:
+  /// Only ever a binding target for the producers handed out above; nothing is enqueued.
+  moodycamel::ConcurrentQueue<int> producerQueue_;
+};
+
 struct RecorderAdapterTestFixture {
   std::shared_ptr<OfflineAudioContext> context;
   std::shared_ptr<utils::graph::NodeHandle> handle;
@@ -42,11 +80,11 @@ struct RecorderAdapterTestFixture {
 
 static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
   RecorderAdapterTestFixture fixture;
-  fixture.context =
-      std::make_shared<OfflineAudioContext>(2, 512, 44100.0f, nullptr);
+  fixture.context = std::make_shared<OfflineAudioContext>(
+      2, 512, 44100.0f, std::make_shared<NullAudioEventHandlerRegistry>());
   auto adapterNode = std::make_unique<RecorderAdapterNode>(fixture.context);
   fixture.handle =
-      std::make_shared<utils::graph::NodeHandle>(0, std::move(adapterNode));
+      std::make_shared<utils::graph::NodeHandle>(std::move(adapterNode));
   return fixture;
 }
 
@@ -135,6 +173,15 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 @property(nonatomic, assign) BOOL lastInputArmed;
 @property(nonatomic, assign) BOOL throwsOnStart;
 @property(nonatomic, strong) NSException *startException;
+/// Refreshing reports a format change the first time and none afterwards.
+@property(atomic, assign) BOOL reportsFormatChangeOnFirstRefresh;
+@property(atomic, assign) NSInteger refreshCallCount;
+/// When set, the first re-prepare signals `reprepareParked` and waits on
+/// `releaseParkedReprepare` before reading the buffer size.
+@property(atomic, strong) dispatch_semaphore_t reprepareParked;
+@property(atomic, strong) dispatch_semaphore_t releaseParkedReprepare;
+@property(atomic, assign) BOOL reprepareIsParked;
+@property(atomic, assign) BOOL armedWhileReprepareParked;
 
 @end
 
@@ -162,7 +209,30 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 }
 
 - (int)getResolvedBufferSize {
+  dispatch_semaphore_t releaseParkedReprepare = self.releaseParkedReprepare;
+  if (releaseParkedReprepare != nil) {
+    self.releaseParkedReprepare = nil;
+    self.reprepareIsParked = YES;
+    dispatch_semaphore_signal(self.reprepareParked);
+    dispatch_semaphore_wait(
+        releaseParkedReprepare,
+        dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
+    self.reprepareIsParked = NO;
+  }
+
   return self.mockResolvedBufferSize;
+}
+
+- (BOOL)refreshResolvedInputFormatReturningChanged:(BOOL *)formatChanged {
+  if (!self.reportsFormatChangeOnFirstRefresh) {
+    return [super refreshResolvedInputFormatReturningChanged:formatChanged];
+  }
+
+  @synchronized(self) {
+    self.refreshCallCount += 1;
+    *formatChanged = self.refreshCallCount == 1;
+  }
+  return YES;
 }
 
 - (BOOL)start:(NSError **)error {
@@ -185,6 +255,9 @@ static RecorderAdapterTestFixture makeRecorderAdapterFixture() {
 - (void)setInputArmed:(BOOL)armed {
   self.setInputArmedCallCount += 1;
   self.lastInputArmed = armed;
+  if (armed && self.reprepareIsParked) {
+    self.armedWhileReprepareParked = YES;
+  }
   [super setInputArmed:armed];
 }
 
@@ -220,6 +293,10 @@ public:
     NativeAudioRecorder *previous = nativeRecorder_;
     nativeRecorder_ = nativeRecorder;
     return previous;
+  }
+
+  float streamSampleRate() const {
+    return streamSampleRate_.load(std::memory_order_acquire);
   }
 
   void setRecorderState(RecorderState state) {
@@ -277,7 +354,8 @@ public:
   self.audioEngine = [[FakeIOSRecorderAudioEngine alloc] init];
   self.nativeRecorder = [[FakeNativeAudioRecorder alloc] init];
 
-  _recorder = std::make_unique<TestableIOSAudioRecorder>(std::shared_ptr<IAudioEventHandlerRegistry>());
+  _recorder = std::make_unique<TestableIOSAudioRecorder>(
+      std::make_shared<NullAudioEventHandlerRegistry>());
   self.originalNativeRecorder = _recorder->replaceNativeRecorder(self.nativeRecorder);
   self.nativeRecorder.onInputNotification = self.originalNativeRecorder.onInputNotification;
 }
@@ -465,7 +543,7 @@ public:
 }
 
 - (void)testConnectWhileIdleTracksIntentWithoutLiveConnection {
-  auto adapter = std::make_shared<utils::graph::NodeHandle>(0, nullptr);
+  auto adapter = std::make_shared<utils::graph::NodeHandle>(nullptr);
 
   _recorder->connect(adapter);
 
@@ -514,6 +592,94 @@ public:
   XCTAssertEqual(self.nativeRecorder.resumeCallCount, 1);
   XCTAssertTrue(_recorder->isPaused());
   XCTAssertFalse(_recorder->isRecording());
+}
+
+- (void)testConcurrentHardwareChangeArmsInputOnlyAfterOutputsAreReprepared {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
+  _recorder->setRecorderState(RecorderState::Recording);
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  void (^notifyInput)(AudioEngineInputNotification) =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // The engine notifies a rebuilt graph: this call sees the format change and
+  // is held while re-preparing the outputs.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+
+  // A second starter notifies the same graph and starts it once this returns.
+  dispatch_semaphore_t secondNotificationReturned = dispatch_semaphore_create(0);
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged);
+    dispatch_semaphore_signal(secondNotificationReturned);
+  });
+  dispatch_semaphore_wait(
+      secondNotificationReturned,
+      dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC));
+  dispatch_semaphore_signal(releaseParkedReprepare);
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertFalse(nativeRecorder.armedWhileReprepareParked);
+  XCTAssertTrue(nativeRecorder.lastInputArmed);
+}
+
+- (void)testHardwareChangeOfStoppedSessionFinishesBeforeNextStart {
+  XCTSkip(@"Needs the input notified once at a time; see the iOS engine refactor.");
+  self.audioEngine.state = AudioEngineStateRunning;
+  XCTAssertTrue(_recorder->start().is_ok());
+  FakeNativeAudioRecorder *nativeRecorder = self.nativeRecorder;
+  nativeRecorder.reportsFormatChangeOnFirstRefresh = YES;
+  dispatch_semaphore_t reprepareParked = dispatch_semaphore_create(0);
+  dispatch_semaphore_t releaseParkedReprepare = dispatch_semaphore_create(0);
+  nativeRecorder.reprepareParked = reprepareParked;
+  nativeRecorder.releaseParkedReprepare = releaseParkedReprepare;
+  void (^notifyInput)(AudioEngineInputNotification) =
+      nativeRecorder.onInputNotification;
+  dispatch_queue_t queue =
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_t group = dispatch_group_create();
+
+  // A notification for the first session is held while re-preparing its
+  // outputs in the first session's format.
+  dispatch_group_async(group, queue, ^{
+    notifyInput(AudioEngineInputNotificationHardwareChanged);
+  });
+  XCTAssertEqual(
+      dispatch_semaphore_wait(
+          reprepareParked, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)),
+      0);
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), queue,
+                 ^{
+                   dispatch_semaphore_signal(releaseParkedReprepare);
+                 });
+
+  // The session stops and a new one starts in another format meanwhile.
+  XCTAssertTrue(_recorder->stop().is_ok());
+  nativeRecorder.mockResolvedInputFormat =
+      [[AVAudioFormat alloc] initStandardFormatWithSampleRate:48000
+                                                     channels:2];
+  XCTAssertTrue(_recorder->start().is_ok());
+
+  XCTAssertEqual(
+      dispatch_group_wait(group,
+                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)),
+      0);
+  XCTAssertEqual(_recorder->streamSampleRate(), 48000.0F);
 }
 
 - (void)testStopReturnsErrorWhileIdle {

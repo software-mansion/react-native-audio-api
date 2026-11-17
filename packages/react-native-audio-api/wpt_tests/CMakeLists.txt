@@ -24,7 +24,7 @@ FetchContent_Declare(
   node_api_jsi
   GIT_REPOSITORY https://github.com/microsoft/node-api-jsi.git
   GIT_TAG ${NODE_API_JSI_GIT_TAG}
-  GIT_SHALLOW TRUE
+  GIT_SHALLOW FALSE
 )
 FetchContent_GetProperties(node_api_jsi)
 if(NOT node_api_jsi_POPULATED)

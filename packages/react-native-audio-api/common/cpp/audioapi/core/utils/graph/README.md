@@ -23,7 +23,7 @@ It has very limited task that needs to be performed very fast, so it is designed
 `InputPool.hpp` contains the `InputPool` class which is responsible for managing the pool of edges. It is designed to be as efficient as possible, so it uses a free list to manage the pool of edges. It also provides API for allocating and deallocating edges. It is designed to be used on the audio thread, so it is not thread safe and should be used within the `AudioGraph` class. Or its events.
 
 ## NodeHandle
-`NodeHandle.hpp` contains the `NodeHandle` class which is responsible for managing node index in AudioGraph. Indices are 32 bit to minimize memory usage and maximize cache efficiency. So it is only to be used in `AGEvent` closures to reference nodes in `AudioGraph` only having a handle to it.
+`NodeHandle.h` contains the `NodeHandle` class which is responsible for managing node index in AudioGraph. Indices are 32 bit to minimize memory usage and maximize cache efficiency. So it is only to be used in `AGEvent` closures to reference nodes in `AudioGraph` only having a handle to it.
 
 ## Disposer
 `Disposer.hpp` contains the `Disposer` class which is responsible for managing the disposal of nodes and edges. It is designed to be used on single thread. It has a worker thread that we can offload destruction onto through SPSC queue. It is more robust then previous implementation allowing wide range of payloads to be disposed.

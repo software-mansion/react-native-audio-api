@@ -1,8 +1,13 @@
+#include <audioapi/core/OfflineAudioContext.h>
+#include <audioapi/core/effects/GainNode.h>
+#include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
+#include <audioapi/types/NodeOptions.h>
 #include <gtest/gtest.h>
+#include <test/src/MockAudioEventHandlerRegistry.h>
 
 #include <algorithm>
 #include <memory>
@@ -63,7 +68,7 @@ class BridgeGraphTest : public ::testing::Test {
 
   HostVertex *addMockNode() {
     auto obj = std::make_unique<MockNode>();
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
@@ -71,7 +76,7 @@ class BridgeGraphTest : public ::testing::Test {
 
   HostVertex *addBridgeNode(AudioParam *param = nullptr) {
     auto obj = std::make_unique<BridgeNode>(param);
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
@@ -123,9 +128,9 @@ TEST_F(BridgeGraphTest, BridgeCreatesThreeNodePath) {
   audioGraph.sortAndCompact();
 
   // Verify source comes before bridge comes before owner
-  auto srcIdx = source->handle->index;
-  auto bridgeIdx = bridge->handle->index;
-  auto ownerIdx = owner->handle->index;
+  auto srcIdx = audioGraph.indexOf(*source->handle);
+  auto bridgeIdx = audioGraph.indexOf(*bridge->handle);
+  auto ownerIdx = audioGraph.indexOf(*owner->handle);
   EXPECT_LT(srcIdx, bridgeIdx);
   EXPECT_LT(bridgeIdx, ownerIdx);
 }
@@ -170,7 +175,7 @@ class BridgeIterTest : public ::testing::Test {
   DisposerImpl<kPayloadSize> disposer_{64};
 
   HostVertex *addNode(std::unique_ptr<GraphObject> obj) {
-    auto handle = std::make_shared<NodeHandle>(0, std::move(obj));
+    auto handle = std::make_shared<NodeHandle>(std::move(obj));
     auto [hostNode, event] = hostGraph.addNode(handle);
     event(audioGraph, disposer_);
     return hostNode;
@@ -524,6 +529,79 @@ TEST_F(BridgeGraphWrapperTest, ConcurrentWithMockGraphProcessor) {
 
   processor.stop();
   EXPECT_TRUE(processor.allocationClean());
+}
+
+// =========================================================================
+// G. Bridge into a source node (real AudioNodes, channel negotiation)
+// =========================================================================
+
+/// A source owns its output buffer: its width comes from what it renders
+/// (OscillatorNode is always mono), not from its inputs. The only edge that may
+/// end at a source is the bridge of one of its own AudioParams, which carries
+/// no audio payload and must not trigger a channel renegotiation of the source.
+class BridgeIntoSourceTest : public ::testing::Test {
+ protected:
+  using HostVertex = HostGraph::HostVertex;
+  static constexpr float kSampleRate = 44100.0f;
+
+  std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry_ =
+      std::make_shared<MockAudioEventHandlerRegistry>();
+  std::shared_ptr<OfflineAudioContext> context_ =
+      std::make_shared<OfflineAudioContext>(2, RENDER_QUANTUM_SIZE, kSampleRate, eventRegistry_);
+  std::shared_ptr<Graph> graph_ = context_->getGraph();
+
+  HostVertex *oscillatorVertex_ = nullptr;
+  OscillatorNode *oscillator_ = nullptr;
+
+  void SetUp() override {
+    oscillatorVertex_ =
+        graph_->addNode(std::make_unique<OscillatorNode>(context_, OscillatorOptions()));
+    oscillator_ =
+        static_cast<OscillatorNode *>(oscillatorVertex_->handle->audioNode->asAudioNode());
+    graph_->processEvents();
+  }
+
+  /// Mirrors AudioParamHostObject::connectToGraph.
+  HostVertex *addFrequencyBridge() {
+    auto *bridge =
+        graph_->addNode(std::make_unique<BridgeNode>(oscillator_->getFrequencyParam().get()));
+    EXPECT_TRUE(graph_->addEdge(bridge, oscillatorVertex_).is_ok());
+    return bridge;
+  }
+};
+
+TEST_F(BridgeIntoSourceTest, ParamBridgeEdgeKeepsSourceOutputBuffer) {
+  const auto bufferBeforeBridge = oscillator_->getNegotiatedBuffer();
+  ASSERT_EQ(bufferBeforeBridge->getNumberOfChannels(), 1u);
+  // channelCount differs from the rendered width, so a renegotiation driven
+  // by it would visibly widen the buffer.
+  ASSERT_EQ(oscillator_->getChannelCount(), 2u);
+
+  addFrequencyBridge();
+  graph_->processEvents();
+
+  EXPECT_EQ(oscillator_->getNegotiatedBuffer(), bufferBeforeBridge);
+  EXPECT_EQ(oscillator_->getOutputBuffer()->getNumberOfChannels(), 1u);
+}
+
+TEST_F(BridgeIntoSourceTest, ModulatorConnectedToParamKeepsSourceOutputBuffer) {
+  auto *bridge = addFrequencyBridge();
+  graph_->processEvents();
+  const auto bufferBeforeModulator = oscillator_->getNegotiatedBuffer();
+
+  // The negotiation cascade starts at the bridge and walks toward the
+  // destination, reaching the oscillator through bridge -> oscillator.
+  auto *modulator = graph_->addNode(std::make_unique<GainNode>(context_, GainOptions()));
+  ASSERT_TRUE(graph_->addEdge(modulator, bridge).is_ok());
+  graph_->processEvents();
+
+  EXPECT_EQ(oscillator_->getNegotiatedBuffer(), bufferBeforeModulator);
+  EXPECT_EQ(oscillator_->getOutputBuffer()->getNumberOfChannels(), 1u);
+
+  ASSERT_TRUE(graph_->removeEdge(modulator, bridge).is_ok());
+  graph_->processEvents();
+
+  EXPECT_EQ(oscillator_->getNegotiatedBuffer(), bufferBeforeModulator);
 }
 
 // =========================================================================
