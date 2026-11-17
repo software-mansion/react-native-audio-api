@@ -40,7 +40,9 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   ~AudioRecorder();
 
   Result<NoneType, std::string> start();
-  Result<FileInfo, std::string> stop();
+  /// With @p openedGeneration, only while the input is still at that opening: once a later
+  /// reroute or session has moved past it, that session is left alone and this fails.
+  Result<FileInfo, std::string> stop(std::optional<uint64_t> openedGeneration = std::nullopt);
   Result<NoneType, std::string> resume();
   void pause();
 
@@ -128,8 +130,11 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// phase requires: armed again only when recording. The caller holds controlMutex_.
   Result<NoneType, std::string> repointOutputsAt(const StreamFormat &format);
 
-  /// rerouteInput(), leaving a session whose input could not be reopened as it is.
-  Result<NoneType, std::string> reopenInput(std::optional<uint64_t> openedGeneration);
+  /// rerouteInput(), leaving a session whose input could not be reopened as it is. Sets
+  /// @p reopenedGeneration to the opening it tried, which a failure belongs to.
+  Result<NoneType, std::string> reopenInput(
+      std::optional<uint64_t> openedGeneration,
+      uint64_t &reopenedGeneration);
 
   /// Ends the session from any phase: closes the input and takes the outputs away from the audio
   /// thread; RecorderOutputs::finalize() on the result is the caller's, with no mutex held. The

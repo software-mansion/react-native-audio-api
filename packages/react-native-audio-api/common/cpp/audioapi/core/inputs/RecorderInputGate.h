@@ -9,19 +9,36 @@ namespace audioapi {
 
 class AudioRecorder;
 
-/// @brief Lets the platform input's audio thread reach the recorder only while the recorder
-/// allows it, so the recorder can change what that thread reads without the audio thread ever
-/// taking a lock.
+/// @brief Lets the audio thread reach the recorder only while armed, without taking a lock.
 class RecorderInputGate {
  public:
   explicit RecorderInputGate(AudioRecorder *recorder) : recorder_(recorder) {}
   DELETE_COPY_AND_MOVE(RecorderInputGate);
   ~RecorderInputGate() = default;
 
-  /// Audio thread. Forwards the frames to the recorder while armed, drops them otherwise.
-  /// @p channels holds @p channelCount pointers, each to @p numFrames float32 samples, valid only
-  /// for the call.
-  void deliver(const float *const *channels, int channelCount, int numFrames);
+  /// @brief Taken first in a platform callback: disarmAndWait() waits for its whole body. Empty
+  /// when disarmed at entry; the callback then returns without touching anything.
+  class Pass {
+   public:
+    DELETE_COPY_AND_MOVE(Pass);
+    ~Pass();
+
+    explicit operator bool() const {
+      return isAdmitted_;
+    }
+
+    /// @p channels holds @p channelCount pointers to @p numFrames float32 samples each.
+    void deliver(const float *const *channels, int channelCount, int numFrames) const;
+
+   private:
+    friend class RecorderInputGate;
+    explicit Pass(RecorderInputGate &gate);
+
+    RecorderInputGate &gate_;
+    bool isAdmitted_;
+  };
+
+  [[nodiscard]] Pass enter();
 
   void arm();
   void disarmAndWait();

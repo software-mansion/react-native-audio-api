@@ -135,7 +135,9 @@ class FakeRecorderInput final : public IRecorderInput {
     for (const auto &channel : samples) {
       channelPointers.push_back(channel.data());
     }
-    gate_->deliver(channelPointers.data(), channels, numFrames);
+    if (const auto pass = gate_->enter()) {
+      pass.deliver(channelPointers.data(), channels, numFrames);
+    }
   }
 
  private:

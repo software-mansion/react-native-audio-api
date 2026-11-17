@@ -797,12 +797,11 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
   _recorder->connect(adapterFixture.handle);
 
-  XCTAssertTrue(_recorder->isConnected());
   XCTAssertEqual(adapterFixture.adapter()->buff_.size(), 2U);
 
   _recorder->disconnect();
 
-  XCTAssertFalse(_recorder->isConnected());
+  XCTAssertEqual(adapterFixture.adapter()->buff_.size(), 0U);
 }
 
 - (void)testReceiverBlockFeedsTheRecordedFile

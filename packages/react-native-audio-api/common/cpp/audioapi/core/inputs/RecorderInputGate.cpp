@@ -6,19 +6,27 @@
 
 namespace audioapi {
 
-// deliver() increments callbacksInFlight_ and then reads armed_; disarmAndWait() clears armed_ and
-// then reads callbacksInFlight_. Each side stores one variable and loads the other, and only
-// seq_cst rules out both loads seeing the old values: with acquire/release, a store can still sit
-// in its core's store buffer when the other core loads, so a callback could run while the
-// recorder changes its state.
-void RecorderInputGate::deliver(const float *const *channels, int channelCount, int numFrames) {
-  callbacksInFlight_.fetch_add(1, std::memory_order_seq_cst);
+// Each side stores one atomic, then loads the other; seq_cst keeps both loads from missing the
+// other side's store. Increment before reading armed_, so a drain can never miss this pass.
+RecorderInputGate::Pass::Pass(RecorderInputGate &gate) : gate_(gate) {
+  gate_.callbacksInFlight_.fetch_add(1, std::memory_order_seq_cst);
+  // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
+  isAdmitted_ = gate_.armed_.load(std::memory_order_seq_cst);
+}
 
-  if (armed_.load(std::memory_order_seq_cst)) {
-    recorder_->onInputFrames(channels, channelCount, numFrames);
+RecorderInputGate::Pass::~Pass() {
+  gate_.callbacksInFlight_.fetch_sub(1, std::memory_order_release);
+}
+
+void RecorderInputGate::Pass::deliver(const float *const *channels, int channelCount, int numFrames)
+    const {
+  if (isAdmitted_) {
+    gate_.recorder_->onInputFrames(channels, channelCount, numFrames);
   }
+}
 
-  callbacksInFlight_.fetch_sub(1, std::memory_order_release);
+RecorderInputGate::Pass RecorderInputGate::enter() {
+  return Pass(*this);
 }
 
 void RecorderInputGate::arm() {

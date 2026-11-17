@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/Constants.h>
 
 #include <array>
+#include <cassert>
 #include <memory>
 #include <optional>
 #include <string>
@@ -104,7 +105,10 @@ Result<NoneType, std::string> AndroidRecorderInput::open(
       .layout = {.sampleRate = sampleRate, .channelCount = channelCount_},
       .maxFramesPerBuffer = static_cast<size_t>(stream->getBufferSizeInFrames())};
   planarInput_ = AudioBuffer(format_.maxFramesPerBuffer, channelCount_, sampleRate);
-  gate_ = std::move(gate);
+  assert(gate_ == nullptr || gate_ == gate);
+  if (gate_ == nullptr) {
+    gate_ = std::move(gate);
+  }
 
   {
     std::scoped_lock streamLock(streamMutex_);
@@ -238,8 +242,11 @@ oboe::DataCallbackResult AndroidRecorderInput::onAudioReady(
     oboe::AudioStream * /*stream*/,
     void *audioData,
     int32_t numFrames) {
+  // Before any member is read: a reopen reallocates planarInput_ and changes channelCount_ once
+  // the recorder has disarmed the gate and waited for the callbacks that hold a pass.
+  const auto pass = gate_->enter();
   const auto frames = static_cast<size_t>(numFrames);
-  if (audioData == nullptr || numFrames <= 0 || frames > planarInput_.getSize()) {
+  if (!pass || audioData == nullptr || numFrames <= 0 || frames > planarInput_.getSize()) {
     return oboe::DataCallbackResult::Continue;
   }
 
@@ -249,7 +256,7 @@ oboe::DataCallbackResult AndroidRecorderInput::onAudioReady(
   for (int channel = 0; channel < channelCount_; ++channel) {
     channels[channel] = planarInput_.getChannel(channel)->begin();
   }
-  gate_->deliver(channels.data(), channelCount_, numFrames);
+  pass.deliver(channels.data(), channelCount_, numFrames);
 
   return oboe::DataCallbackResult::Continue;
 }
