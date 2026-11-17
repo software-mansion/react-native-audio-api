@@ -2,6 +2,7 @@
 
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/encoding/StreamFormat.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioLayout.h>
 #include <audioapi/utils/Macros.h>
@@ -47,9 +48,9 @@ class AudioEncoder {
       const EncoderOutputSpec &outputSpec,
       const std::string &filePath) = 0;
 
-  /// @p channels holds inputFormat.channelCount pointers, each to numFrames float32 samples,
-  /// valid only for the duration of the call.
-  virtual EncodeResult encode(const float *const *channels, int numFrames) = 0;
+  /// Consumes the first @p numFrames frames of @p input, a buffer with inputFormat.channelCount
+  /// channels that is valid only for the duration of the call.
+  virtual EncodeResult encode(const AudioBuffer &input, int numFrames) = 0;
 
   /// Flushes and closes the output file. Returns {sizeMB, durationSeconds}.
   virtual CloseEncoderResult close() = 0;

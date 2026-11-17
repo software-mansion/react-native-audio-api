@@ -10,3 +10,14 @@
 [class*='plugin-pages'] [class*='dropdown__menu'] a:hover {
   color: var(--swm-dropdown-versions-item-hover) !important;
 }
+
+.comparison-table table {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.comparison-table th:nth-child(2),
+.comparison-table th:nth-child(3) {
+  width: 30%;
+}

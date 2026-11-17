@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/inputs/RouteLease.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioRecorderOptions.h>
@@ -35,7 +36,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   Result<FileInfo, std::string> stop() override;
 
   void pause() override;
-  void resume() override;
+  Result<NoneType, std::string> resume() override;
   /// @brief Reopens the capture stream on the input AudioInputRouter currently selects.
   /// A stream format that differs from the previous one re-points the outputs at it without
   /// splitting the file (see reprepareOutputs()). Does nothing while idle.
@@ -43,8 +44,6 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   bool isRecording() const override;
   bool isPaused() const override;
   bool isIdle() const override;
-
-  [[nodiscard]] double getInputLatency() const override;
 
   oboe::DataCallbackResult
   onAudioReady(oboe::AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
@@ -54,9 +53,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   /// Oboe resolves the format once the stream is open, so the cached values stay valid for
   /// the whole session; a disconnect closes the stream and refreshes them on reopen.
   [[nodiscard]] Result<StreamFormat, std::string> resolveStreamFormat() const override;
+  [[nodiscard]] double platformInputLatency(double callbackSeconds) const override;
 
  private:
-  /// The caller holds streamMutex_ and an input route (see adoptInputRoute()). A stream that
+  /// The caller holds streamMutex_ and has set route_. A stream that
   /// is open on a device other than the route's is closed and reopened.
   Result<NoneType, std::string> openAudioStream();
   /// Closes the stream and leaves the recorder's state alone, so a restart can reopen it
@@ -69,7 +69,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   /// from scratch; for a live one it is the format its outputs were prepared for, and they
   /// follow the stream only when its format differs.
   ///
-  /// The caller holds callbackMutex_, fileWriterMutex_, adapterNodeMutex_ and streamMutex_.
+  /// The caller holds every output's mutex and streamMutex_.
   Result<NoneType, std::string> startCapture(
       const std::optional<StreamFormat> &preparedFormat,
       RecorderState targetState);
@@ -78,12 +78,9 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   ///
   /// Call with none of the recorder's mutexes held.
   Result<NoneType, std::string> restartCapture();
-  /// @brief Records a route the caller took with NativeInputRouting::acquireInputRoute(), which
-  /// openAudioStream() then opens on. acquireInputRoute() itself can block for seconds, so it is
-  /// called with none of the recorder's mutexes held. The caller holds streamMutex_.
-  void adoptInputRoute(std::optional<int32_t> routedDeviceId);
-  /// @brief Hands the route back; does nothing when none is held. The caller holds streamMutex_.
-  void releaseInputRoute();
+  /// @brief Asks AudioInputRouter which device to capture from. Can block for seconds while a
+  /// Bluetooth headset's link comes up, so it is called with none of the recorder's mutexes held.
+  static RouteLease acquireRoute();
 
   /// Taken once by each entry point (the public methods and Oboe's error callback); the
   /// private stream helpers above never take it.
@@ -94,10 +91,9 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   int32_t streamMaxBufferSizeInFrames_{0};
   /// The device mStream_ was opened for. Guarded by streamMutex_.
   int32_t streamDeviceId_;
-  /// Whether this recorder holds a route from NativeInputRouting::acquireInputRoute, and that
-  /// route's device. Guarded by streamMutex_.
-  bool holdsInputRoute_{false};
-  int32_t captureDeviceId_;
+  /// The route openAudioStream() opens on: held from start() until stop(), and given back while
+  /// a restart waits for the next one. Guarded by streamMutex_.
+  RouteLease route_;
 
   /// Oboe delivers interleaved float32 and every consumer takes planar, so each callback is
   /// repacked here once. Sized under streamMutex_ before the stream starts.

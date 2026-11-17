@@ -1,6 +1,8 @@
 #import <ImageIO/ImageIO.h>
 #import <audioapi/ios/system/notification/ArtworkLoader.h>
 #import <audioapi/ios/system/notification/NotificationQueueAssertions.h>
+#define LOG_MODULE ArtworkLoader
+#import <audioapi/ios/utils/Log.h>
 
 static const NSTimeInterval kArtworkFetchTimeoutSeconds = 10.0;
 
@@ -150,10 +152,8 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
 - (void)armDeadline
 {
   _timeoutBlock = dispatch_block_create(DISPATCH_BLOCK_INHERIT_QOS_CLASS, ^{
-    NSLog(
-        @"[ArtworkLoader] Artwork fetch timed out after %.0fs: %@",
-        kArtworkFetchTimeoutSeconds,
-        self->_url);
+    AUDIO_LOG_WARNING(
+        "Artwork fetch timed out after %.0fs: %{public}@", kArtworkFetchTimeoutSeconds, self->_url);
     [self settleWithImage:nil notify:YES];
   });
 
@@ -186,10 +186,8 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
   }
 
   if (error != nil) {
-    NSLog(
-        @"[ArtworkLoader] Failed to download artwork from %@: %@",
-        _url,
-        error.localizedDescription);
+    AUDIO_LOG_WARNING(
+        "Failed to download artwork from %{public}@: %{public}@", _url, error.localizedDescription);
     [self settleWithImage:nil notify:YES];
     return;
   }
@@ -197,17 +195,15 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
   if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
     NSInteger statusCode = ((NSHTTPURLResponse *)response).statusCode;
     if (statusCode < 200 || statusCode > 299) {
-      NSLog(@"[ArtworkLoader] Artwork request returned HTTP %ld: %@", (long)statusCode, _url);
+      AUDIO_LOG_WARNING("Artwork request returned HTTP %ld: %{public}@", (long)statusCode, _url);
       [self settleWithImage:nil notify:YES];
       return;
     }
   }
 
   if (data.length == 0 || data.length > kArtworkMaximumDownloadBytes) {
-    NSLog(
-        @"[ArtworkLoader] Rejecting artwork body of %lu bytes: %@",
-        (unsigned long)data.length,
-        _url);
+    AUDIO_LOG_WARNING(
+        "Rejecting artwork body of %lu bytes: %{public}@", (unsigned long)data.length, _url);
     [self settleWithImage:nil notify:YES];
     return;
   }
@@ -224,7 +220,7 @@ static UIImage *_Nullable ArtworkImageFromFileURL(NSURL *url, NSInteger maximumS
   dispatch_async(_loader.decodeQueue, ^{
     UIImage *image = decode();
     if (image == nil) {
-      NSLog(@"[ArtworkLoader] Failed to decode artwork from %@", self->_url);
+      AUDIO_LOG_WARNING("Failed to decode artwork from %{public}@", self->_url);
     }
 
     dispatch_async(dispatch_get_main_queue(), ^{ [self settleWithImage:image notify:YES]; });

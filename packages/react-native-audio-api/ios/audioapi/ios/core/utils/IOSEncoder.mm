@@ -2,6 +2,7 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <Foundation/Foundation.h>
 
+#include <audioapi/encoding/ChannelRemixer.h>
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/ios/core/utils/IOSEncoder.h>
 #include <audioapi/utils/AudioFileProperties.h>
@@ -25,10 +26,12 @@ struct IOSEncoderState {
   AVAudioFormat *inputFormat = nil;
   AVAudioConverter *converter = nil;
   AVAudioPCMBuffer *converterOutputBuffer = nil;
-  int inputChannelCount = 0;
   size_t maxInputFrames = 0;
-  /// Backing store for an AudioBufferList with one buffer per input channel. encode() points
-  /// it at the caller's planar frames and wraps it in a no-copy AVAudioPCMBuffer.
+  /// Brings the input to the file's channel count before the converter, which then only
+  /// converts the sample rate and sample format.
+  ChannelRemixer remixer;
+  /// Backing store for an AudioBufferList with one buffer per converted channel. encode() points
+  /// it at the planar frames and wraps it in a no-copy AVAudioPCMBuffer.
   std::vector<uint8_t> inputBufferListStorage;
 
   AudioBufferList *inputBufferList()
@@ -277,18 +280,24 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
       return Err("Channel count exceeds MAX_CHANNEL_COUNT");
     }
     inputFormat_ = inputFormat;
-    state_->inputChannelCount = inputLayout.channelCount;
     state_->maxInputFrames = inputFormat.maxFramesPerBuffer;
+    state_->remixer = ChannelRemixer(
+        inputLayout.channelCount,
+        settings_.fileLayout.channelCount,
+        std::max<size_t>(inputFormat.maxFramesPerBuffer, 1),
+        inputLayout.sampleRate);
+    const int convertedChannelCount = state_->remixer.outputChannelCount();
+
     state_->inputBufferListStorage.assign(
         offsetof(AudioBufferList, mBuffers) +
-            static_cast<size_t>(inputLayout.channelCount) * sizeof(::AudioBuffer),
+            static_cast<size_t>(convertedChannelCount) * sizeof(::AudioBuffer),
         0);
 
-    state_->inputFormat =
-        [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                         sampleRate:inputLayout.sampleRate
-                                           channels:(AVAudioChannelCount)inputLayout.channelCount
-                                        interleaved:NO];
+    state_->inputFormat = [[AVAudioFormat alloc]
+        initWithCommonFormat:AVAudioPCMFormatFloat32
+                  sampleRate:inputLayout.sampleRate
+                    channels:static_cast<AVAudioChannelCount>(convertedChannelCount)
+                 interleaved:NO];
     if (state_->inputFormat == nil) {
       return Err("Failed to build input AVAudioFormat");
     }
@@ -324,17 +333,17 @@ void IOSEncoder::releaseConversionPipeline()
   state_->converter = nil;
   state_->converterOutputBuffer = nil;
   state_->inputFormat = nil;
-  state_->inputChannelCount = 0;
   state_->maxInputFrames = 0;
+  state_->remixer = ChannelRemixer();
   state_->inputBufferListStorage.clear();
 }
 
-EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
+EncodeResult IOSEncoder::encode(const AudioBuffer &input, int numFrames)
 {
   if (!isOpen() || state_->audioFile == nil) {
     return Err("Encoder is not open");
   }
-  if (channels == nullptr || numFrames <= 0) {
+  if (numFrames <= 0) {
     return Err("Invalid encode input");
   }
   if (static_cast<size_t>(numFrames) > state_->maxInputFrames) {
@@ -344,17 +353,18 @@ EncodeResult IOSEncoder::encode(const float *const *channels, int numFrames)
   @autoreleasepool {
     NSError *error = nil;
 
-    // Wrap the caller's planar frames in place: the buffer list points at them for the duration
-    // of this call and AVAudioPCMBuffer reads through it without copying.
+    const auto frames = static_cast<size_t>(numFrames);
+    const int convertedChannelCount = state_->remixer.outputChannelCount();
+    const AudioBuffer &converted = state_->remixer.remix(input, frames);
+
+    // Wrap the planar frames in place: the buffer list points at them for the duration of this
+    // call and AVAudioPCMBuffer reads through it without copying.
     AudioBufferList *bufferList = state_->inputBufferList();
-    bufferList->mNumberBuffers = static_cast<UInt32>(state_->inputChannelCount);
-    for (int channel = 0; channel < state_->inputChannelCount; ++channel) {
+    bufferList->mNumberBuffers = static_cast<UInt32>(convertedChannelCount);
+    for (int channel = 0; channel < convertedChannelCount; ++channel) {
       bufferList->mBuffers[channel].mNumberChannels = 1;
-      bufferList->mBuffers[channel].mDataByteSize =
-          static_cast<UInt32>(static_cast<size_t>(numFrames) * sizeof(float));
-      // AudioBufferList carries void*; nothing below writes through it.
-      bufferList->mBuffers[channel].mData =
-          const_cast<float *>(channels[channel]); // NOLINT(cppcoreguidelines-pro-type-const-cast)
+      bufferList->mBuffers[channel].mDataByteSize = static_cast<UInt32>(frames * sizeof(float));
+      bufferList->mBuffers[channel].mData = converted.getChannel(channel)->begin();
     }
     AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:state_->inputFormat
                                                                bufferListNoCopy:bufferList
@@ -430,6 +440,7 @@ CloseEncoderResult IOSEncoder::close()
     state_->converter = nil;
     state_->converterOutputBuffer = nil;
     state_->inputFormat = nil;
+    state_->remixer = ChannelRemixer();
     state_->inputBufferListStorage.clear();
 
     const double durationSeconds = getEncodedDurationSeconds();

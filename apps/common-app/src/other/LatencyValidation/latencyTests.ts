@@ -284,13 +284,20 @@ async function runLoopbackLatencyTest(
   }
 
   const recordingStartContextTime = audioContext.currentTime;
-  const startResult = await audioRecorder.start();
-  if (startResult.status !== 'success') {
+  let startError: unknown;
+  try {
+    await audioRecorder.start();
+  } catch (error) {
+    startError = error;
+  }
+
+  if (startError !== undefined) {
     steps.push({
       id: 'loopback-recorder-start',
       message: 'Recorder is available for loopback measurement',
       status: 'fail',
-      details: startResult.message,
+      details:
+        startError instanceof Error ? startError.message : String(startError),
     });
 
     return createEmptyAnalysis(

@@ -51,7 +51,7 @@ post_install do |installer|
     installer,
     react_native_path,
     :mac_catalyst_enabled => false,
-    # :ccache_enabled => true
+    :ccache_enabled => ENV['USE_CCACHE'] == '1'
   )
 
   # react_native_post_install resolves the path to pnpm's store folder (with its hash)

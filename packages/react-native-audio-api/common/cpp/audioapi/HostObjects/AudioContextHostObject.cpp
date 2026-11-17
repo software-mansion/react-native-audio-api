@@ -1,6 +1,5 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 
-#include <audioapi/HostObjects/sources/AudioFileSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/MediaElementAudioSourceNodeHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/types/ContextState.h>
@@ -40,22 +39,22 @@ AudioContextHostObject::~AudioContextHostObject() {
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, close) {
   return createLifecyclePromise(
-      ContextState::CLOSED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<AudioContext &>(context).close(resolver);
+      ContextState::CLOSED, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<AudioContext &>(context).close(std::move(resolver));
       });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, resume) {
   return createLifecyclePromise(
-      ContextState::RUNNING, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<AudioContext &>(context).resume(resolver);
+      ContextState::RUNNING, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<AudioContext &>(context).resume(std::move(resolver));
       });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, suspend) {
   return createLifecyclePromise(
-      ContextState::SUSPENDED, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<AudioContext &>(context).suspend(resolver);
+      ContextState::SUSPENDED, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<AudioContext &>(context).suspend(std::move(resolver));
       });
 }
 
@@ -70,11 +69,8 @@ JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, baseLatency) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
-  auto sourceObject = args[0].asObject(runtime);
-  auto fileSourceHostObject = sourceObject.getHostObject<AudioFileSourceNodeHostObject>(runtime);
-  auto *fileSourceRaw = fileSourceHostObject->audioFileSourceNode();
   auto mediaElementHostObject = std::make_shared<MediaElementAudioSourceNodeHostObject>(
-      std::static_pointer_cast<AudioContext>(context_), fileSourceRaw);
+      std::static_pointer_cast<AudioContext>(context_));
   auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);
   object.setExternalMemoryPressure(runtime, mediaElementHostObject->getMemoryPressure());
   return object;

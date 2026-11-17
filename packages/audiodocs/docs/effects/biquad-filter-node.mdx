@@ -5,18 +5,17 @@ sidebar_position: 1
 import { Optional, ReadOnly } from '@site/src/components/Badges';
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
-import FrequencyResponseGraph from '@site/src/examples/Biquad/FrequencyResponseGraph';
-import VinylPlayer from '@site/src/examples/VinylPlayer';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useBiquadFilterPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useBiquadFilterPlayground';
 
 # BiquadFilterNode
-
 
 The `BiquadFilterNode` interface represents a low-order filter. It is an [`AudioNode`](../core/audio-node.mdx) used for tone controls, graphic equalizers, and other audio effects.
 Multiple `BiquadFilterNode` instances can be combined to create more complex filtering chains.
 
-This interactive example shows effects you can achieve using `BiquadFilterNode`: a `lowpass` filter whose [`frequency`](./biquad-filter-node.mdx#properties) follows the player cover, muffling the audio while it is closed and opening the sound as you raise it.
+Press play, then click the `BiquadFilterNode` box to bypass it and compare. Pick a [`type`](#biquadfiltertype-enumeration-description) and drag the sliders while listening: the line drawn over the spectrum is the filter's frequency response, and the code follows your settings. Only the parameters that affect the selected type are shown.
 
-<VinylPlayer />
+<InteractivePlayground tag="BiquadFilterNode" usePlayground={useBiquadFilterPlayground} />
 
 ## Constructor
 
@@ -58,19 +57,7 @@ Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 </div>
 
-<br />
-
-<br />
-
-<br />
-
 #### BiquadFilterType enumeration description
-
-<FrequencyResponseGraph />
-
-<br />
-
-<br />
 
 | `type` | Description | `frequency` | `Q` | `gain` |
 |:------:|:-----------:|:-----------:|:---:|:------:|

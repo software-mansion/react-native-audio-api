@@ -8,7 +8,7 @@
       "Bash(pnpm format*)",
       "Bash(pnpm typecheck)",
       "Bash(pnpm test)",
-      "Bash(pnpm check-audio-enum-sync)",
+      "Bash(pnpm --filter react-native-audio-api check:enums)",
       "Bash(pnpm --filter *)",
       "Bash(git status)",
       "Bash(git diff*)",

@@ -12,10 +12,12 @@ interface SelectProps<T extends string> {
   value: T;
   options: T[];
   onChange: (value: T) => void;
+  /** Each modal option gets `<testID>-option-<option>`. */
+  testID?: string;
 }
 
 function Select<T extends string>(props: SelectProps<T>) {
-  const { options, value, onChange } = props;
+  const { options, value, onChange, testID } = props;
   const [isModalOpen, setModalOpen] = useState(false);
 
   const renderSeparator = (index: number) => (
@@ -25,10 +27,12 @@ function Select<T extends string>(props: SelectProps<T>) {
   const renderOption = (option: T) => (
     <Pressable
       key={option}
+      testID={testID && `${testID}-option-${option}`}
       onPress={() => {
         onChange(option);
         setModalOpen(false);
-      }}>
+      }}
+    >
       <View style={styles.optionRow}>
         <CheckCircleIcon selected={option === value} color={colors.white} />
         <Spacer.Horizontal size={12} />
@@ -39,7 +43,7 @@ function Select<T extends string>(props: SelectProps<T>) {
 
   return (
     <>
-      <Pressable onPress={() => setModalOpen(true)}>
+      <Pressable testID={testID} onPress={() => setModalOpen(true)}>
         <View style={styles.selectBox}>
           <Text style={styles.selectText}>{value}</Text>
           <MenuIcon size={24} color={colors.white} />

@@ -6,7 +6,6 @@
 #include <audioapi/utils/CircularArray.hpp>
 
 #include <algorithm>
-#include <array>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -159,18 +158,10 @@ void AudioRecorderCallback::receiveAudioData(const float *const *channels, int n
       PendingCallbackFrames{.buffer = std::move(slot), .numFrames = numFrames});
 }
 
-void AudioRecorderCallback::pushChannels(const AudioBuffer &planarFrames, int numFrames) {
-  std::array<const float *, MAX_CHANNEL_COUNT> channels{};
-  for (int ch = 0; ch < channelCount_; ++ch) {
-    channels[ch] = planarFrames.getChannel(ch)->begin();
-  }
-  pushChannels(channels.data(), numFrames);
-}
-
-void AudioRecorderCallback::pushChannels(const float *const *planarFrames, int numFrames) {
+void AudioRecorderCallback::pushChannels(const AudioBuffer &frames, size_t start, int numFrames) {
   try {
     for (int ch = 0; ch < channelCount_; ++ch) {
-      circularBuffer_[ch]->push_back(planarFrames[ch], numFrames);
+      circularBuffer_[ch]->push_back(frames.getChannel(ch)->begin() + start, numFrames);
     }
   } catch (const std::overflow_error &e) {
     invokeOnErrorCallback(
@@ -191,7 +182,7 @@ void AudioRecorderCallback::runCallbackTask(PendingCallbackFrames pending) {
 
   if (resampler_ == nullptr && remixedChunk_ == nullptr) {
     // Stream already matches what JS asked for.
-    pushChannels(slotFrames, numFrames);
+    pushChannels(slotFrames, 0, numFrames);
   } else {
     convertAndPushChunks(slotFrames, numFrames);
   }
@@ -205,35 +196,24 @@ void AudioRecorderCallback::runCallbackTask(PendingCallbackFrames pending) {
 /// time. It resamples but never remixes, so a chunk is folded to the callback's channel count
 /// first when the counts differ; otherwise it is a window straight into the slot.
 void AudioRecorderCallback::convertAndPushChunks(const AudioBuffer &slotFrames, int numFrames) {
-  std::array<float *, MAX_CHANNEL_COUNT> resampled{};
-  if (resampler_ != nullptr) {
-    for (int ch = 0; ch < channelCount_; ++ch) {
-      resampled[ch] = resamplerOutput_->getChannel(ch)->begin();
-    }
-  }
-
   for (int consumed = 0; consumed < numFrames;) {
     const int chunkFrames = std::min(numFrames - consumed, RESAMPLER_MAX_INPUT_FRAMES);
 
-    std::array<const float *, MAX_CHANNEL_COUNT> chunk{};
+    const AudioBuffer *chunk = &slotFrames;
+    auto chunkStart = static_cast<size_t>(consumed);
     if (remixedChunk_ != nullptr) {
-      remixedChunk_->copy(
-          slotFrames, static_cast<size_t>(consumed), 0, static_cast<size_t>(chunkFrames));
-      for (int ch = 0; ch < channelCount_; ++ch) {
-        chunk[ch] = remixedChunk_->getChannel(ch)->begin();
-      }
-    } else {
-      for (int ch = 0; ch < channelCount_; ++ch) {
-        chunk[ch] = slotFrames.getChannel(ch)->begin() + consumed;
-      }
+      remixedChunk_->copy(slotFrames, chunkStart, 0, static_cast<size_t>(chunkFrames));
+      chunk = remixedChunk_.get();
+      chunkStart = 0;
     }
 
     if (resampler_ == nullptr) {
-      pushChannels(chunk.data(), chunkFrames);
+      pushChannels(*chunk, chunkStart, chunkFrames);
     } else {
-      const int producedFrames = resampler_->process(chunk.data(), chunkFrames, resampled.data());
+      const int producedFrames =
+          resampler_->process(*chunk, chunkStart, chunkFrames, *resamplerOutput_);
       if (producedFrames > 0) {
-        pushChannels(resampled.data(), producedFrames);
+        pushChannels(*resamplerOutput_, 0, producedFrames);
       }
     }
 

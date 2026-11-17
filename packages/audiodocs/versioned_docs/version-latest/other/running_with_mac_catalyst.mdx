@@ -7,7 +7,7 @@ sidebar_label: Running with Mac Catalyst
 
 Mac Catalyst allows you to run your iOS apps natively on macOS. This guide covers the necessary changes to your Podfile to enable Mac Catalyst support for your React Native app with `react-native-audio-api`.
 
-## Podfile Configuration
+## Podfile configuration
 
 To build your app for Mac Catalyst, you need to make several changes to your `ios/Podfile`:
 
@@ -93,7 +93,7 @@ post_install do |installer|
 end
 ```
 
-## Complete Example
+## Complete example
 
 Here's a complete Podfile configured for Mac Catalyst (includes Hermes fix for RN 0.83.x — remove the Hermes section if you're on a different version):
 

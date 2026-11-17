@@ -3,6 +3,7 @@
 
 const lightCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-dark.js');
+const prismMagicComments = require('docs-theme/theme/CodeBlock/magicComments.js');
 
 import { topbarBannerReservationScript } from '@swmansion/t-rex-ui/topbar-banner'; // eslint-disable-line import/first, import/no-unresolved
 // @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
@@ -146,6 +147,7 @@ const config = {
       additionalLanguages: ['bash', 'cmake'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
+      magicComments: prismMagicComments,
     },
     algolia: {
       appId: '7OKARNAQRP',

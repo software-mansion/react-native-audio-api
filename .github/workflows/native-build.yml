@@ -1,0 +1,186 @@
+name: Build example app
+
+# Builds the example app for Android and iOS.
+
+on:
+  workflow_call:
+    inputs:
+      android:
+        description: Build the Android app
+        type: boolean
+        default: false
+      ios:
+        description: Build the iOS app
+        type: boolean
+        default: false
+
+jobs:
+  install:
+    name: Install dependencies
+    if: inputs.android || inputs.ios
+    runs-on: ubuntu-24.04
+    outputs:
+      cache-key: ${{ steps.key.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
+
+      - name: Compute cache key
+        id: key
+        run: >
+          echo "value=node-modules-xplat-$(node --version)-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json', '!**/node_modules/**') }}"
+          >> "$GITHUB_OUTPUT"
+
+      - name: Check for cached node_modules
+        id: cache
+        uses: actions/cache/restore@v6
+        with:
+          lookup-only: true
+          enableCrossOsArchive: true
+          key: ${{ steps.key.outputs.value }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+
+      # The iOS job unpacks the same tree on macOS, so install the darwin packages too
+      - name: Install dependencies for linux and darwin
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile --os linux --os darwin --cpu x64 --cpu arm64
+
+      - name: Save node_modules
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          enableCrossOsArchive: true
+          key: ${{ steps.key.outputs.value }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+
+  android:
+    name: Android
+    needs: install
+    if: inputs.android
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v6
+        with:
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+          key: ${{ needs.install.outputs.cache-key }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+
+      - name: Cache prebuilt binaries
+        uses: actions/cache@v6
+        with:
+          key: prebuilt-android-${{ hashFiles('packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh') }}
+          path: |
+            packages/react-native-audio-api/common/cpp/audioapi/external/android
+            packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg
+            packages/react-native-audio-api/android/src/main/jniLibs
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Assemble debug APK
+        working-directory: apps/fabric-example/android
+        run: ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --build-cache
+
+  ios:
+    name: iOS
+    needs: install
+    if: inputs.ios
+    runs-on: macos-26
+    env:
+      USE_CCACHE: '1'
+      BUNDLE_VERSION: system
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v6
+        with:
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+          key: ${{ needs.install.outputs.cache-key }}
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+
+      - name: Cache prebuilt binaries
+        uses: actions/cache@v6
+        with:
+          key: prebuilt-ios-${{ hashFiles('packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh') }}
+          path: |
+            packages/react-native-audio-api/common/cpp/audioapi/external/xcframeworks
+            packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler: default
+          bundler-cache: true
+          working-directory: apps/fabric-example
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ios-${{ github.job }}
+          max-size: 2G
+
+      - name: Cache Pods
+        uses: actions/cache@v6
+        with:
+          key: pods-${{ hashFiles('apps/fabric-example/ios/Podfile.lock', 'packages/react-native-audio-api/RNAudioAPI.podspec') }}
+          restore-keys: pods-
+          path: apps/fabric-example/ios/Pods
+
+      - name: Install Pods
+        working-directory: apps/fabric-example/ios
+        run: bundle exec pod install
+
+      - name: Build for simulator
+        working-directory: apps/fabric-example/ios
+        run: >
+          set -o pipefail &&
+          xcodebuild build
+          -workspace FabricExample.xcworkspace
+          -scheme FabricExample
+          -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build
+          CODE_SIGNING_ALLOWED=NO
+          -quiet
