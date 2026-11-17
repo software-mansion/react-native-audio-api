@@ -1,5 +1,4 @@
 #include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/inputs/IRecorderInput.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
@@ -8,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <test/src/core/inputs/FakeRecorderInput.h>
+#include <test/src/core/inputs/FakeSessionRegistry.h>
 #include <test/src/utils/FakeFileBackend.h>
 
 #include <atomic>
@@ -26,7 +26,7 @@ class AudioRecorderTest : public ::testing::Test {
  protected:
   void SetUp() override {
     backend_ = makeFakeBackend(log_);
-    recorder_ = std::make_shared<AudioRecorder>(registry_, input_, &backend_);
+    recorder_ = std::make_shared<AudioRecorder>(registry_, input_, sessions_, &backend_);
   }
 
   void TearDown() override {
@@ -72,6 +72,7 @@ class AudioRecorderTest : public ::testing::Test {
   FakeEncoderLog log_;
   PlatformFileBackend backend_;
   std::shared_ptr<FakeRecorderInput> input_ = std::make_shared<FakeRecorderInput>();
+  std::shared_ptr<FakeSessionRegistry> sessions_ = std::make_shared<FakeSessionRegistry>();
   std::shared_ptr<AudioRecorder> recorder_;
 };
 
@@ -148,6 +149,44 @@ TEST_F(AudioRecorderTest, StartWhileRecordingIsRefused) {
 
 TEST_F(AudioRecorderTest, StopWhileIdleFails) {
   EXPECT_TRUE(recorder_->stop().is_err());
+  EXPECT_EQ(sessions_->releases, 0);
+  EXPECT_TRUE(sessions_->keptRecordings.empty());
+}
+
+TEST_F(AudioRecorderTest, ARefusedClaimFailsTheStartBeforeTheInputOpens) {
+  sessions_->claimError = "Another recording is already in progress";
+
+  auto result = recorder_->start();
+
+  ASSERT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "Another recording is already in progress");
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_TRUE(input_->openPurposes.empty());
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+  EXPECT_EQ(sessions_->releases, 0);
+}
+
+TEST_F(AudioRecorderTest, AStopReleasesTheSessionAndKeepsWhatItWrote) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  EXPECT_EQ(sessions_->claims, 1);
+  EXPECT_EQ(sessions_->releases, 0);
+
+  auto stopResult = recorder_->stop();
+
+  ASSERT_TRUE(stopResult.is_ok());
+  EXPECT_EQ(sessions_->releases, 1);
+  ASSERT_EQ(sessions_->keptRecordings.size(), 1U);
+  EXPECT_EQ(sessions_->keptRecordings[0].paths, stopResult.unwrap().paths);
+}
+
+TEST_F(AudioRecorderTest, EachStopReportsTheSessionItEnded) {
+  ASSERT_TRUE(recorder_->start().is_ok());
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
+  ASSERT_TRUE(recorder_->stop().is_ok());
+
+  EXPECT_EQ(sessions_->keptSessions, (std::vector<RecordingSessionId>{1, 2}));
 }
 
 TEST_F(AudioRecorderTest, AnInputThatFailsToOpenLeavesTheRecorderIdle) {
@@ -159,6 +198,8 @@ TEST_F(AudioRecorderTest, AnInputThatFailsToOpenLeavesTheRecorderIdle) {
   EXPECT_EQ(result.unwrap_err(), "no microphone");
   EXPECT_TRUE(recorder_->isIdle());
   EXPECT_EQ(input_->routesReleased.load(), 1);
+  EXPECT_EQ(sessions_->claims, 1);
+  EXPECT_EQ(sessions_->releases, 1);
 }
 
 TEST_F(AudioRecorderTest, AnInputThatFailsToStartIsClosedBeforeAnyFileIsOpened) {
@@ -169,6 +210,8 @@ TEST_F(AudioRecorderTest, AnInputThatFailsToStartIsClosedBeforeAnyFileIsOpened) 
   EXPECT_TRUE(recorder_->isIdle());
   EXPECT_FALSE(input_->isOpen);
   EXPECT_EQ(log_.closedFiles.load(), 0);
+  EXPECT_EQ(sessions_->releases, 1);
+  EXPECT_TRUE(sessions_->keptRecordings.empty());
 
   input_->startError.reset();
   EXPECT_TRUE(recorder_->start().is_ok());
@@ -525,6 +568,9 @@ TEST_F(AudioRecorderTest, DestroyingARecordingRecorderFinalizesItsFile) {
   recorder_.reset();
 
   EXPECT_EQ(log_.closedFiles.load(), 1);
+  EXPECT_EQ(sessions_->releases, 1);
+  ASSERT_EQ(sessions_->keptRecordings.size(), 1U);
+  EXPECT_EQ(sessions_->keptRecordings[0].paths.size(), 1U);
 }
 
 TEST_F(AudioRecorderTest, EventsFromAnEarlierOpeningOfTheInputAreIgnored) {
@@ -570,38 +616,34 @@ TEST_F(AudioRecorderTest, ALostInputThatCannotBeReopenedEndsTheSession) {
   EXPECT_EQ(log_.closedFiles.load(), 1);
 }
 
-TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteStaysConsumable) {
+TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteIsKept) {
   enableFileOutput();
-  auto &handle = ActiveRecorderHandle::global();
-  ASSERT_TRUE(handle.tryStart(recorder_).is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
   input_->openError = "device gone";
 
   EXPECT_TRUE(recorder_->rerouteInput().is_err());
 
   EXPECT_TRUE(recorder_->isIdle());
-  EXPECT_FALSE(handle.isRecordingOngoing());
-  auto recording = handle.consumeLastRecordingResult();
-  ASSERT_TRUE(recording.has_value());
-  EXPECT_EQ(recording->paths.size(), 1U);
+  EXPECT_EQ(sessions_->releases, 1);
+  ASSERT_EQ(sessions_->keptRecordings.size(), 1U);
+  EXPECT_EQ(sessions_->keptRecordings[0].paths.size(), 1U);
 }
 
 // The cleanup of a failed reroute runs after the control mutex is released, so a later reroute
 // can reopen the input first; that cleanup must not end the session the later reroute restored.
 TEST_F(AudioRecorderTest, AStopBoundToAnOpeningARerouteMovedPastLeavesTheSessionRecording) {
   enableFileOutput();
-  auto &handle = ActiveRecorderHandle::global();
-  ASSERT_TRUE(handle.tryStart(recorder_).is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
   // start() opens the input at the recorder's first generation.
   constexpr uint64_t FIRST_OPENING = 0;
   ASSERT_TRUE(recorder_->rerouteInput().is_ok());
 
-  EXPECT_TRUE(handle.stopAndReturnInfo(recorder_, FIRST_OPENING).is_err());
   EXPECT_TRUE(recorder_->stop(FIRST_OPENING).is_err());
 
   EXPECT_TRUE(recorder_->isRecording());
-  EXPECT_TRUE(handle.isRecordingOngoing());
+  EXPECT_EQ(sessions_->releases, 0);
   EXPECT_EQ(log_.closedFiles.load(), 0);
-  EXPECT_TRUE(handle.stopAndReturnInfo(recorder_).is_ok());
+  EXPECT_TRUE(recorder_->stop().is_ok());
 }
 
 TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyOutput) {

@@ -1,7 +1,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 
-#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/IRecorderInput.h>
+#include <audioapi/core/inputs/IRecordingSessionRegistry.h>
 #include <audioapi/core/inputs/RecorderInputEvents.h>
 #include <audioapi/core/inputs/RecorderInputGate.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
@@ -17,11 +17,13 @@ namespace audioapi {
 AudioRecorder::AudioRecorder(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     std::shared_ptr<IRecorderInput> input,
+    std::shared_ptr<IRecordingSessionRegistry> sessionRegistry,
     const PlatformFileBackend *fileBackend)
     : input_(std::move(input)),
       inputGate_(std::make_shared<RecorderInputGate>(this)),
       outputs_(audioEventHandlerRegistry, fileBackend != nullptr ? *fileBackend : osFileBackend()),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+      audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      sessionRegistry_(std::move(sessionRegistry)) {}
 
 /// The platform input can outlive the recorder and keeps calling the gate, which holds a raw
 /// pointer to it: disarm before any teardown, whatever phase the recorder is in.
@@ -49,12 +51,19 @@ Result<NoneType, std::string> AudioRecorder::start() {
       return Err("Recorder is already recording");
     }
 
+    auto claimResult = sessionRegistry_->claim(shared_from_this());
+    if (claimResult.is_err()) {
+      return Err(claimResult.unwrap_err());
+    }
+    session_.id = claimResult.unwrap();
+
     auto openResult = input_->open(
         std::move(route),
         InputOpenPurpose::StartSession,
         inputGate_,
         RecorderInputEvents(weak_from_this(), session_.inputGeneration));
     if (openResult.is_err()) {
+      sessionRegistry_->release(weak_from_this());
       return openResult;
     }
 
@@ -83,6 +92,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
 }
 
 Result<FileInfo, std::string> AudioRecorder::stop(std::optional<uint64_t> openedGeneration) {
+  RecordingSessionId stoppedSession = 0;
   RecorderOutputs::Detached detached;
 
   {
@@ -95,10 +105,15 @@ Result<FileInfo, std::string> AudioRecorder::stop(std::optional<uint64_t> opened
       return Err("Recorder input was reopened since.");
     }
 
+    stoppedSession = session_.id;
     detached = endSession();
   }
 
-  return RecorderOutputs::finalize(std::move(detached));
+  auto stopResult = RecorderOutputs::finalize(std::move(detached));
+  if (stopResult.is_ok()) {
+    sessionRegistry_->keepRecording(stoppedSession, stopResult.unwrap());
+  }
+  return stopResult;
 }
 
 Result<NoneType, std::string> AudioRecorder::resume() {
@@ -182,15 +197,9 @@ Result<NoneType, std::string> AudioRecorder::rerouteInput(
   auto reopenResult = reopenInput(openedGeneration, failedGeneration);
 
   if (reopenResult.is_err()) {
-    // Through the handle, which keeps the file info for consumeLastRecordingResult(), so what
-    // was recorded so far is not lost. The handle only stops the session it started. Both stops
-    // are bound to the failed opening: the control mutex was released on the way here, and a
-    // later reroute may have reopened the input since.
-    if (ActiveRecorderHandle::global()
-            .stopAndReturnInfo(shared_from_this(), failedGeneration)
-            .is_err()) {
-      stop(failedGeneration);
-    }
+    // Bound to the failed opening: the control mutex was released on the way here, and a later
+    // reroute may have reopened the input since.
+    stop(failedGeneration);
     reportError("Recorder input could not be reopened: " + reopenResult.unwrap_err());
   }
   return reopenResult;
@@ -451,6 +460,7 @@ RecorderOutputs::Detached AudioRecorder::endSession() {
   session_.format.reset();
   session_.lastBufferSeconds.store(0.0, std::memory_order_relaxed);
   session_.recordedSeconds.store(0.0, std::memory_order_relaxed);
+  sessionRegistry_->release(weak_from_this());
 
   return outputs_.detach();
 }

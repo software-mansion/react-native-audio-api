@@ -161,8 +161,8 @@ the table of what holds in each is in `AudioRecorder.h`) that only `enterPhase()
 gate exactly for `Recording`, and `repointOutputsAt()`, which disarms the gate while the outputs
 follow a new format, re-arms it only when the phase is `Recording`. `start`/`stop`/`pause`/`resume`/`rerouteInput` are a `switch`
 over the phase, serialized by `controlMutex_`; add a phase rather than a flag when the session gains
-a state. A reroute that cannot reopen the input ends the session through `ActiveRecorderHandle`, so
-what it recorded stays consumable. Session state lives in one `SessionState` (phase, input
+a state. A reroute that cannot reopen the input ends the session with a plain `stop()`; the session
+registry keeps what it recorded, as for every stop. Session state lives in one `SessionState` (phase, input
 generation, stream format; guarded by `controlMutex_`); put new session state there. Everything that
 happens to recorded frames lives in `RecorderOutputs` (`core/inputs/RecorderOutputs.h`, the
 recorder's `outputs_`): one `OutputSlot` per output (`file_`, `callback_`, `adapter_`: state, mutex,
