@@ -8,6 +8,10 @@ Build the C++ gtest suite with Clang LLVM source-based coverage and emit an
 llvm-cov HTML report under coverage-html/. Always uses the smoke filter
 (unsanitized). Override with GTEST_FILTER if needed.
 
+Also writes, under build-coverage/:
+  coverage.lcov       line coverage in LCOV format (input for diff-cover)
+  coverage-totals.md  Markdown table of line / function / region totals
+
   pnpm test:cpp:coverage
 
 Options:
@@ -40,6 +44,8 @@ source "${SCRIPT_DIR}/filters.sh"
 readonly BUILD_DIR="${SCRIPT_DIR}/build-coverage"
 readonly COVERAGE_HTML_DIR="${SCRIPT_DIR}/coverage-html"
 readonly PROFDATA_FILE="${BUILD_DIR}/coverage.profdata"
+readonly LCOV_FILE="${BUILD_DIR}/coverage.lcov"
+readonly TOTALS_FILE="${BUILD_DIR}/coverage-totals.md"
 readonly IGNORE_FILENAME_REGEX='(/common/cpp/test/|/_deps/|/googletest|/gmock|/audioapi/libs/|/r8brain/|/jsi/|/HostObjects/)'
 readonly FILTER="${GTEST_FILTER:-$(cpp_test_smoke_filter)}"
 
@@ -61,10 +67,6 @@ require_llvm_tools() {
     echo "error: llvm-cov not found (install Xcode CLT or an llvm package)" >&2
     exit 1
   }
-}
-
-parallel_job_count() {
-  sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 10
 }
 
 # ENABLE_COVERAGE requires Clang; default to clang/clang++ when unset so Linux
@@ -114,6 +116,25 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     echo '```'
   } >> "$GITHUB_STEP_SUMMARY"
 fi
+
+"$LLVM_COV" export \
+  "$BUILD_DIR/tests" \
+  --instr-profile="$PROFDATA_FILE" \
+  --ignore-filename-regex="$IGNORE_FILENAME_REGEX" \
+  --format=lcov >"$LCOV_FILE"
+
+"$LLVM_COV" export \
+  "$BUILD_DIR/tests" \
+  --instr-profile="$PROFDATA_FILE" \
+  --ignore-filename-regex="$IGNORE_FILENAME_REGEX" \
+  --summary-only |
+  jq -r '.data[0].totals as $t
+    | "| | Covered | Total | % |",
+      "| --- | ---: | ---: | ---: |",
+      (["lines", "functions", "regions"][] as $kind
+        | $t[$kind]
+        | "| \(($kind[0:1] | ascii_upcase) + $kind[1:]) | \(.covered) | \(.count) | \(.percent * 100 | round / 100)% |")' \
+    >"$TOTALS_FILE"
 
 mkdir -p "$COVERAGE_HTML_DIR"
 

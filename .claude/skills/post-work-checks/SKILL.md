@@ -19,7 +19,7 @@ Run these checks after any code change and before opening a PR.
 
 ## Quick Reference — Local Validation Tiers
 
-CI always runs the **fast** tier (format, lint, typecheck, enum sync, TS build, C++ smoke + JS tests). Extended C++ categories (e.g. graph) run from `tests.yml` when matching paths change, or via `workflow_dispatch` booleans. CI does **not** build Android Gradle, iOS pods, or example apps. Use `validate.sh` locally to close that gap:
+CI runs each changed package's `check` and `test` scripts (`ci.yml`). The library's `test` runs Jest and only the C++ suites whose paths your changes touch (`run-tests.sh affected`: smoke for `common/cpp/`, graph for graph code); outside pull requests it runs all of them. CI also builds the example app for Android and iOS when native code changes (`native-build.yml`). Use `validate.sh` locally for the same checks before pushing:
 
 ```bash
 pnpm validate:fast          # CI parity — always run before opening a PR
@@ -27,7 +27,7 @@ pnpm validate:cpp           # C++ smoke
 pnpm validate:cpp-extended  # C++ extended (all categories)
 pnpm validate:android       # Android native build (requires ANDROID_HOME)
 pnpm validate:ios           # iOS native build (macOS only)
-pnpm validate:full          # --fast + C++ extended + --android + --ios
+pnpm validate:full          # --fast with every C++ suite + --android + --ios
 ```
 
 Equivalent: `./scripts/validate.sh --fast` (etc.)
@@ -50,11 +50,12 @@ Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `pnpm v
 ## Quick Reference — Individual Commands
 
 ```bash
+pnpm check                   # build every package, then its `check`, as CI runs it
+pnpm test                    # every package's `test` (library: Jest + affected C++ suites)
 pnpm format                  # auto-fix all formatting
 pnpm lint                    # lint all workspaces
 pnpm typecheck               # TypeScript type checking
-pnpm test                    # C++ + JS tests (library workspace)
-pnpm check-audio-enum-sync   # only if a C++/Kotlin mirrored enum touched
+pnpm --filter react-native-audio-api check:enums   # only if a mirrored enum touched
 ```
 
 ---
@@ -93,7 +94,7 @@ pnpm validate:fast
 ```bash
 pnpm validate:android   # pnpm --filter … build:android (~3–4 min)
 pnpm validate:ios       # pnpm --filter … build:ios (macOS only)
-pnpm validate:full      # --fast + C++ extended + --android + --ios
+pnpm validate:full      # --fast with every C++ suite + --android + --ios
 ```
 
 Autolinking registers workspace packages under their real `packages/` path (`apps/common-app/scripts/dependencies.js` follows the `node_modules` symlink), so Gradle and CocoaPods build local edits in `packages/react-native-audio-api/` directly.
@@ -126,17 +127,17 @@ pnpm test   # from monorepo root — runs test:js + test:cpp
 ### Native enum sync check
 
 ```bash
-pnpm check-audio-enum-sync
+pnpm --filter react-native-audio-api check:enums
 ```
 
 Runs `packages/react-native-audio-api/scripts/check-enum-sync.sh`, which compares every
-enum mirrored between C++ and Kotlin — currently `AudioEvent` and `RecorderState`. These
-cross JNI as plain ints and Kotlin maps them back by ordinal, so entry *order* is part of
-the contract; the check compares ignoring case and underscores, since the two languages
-name entries differently by convention. Add a new pair to the `MIRRORED_ENUMS` table at
-the top of the script. It then runs `check-audio-file-properties-enum-sync.sh`, which does
-the same for the `AudioFileProperties` enums that cross JSI into TypeScript (`FileFormat`,
-`FileDirectory`, `BitDepth`, `IOSAudioQuality`).
+enum mirrored from C++: into Kotlin (`AudioEvent`, `RecorderState`, crossing JNI) and into
+TypeScript (`FileFormat`, `FileDirectory`, `BitDepth`, `IOSAudioQuality` from
+`AudioFileProperties.h`, crossing JSI). Both cross as plain ints, so entry *order* and
+values are the contract: an entry without an initializer counts as previous + 1, which is
+also how a Kotlin ordinal counts. Names are compared ignoring case and underscores, since
+the languages name entries differently by convention. An enum the script finds no entries
+for fails the check. Add a new pair to the `MIRRORED_ENUMS` table at the top of the script.
 
 **When**: only when you modify one of those enums or any file that maps event names across
 C++/Kotlin/TypeScript. Skip this step if you already ran `validate:fast` (it includes enum sync).

@@ -38,10 +38,12 @@ jobs:
       TAG: PLACEHOLDER
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Checkout with Node
-        uses: ./.github/actions/checkout-with-node
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Update NPM
         run: npm install -g npm@latest
@@ -63,7 +65,7 @@ jobs:
         run: exit 1 # this should never happen
 
       - name: Install monorepo dependencies
-        uses: ./.github/actions/setup-pnpm
+        run: pnpm install --frozen-lockfile
 
       - name: Set tag
         run: |
@@ -102,7 +104,7 @@ jobs:
         run: exit 1 # this should never happen
 
       - name: Upload package to GitHub
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.PACKAGE_NAME }}
           path: ${{ env.AUDIO_API_DIR }}/${{ env.PACKAGE_NAME }}
