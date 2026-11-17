@@ -42,8 +42,6 @@ jobs:
 
       - name: Checkout with Node
         uses: ./.github/actions/checkout-with-node
-        with:
-          cache: yarn
 
       - name: Update NPM
         run: npm install -g npm@latest
@@ -65,7 +63,7 @@ jobs:
         run: exit 1 # this should never happen
 
       - name: Install monorepo dependencies
-        run: yarn install --immutable
+        uses: ./.github/actions/setup-pnpm
 
       - name: Set tag
         run: |

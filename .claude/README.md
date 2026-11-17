@@ -158,8 +158,8 @@ The script caps the source diff at **4000 lines**. If a batch of commits exceeds
 
 Defines tool permissions for Claude Code:
 
-- **Always allow**: `yarn build/lint/format/test`, read-only git commands, reading all source files, writing/editing `.claude/**` and `**/CLAUDE.md`, common inspection commands (`ls`, `which`, etc.)
-- **Ask before**: destructive git operations (`commit`, `push`, `reset`, `checkout`, etc.), `yarn clean`
+- **Always allow**: `pnpm build/lint/format/test`, read-only git commands, reading all source files, writing/editing `.claude/**` and `**/CLAUDE.md`, common inspection commands (`ls`, `which`, etc.)
+- **Ask before**: destructive git operations (`commit`, `push`, `reset`, `checkout`, etc.), `pnpm clean`
 - **Always deny**: force push, `rm -rf`, `sudo`, reading build artifacts and binary files
 
 Also configures MCP servers:
