@@ -6,7 +6,6 @@
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <cstddef>
 #include <memory>
-#include <optional>
 
 namespace audioapi {
 
@@ -66,9 +65,6 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
   bool loopSkip_;
   double loopStart_;
   double loopEnd_;
-
-  /// Buffer seconds `start()`'s `duration` still allows, across loop iterations.
-  std::optional<double> remainingDuration_;
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
