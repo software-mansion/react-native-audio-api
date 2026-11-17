@@ -116,7 +116,8 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
 
     /// The session registry's id for the current session; set by start().
     RecordingSessionId id = 0;
-    /// Bumped every time the input is closed, so it identifies one opening of the input.
+    /// Bumped every time the input is closed, and by a reroute while Starting, so it identifies one
+    /// opening of the input, or the route a start waits for.
     uint64_t inputGeneration = 0;
     std::optional<StreamFormat> format;
     /// Written only by the audio thread, through the armed gate.

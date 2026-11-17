@@ -262,8 +262,13 @@ TEST_F(AudioRecorderTest, APauseWhileAStartWaitsForItsRouteOpensTheInputStopped)
   EXPECT_TRUE(recorder_->isRecording());
 }
 
-TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsForItsRouteIsLeftToTheStart) {
+// The route the start waits for was settled before the device changed: the start acquires again
+// and opens only once, on the new device.
+TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsForItsRouteOpensTheInputOnTheNewDevice) {
+  enableFileOutput();
+  static constexpr int32_t NEW_DEVICE = 7;
   input_->duringAcquireRoute = [this] {
+    input_->routedDeviceId = NEW_DEVICE;
     EXPECT_TRUE(recorder_->rerouteInput().is_ok());
   };
 
@@ -271,7 +276,63 @@ TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsForItsRouteIsLeftToTheStart) {
 
   EXPECT_TRUE(recorder_->isRecording());
   EXPECT_EQ(input_->openPurposes, std::vector<InputOpenPurpose>{InputOpenPurpose::StartSession});
-  EXPECT_EQ(input_->routesAcquired.load(), 1);
+  EXPECT_EQ(input_->openedDeviceIds, (std::vector<std::optional<int32_t>>{NEW_DEVICE}));
+  EXPECT_EQ(input_->routesAcquired.load(), 2);
+  EXPECT_EQ(input_->routesReleased.load(), 1);
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(encodedBuffers(), 1);
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+}
+
+TEST_F(AudioRecorderTest, ADeviceChangeDuringEveryRouteWaitOfAStartIsFollowedToTheLast) {
+  static constexpr int32_t SECOND_DEVICE = 7;
+  static constexpr int32_t THIRD_DEVICE = 9;
+  input_->duringAcquireRoute = [this] {
+    input_->routedDeviceId = SECOND_DEVICE;
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    input_->duringAcquireRoute = [this] {
+      input_->routedDeviceId = THIRD_DEVICE;
+      EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    };
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_EQ(input_->openedDeviceIds, (std::vector<std::optional<int32_t>>{THIRD_DEVICE}));
+  EXPECT_EQ(input_->routesAcquired.load(), 3);
+  EXPECT_EQ(input_->routesReleased.load(), 2);
+}
+
+TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsKeepsASessionPausedMeanwhilePaused) {
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    recorder_->pause();
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isPaused());
+  EXPECT_EQ(input_->openPurposes.size(), 1U);
+  EXPECT_TRUE(input_->isOpen);
+  EXPECT_FALSE(input_->running.load());
+}
+
+TEST_F(AudioRecorderTest, AStopWhileAStartAcquiresItsRouteAgainAbandonsTheStart) {
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    input_->duringAcquireRoute = [this] {
+      EXPECT_TRUE(recorder_->stop().is_ok());
+    };
+  };
+
+  EXPECT_TRUE(recorder_->start().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_TRUE(input_->openPurposes.empty());
+  EXPECT_EQ(input_->routesAcquired.load(), 2);
+  EXPECT_EQ(input_->routesReleased.load(), 2);
+  EXPECT_TRUE(anotherRecorderCanStart());
 }
 
 TEST_F(AudioRecorderTest, AStartWhoseInputFailsToOpenReleasesTheSession) {

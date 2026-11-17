@@ -34,6 +34,7 @@ AudioRecorder::~AudioRecorder() {
 
 Result<NoneType, std::string> AudioRecorder::start() {
   RecordingSessionId startingSession = 0;
+  uint64_t routedGeneration = 0;
 
   {
     std::scoped_lock controlLock(controlMutex_);
@@ -48,23 +49,30 @@ Result<NoneType, std::string> AudioRecorder::start() {
     }
     startingSession = session_.id = claimResult.unwrap();
     session_.phaseAfterOpening.store(Phase::Recording, std::memory_order_release);
+    routedGeneration = session_.inputGeneration;
     enterPhase(Phase::Starting);
   }
-
-  // With the control mutex released: it can wait seconds for a Bluetooth link, and every other
-  // control path would wait behind it.
-  auto route = input_->acquireRoute();
 
   Result<NoneType, std::string> startResult = Ok(None);
   RecorderOutputs::Detached abandoned;
 
-  {
+  while (true) {
+    // With the control mutex released: it can wait seconds for a Bluetooth link, and every other
+    // control path would wait behind it.
+    auto route = input_->acquireRoute();
+
     std::scoped_lock controlLock(controlMutex_);
 
     // Stopped, or stopped and started again, while the route was on its way.
     if (session_.phase.load(std::memory_order_acquire) != Phase::Starting ||
         session_.id != startingSession) {
       return Err("Recorder was stopped before it started");
+    }
+
+    // A reroute arrived meanwhile: this route was settled before the device changed.
+    if (session_.inputGeneration != routedGeneration) {
+      routedGeneration = session_.inputGeneration;
+      continue;
     }
 
     startResult = input_->open(
@@ -95,6 +103,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
     }
 
     abandoned = endSession();
+    break;
   }
 
   RecorderOutputs::finalize(std::move(abandoned));
@@ -405,11 +414,15 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
   {
     std::scoped_lock controlLock(controlMutex_);
 
-    // A start still waiting for its route opens the input itself, as when it read as idle.
     const Phase phase = session_.phase.load(std::memory_order_acquire);
     const bool isStaleOpening =
         openedGeneration.has_value() && *openedGeneration != session_.inputGeneration;
-    if (phase == Phase::Idle || phase == Phase::Starting || isStaleOpening) {
+    if (phase == Phase::Idle || isStaleOpening) {
+      return Ok(None);
+    }
+    // No input is open yet: the start acquires its route again once this one is in.
+    if (phase == Phase::Starting) {
+      ++session_.inputGeneration;
       return Ok(None);
     }
 

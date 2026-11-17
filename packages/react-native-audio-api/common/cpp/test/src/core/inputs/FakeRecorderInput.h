@@ -36,13 +36,16 @@ class FakeRecorderInput final : public IRecorderInput {
 
   /// The device the next acquired route reports; nullopt when the route could not be set up.
   std::optional<int32_t> routedDeviceId = 0;
-  /// Runs once inside the next acquireRoute(), where the recorder holds no lock.
+  /// Runs once inside the next acquireRoute(), where the recorder holds no lock, after that route
+  /// has settled its device: a change made here comes too late for it.
   std::function<void()> duringAcquireRoute;
 
   std::atomic<int> routesAcquired{0};
   std::atomic<int> routesReleased{0};
   std::atomic<int> closeCount{0};
   std::vector<InputOpenPurpose> openPurposes;
+  /// The device of the route each open() received.
+  std::vector<std::optional<int32_t>> openedDeviceIds;
   /// Those of the last open(), kept after close(), so a test can replay a late notification.
   std::optional<RecorderInputEvents> events;
   bool isOpen = false;
@@ -50,11 +53,12 @@ class FakeRecorderInput final : public IRecorderInput {
 
   RouteLease acquireRoute() override {
     routesAcquired.fetch_add(1);
+    RouteReleaser releaser{[this] { routesReleased.fetch_add(1); }};
+    RouteLease route(new std::optional<int32_t>(routedDeviceId), std::move(releaser));
     if (auto hook = std::exchange(duringAcquireRoute, nullptr)) {
       hook();
     }
-    RouteReleaser releaser{[this] { routesReleased.fetch_add(1); }};
-    return RouteLease(new std::optional<int32_t>(routedDeviceId), std::move(releaser));
+    return route;
   }
 
   Result<NoneType, std::string> open(
@@ -63,6 +67,7 @@ class FakeRecorderInput final : public IRecorderInput {
       std::shared_ptr<RecorderInputGate> gate,
       RecorderInputEvents openEvents) override {
     openPurposes.push_back(purpose);
+    openedDeviceIds.push_back(route != nullptr ? *route : std::nullopt);
     events = openEvents;
     if (openError.has_value()) {
       return Result<NoneType, std::string>::Err(*openError);
