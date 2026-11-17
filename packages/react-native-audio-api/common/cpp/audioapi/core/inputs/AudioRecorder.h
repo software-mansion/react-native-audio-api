@@ -1,9 +1,9 @@
 #pragma once
 
 #include <audioapi/core/inputs/FileInfo.h>
-#include <audioapi/core/inputs/IRecordingSessionRegistry.h>
 #include <audioapi/core/inputs/RecorderOutputs.h>
 #include <audioapi/core/inputs/RecorderState.h>
+#include <audioapi/core/inputs/RecordingSessionRegistry.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/Macros.h>
@@ -36,7 +36,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   AudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       std::shared_ptr<IRecorderInput> input,
-      std::shared_ptr<IRecordingSessionRegistry> sessionRegistry,
+      std::shared_ptr<RecordingSessionRegistry> sessionRegistry,
       const PlatformFileBackend *fileBackend = nullptr);
 
   DELETE_COPY_AND_MOVE(AudioRecorder);
@@ -155,7 +155,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   std::shared_ptr<RecorderInputGate> inputGate_;
   RecorderOutputs outputs_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  std::shared_ptr<IRecordingSessionRegistry> sessionRegistry_;
+  std::shared_ptr<RecordingSessionRegistry> sessionRegistry_;
 };
 
 } // namespace audioapi
