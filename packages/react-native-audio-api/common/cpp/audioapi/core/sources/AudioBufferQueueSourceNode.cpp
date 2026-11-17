@@ -45,13 +45,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
   processor_ = std::make_unique<QueueBufferProcessor>(&buffers_, onBufferConsumed);
 }
 
-void AudioBufferQueueSourceNode::stop(double when) {
-  AudioScheduledSourceNode::stop(when);
-  isPaused_ = false;
-}
-
 void AudioBufferQueueSourceNode::start(double when) {
-  isPaused_ = false;
   stopTime_ = -1.0;
   AudioScheduledSourceNode::start(when);
 }
@@ -64,16 +58,7 @@ void AudioBufferQueueSourceNode::start(double when, double offset) {
   }
 
   offset = std::min(offset, buffers_.front().second->getDuration());
-  vReadIndex_ = static_cast<double>(buffers_.front().second->getSampleRate() * offset);
-}
-
-void AudioBufferQueueSourceNode::resume(double when) {
-  start(when);
-}
-
-void AudioBufferQueueSourceNode::pause() {
-  AudioScheduledSourceNode::stop(0.0);
-  isPaused_ = true;
+  vReadIndex_ = buffers_.front().second->getSampleRate() * offset;
 }
 
 void AudioBufferQueueSourceNode::enqueueBuffer(
@@ -128,15 +113,6 @@ void AudioBufferQueueSourceNode::clearBuffers() {
 }
 
 void AudioBufferQueueSourceNode::disable() {
-  if (isPaused_) {
-    playbackState_ = PlaybackState::UNSCHEDULED;
-    startTime_ = -1.0;
-    stopTime_ = -1.0;
-    isPaused_ = false;
-
-    return;
-  }
-
   AudioScheduledSourceNode::disable();
   clearBuffers();
 }

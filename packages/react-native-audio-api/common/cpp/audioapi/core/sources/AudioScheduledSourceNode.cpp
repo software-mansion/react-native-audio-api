@@ -29,19 +29,55 @@ void AudioScheduledSourceNode::start(double when) {
 }
 
 void AudioScheduledSourceNode::stop(double when) {
+  if (isFinished()) {
+    return;
+  }
+
   stopTime_ = when;
+  if (isPaused()) {
+    // Nothing is playing, so there is no start to compare against: the node
+    // finishes once `when` comes, unless resume() gets it playing before then.
+    return;
+  }
+
   auto context = context_.lock();
   auto startFrame = dsp::timeToSampleFrame(startTime_, context->getSampleRate());
   auto stopFrame = dsp::timeToSampleFrame(stopTime_, context->getSampleRate());
   // if stop is requested before start, mark as finished
   if (stopFrame <= startFrame) {
     playbackState_ = PlaybackState::FINISHED;
+    markEnded();
     AudioNode::disable();
     // The node never plays, so the render path will not fire onended. Defer a
     // dispatch until the context clock reaches the requested stop time
     onEndedEvent_.deferEmpty(context->getDeferredEvents(), when);
     return;
   }
+}
+
+void AudioScheduledSourceNode::pause() {
+  if (isScheduled() || isPlaying()) {
+    playbackState_ = PlaybackState::PAUSED;
+  }
+}
+
+void AudioScheduledSourceNode::resume(double when) {
+  if (!isPaused()) {
+    return;
+  }
+
+  if (stopTime_ != -1.0) {
+    const auto context = context_.lock();
+    const auto resumeTime = std::max(when, context ? context->getCurrentTime() : when);
+    if (stopTime_ <= resumeTime) {
+      return;
+    }
+  }
+
+  // Not through the virtual start(): an override may treat it as a fresh start
+  // and drop the stop time.
+  playbackState_ = PlaybackState::SCHEDULED;
+  startTime_ = when;
 }
 
 bool AudioScheduledSourceNode::isUnscheduled() const {
@@ -56,6 +92,10 @@ bool AudioScheduledSourceNode::isPlaying() const {
   return playbackState_ == PlaybackState::PLAYING;
 }
 
+bool AudioScheduledSourceNode::isPaused() const {
+  return playbackState_ == PlaybackState::PAUSED;
+}
+
 bool AudioScheduledSourceNode::isFinished() const {
   return playbackState_ == PlaybackState::FINISHED;
 }
@@ -64,8 +104,18 @@ bool AudioScheduledSourceNode::isStopScheduled() const {
   return playbackState_ == PlaybackState::STOP_SCHEDULED;
 }
 
+bool AudioScheduledSourceNode::hasEnded() const {
+  return hasEnded_.load(std::memory_order_acquire);
+}
+
+void AudioScheduledSourceNode::markEnded() {
+  hasEnded_.store(true, std::memory_order_release);
+}
+
 bool AudioScheduledSourceNode::canBeDestructed() const {
-  return isUnscheduled() || isFinished();
+  // A paused node can only be resumed through its JS handle, so once nothing
+  // holds it, it will never play again.
+  return isUnscheduled() || isPaused() || isFinished();
 }
 
 std::optional<size_t> AudioScheduledSourceNode::getOutputChannelNumber() const {
@@ -89,6 +139,13 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
   if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
+    return;
+  }
+
+  if (isPaused()) {
+    startOffset = 0;
+    nonSilentFramesToProcess = 0;
+    finishIfStopFrameReached(stopFrame, lastFrame);
     return;
   }
 
@@ -160,6 +217,7 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
 }
 
 void AudioScheduledSourceNode::disable() {
+  markEnded();
   onEndedEvent_.dispatchEmptyFromAudioThread();
   AudioNode::disable();
 }
@@ -180,6 +238,13 @@ void AudioScheduledSourceNode::advanceWithoutRender(std::size_t currentSampleFra
 
 void AudioScheduledSourceNode::assignOnEndedCallbackId(uint64_t callbackId) {
   onEndedEvent_.assignCallbackId(callbackId);
+}
+
+void AudioScheduledSourceNode::finishIfStopFrameReached(size_t stopFrame, size_t lastFrame) {
+  if (stopFrame <= lastFrame) {
+    playbackState_ = PlaybackState::STOP_SCHEDULED;
+    handleStopScheduled();
+  }
 }
 
 void AudioScheduledSourceNode::handleStopScheduled() {

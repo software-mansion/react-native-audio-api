@@ -7,20 +7,21 @@ Usage: ./scripts/validate.sh [tiers…]
 Local-only validation (not run in CI). Combine flags as needed.
 
 Tiers:
-  --fast           CI parity: format, lint, typecheck, enum sync, build, C++ smoke + JS
+  --fast           CI parity: the library's and worklets' check and test scripts
+                   (C++ suites only for what your changes touch)
   --cpp            C++ smoke only
   --cpp-extended   C++ extended (all registered categories)
   --cpp-full       C++ full (smoke, then all extended categories)
   --android        Android native build (requires ANDROID_HOME)
   --ios            iOS native build (macOS only)
-  --full           --fast + C++ extended (all categories) + --android + --ios
-                   (C++ full = smoke from --fast + extended; skips unavailable platforms)
+  --full           --fast with every C++ suite + --android + --ios
+                   (skips unavailable platforms)
 
 Examples:
-  yarn validate:fast
-  yarn validate:cpp
-  yarn validate:cpp-extended
-  yarn validate:full
+  pnpm validate:fast
+  pnpm validate:cpp
+  pnpm validate:cpp-extended
+  pnpm validate:full
 
 Options:
   --help, -h       Show this help.
@@ -41,6 +42,10 @@ RUN_CPP_FULL=false
 RUN_ANDROID=false
 RUN_IOS=false
 RUN_FULL=false
+
+# The packages whose check and test scripts --fast runs, the same ones CI checks for
+# a library change. The docs builds are left out to keep it fast.
+FAST_PACKAGES=(--filter react-native-audio-api --filter react-native-audio-worklets)
 
 PREBUILD_CORE_DONE=false
 
@@ -72,14 +77,14 @@ run_prebuild_core() {
     return 0
   fi
 
-  log_step "Prebuild: yarn install --immutable"
-  (cd "$REPO_ROOT" && yarn install --immutable)
+  log_step "Prebuild: pnpm install --frozen-lockfile"
+  (cd "$REPO_ROOT" && pnpm install --frozen-lockfile)
 
-  log_step "Prebuild: yarn build"
-  (cd "$REPO_ROOT" && yarn build)
+  log_step "Prebuild: pnpm build"
+  (cd "$REPO_ROOT" && pnpm build)
 
   log_step "Prebuild: C++ smoke (shared layer compile check)"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp)
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:cpp)
 
   PREBUILD_CORE_DONE=true
 }
@@ -111,29 +116,14 @@ EOF
 run_fast() {
   log_step "Tier (--fast): CI parity checks"
 
-  log_step "yarn install --immutable"
-  (cd "$REPO_ROOT" && yarn install --immutable)
+  log_step "pnpm install --frozen-lockfile"
+  (cd "$REPO_ROOT" && pnpm install --frozen-lockfile)
 
-  log_step "yarn format:check"
-  (cd "$REPO_ROOT" && yarn format:check)
+  log_step "pnpm ${FAST_PACKAGES[*]} run check"
+  (cd "$REPO_ROOT" && pnpm "${FAST_PACKAGES[@]}" run check)
 
-  log_step "yarn lint"
-  (cd "$REPO_ROOT" && yarn lint)
-
-  log_step "yarn typecheck"
-  (cd "$REPO_ROOT" && yarn typecheck)
-
-  log_step "yarn check-audio-enum-sync"
-  (cd "$REPO_ROOT" && yarn check-audio-enum-sync)
-
-  log_step "yarn build"
-  (cd "$REPO_ROOT" && yarn build)
-
-  log_step "yarn workspace react-native-audio-api test:cpp"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp)
-
-  log_step "yarn workspace react-native-audio-api test:js"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:js)
+  log_step "pnpm ${FAST_PACKAGES[*]} run test"
+  (cd "$REPO_ROOT" && pnpm "${FAST_PACKAGES[@]}" run test)
 
   PREBUILD_CORE_DONE=true
 }
@@ -141,19 +131,19 @@ run_fast() {
 run_cpp() {
   log_step "C++ smoke (--cpp)"
   run_prebuild_core
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:smoke)
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:cpp:smoke)
 }
 
 run_cpp_extended() {
   log_step "C++ extended all categories (--cpp-extended)"
   run_prebuild_core
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:extended)
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:cpp:extended)
 }
 
 run_cpp_full() {
   log_step "C++ full (--cpp-full)"
   run_prebuild_core
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:full)
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api test:cpp:full)
 }
 
 run_android() {
@@ -176,8 +166,8 @@ run_android() {
 
   run_prebuild_for_platform android
 
-  log_step "yarn workspace react-native-audio-api build:android"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api build:android)
+  log_step "pnpm --filter react-native-audio-api build:android"
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api build:android)
 }
 
 run_ios() {
@@ -204,16 +194,14 @@ run_ios() {
 
   run_prebuild_for_platform ios
 
-  log_step "yarn workspace react-native-audio-api build:ios"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api build:ios)
+  log_step "pnpm --filter react-native-audio-api build:ios"
+  (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api build:ios)
 }
 
 run_full() {
   log_step "Full local validation (--full)"
+  export TEST_ALL=1
   run_fast
-  # --fast already ran C++ smoke; extended completes C++ full without re-running smoke.
-  log_step "C++ extended all categories (remainder of C++ full)"
-  (cd "$REPO_ROOT" && yarn workspace react-native-audio-api test:cpp:extended)
   run_android true
   run_ios true
 }

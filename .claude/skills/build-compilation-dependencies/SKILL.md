@@ -8,8 +8,9 @@ description: >
   differently in tests vs the app. Trigger phrases: "add source file", "CMakeLists", "podspec",
   "build.gradle", "prebuilt binaries", "FFmpeg disabled", "pod install", "new architecture",
   "compile error", "undefined symbol", "SIMD", "worklets build flag", "C++ tests", "conditional
-  compilation", "include path", "gradle build fails", "link error", "yarn catalog", "catalog:", "add a dependency",
-  "bump a dependency", "yarn workspaces", "npmMinimalAgeGate", "shared dependency version",
+  compilation", "include path", "gradle build fails", "link error", "pnpm catalog", "catalog:", "add a dependency",
+  "bump a dependency", "pnpm workspace", "minimumReleaseAge", "allowBuilds", "overrides",
+  "shared dependency version", "undeclared dependency", "phantom dependency",
   "Package.swift", "SwiftPM", "Swift Package Manager", "react-native spm".
 ---
 
@@ -23,7 +24,7 @@ For deep CMake/Gradle/podspec analysis see [build-details.md](build-details.md).
 
 ```
 react-native-audio-api/
-├── package.json                        # Yarn 4 workspaces root
+├── package.json                        # pnpm workspace root (packages listed in pnpm-workspace.yaml)
 ├── packages/react-native-audio-api/    # Main library
 │   ├── android/
 │   │   ├── build.gradle                # Android build config (Gradle)
@@ -41,7 +42,7 @@ react-native-audio-api/
 │   │       └── include_ffmpeg/         # FFmpeg headers (downloaded, FFmpeg builds only)
 │   ├── common/cpp/test/
 │   │   ├── CMakeLists.txt              # Standalone test build (no Android/iOS)
-│   │   ├── run-tests.sh / filters.sh    # smoke|extended|full (+ categories, CI path filters)
+│   │   ├── run-tests.sh / filters.sh    # smoke|extended|full|affected (+ categories, suite paths)
 │   │   └── src/                        # Google Test files
 │   ├── RNAudioAPI.podspec              # CocoaPods spec for iOS
 │   ├── Package.swift                   # SwiftPM manifest for RN's `react-native spm` mode
@@ -57,11 +58,18 @@ react-native-audio-api/
 
 ---
 
-## Yarn Workspaces & Dependency Catalog
+## pnpm Workspace & Dependency Catalog
 
-Dependency versions live in a single catalog in the root `.yarnrc.yml`, referenced from
-manifests as `"<dep>": "catalog:"`. Bump once there and every workspace follows.
-Needs Yarn >= 4.10 (repo is on 4.18).
+The workspace packages, the dependency catalog, `overrides`, the release-age gate and the
+build-script allowlist all live in the root `pnpm-workspace.yaml`. Catalogued versions are
+referenced from manifests as `"<dep>": "catalog:"`. Bump once there and every workspace
+follows. The pnpm version is pinned exactly in the root `package.json` `packageManager`.
+
+**Every package declares what it imports.** pnpm's layout is isolated: a package only sees
+its own declared dependencies, so an undeclared import fails at install-time resolution
+(Metro, tsc, Node) instead of working by accident through hoisting. This is deliberate:
+undeclared imports shipped in 0.13.3 (#1267) and broke users' bundling. Fix such an error
+by declaring the dependency in the package that imports it, never by adding it to the root.
 
 **What belongs in the catalog** — anything that must move in lockstep, which is broader
 than "used more than once":
@@ -87,18 +95,23 @@ Three kinds of dependency must **never** be given `catalog:`:
 | Never catalogue | Why |
 |---|---|
 | `peerDependencies` | Public API surface of the published packages, deliberately loose (`"*"`). Pinning narrows what consumers may install. |
-| Runtime `dependencies` of published packages (`semver`, `chalk`, `commander`, `fs-extra`) | The release pipeline packs with `npm pack` (`scripts/create-package.sh`, `npm-custom-node-generator-build.yml`) and npm does not understand `catalog:`. It publishes the literal string, producing an uninstallable package. Only `yarn pack` / `yarn npm publish` perform the swap. |
+| Runtime `dependencies` of published packages (`semver`, `chalk`, `commander`, `fs-extra`) | The release pipeline packs with `npm pack` (`scripts/create-package.sh`, `npm-custom-node-generator-build.yml`) and npm does not understand `catalog:`. It publishes the literal string, producing an uninstallable package. Only `pnpm pack` / `pnpm publish` perform the swap. |
 | `workspace:*` ranges | Not version ranges — nothing to centralise. |
 
 Other constraints:
 
-- **`resolutions` does not accept `catalog:`** — install fails with `typescript@catalog: isn't supported by any available resolver`. Root `package.json` pins `typescript` literally; keep it in sync with the catalog entry. It is *not* redundant with the catalog: it forces `@commitlint/load`'s optional `typescript` peer (`^4.6.4 || ^5.2.2`) onto our version, and catalogs only rewrite workspace manifests, never transitive dependencies.
-- **`packages/audiodocs` is a separate Yarn 1 project** with its own lockfile and `node_modules`. It is not in root `workspaces`, so the catalog does not reach it.
-- **`yarn pack` is not a drop-in for `npm pack` here.** It drops `development/react/` (a nested `package.json` listed in `files[]`) and strips the executable bit from 29 prebuilt FFmpeg binaries. Do not switch the release pipeline to it without re-verifying the tarball contents.
+- **`overrides` pins `typescript` literally**; keep it in sync with the catalog entry. It is *not* redundant with the catalog: it forces `@commitlint/load`'s optional `typescript` peer (`^4.6.4 || ^5.2.2`) onto our version, and catalogs only rewrite workspace manifests, never transitive dependencies.
+- **`overrides` pins the root's `@typescript-eslint/*` to 8.58.1**, the version Yarn had resolved; 8.67+ reports 13 `no-unnecessary-type-assertion` errors. Remove it together with ESLint.
+- **The docs sites (`audiodocs`, `internaldocs`, `docs-theme`) are workspace packages.** They take `react` / `react-dom` from the catalog (React requires the two to match exactly) and link `docs-theme` with `workspace:*`. audiodocs pins an exact published `react-native-audio-api` version on purpose: its demos run the npm release, never the workspace source. CI installs them alone with `pnpm install --filter <site>...`, which skips building the library.
+- **Docusaurus is pinned to exactly 3.9.2** in every `@docusaurus/*` entry (a `^` range let one plugin drift to 3.10 and broke the build) because `@swmansion/t-rex-ui` requires 3.9.2. The `webpack: 5.101.3` override exists because Docusaurus 3.9 breaks on webpack ≥ 5.102; drop both once t-rex-ui supports 3.10.
+- **Packing goes through `npm pack`, not `pnpm pack`.** `yarn pack` dropped `development/react/` (a nested `package.json` listed in `files[]`) and stripped the executable bit from 29 prebuilt FFmpeg binaries; `pnpm pack` has not been verified. Do not switch the release pipeline without re-verifying the tarball contents.
 
-Supply-chain gate: `npmMinimalAgeGate: '1w'` refuses versions published in the last 7 days.
-Bypass one command with `yarn add --no-time-gate` / `yarn up --no-time-gate`, or exempt
-specific packages permanently via `npmPreapprovedPackages`.
+Install scripts run only for packages listed under `allowBuilds` (lefthook, which installs the
+git hooks, and esbuild for the docs; `core-js` is explicitly denied, it only prints a funding message). A new dependency with a build script fails `pnpm install` with
+`ERR_PNPM_IGNORED_BUILDS` until it is allowed (`true`) or explicitly denied (`false`) there.
+
+Supply-chain gate: `minimumReleaseAge: 10080` (minutes) refuses versions published in the
+last 7 days. Exempt specific packages via `minimumReleaseAgeExclude` in `pnpm-workspace.yaml`.
 
 ---
 
@@ -235,20 +248,20 @@ Keep it in sync with the podspec; how each podspec feature maps:
 
 ```bash
 # From the monorepo root first:
-yarn install
+pnpm install
 
 # Then install pods — must be done from the ios/ directory:
 cd apps/fabric-example/ios
 pod install
 
 # Run the app (from repo root):
-yarn workspace fabric-example ios
+pnpm --filter fabric-example ios
 # or open Xcode:
 open apps/fabric-example/ios/FabricExample.xcworkspace
 ```
 
 **When to re-run `pod install`**:
-- After `yarn install` (any dependency change)
+- After `pnpm install` (any dependency change)
 - After changing `RNAudioAPI.podspec`
 - After adding/removing iOS source files that need to be picked up
 - After changing `rnaa_utils.rb`
@@ -262,14 +275,14 @@ open apps/fabric-example/ios/FabricExample.xcworkspace
 ### Android (fabric-example)
 
 ```bash
-yarn workspace fabric-example android
+pnpm --filter fabric-example android
 # or open in Android Studio:
 open apps/fabric-example/android
 ```
 
 **Clean CMake cache** (fixes most mysterious native build failures):
 ```bash
-yarn workspace react-native-audio-api clean  # or manually:
+pnpm --filter react-native-audio-api clean  # or manually:
 rm -rf packages/react-native-audio-api/android/.cxx
 ```
 
@@ -277,43 +290,43 @@ rm -rf packages/react-native-audio-api/android/.cxx
 
 ## Local Full Validation
 
-CI intentionally skips native Android/iOS builds (expensive). Use the tiered local validation script for pre-PR checks:
+CI builds the example app for Android and iOS only when native code changes (`native-build.yml`). Use the tiered local validation script for pre-PR checks:
 
 ```bash
-yarn validate:fast      # CI parity (format, lint, typecheck, enum sync, build, C++ + JS tests)
-yarn validate:cpp       # C++ smoke
-yarn validate:cpp-extended  # C++ extended (all categories)
-yarn validate:android   # yarn workspace … build:android
-yarn validate:ios       # yarn workspace … build:ios (macOS only)
-yarn validate:full      # --fast + C++ extended + --android + --ios
+pnpm validate:fast      # CI parity: library + worklets `check` and `test` (affected C++ suites)
+pnpm validate:cpp       # C++ smoke
+pnpm validate:cpp-extended  # C++ extended (all categories)
+pnpm validate:android   # pnpm workspace … build:android
+pnpm validate:ios       # pnpm workspace … build:ios (macOS only)
+pnpm validate:full      # --fast with every C++ suite + --android + --ios
 ```
 
 Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 
 ### What CI covers vs what validation tiers add
 
-| Layer | CI (`ci.yml` + `tests.yml`) | Local tiers |
+| Layer | CI (`ci.yml`) | Local tiers |
 |---|---|---|
 | TS build (`bob build`) | Yes | `--fast` |
-| C++ smoke (`run-tests.sh`) | Yes | `--fast` |
-| C++ coverage (`run-coverage.sh`, smoke, Clang) | Yes (`cpp-coverage` artifact) | `yarn test:cpp:coverage` |
+| C++ smoke (`run-tests.sh`) | When `common/cpp/`, the lockfile or the library manifest changes (`affected`) | `--fast` (same rule), `--cpp` |
+| C++ coverage (`run-coverage.sh`, smoke, Clang) | Pull requests where smoke is selected (`cpp-coverage.yml`; PR comment with totals + changed-line coverage) | `pnpm test:cpp:coverage` |
 | Jest | Yes | `--fast` |
-| Extended C++ by category (e.g. graph) | Path change or manual dispatch in `tests.yml` | `--cpp-extended` |
+| Extended C++ by category (e.g. graph) | When the category's paths change (`affected`) | `--fast` (same rule), `--cpp-extended` |
 | HostObjects (26 JSI `.cpp` files) | **No** | `--android` + `--ios` |
 | Android JNI C++ + Kotlin | **No** | `--android` |
 | iOS ObjC++ | **No** | `--ios` |
 | Prebuilt libs (Opus, FFmpeg, etc.) | **No** | `--android` / `--ios` (via `download-prebuilt-binaries.sh`) |
 | TurboModule codegen, worklets linking | **No** | `--android` / `--ios` |
 
-The C++ test build excludes HostObjects, `AudioContext.cpp`, `FfmpegDecoder.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `yarn test` alone does not prove native layers compile.
+The C++ test build excludes HostObjects, `AudioContext.cpp`, `FfmpegDecoder.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `pnpm test` alone does not prove native layers compile.
 
 ### Shared prebuild phase (before native tiers)
 
 Before `--android` or `--ios`, the script runs once:
 
-1. `yarn install --immutable` + `yarn build`
+1. `pnpm install --frozen-lockfile` + `pnpm build`
 2. [`download-prebuilt-binaries.sh`](../../../packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh) `{android|ios}` (must run from `packages/react-native-audio-api/scripts/`)
-3. `yarn workspace react-native-audio-api test:cpp`
+3. `pnpm --filter react-native-audio-api test:cpp`
 
 Android (NDK) and iOS (Clang) cannot share object files — reuse is at the prebuild/download level. If `ccache` is installed, `validate.sh` wraps host `CC`/`CXX`; only the host C++ tests (`test:cpp`) honor that — Gradle/NDK and `xcodebuild` use their own toolchains and are unaffected.
 
@@ -321,7 +334,7 @@ Android (NDK) and iOS (Clang) cannot share object files — reuse is at the preb
 
 - `--ios` on Linux → skip with message (exit 0)
 - `--android` without `ANDROID_HOME` → fail on explicit `--android`; skip with warning inside `--full`
-- `--full` includes C++ extended (all categories) after `--fast`’s smoke, so local full covers C++ full + native builds
+- `--full` runs `--fast` with `TEST_ALL=1`, so every C++ suite runs, then the native builds
 
 ### Which tier to run
 
@@ -336,31 +349,33 @@ See the decision table in [post-work-checks](../post-work-checks/SKILL.md).
 
 ### How to run
 ```bash
-yarn test   # Jest + C++ smoke
-yarn workspace react-native-audio-api test:cpp:smoke|extended|full
-yarn workspace react-native-audio-api test:cpp:extended -- graph
+pnpm test   # Jest + the C++ suites your changes touch
+pnpm --filter react-native-audio-api test:cpp:smoke|extended|full|affected
+pnpm --filter react-native-audio-api test:cpp:extended -- graph
 ```
 
-`run-tests.sh [smoke|extended|full] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
+`run-tests.sh [smoke|extended|full|affected] [category…] [--ubasan|--tsan|--no-ubasan]` uses filters from `filters.sh`. `affected` picks suites by matching changed files against `cpp_test_paths_for_suite`. Docs: `common/cpp/test/TESTING.md`. Shell scripts in this repo use kebab-case plus `.sh` (`run-tests.sh`, not `RunTests.sh`).
 
 > **Sanitizer binaries compile every engine translation unit with that sanitizer.** `add_sanitized_tests(<name> <compile-flags> <link-flags>)` builds `tests_<name>` plus `rnaudioapi_<name>` and `rnaudioapi_libs_<name>`. `tsan` uses `-fsanitize=thread`; `asan` uses `-fsanitize=address,undefined`. The plain `rnaudioapi` pair is only for `tests` and the coverage build. TSan misses release/acquire pairs in uninstrumented code, so an uninstrumented engine turns every SPSC hand-off into a false race (`<null>` frames, "As if synchronized via sleep"). ASan and UBSan simply never check a translation unit they did not compile. `AudioThreadGuard.cpp` is compiled into the executable, not the static lib, so its `__SANITIZE_*` macros match that binary. GoogleTest stays the shared uninstrumented target: one gtest cannot be compiled with both sanitizers and with neither.
 
 ### Coverage (Clang / llvm-cov)
 
 ```bash
-yarn workspace react-native-audio-api test:cpp:coverage
+pnpm --filter react-native-audio-api test:cpp:coverage
 # open packages/react-native-audio-api/common/cpp/test/coverage-html/index.html
 ```
 
-`run-coverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux).
+`run-coverage.sh` configures a separate `build-coverage/` tree with `-DENABLE_COVERAGE=ON` (Clang-only LLVM source-based coverage: `-fprofile-instr-generate -fcoverage-mapping`), defaults `CC`/`CXX` to `clang`/`clang++` when unset, runs the **smoke** filter from `filters.sh`, then prints `llvm-cov report` and writes HTML via `llvm-cov show -format=html`. When `GITHUB_STEP_SUMMARY` is set, the report is also appended there. It also writes `build-coverage/coverage.lcov` and `build-coverage/coverage-totals.md` (line/function/region totals, via `llvm-cov export --summary-only` + `jq`). Sanitizer targets are skipped when coverage is enabled. Requires Apple Clang / `xcrun llvm-profdata` and `xcrun llvm-cov` on macOS (or the same tools on PATH for Linux). On macOS with Homebrew LLVM first on `PATH`, `clang` is Homebrew's while the profile tools come from `xcrun`, and `llvm-profdata merge` fails with "raw profile version mismatch": run with `CC=/usr/bin/clang CXX=/usr/bin/clang++` after deleting `build-coverage/` (CMake caches the compiler).
 
-CI runs a parallel `cpp-coverage` job via `.github/workflows/cpp-coverage-job.yml` (called from `tests.yml` on pull requests; Clang + LLVM apt packages, separate from the GCC `cpp-smoke-tests` job). It uploads the HTML tree as the `cpp-coverage-html` artifact (14-day retention); download the zip from the Actions run and open `index.html`. Manual `workflow_dispatch` on `tests.yml` accepts booleans `run_cpp_smoke_tests` / `run_cpp_coverage` / `run_js_tests` (default true); non-draft PRs always run all three, including when a draft is marked ready for review (`ready_for_review` is listed explicitly because it is not a default `pull_request` type). Extended categories share `cpp-job.yml` and pass `categories`; path-filter YAML is generated by `filters.sh path-filters`.
+`coverage-pr-report.sh <output.md>` turns those files into the PR comment: totals, then `diff-cover`'s coverage of the lines changed since `cpp_test_base_ref` (no coverage data from the base is needed), with the uncovered snippets collapsed and dropped when the comment would exceed GitHub's size limit.
+
+`ci.yml` calls `cpp-coverage.yml` on pull requests that change the library. Its `affected` job runs `cpp_test_affected_suites` (the same selection as the library's `test`; `test-all` from the `shared` filter) and its `coverage` job runs only when smoke is selected (`setup-env` tools `cmake`, `llvm`, `diff-cover`). The report goes up through `.github/actions/upload-pr-report`, and `pr-report-comment.yml` posts it. Smoke in the library's `test` keeps its own plain build.
 
 > **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
 
 ### Key design decisions
 - Completely standalone — no Gradle, no Xcode, no prebuilt Android libraries needed
-- Sources resolved from `node_modules` (symlinked to `packages/` in yarn workspaces)
+- Sources compiled from the package directory itself; react-native headers from the package's own `node_modules/react-native`
 - HostObjects (except the `list(APPEND RNAUDIOAPI_SRC …)` exceptions), AudioContext, and FfmpegDecoder are excluded from the test build. There is no worklets-node filter and no `RN_AUDIO_API_ENABLE_WORKLETS` define; engine sources no longer read that flag
 - The static lib compiles `jsi/jsi.cpp`, so real JSI types (`jsi::HostObject`, `jsi::MutableBuffer`) work in tests. When core code a test links constructs a HostObject (e.g. `AudioRecorderCallback` → `AudioBufferHostObject`), add that HostObject's `.cpp` to the `list(APPEND RNAUDIOAPI_SRC …)` exceptions in `test/CMakeLists.txt` (as for `JsEnumParser.cpp` and `AudioBufferHostObject.cpp`) instead of writing a stub translation unit or an `#if RN_AUDIO_API_TEST` test double
 - Compile definitions: `RN_AUDIO_API_TEST=1`, `RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1`, `MA_NO_LIBOPUS=1`, `MA_NO_LIBVORBIS=1` (FFmpeg is off because its define is absent). `add_compile_definitions` is directory-scoped, so every target in this file receives them
@@ -376,22 +391,22 @@ For `MockAudioEventHandlerRegistry`, `TestableXxx` pattern, and full CMakeLists 
 
 ## WPT Node bindings build (`wpt_tests/CMakeLists.txt`)
 
-Builds the C++ engine as a Node.js addon (`.node`, via cmake-js + microsoft/node-api-jsi) so Web Platform Tests can run against it: `yarn workspace react-native-audio-api node:build` (part of `yarn wpt`). The engine is always compiled from the workspace `common/cpp` sources.
+Builds the C++ engine as a Node.js addon (`.node`, via cmake-js + microsoft/node-api-jsi) so Web Platform Tests can run against it: `pnpm --filter react-native-audio-api node:build` (part of `pnpm wpt`). The engine is always compiled from the workspace `common/cpp` sources.
 
-The JS wrapper layer (`lib/commonjs` classes and error types) is resolved by `wpt_tests/package-root.js`. By default it uses the workspace build output of `yarn build`; set `RN_AUDIO_API_APP_ROOT` to an app directory to load the `react-native-audio-api` JS installed for that app instead (e.g. a published npm release):
+The JS wrapper layer (`lib/commonjs` classes and error types) is resolved by `wpt_tests/package-root.js`. By default it uses the workspace build output of `pnpm build`; set `RN_AUDIO_API_APP_ROOT` to an app directory to load the `react-native-audio-api` JS installed for that app instead (e.g. a published npm release):
 
 ```bash
-RN_AUDIO_API_APP_ROOT=/path/to/app yarn wpt:only
+RN_AUDIO_API_APP_ROOT=/path/to/app pnpm wpt:only
 ```
 
 Classes missing from an older package version are skipped with a warning, so their tests fail at runtime instead of crashing the harness at load. Note the native addon is NOT swapped by this env var — only the JS layer.
 
 Resolution pitfalls learned the hard way (both handled inside `package-root.js`):
 
-- Yarn (node-modules linker) may **hoist** the app's pinned npm copy to the monorepo root `node_modules` rather than `<app>/node_modules`, so the package must be resolved with Node resolution from the app directory, not a hard-coded `<app>/node_modules/<pkg>` path. If `yarn install` claims success but the copy is missing everywhere, delete `.yarn/install-state.gz` and reinstall.
+- The app's copy must be resolved with Node resolution from the app directory, not a hard-coded `<app>/node_modules/<pkg>` path: package managers that hoist may place it in an ancestor `node_modules`.
 - `require.resolve('react-native-audio-api/...', { paths: [appRoot] })` from a file *inside* the workspace package still resolves to the workspace itself (Node package **self-reference** beats the `paths` option). Use `createRequire(path.join(appRoot, 'anything.js'))` to anchor resolution in the app.
 
-`yarn wpt:report:docs` runs the suite twice (workspace `main`, then the stable release pinned in `apps/common-app` via `wpt:report:stable`) and regenerates the side-by-side table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
+`pnpm wpt:report:docs` runs the suite twice (workspace `main`, then the stable release pinned in `apps/common-app` via `wpt:report:stable`) and regenerates the side-by-side table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
 
 ---
 
@@ -407,7 +422,7 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | `HAVE_ACCELERATE` | Not set | `GCC_PREPROCESSOR_DEFINITIONS` | Not set |
 | `RN_AUDIO_API_TEST` | Not set | Not set | Always set to 1 |
 
-**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`, `encoding/OSFilePath.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)` dispatch. The Apple branch must exclude **both** desktop defines: the gtest build (`RN_AUDIO_API_TEST`) and the WPT node addon (`RN_AUDIO_API_NODE`) run on macOS (where `__APPLE__` is defined) but do not compile or link the `ios/` ObjC++ sources. The node build cannot borrow `RN_AUDIO_API_TEST` instead — that flag also switches on gtest-only code (`gtest_prod.h` includes, test `ArrayBuffer` shims). When adding a new OS-selector header, copy the full three-clause guard; an incremental `wpt_tests/build` dir can mask a missing clause for a long time, so verify with a clean `yarn node:build`. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoder`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoder`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed. A selector header only names the platform type; choosing between it and a bundled or optional library (FFmpeg, the Ogg/Opus encoder) belongs in the factory (`decoding/DecoderFactory.cpp`, `encoding/EncoderFactory.cpp`), which holds that library's flag check in one place.
+**OS-API selector headers** (`decoding/OSDecoding.h`, `encoding/OSEncoding.h`, `encoding/OSRemux.h`, `encoding/OSFilePath.h`): common code reaches platform implementations through `#if defined(__ANDROID__)` / `#elif defined(__APPLE__) && !defined(RN_AUDIO_API_TEST) && !defined(RN_AUDIO_API_NODE)` dispatch. The Apple branch must exclude **both** desktop defines: the gtest build (`RN_AUDIO_API_TEST`) and the WPT node addon (`RN_AUDIO_API_NODE`) run on macOS (where `__APPLE__` is defined) but do not compile or link the `ios/` ObjC++ sources. The node build cannot borrow `RN_AUDIO_API_TEST` instead — that flag also switches on gtest-only code (`gtest_prod.h` includes, test `ArrayBuffer` shims). When adding a new OS-selector header, copy the full three-clause guard; an incremental `wpt_tests/build` dir can mask a missing clause for a long time, so verify with a clean `pnpm node:build`. Platform glue selected this way lives in `android/src/main/cpp/audioapi/android/` (e.g. `AndroidDecoding`, `AndroidEncoder`, `AndroidRemux`) and `ios/audioapi/ios/core/utils/` (e.g. `IOSDecoding`, `IOSEncoder`, `IOSRemux`) — both picked up automatically by the CMake glob / podspec glob, no build-file edits needed. A selector header only names the platform type; choosing between it and a bundled or optional library (FFmpeg, the Ogg/Opus encoder) belongs in the factory (`decoding/DecoderFactory.cpp`, `encoding/EncoderFactory.cpp`), which holds that library's flag check in one place.
 
 ---
 
@@ -420,23 +435,22 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 | `undefined symbol: av_*` | FFmpeg .so not in jniLibs | Build triggers download; verify `"enableFFmpeg": true` is in the app's package.json (FFmpeg is off by default) |
 | `'libavcodec/avcodec.h' file not found` | FFmpeg include dir is gated on the enable flag; something compiled `FfmpegDecoder.cpp` in a disabled build | Check the source filter (`list(FILTER … FfmpegDecoder\.cpp$)` / podspec `exclude_files`) picked the file up |
 | CMake error on clean build | Stale `.cxx` cache | `rm -rf packages/react-native-audio-api/android/.cxx` |
-| Test build: `Cannot open include file: audioapi/...` | Node modules not linked | `yarn install` from root, then re-run tests |
+| Test build: `Cannot open include file: audioapi/...` | Node modules not linked | `pnpm install` from root, then re-run tests |
 | New `.cpp` not compiled in tests | Glob picks it up automatically — may need cmake reconfigure | Delete `test/build/` and re-run |
 | iOS compile error `unknown type 'id'` | C++ file included ObjC-only header | Compile that file as ObjC++ (separate subspec with `-x objective-c++`) |
 | `RCT_NEW_ARCH_ENABLED` undefined on Android | App sets `newArchEnabled=false` | Remove it; a missing property already means the New Architecture |
-| iOS: `'to_chars' is unavailable: introduced in iOS 16.3` from `formatter_floating_point.h`, instantiated by `std::format<...>` | `std::format` in code compiled for iOS. libc++ availability-gates the whole `<format>` library to iOS 16.3; the podspec minimum is `ios_min_version = '14.0'`. The desktop C++ test build and Android NDK have no such gate, so `yarn test:cpp` passes and only the iOS build fails. | Use `std::string` concatenation / `std::to_string` in `common/cpp` and `ios/`. Zero-pad by hand (`insert(0, n, '0')`). Android-only files (`android/src/main/cpp`) may keep `std::format`. |
+| iOS: `'to_chars' is unavailable: introduced in iOS 16.3` from `formatter_floating_point.h`, instantiated by `std::format<...>` | `std::format` in code compiled for iOS. libc++ availability-gates the whole `<format>` library to iOS 16.3; the podspec minimum is `ios_min_version = '14.0'`. The desktop C++ test build and Android NDK have no such gate, so `pnpm test:cpp` passes and only the iOS build fails. | Use `std::string` concatenation / `std::to_string` in `common/cpp` and `ios/`. Zero-pad by hand (`insert(0, n, '0')`). Android-only files (`android/src/main/cpp`) may keep `std::format`. |
 | iOS test target: `Undefined symbol: audioapi::<something>` for a function that exists in `common/cpp` and compiles in the pod | The XCTest bundle links against the host app, and the host app only pulls the static-lib members its own code references. A common symbol nobody in `ios/` or the HostObjects uses never reaches the host. | Compute it inline in the test, or make the library reference it; do not add a fake use in production code. |
 | iOS: new `common/cpp` `.cpp` not compiled at all (`Undefined symbol` with no `CompileC` line for it) | CocoaPods expands `source_files` globs at `pod install`, not at build time | `cd apps/fabric-example/ios && pod install` after adding a source file |
-| `check-audio-file-properties-enum-sync.sh` passes while `FileFormat` is out of sync | Its extractor only reads `Name = <number>` lines; `FileFormat` has no explicit values on either side, so it compares two empty lists ("in sync (0 entries)") | Keep the C++ and TS `FileFormat` lists in the same order by hand; `EncoderCapabilities.h`'s `static_assert` only checks the C++ count |
 | Android/iOS: after editing a C++/TS mirrored enum (`FileFormat`, `BitDepth`, …) the app silently uses the wrong value (e.g. records FLAC when JS asked for ADTS) | Metro hot-reloaded the TS enum with the new numbering, but the installed binary still carries the old C++ numbering; enum values cross JSI as plain numbers | Reinstall the app (`installDebug` / `run-ios`) after any enum reorder; a JS reload is never enough |
 | Android incremental build only: `Unresolved reference` to a top-level Kotlin function, or `Cannot access '…': it is internal in file`, while `--rerun-tasks` passes | Incremental Kotlin rounds treat the module's own earlier classes as a foreign module (library is built through the `node_modules/react-native-audio-api` symlink) | Use only public classes/objects across files in `android/src/main/java`; no top-level functions, no `internal` |
-| clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `yarn setup:clangd` |
+| clangd only: `'React/RCTBridgeModule.h' file not found` in `.mm` files | `compile_commands.json` has no framework search path | See *clangd compile database* below — regenerate with `pnpm setup:clangd` |
 
 ## clangd compile database
 
 `packages/react-native-audio-api/common/cpp/clangd/` generates the repo-root
-`compile_commands.json` that clangd reads (`yarn setup:clangd`, or
-`yarn setup:clangd:clean` after a native dependency bump). It is editor tooling
+`compile_commands.json` that clangd reads (`pnpm setup:clangd`, or
+`pnpm setup:clangd:clean` after a native dependency bump). It is editor tooling
 only — it never participates in a real build. See its `SETUP.md`.
 
 The iOS half reuses whatever `pod install` resolved for `apps/fabric-example`,

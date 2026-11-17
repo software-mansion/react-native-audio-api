@@ -1,7 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/sources/AudioFileSourceNode.h>
-#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/types/NodeOptions.h>
@@ -368,59 +367,17 @@ std::shared_ptr<DSPAudioBuffer> AudioFileSourceNode::handleEndOfStreamPlayback(
   return processingBuffer;
 }
 
-//void AudioFileSourceNode::connect(const std::shared_ptr<AudioNode> &node) {
-//  if (isRoutedThroughMediaElement()) {
-//    return;
-//  }
-//
-//  AudioScheduledSourceNode::connect(node);
-//}
-//
-
 void AudioFileSourceNode::start(double when) {
   AudioScheduledSourceNode::start(when);
-  filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   positionChanged_.requestFlush();
 }
 
-void AudioFileSourceNode::bindMediaElementSource(uint64_t bindingId) {
-  activeMediaBindingId_.store(bindingId, std::memory_order_release);
-}
-
-void AudioFileSourceNode::releaseMediaElementSource(uint64_t bindingId) {
-  uint64_t expected = bindingId;
-  if (!activeMediaBindingId_.compare_exchange_strong(
-          expected, 0, std::memory_order_acq_rel, std::memory_order_acquire)) {
-    return;
-  }
-
-  ensureConnectedForDirectPlayback();
-}
-
-void AudioFileSourceNode::ensureConnectedForDirectPlayback() {
-  if (filePaused_ || isUnscheduled() || isFinished()) {
-    return;
-  }
-
-  //  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-  //    connect(context->getDestination());
-  //  }
-}
-
-bool AudioFileSourceNode::isCurrentMediaElementSource(uint64_t bindingId) const {
-  if (bindingId == 0) {
-    return false;
-  }
-
-  return activeMediaBindingId_.load(std::memory_order_acquire) == bindingId;
-}
-
 void AudioFileSourceNode::pause() {
-  filePaused_ = true;
+  AudioScheduledSourceNode::pause();
   // A deliberate pause is not a stall — don't leave a stale "buffering" state
-  // observed by JS once processDecodedOutput() stops being called below.
+  // observed by JS once processNode() stops decoding below.
   bufferingStateDispatcher_.advance(/* hasData */ true, 0);
 }
 
@@ -431,7 +388,6 @@ void AudioFileSourceNode::disable() {
     seekDecoderDaemon_->requestStop();
   }
 
-  filePaused_ = false;
   endOfStreamStopPending_ = false;
   endOfStreamDrainPending_ = false;
   bufferingStateDispatcher_.advance(/* hasData */ true, 0);
@@ -626,14 +582,6 @@ size_t AudioFileSourceNode::renderWithoutPitchPreservation(
   return inputFrames;
 }
 
-void AudioFileSourceNode::processNode(int framesToProcess) {
-  if (isRoutedThroughMediaElement()) {
-    audioBuffer_->zero();
-    return;
-  }
-  processDecodedOutput(framesToProcess);
-}
-
 std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPreflight(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess,
@@ -645,7 +593,6 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
 
   if (endOfStreamStopPending_) {
     endOfStreamStopPending_ = false;
-    filePaused_ = true;
     playbackState_ = PlaybackState::STOP_SCHEDULED;
     handleStopScheduled();
     processingBuffer->zero();
@@ -654,11 +601,6 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
 
   if (endOfStreamDrainPending_) {
     return handleEndOfStreamPlayback(processingBuffer, framesToProcess, eofDrainRate_);
-  }
-
-  if (filePaused_) {
-    processingBuffer->zero();
-    return processingBuffer;
   }
 
   outContext = context_.lock();
@@ -675,11 +617,8 @@ std::optional<std::shared_ptr<DSPAudioBuffer>> AudioFileSourceNode::renderPrefli
   return std::nullopt;
 }
 
-void AudioFileSourceNode::processDecodedOutput(
-    int framesToProcess,
-    const std::shared_ptr<DSPAudioBuffer> &outputBuffer) {
-  const std::shared_ptr<DSPAudioBuffer> &processingBuffer =
-      outputBuffer != nullptr ? outputBuffer : audioBuffer_;
+void AudioFileSourceNode::processNode(int framesToProcess) {
+  const std::shared_ptr<DSPAudioBuffer> &processingBuffer = audioBuffer_;
 
   std::shared_ptr<BaseAudioContext> context;
   if (renderPreflight(processingBuffer, framesToProcess, context)) {

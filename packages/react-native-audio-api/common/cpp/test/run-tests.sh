@@ -2,12 +2,14 @@
 
 print_help() {
   cat <<'EOF'
-Usage: run-tests.sh [smoke|extended|full] [category…] [options]
+Usage: run-tests.sh [smoke|extended|full|affected] [category…] [options]
 
 Modes (default: smoke):
   smoke       Fast suites — PR default and coverage. Disjoint from extended.
   extended    Slow suites for the given categories (default: all registered).
   full        smoke, then extended for all categories (each mode’s defaults).
+  affected    The suites (smoke, extended categories) whose paths in filters.sh the
+              current changes touch; nothing when none do. TEST_ALL=1 runs all of them.
 
 Categories (extended only):
   graph       Slow graph suites (see filters.sh). GraphNodeGrowthTest is smoke.
@@ -31,6 +33,7 @@ Examples:
   run-tests.sh extended graph --no-ubasan
   run-tests.sh extended graph --tsan
   run-tests.sh full
+  run-tests.sh affected
 
 See TESTING.md.
 EOF
@@ -55,7 +58,7 @@ while [[ $# -gt 0 ]]; do
       print_help
       exit 0
       ;;
-    smoke|extended|full)
+    smoke|extended|full|affected)
       if [[ -n "$MODE" ]]; then
         echo "error: mode already set to '${MODE}', got '$1'" >&2
         exit 1
@@ -87,7 +90,7 @@ while [[ $# -gt 0 ]]; do
       SANITIZER=none
       shift
       ;;
-    # Yarn forwards a literal "--" before script args (`yarn cmd -- graph`).
+    # pnpm forwards a literal "--" before script args (`pnpm cmd -- graph`).
     --)
       shift
       ;;
@@ -155,10 +158,6 @@ label_for_sanitizer() {
   esac
 }
 
-parallel_job_count() {
-  sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 10
-}
-
 filter_for_mode() {
   local mode="$1"
   shift
@@ -199,6 +198,28 @@ run_mode() {
     ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}
 }
 
+AFFECTED_CATEGORIES=()
+RUN_SMOKE=false
+if [[ "$MODE" == "affected" ]]; then
+  if [[ -n "$SANITIZER" ]]; then
+    echo "error: affected runs each suite with its mode's default sanitizer; drop the sanitizer flag" >&2
+    exit 1
+  fi
+  while IFS= read -r suite; do
+    if [[ "$suite" == "smoke" ]]; then
+      RUN_SMOKE=true
+    elif [[ -n "$suite" ]]; then
+      AFFECTED_CATEGORIES+=("$suite")
+    fi
+  done < <(cpp_test_affected_suites)
+
+  if [[ "$RUN_SMOKE" == false && ${#AFFECTED_CATEGORIES[@]} -eq 0 ]]; then
+    echo "No C++ test inputs changed; skipping the C++ tests."
+    exit 0
+  fi
+  echo "Affected suites: $([[ "$RUN_SMOKE" == true ]] && echo "smoke ")${AFFECTED_CATEGORIES[*]+"${AFFECTED_CATEGORIES[*]}"}"
+fi
+
 cmake -S . -B build -Wno-dev
 
 case "$MODE" in
@@ -214,6 +235,14 @@ case "$MODE" in
     run_mode smoke
     SANITIZER=""
     run_mode extended
+    ;;
+  affected)
+    if [[ "$RUN_SMOKE" == true ]]; then
+      run_mode smoke
+    fi
+    if [[ ${#AFFECTED_CATEGORIES[@]} -gt 0 ]]; then
+      run_mode extended "${AFFECTED_CATEGORIES[@]}"
+    fi
     ;;
   *)
     echo "error: unknown mode '${MODE}'" >&2

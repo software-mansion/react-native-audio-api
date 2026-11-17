@@ -230,7 +230,7 @@ Resolves two paths that vary per machine/monorepo layout:
 
 These vary per machine/monorepo layout, so they're computed at install time rather than hardcoded.
 
-`ReactCommon` is joined onto react-native's **own** directory (`File.dirname(require.resolve('react-native/package.json'))`), never `<that dir>/../react-native`: isolated layouts (pnpm, Yarn's pnpm linker) store the package in a folder not named `react-native` (e.g. `.store/react-native-virtual-<hash>/package`), and the sibling lookup made `pod install` fail for those consumers. The `REACT_NATIVE_NODE_MODULES_DIR` fallback accepts either react-native's directory or the `node_modules` containing it.
+`ReactCommon` is joined onto react-native's **own** directory (`File.dirname(require.resolve('react-native/package.json'))`), never `<that dir>/../react-native`: the script runs in consumers' projects under any package manager, and Yarn's pnpm linker stores the package in a folder not named `react-native` (`.store/react-native-virtual-<hash>/package`), so the sibling lookup made `pod install` fail there. The `REACT_NATIVE_NODE_MODULES_DIR` fallback accepts either react-native's directory or the `node_modules` containing it.
 
 ### System frameworks linked
 
@@ -246,7 +246,7 @@ Enables New Architecture: `ENV['RCT_NEW_ARCH_ENABLED'] = '1'` at the top. This i
 
 The podfile resolves the minimum iOS version from RN's `min_ios_version_supported` helper — do not hardcode `14.0` in the Podfile itself.
 
-**No hard-coded `node_modules` paths in fabric-example.** `RN_RELATIVE_PATH` (Podfile), `reactNativeDir` / `codegenDir` / `cliFile` / `hermesCommand` (`android/app/build.gradle`), the `@react-native/gradle-plugin` `includeBuild` (`settings.gradle`) and `apps/common-app/scripts/dependencies.js` all resolve packages with Node, so they hold for hoisted and isolated `node_modules`. Packages that are react-native's dependencies (gradle-plugin, codegen, hermes-compiler) are resolved from react-native's location, since the app doesn't declare them. The pbxproj sets `REACT_NATIVE_PATH` only at project level (written by `pod install` from `RN_RELATIVE_PATH`); targets inherit it — don't add target-level overrides. fabric-example declares every package its own JS config uses (babel preset, module-resolver, metro-config, RN CLI, `react-native-worklets` for its babel plugin) instead of relying on common-app's being hoisted.
+**No hard-coded `node_modules` paths in fabric-example.** `reactNativeDir` / `codegenDir` / `cliFile` / `hermesCommand` (`android/app/build.gradle`), the `@react-native/gradle-plugin` `includeBuild` (`settings.gradle`) and `apps/common-app/scripts/dependencies.js` all resolve packages with Node, so they hold for hoisted and isolated `node_modules`. Packages that are react-native's dependencies (gradle-plugin, codegen, hermes-compiler) are resolved from react-native's location, since the app doesn't declare them. The Podfile takes react-native's path from the RN CLI (`config[:reactNativePath]` in the app target) and reuses it for the test-host target and `post_install`, so the test host must stay declared after the app target. Every target must use that same path string: under pnpm, Node's `require.resolve` returns the store path (`node_modules/.pnpm/react-native@…_<hash>/…`) while the CLI returns the app's link, and CocoaPods rejects the same pods from two different paths ("multiple dependencies with different sources"). The pbxproj sets `REACT_NATIVE_PATH` only at project level; `react_native_post_install` writes the resolved store path there, so `post_install` overwrites it with the link path to keep the hash out of the pbxproj. Targets inherit it — don't add target-level overrides. fabric-example declares every package its own JS config uses (babel preset, module-resolver, metro-config, RN CLI, `react-native-worklets` for its babel plugin) instead of relying on common-app's being hoisted.
 
 ---
 
@@ -256,18 +256,19 @@ The podfile resolves the minimum iOS version from RN's `min_ios_version_supporte
 
 No Gradle, no Xcode, no prebuilt Android libraries needed.
 
-### Sources resolved from `node_modules` (not from monorepo source directly)
+### Sources and headers resolved from the package directory
 
 ```cmake
-set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
-set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/node_modules/react-native-audio-api")
+set(PACKAGE_DIR ${CMAKE_SOURCE_DIR}/../../..)
+set(REACT_NATIVE_DIR "${PACKAGE_DIR}/node_modules/react-native")
+set(REACT_NATIVE_AUDIO_API_DIR "${PACKAGE_DIR}")
 
 file(GLOB_RECURSE RNAUDIOAPI_SRC CONFIGURE_DEPENDS
   "${REACT_NATIVE_AUDIO_API_DIR}/common/cpp/audioapi/*.cpp"
 )
 ```
 
-This means **tests build against the installed/published version of the library** in `node_modules`, not the local `packages/` source directly. In a monorepo with yarn workspaces, `node_modules/react-native-audio-api` symlinks to `packages/react-native-audio-api`, so this works fine locally.
+Tests compile the package's own `common/cpp` sources. react-native's headers come from the package's own `node_modules/react-native`: it is a devDependency of the library, so pnpm always links it there; the repo root `node_modules` only holds the root's own dependencies. The WPT addon (`wpt_tests/CMakeLists.txt`) and both clangd CMake projects use the same package-local paths (worklets: its own `node_modules/react-native` and `react-native-worklets`).
 
 ### Excluded from tests (not relevant for unit testing)
 

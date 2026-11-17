@@ -21,7 +21,6 @@ using namespace audioapi::channels;
 namespace audioapi {
 
 struct AudioFileSourceOptions;
-class MediaElementAudioSourceNode;
 
 inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 
@@ -29,10 +28,7 @@ inline constexpr auto ON_POSITION_CHANGED_INTERVAL = 0.25f;
 inline constexpr auto ON_BUFFERING_STATE_DEBOUNCE_INTERVAL = 0.15f;
 
 /// @brief Decodes a file or in-memory buffer and plays it as a scheduled source.
-/// @note When routed through MediaElementAudioSourceNode, this node outputs silence and the media node pulls decoded audio.
 class AudioFileSourceNode : public AudioScheduledSourceNode {
-  friend class MediaElementAudioSourceNode;
-
  public:
   explicit AudioFileSourceNode(
       const std::shared_ptr<BaseAudioContext> &context,
@@ -43,26 +39,12 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @note Audio thread only.
   void disable() override;
 
-  /// @brief Schedules playback; auto-connects to the destination when not media-routed.
+  /// @brief Schedules playback, or resumes it when the source is paused.
   void start(double when) override;
-
-  /// @brief True while a media element owns decoding (active binding id is non-zero).
-  [[nodiscard]] bool isRoutedThroughMediaElement() const {
-    return activeMediaBindingId_.load(std::memory_order_acquire) != 0;
-  }
 
   /// @brief Sends on position changed event.
   /// @param framesPlayed number of frames played since the last event.
   void sendOnPositionChangedEvent(int framesPlayed);
-
-  /// @brief Registers @p bindingId as the current media-element owner of this decoder.
-  void bindMediaElementSource(uint64_t bindingId);
-
-  /// @brief Clears the binding when @p bindingId matches; resumes direct destination routing if playing.
-  void releaseMediaElementSource(uint64_t bindingId);
-
-  /// @brief True if @p bindingId is the active media-element binding.
-  [[nodiscard]] bool isCurrentMediaElementSource(uint64_t bindingId) const;
 
   /// @brief Sets linear gain applied when writing decoded samples.
   void setVolume(float v) {
@@ -93,7 +75,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   }
 
   /// @brief Stops decoding on the audio thread until playback is started again.
-  void pause();
+  void pause() override;
 
   /// @brief Enables looping at end-of-file.
   void setLoop(bool v) {
@@ -114,15 +96,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// @brief Seeks asynchronously on a worker thread.
   void seekToTime(double seconds);
 
-  /// @brief True when paused or stopped after natural end-of-file (non-looping).
-  bool filePaused() const {
-    return filePaused_;
-  }
-
-  bool canBeDestructed() const override {
-    return filePaused() || AudioScheduledSourceNode::canBeDestructed();
-  }
-
   void assignOnPositionChangedCallbackId(uint64_t callbackId);
 
   /// @brief Registers the JS callback for buffering-state-change events.
@@ -141,14 +114,7 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
 
  private:
   std::shared_ptr<AudioFileDecoderState> decoderState_;
-  /// @brief Decodes and mixes samples for direct or media-element playback.
-  /// @param outputBuffer when non-null, decoded audio is written here instead of this node's buffer.
-  /// @note Audio thread only.
-  void processDecodedOutput(
-      int framesToProcess,
-      const std::shared_ptr<DSPAudioBuffer> &outputBuffer = nullptr);
-
-  /// @brief Handles the paused / drained / stopped short-circuit states before decoding.
+  /// @brief Handles the drained / stopped / seeking short-circuit states before decoding.
   /// @return a finished output buffer when the render should bail out early, std::nullopt otherwise.
   /// @note Audio thread only. On success @p outContext holds a locked context.
   std::optional<std::shared_ptr<DSPAudioBuffer>> renderPreflight(
@@ -159,12 +125,10 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   float volume_;
   WsolaTimeStretcher wsolaStretcher_;
   std::shared_ptr<DSPAudioBuffer> playbackRateBuffer_;
-  bool filePaused_{false};
   bool loop_{false};
   double duration_{0};
   double sampleRate_{0};
   std::atomic<double> currentTime_{0};
-  std::atomic<uint64_t> activeMediaBindingId_{0};
 
   // Target rate from JS; applied immediately on the audio thread (Chromium does not smooth rate).
   float targetPlaybackRate_{1.0f};
@@ -276,10 +240,6 @@ class AudioFileSourceNode : public AudioScheduledSourceNode {
   /// joins, which is safe here because audio nodes are destroyed on the JS
   /// runtime's GC thread, never on the audio thread.
   std::unique_ptr<SeekDecoderDaemon> seekDecoderDaemon_;
-
-  /// @brief Connects to the destination when leaving media routing while playback is active.
-  /// @note Audio thread only.
-  void ensureConnectedForDirectPlayback();
 
   /// @brief SPSC for JS -> Daemon thread communication (seek event)
   CommandSender commandSender_;

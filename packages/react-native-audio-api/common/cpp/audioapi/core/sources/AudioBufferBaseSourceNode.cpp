@@ -69,18 +69,21 @@ void AudioBufferBaseSourceNode::assignOnPositionChangedCallbackId(uint64_t callb
 }
 
 void AudioBufferBaseSourceNode::processNode(int framesToProcess) {
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    audioBuffer_->zero();
+    return;
+  }
+
   if (isEmpty()) {
     audioBuffer_->zero();
     if (isScheduled() && endsWhenStartedEmpty()) {
       playbackState_ = PlaybackState::FINISHED;
       disable();
+      return;
     }
-    return;
-  }
-
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr) {
-    audioBuffer_->zero();
+    // Nothing to render, but a stop time can still come due.
+    advanceWithoutRender(context->getCurrentSampleFrame());
     return;
   }
 
