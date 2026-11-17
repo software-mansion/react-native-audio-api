@@ -10,6 +10,7 @@
 
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -82,7 +83,7 @@ void AudioBufferSourceNode::setBuffer(
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
-  if (duration > 0) {
+  if (duration > 0 && std::isfinite(duration)) {
     // A buffer assigned after start() is taken to run at the context rate.
     const float sampleRate = buffer_ != nullptr ? buffer_->getSampleRate() : getContextSampleRate();
     // Spec: `duration` counts buffer content, not context time.
