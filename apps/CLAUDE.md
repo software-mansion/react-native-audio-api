@@ -316,4 +316,6 @@ All in `apps/common-app/src/components/`:
 
 `fabric-example/metro.config.js` sets `watchFolders: [monorepoRoot, appsRoot]` so Metro hot-reloads changes in `common-app` and `packages/react-native-audio-api` without restarting.
 
+Its `resolveRequest` also resolves `@babel/runtime/*` from the app. The Babel preset injects those helper imports into workspace packages Metro compiles from source (`packages/*`), which sit outside the app's `node_modules` and don't declare `@babel/runtime`; under pnpm's isolated layout they would otherwise fail to resolve. Don't add `@babel/runtime` to the root or to those packages instead.
+
 If you add a new workspace package that the app depends on, add its root to `watchFolders`.

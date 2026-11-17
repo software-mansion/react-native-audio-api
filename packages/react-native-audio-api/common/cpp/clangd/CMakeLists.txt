@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
 
 set(RN_AUDIO_API_TEST 0)
-set(REACT_NATIVE_DIR ../../../../../node_modules/react-native)
+set(REACT_NATIVE_DIR ${COMMON_CPP_DIR}/../../node_modules/react-native)
 
 include(FetchContent)
 FetchContent_Declare(

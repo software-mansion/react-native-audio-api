@@ -24,17 +24,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout with Node
-        uses: ./.github/actions/checkout-with-node
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
-      - name: Setup Yarn
-        uses: mskelton/setup-yarn@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
 
-      - name: Install dependencies and build the docs
-        run: |
-          cd packages/audiodocs
-          yarn
-          yarn build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter audiodocs...
+
+      - name: Build the docs
+        run: pnpm --filter audiodocs build
 
       - name: Upload build files
         uses: actions/upload-pages-artifact@v3
