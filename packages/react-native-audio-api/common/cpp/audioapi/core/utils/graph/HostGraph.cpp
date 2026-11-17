@@ -1,7 +1,6 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/GraphObject.h>
@@ -30,17 +29,6 @@ namespace {
 /// @brief Returns the AudioNode associated with `node`, or nullptr if the
 /// node has no audio payload (e.g. the lightweight `graph->addNode()` used
 /// in tests that exercise topology only).
-inline void notifyMediaElementOutputsDisconnected(
-    audioapi::AudioNode *fromAudio,
-    const HostGraph::HostVertex *from) {
-  if (from == nullptr || !from->outputs.empty() || fromAudio == nullptr) {
-    return;
-  }
-  if (auto *media = dynamic_cast<audioapi::MediaElementAudioSourceNode *>(fromAudio)) {
-    media->onOutputsDisconnected();
-  }
-}
-
 inline audioapi::AudioNode *audioNodeOf(const HostGraph::HostVertex *node) {
   if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
     return nullptr;
@@ -108,12 +96,13 @@ size_t computeNumberOfChannels(const HostGraph::HostVertex *node) {
 /// @brief If `node` needs a newly negotiated channel layout, allocates a
 /// replacement `DSPAudioBuffer` on the host thread, records its width as
 /// pending, and returns it. Returns `nullptr` when no swap is needed (no audio
-/// payload, or the pending buffer already has `computedNumberOfChannels`).
+/// payload, a source, or the pending buffer already has
+/// `computedNumberOfChannels`).
 std::shared_ptr<audioapi::DSPAudioBuffer> buildNegotiatedBufferIfNeeded(
     HostGraph::HostVertex *node,
     size_t computedNumberOfChannels) {
   auto *audio = audioNodeOf(node);
-  if (audio == nullptr) {
+  if (audio == nullptr || ownsOutputBuffer(node)) {
     return nullptr;
   }
 
@@ -321,10 +310,10 @@ auto HostGraph::addEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, Gra
     return Err(GraphError::CYCLE_DETECTED);
   }
 
-  // `connect()` already rejects a source as destination; negotiation below
-  // would otherwise build a buffer narrower than the content the source
-  // writes into it.
-  assert(!ownsOutputBuffer(to));
+  // `connect()` rejects a source as destination, so only the bridge of one of
+  // its AudioParams (no audio payload) reaches it, to order the param before
+  // its owner.
+  assert(!ownsOutputBuffer(to) || audioNodeOf(from) == nullptr);
 
   from->outputs.push_back(to);
   to->inputs.push_back(from);
@@ -381,10 +370,6 @@ auto HostGraph::removeEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, 
   from->outputs.erase(itOut);
   edgeCount_--;
 
-  if (auto *fromAudio = from->handle->audioNode->asAudioNode()) {
-    notifyMediaElementOutputsDisconnected(fromAudio, from);
-  }
-
   // Channel negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below. Cascade upstream
   // (toward AudioDestinationNode) so disconnects still propagate.
@@ -417,10 +402,6 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
     formerOutputs.push_back(to);
   }
   from->outputs.clear();
-
-  if (auto *fromAudio = from->handle->audioNode->asAudioNode()) {
-    notifyMediaElementOutputsDisconnected(fromAudio, from);
-  }
 
   // Channel negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below. Cascade upstream from

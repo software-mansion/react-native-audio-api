@@ -95,10 +95,13 @@
     "app.plugin.js"
   ],
   "scripts": {
-    "test": "pnpm test:js && pnpm test:cpp",
-    "test:js": "jest",
+    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck check:enums",
+    "check:enums": "bash scripts/check-enum-sync.sh",
+    "test": "bash ../../scripts/run-steps.sh test:js test:cpp:affected",
+    "test:js": "jest --config tests/jest.config.json",
     "test:cpp": "bash common/cpp/test/run-tests.sh",
     "test:cpp:smoke": "bash common/cpp/test/run-tests.sh smoke",
+    "test:cpp:affected": "bash common/cpp/test/run-tests.sh affected",
     "test:cpp:extended": "bash common/cpp/test/run-tests.sh extended",
     "test:cpp:full": "bash common/cpp/test/run-tests.sh full",
     "test:cpp:coverage": "bash common/cpp/test/run-coverage.sh",
@@ -141,6 +144,14 @@
     "create:package": "./scripts/create-package.sh",
     "prepack": "cp ../../README.md ./README.md",
     "postpack": "rm ./README.md"
+  },
+  "ci": {
+    "tools": [
+      "cmake",
+      "cpplint",
+      "ktlint",
+      "clang-format"
+    ]
   },
   "keywords": [
     "react-native",
@@ -185,6 +196,7 @@
     "@expo/config-types": "^53.0.4",
     "@react-native/babel-preset": "catalog:",
     "@react-native/eslint-config": "catalog:",
+    "@react-native/jest-preset": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
     "@types/babel__core": "^7.20.0",
@@ -221,7 +233,6 @@
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-builder-bob": "catalog:",
-    "turbo": "^1.10.7",
     "typescript": "catalog:",
     "wpt-runner": "^7.0.0"
   },

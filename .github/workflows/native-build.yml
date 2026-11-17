@@ -1,85 +1,34 @@
 name: Build example app
 
-# Builds example app for Android and iOS.
+# Builds the example app for Android and iOS.
 
 on:
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened, ready_for_review]
-  merge_group:
-    types:
-      - checks_requested
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      android:
+        description: Build the Android app
+        type: boolean
+        default: false
+      ios:
+        description: Build the iOS app
+        type: boolean
+        default: false
 
 jobs:
-  # Pull requests build only the platforms their changes can affect
-  changes:
-    name: Detect native changes
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      android: ${{ github.event_name != 'pull_request' || steps.filter.outputs.common == 'true' || steps.filter.outputs.android == 'true' }}
-      ios: ${{ github.event_name != 'pull_request' || steps.filter.outputs.common == 'true' || steps.filter.outputs.ios == 'true' }}
-    steps:
-      - name: Path filter
-        id: filter
-        if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            common:
-              - 'packages/react-native-audio-api/common/**'
-              - 'packages/react-native-audio-api/src/specs/**'
-              - 'packages/react-native-audio-api/scripts/**'
-              - 'packages/react-native-audio-api/package.json'
-              - 'packages/react-native-audio-worklets/common/**'
-              - 'packages/react-native-audio-worklets/src/specs/**'
-              - 'packages/react-native-audio-worklets/package.json'
-              - 'apps/common-app/package.json'
-              - 'apps/fabric-example/package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-              - '.nvmrc'
-              - '.github/workflows/native-build.yml'
-              - '.github/actions/checkout-with-node/**'
-            android:
-              - 'packages/react-native-audio-api/android/**'
-              - 'packages/react-native-audio-worklets/android/**'
-              - 'packages/react-native-audio-worklets/CMakeLists.txt'
-              - 'apps/fabric-example/android/**'
-            ios:
-              - 'packages/react-native-audio-api/ios/**'
-              - 'packages/react-native-audio-api/RNAudioAPI.podspec'
-              - 'packages/react-native-audio-worklets/ios/**'
-              - 'packages/react-native-audio-worklets/RNAudioWorklets.podspec'
-              - 'apps/fabric-example/ios/**'
-              - 'apps/fabric-example/Gemfile'
-              - 'apps/fabric-example/Gemfile.lock'
-
   install:
     name: Install dependencies
-    needs: changes
-    if: needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true'
-    runs-on: ubuntu-latest
+    if: inputs.android || inputs.ios
+    runs-on: ubuntu-24.04
     outputs:
       cache-key: ${{ steps.key.outputs.value }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup Node
-        uses: ./.github/actions/checkout-with-node
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Compute cache key
         id: key
@@ -89,7 +38,7 @@ jobs:
 
       - name: Check for cached node_modules
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           lookup-only: true
           enableCrossOsArchive: true
@@ -99,14 +48,14 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
 
-      # The tree is unpacked on macOS too, so fetch the darwin variants also
+      # The iOS job unpacks the same tree on macOS, so install the darwin packages too
       - name: Install dependencies for linux and darwin
         if: steps.cache.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile --os linux --os darwin --cpu x64 --cpu arm64
 
       - name: Save node_modules
         if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           enableCrossOsArchive: true
           key: ${{ steps.key.outputs.value }}
@@ -116,19 +65,21 @@ jobs:
             packages/*/node_modules
 
   android:
-    name: Build Android app
-    needs: [changes, install]
-    if: needs.changes.outputs.android == 'true'
-    runs-on: ubuntu-latest
+    name: Android
+    needs: install
+    if: inputs.android
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: ./.github/actions/checkout-with-node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Restore node_modules
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           fail-on-cache-miss: true
           enableCrossOsArchive: true
@@ -139,7 +90,7 @@ jobs:
             packages/*/node_modules
 
       - name: Cache prebuilt binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: prebuilt-android-${{ hashFiles('packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh') }}
           path: |
@@ -148,35 +99,37 @@ jobs:
             packages/react-native-audio-api/android/src/main/jniLibs
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Assemble debug APK
         working-directory: apps/fabric-example/android
         run: ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --build-cache
 
   ios:
-    name: Build iOS app
-    needs: [changes, install]
-    if: needs.changes.outputs.ios == 'true'
+    name: iOS
+    needs: install
+    if: inputs.ios
     runs-on: macos-26
     env:
       USE_CCACHE: '1'
       BUNDLE_VERSION: system
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: ./.github/actions/checkout-with-node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Restore node_modules
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           fail-on-cache-miss: true
           enableCrossOsArchive: true
@@ -187,7 +140,7 @@ jobs:
             packages/*/node_modules
 
       - name: Cache prebuilt binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: prebuilt-ios-${{ hashFiles('packages/react-native-audio-api/scripts/download-prebuilt-binaries.sh') }}
           path: |
@@ -209,7 +162,7 @@ jobs:
           max-size: 2G
 
       - name: Cache Pods
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: pods-${{ hashFiles('apps/fabric-example/ios/Podfile.lock', 'packages/react-native-audio-api/RNAudioAPI.podspec') }}
           restore-keys: pods-

@@ -194,6 +194,9 @@ catalogs:
     '@react-native/eslint-config':
       specifier: 0.88.0
       version: 0.88.0
+    '@react-native/jest-preset':
+      specifier: 0.88.0
+      version: 0.88.0
     '@react-native/metro-config':
       specifier: 0.88.0
       version: 0.88.0
@@ -794,6 +797,9 @@ importers:
       '@react-native/eslint-config':
         specifier: 'catalog:'
         version: 0.88.0(eslint@8.57.1(supports-color@8.1.1))(jest@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)))(prettier@3.8.2)(supports-color@8.1.1)(typescript@6.0.3)
+      '@react-native/jest-preset':
+        specifier: 'catalog:'
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       '@react-native/metro-config':
         specifier: 'catalog:'
         version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
@@ -902,9 +908,6 @@ importers:
       react-native-builder-bob:
         specifier: 'catalog:'
         version: 0.33.1(supports-color@8.1.1)(typescript@6.0.3)
-      turbo:
-        specifier: ^1.10.7
-        version: 1.13.4
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -936,9 +939,6 @@ importers:
       '@react-native/typescript-config':
         specifier: 'catalog:'
         version: 0.88.0
-      '@types/jest':
-        specifier: 'catalog:'
-        version: 29.5.14
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -948,9 +948,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 8.57.1(supports-color@8.1.1)
-      jest:
-        specifier: 'catalog:'
-        version: 29.7.0(@types/node@20.5.1)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@20.5.1)(typescript@6.0.3))
       prettier:
         specifier: 'catalog:'
         version: 3.8.2
@@ -2852,6 +2849,10 @@ packages:
       node-notifier:
         optional: true
 
+  '@jest/create-cache-key-function@29.7.0':
+    resolution: {integrity: sha512-4QqS3LY5PBmTRHj9sAg1HLoPzqAI0uOX6wI/TRqHIcOxlFidy6YEmCQJk6FSZjNLGCeubDMfmkWL+qaLKhSGQA==}
+    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+
   '@jest/environment@29.7.0':
     resolution: {integrity: sha512-aQIfHDq33ExsN4jP1NWGXhxgQ/wixs60gDiKO+XVMd8Mn0NWPWgc34ZQDTb2jKaUWQ7MuwoitXAsN2XVXNMpAw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -3368,6 +3369,12 @@ packages:
   '@react-native/gradle-plugin@0.88.0':
     resolution: {integrity: sha512-4jPSKslOfJj8NKY/jv9qmWkxZYmqPyamoS3Vs0JOFxw9t4PM6L/ea0fUsjNV0LxC9zJlvWilPJOCTOf7h8wlyw==}
     engines: {node: ^22.13.0 || ^24.3.0 || >= 26.0.0}
+
+  '@react-native/jest-preset@0.88.0':
+    resolution: {integrity: sha512-dN97NNqBsShAcxGH8/mNSBgYYc7Xk8q+Hez9qG9iockB4GPir5/Aw45e14sn7iLYTu2HkY0Uq2h3WlMY+ekRxw==}
+    engines: {node: '>= 22.13.0'}
+    peerDependencies:
+      react: ^19.2.3
 
   '@react-native/js-polyfills@0.88.0':
     resolution: {integrity: sha512-Iq6v4+EWdOLv0M1+BpADQJBVfInl6FkABXCIBSi0FbvHahEYT+Y4UJ7Cm96p18gbEN1VKzqz3nbBbwLA6bx0rQ==}
@@ -10814,40 +10821,6 @@ packages:
     resolution: {integrity: sha512-axr3IdNuVIxnaK5XGEUFTu3YmAQ6lllgrvqfEoR16g/HGnYY/6We4oWENtAnzK6/LpJ2ur9PAb80RBt7/U4ugw==}
     engines: {node: '>= 6.0.0'}
 
-  turbo-darwin-64@1.13.4:
-    resolution: {integrity: sha512-A0eKd73R7CGnRinTiS7txkMElg+R5rKFp9HV7baDiEL4xTG1FIg/56Vm7A5RVgg8UNgG2qNnrfatJtb+dRmNdw==}
-    cpu: [x64]
-    os: [darwin]
-
-  turbo-darwin-arm64@1.13.4:
-    resolution: {integrity: sha512-eG769Q0NF6/Vyjsr3mKCnkG/eW6dKMBZk6dxWOdrHfrg6QgfkBUk0WUUujzdtVPiUIvsh4l46vQrNVd9EOtbyA==}
-    cpu: [arm64]
-    os: [darwin]
-
-  turbo-linux-64@1.13.4:
-    resolution: {integrity: sha512-Bq0JphDeNw3XEi+Xb/e4xoKhs1DHN7OoLVUbTIQz+gazYjigVZvtwCvgrZI7eW9Xo1eOXM2zw2u1DGLLUfmGkQ==}
-    cpu: [x64]
-    os: [linux]
-
-  turbo-linux-arm64@1.13.4:
-    resolution: {integrity: sha512-BJcXw1DDiHO/okYbaNdcWN6szjXyHWx9d460v6fCHY65G8CyqGU3y2uUTPK89o8lq/b2C8NK0yZD+Vp0f9VoIg==}
-    cpu: [arm64]
-    os: [linux]
-
-  turbo-windows-64@1.13.4:
-    resolution: {integrity: sha512-OFFhXHOFLN7A78vD/dlVuuSSVEB3s9ZBj18Tm1hk3aW1HTWTuAw0ReN6ZNlVObZUHvGy8d57OAGGxf2bT3etQw==}
-    cpu: [x64]
-    os: [win32]
-
-  turbo-windows-arm64@1.13.4:
-    resolution: {integrity: sha512-u5A+VOKHswJJmJ8o8rcilBfU5U3Y1TTAfP9wX8bFh8teYF1ghP0EhtMRLjhtp6RPa+XCxHHVA2CiC3gbh5eg5g==}
-    cpu: [arm64]
-    os: [win32]
-
-  turbo@1.13.4:
-    resolution: {integrity: sha512-1q7+9UJABuBAHrcC4Sxp5lOqYS5mvxRrwa33wpIyM18hlOCpRD/fTJNxZ0vhbMcJmz15o9kkVm743mPn7p6jpQ==}
-    hasBin: true
-
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -14458,6 +14431,11 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+    optional: true
+
+  '@jest/create-cache-key-function@29.7.0':
+    dependencies:
+      '@jest/types': 29.6.3
 
   '@jest/environment@29.7.0':
     dependencies:
@@ -15307,6 +15285,18 @@ snapshots:
   '@react-native/eslint-plugin@0.88.0': {}
 
   '@react-native/gradle-plugin@0.88.0': {}
+
+  '@react-native/jest-preset@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)':
+    dependencies:
+      '@jest/create-cache-key-function': 29.7.0
+      '@react-native/js-polyfills': 0.88.0
+      babel-jest: 29.7.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
+      jest-environment-node: 29.7.0
+      react: 19.3.0
+      regenerator-runtime: 0.13.11
+    transitivePeerDependencies:
+      - '@babel/core'
+      - supports-color
 
   '@react-native/js-polyfills@0.88.0': {}
 
@@ -17601,6 +17591,7 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+    optional: true
 
   create-require@1.1.1: {}
 
@@ -20240,6 +20231,7 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+    optional: true
 
   jest-config@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)):
     dependencies:
@@ -20302,6 +20294,7 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
+    optional: true
 
   jest-config@29.7.0(@types/node@20.5.1)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@20.5.1)(typescript@6.0.3)):
     dependencies:
@@ -20333,6 +20326,7 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
+    optional: true
 
   jest-diff@29.7.0:
     dependencies:
@@ -20578,6 +20572,7 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+    optional: true
 
   jiti@1.21.7: {}
 
@@ -24860,33 +24855,6 @@ snapshots:
   tsyringe@4.10.0:
     dependencies:
       tslib: 1.14.1
-
-  turbo-darwin-64@1.13.4:
-    optional: true
-
-  turbo-darwin-arm64@1.13.4:
-    optional: true
-
-  turbo-linux-64@1.13.4:
-    optional: true
-
-  turbo-linux-arm64@1.13.4:
-    optional: true
-
-  turbo-windows-64@1.13.4:
-    optional: true
-
-  turbo-windows-arm64@1.13.4:
-    optional: true
-
-  turbo@1.13.4:
-    optionalDependencies:
-      turbo-darwin-64: 1.13.4
-      turbo-darwin-arm64: 1.13.4
-      turbo-linux-64: 1.13.4
-      turbo-linux-arm64: 1.13.4
-      turbo-windows-64: 1.13.4
-      turbo-windows-arm64: 1.13.4
 
   type-check@0.4.0:
     dependencies:

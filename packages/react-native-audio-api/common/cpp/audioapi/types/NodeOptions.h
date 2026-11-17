@@ -214,14 +214,6 @@ struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
   bool preservesPitch = true;
 };
 
-struct MediaElementAudioSourceOptions : AudioNodeOptions {
-  explicit MediaElementAudioSourceOptions(int mediaOutputChannelNumber = 2) {
-    numberOfInputs = 0;
-    numberOfOutputs = 1;
-    outputChannelNumber = mediaOutputChannelNumber;
-  }
-};
-
 struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;

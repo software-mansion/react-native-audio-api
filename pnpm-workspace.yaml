@@ -31,6 +31,7 @@ catalog:
   '@react-native-community/cli-platform-ios': '20.2.0'
   '@react-native/babel-preset': '0.88.0'
   '@react-native/eslint-config': '0.88.0'
+  '@react-native/jest-preset': '0.88.0'
   '@react-native/metro-config': '0.88.0'
   '@react-native/typescript-config': '0.88.0'
   '@types/jest': '^29.5.13'
@@ -64,3 +65,7 @@ allowBuilds:
 # RN 0.88's header layout no longer resolves the quoted "RCTBridge.h" import
 patchedDependencies:
   '@react-native-menu/menu@2.0.0': patches/@react-native-menu__menu@2.0.0.patch
+
+tasks:
+  check:
+    dependsOn: ['^build', 'build']
