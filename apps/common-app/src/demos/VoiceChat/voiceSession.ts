@@ -231,10 +231,7 @@ export class VoiceSession {
     );
     const startup = recorder.start();
     this.audioStartup = startup;
-    const started = await startup;
-    if (started.status === 'error') {
-      throw new Error(started.message);
-    }
+    await startup;
     if (!this.isCurrentConnectionAttempt(attempt)) {
       return;
     }

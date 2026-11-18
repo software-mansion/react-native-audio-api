@@ -1,0 +1,135 @@
+.row {
+  --diagram-low: var(--swm-red-light-100);
+  --diagram-high: var(--swm-blue-light-100);
+  --diagram-sum: var(--swm-green-light-100);
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px 24px;
+  margin: 1.5rem 0;
+}
+
+:root[data-theme='dark'] .row {
+  --diagram-low: var(--swm-red-dark-100);
+  --diagram-high: var(--swm-blue-dark-100);
+  --diagram-sum: var(--swm-green-dark-100);
+}
+
+.figure {
+  display: flex;
+  flex: 1 1 170px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 200px;
+  margin: 0;
+}
+
+.figureWide {
+  flex: 1.4 1 230px;
+  max-width: 280px;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: var(--swm-body-font), sans-serif;
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ifm-font-color-base);
+}
+
+.captionDetail {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.captionDetail code {
+  font-size: 11px;
+}
+
+.axis {
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+
+.arrowHead {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.7;
+}
+
+.axisLabel {
+  fill: var(--ifm-font-color-base);
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.zeroLine {
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.25;
+}
+
+.wave {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.componentWave {
+  stroke-width: 1.5;
+  opacity: 0.55;
+}
+
+.sum {
+  stroke: var(--diagram-sum);
+  stroke-width: 2.5;
+}
+
+.low {
+  stroke: var(--diagram-low);
+}
+
+.high {
+  stroke: var(--diagram-high);
+}
+
+.marker {
+  stroke: none;
+}
+
+.marker.low {
+  fill: var(--diagram-low);
+}
+
+.marker.high {
+  fill: var(--diagram-high);
+}
+
+.bar {
+  stroke: none;
+}
+
+.bar.low {
+  fill: var(--diagram-low);
+}
+
+.bar.high {
+  fill: var(--diagram-high);
+}

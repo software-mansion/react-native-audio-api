@@ -158,8 +158,15 @@ feeds the graph through a `RecorderAdapterNode` instead of being processed by it
 
 The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
 that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
-`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
-subclasses own only the platform input stream. The one thing the base needs from the platform is
+`prepareFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
+subclasses own only the platform input stream. Each output is one `OutputSlot` (`file_`, `callback_`,
+`adapter_`: state, mutex, target); a subclass locks the slot mutexes and calls the base, and never
+reads or writes a slot's state or target itself. A platform `start()` prepares the outputs only
+through `prepareOutputs()`, and when anything fails after that it ends like `stop()`: detach under
+the slot mutexes, finalize without them, so no file stays open. `detachSideEffects()` moves the file
+writer out (a new one each session) but copies the callback and the adapter handle, which stay
+registered: JS `connect()` creates its adapter once, so moving the handle out made every later
+`start()` fail with "Recorder adapter node is unavailable.". The one thing the base needs from the platform is
 `resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
 it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
 cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
@@ -168,7 +175,7 @@ that subclass. State a consumer already owns stays with the consumer: the adapte
 layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
 `AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
-Pitfall: never redeclare a base member (`streamSampleRate_`, `fileWriter_`,
+Pitfall: never redeclare a base member (`streamSampleRate_`, `file_`,
 `lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
 audio-thread fan-out reads its own member and silently drops that output.
 
@@ -194,7 +201,8 @@ Pausing is a state, not a stop. `pause()` / `resume(when)` move a node into and 
 - `stopTime_` is an absolute context time and survives a pause. `updatePlaybackInfo` finishes a paused node in the quantum holding its stop time; `resume(when)` keeps the node paused when the stop time is not after `when`.
 - `stop(when)` while paused only records `stopTime_` (there is no start to compare against).
 - `canBeDestructed()` is true while paused: only the JS handle can resume the node.
-- `AudioFileSourceNode` resumes through `start()` (its JS `play()`), not `resume()`: the base `start()` keeps `stopTime_`, and a stop time already passed ends the node a quantum later without audio. Its `pause()` overrides the base one (which is virtual for that reason) and also moves a never-started source to `PAUSED`, because `MediaElementAudioSourceNode::canBeDestructed()` is "my file source is paused" and the media node holds a raw pointer to it: a source waiting for its first `start()` must keep its media node, a paused one may lose it.
+- `AudioFileSourceNode` resumes through `start()` (its JS `play()`), not `resume()`: the base `start()` keeps `stopTime_`, and a stop time already passed ends the node a quantum later without audio.
+- `MediaElementAudioSourceNode` is a plain one-input pass-through: an `<Audio>` tag's file source reaches it through an ordinary graph edge, so lifetime and silence follow the normal graph rules (a node is removed only when its inputs go too). Do not give it a pointer to the file source or a side channel to pull from: the earlier design did (raw `AudioFileSourceNode *`, a binding id, a `canBeDestructed()` override tied to the source's pause state), and it crashed on the audio thread once the graph freed the file source first, left the media node in the graph forever after a play-to-end, and lost the route on the replacement source `<Audio>` spawns after every playthrough. The route lives in JS: `useAudioSourceLoader` keeps the tag's output (`mediaElementSourceRef`) and hands it to every file source it spawns (`AudioFileSourceNode.setOutput`); the TS `MediaElementAudioSourceNode` takes the tag over in its constructor for good. That matches the spec ("the rendered audio will no longer be heard directly", from creation, not from `connect()`) and Chrome, which also throws `InvalidStateError` for a second node on the same element, even after the first is disconnected or its context closed — the spec itself does not require that error.
 - A paused source must still reach `updatePlaybackInfo` each quantum. An early return for "paused" ahead of it (the old `filePaused_` check in `renderPreflight`) hides a stop time from the render path while the node stays connected.
 
 `hasEnded()` is the one piece of this state readable off the audio thread (an atomic set before `ENDED` is dispatched, exposed as the `hasEnded` HostObject getter). JS wrappers that guard calls by state keep the transitions they request themselves, because native applies `start`/`pause`/`resume` a quantum after the call, and read only the ending from native.

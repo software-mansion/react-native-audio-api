@@ -80,11 +80,12 @@ class FakeWavEncoder final : public AudioEncoder {
     return OpenEncoderResult::Ok(filePath);
   }
 
-  EncodeResult encode(const float *const *channels, int numFrames) override {
+  EncodeResult encode(const AudioBuffer &input, int numFrames) override {
     if (outcome_ == EncodeOutcome::REFUSES_FRAMES) {
       return EncodeResult::Err("encoder refused the frames");
     }
-    frames_.insert(frames_.end(), channels[0], channels[0] + numFrames);
+    const float *mono = input.getChannel(0)->begin();
+    frames_.insert(frames_.end(), mono, mono + numFrames);
     return EncodeResult::Ok(static_cast<size_t>(numFrames));
   }
 

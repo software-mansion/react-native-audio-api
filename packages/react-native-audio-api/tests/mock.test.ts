@@ -171,14 +171,6 @@ describe('React Native Audio API Mocks', () => {
       context = new MockAPI.AudioContext();
     });
 
-    describe('RecorderAdapterNode', () => {
-      it('should create a RecorderAdapterNode', () => {
-        const recorderAdapter = context.createRecorderAdapter();
-        expect(recorderAdapter).toBeInstanceOf(MockAPI.RecorderAdapterNode);
-        expect(recorderAdapter.wasConnected).toBe(false);
-      });
-    });
-
     describe('AudioBufferQueueSourceNode', () => {
       it('should create an AudioBufferQueueSourceNode', () => {
         const queueSource = context.createBufferQueueSource();
@@ -234,8 +226,7 @@ describe('React Native Audio API Mocks', () => {
     it('should support recording workflow', async () => {
       recorder.enableFileOutput();
 
-      const startResult = await recorder.start();
-      expect(startResult.status).toBe('success');
+      await recorder.start();
       expect(recorder.isRecording()).toBe(true);
 
       recorder.pause();
@@ -244,22 +235,21 @@ describe('React Native Audio API Mocks', () => {
       recorder.resume();
       expect(recorder.isPaused()).toBe(false);
 
-      const stopResult = await recorder.stop();
-      expect(stopResult.status).toBe('success');
-      // @ts-ignore - paths is not seen as the correct type
-      expect(stopResult.paths?.length).toBeGreaterThan(0);
+      const fileInfo = await recorder.stop();
+      expect(fileInfo.paths.length).toBeGreaterThan(0);
       expect(recorder.isRecording()).toBe(false);
     });
 
-    it('should support RecorderAdapterNode connection', () => {
+    it('should connect to a destination node', () => {
       const context = new MockAPI.AudioContext();
-      const adapter = context.createRecorderAdapter();
 
-      expect(() => recorder.connect(adapter)).not.toThrow();
-      expect(adapter.wasConnected).toBe(true);
-
-      // Should throw on duplicate connection
-      expect(() => recorder.connect(adapter)).toThrow();
+      expect(recorder.connect(context, context.destination)).toBe(
+        context.destination
+      );
+      // Reconnecting reuses the recorder's internal adapter, so it does not throw.
+      expect(() =>
+        recorder.connect(context, context.destination)
+      ).not.toThrow();
     });
 
     it('should support audio data callbacks', () => {

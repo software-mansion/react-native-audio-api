@@ -1,45 +1,57 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { Optional, Overridden } from '@site/src/components/Badges';
+import { Optional, Overridden, MobileOnly } from '@site/src/components/Badges';
 
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
 import { useAudioBufferSourcePlayground } from '@site/src/components/InteractivePlayground/AudioBufferSourceExample/useAudioBufferSourcePlayground';
 import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
-
+import Heading from '@theme/Heading';
 
 # AudioBufferSourceNode
 
-The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in
-[`AudioBuffer`](/docs/sources/audio-buffer). You can use it for audio playback, including standard pause and resume functionalities.
+The `AudioBufferSourceNode` is an [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx) which represents an audio source with in-memory audio data, stored in
+[`AudioBuffer`](./audio-buffer.mdx). You can use it for audio playback, including standard pause and resume functionalities.
 
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
-However, this node is very inexpensive to create, and what is crucial you can reuse same [`AudioBuffer`](/docs/sources/audio-buffer).
+However, this node is very inexpensive to create, and what is crucial you can reuse same [`AudioBuffer`](./audio-buffer.mdx).
 
 <InteractivePlayground tag="AudioBufferSourceNode" usePlayground={useAudioBufferSourcePlayground} />
 
 ## Constructor
 
-[`BaseAudioContext.createBufferSource(options: AudioBufferBaseSourceNodeOptions)`](/docs/core/base-audio-context#createbuffersource)
-
-```jsx
-interface AudioBufferBaseSourceNodeOptions {
-  pitchCorrection: boolean // specifies if pitch correction algorithm has to be available
-}
+```tsx
+constructor(context: BaseAudioContext, options?: AudioBufferSourceOptions)
 ```
 
+### `AudioBufferSourceOptions`
+
+| Parameter | Type | Default | |
+| :---: | :---: | :----: | :---- |
+| `buffer` <Optional /> | [`AudioBuffer`](./audio-buffer.mdx) | - | Initial value for [`buffer`](./audio-buffer-source-node.mdx#properties). |
+| `loop` <Optional /> | `boolean` | `false` | Initial value for [`loop`](./audio-buffer-source-node.mdx#properties). |
+| `loopStart` <Optional /> | `number` | `0` | Initial value for [`loopStart`](./audio-buffer-source-node.mdx#properties). |
+| `loopEnd` <Optional /> | `number` | `0` | Initial value for [`loopEnd`](./audio-buffer-source-node.mdx#properties). |
+| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](./audio-buffer-source-node.mdx#properties). |
+| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](./audio-buffer-source-node.mdx#properties). |
+| `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](./audio-buffer-source-node.mdx#properties). |
+
 :::info
-To use pitchCorrection option in the web environment, you need to call `npx setup-rn-audio-web react-native-audio-api` command and paste its result to your own bundler public directory".
+You can also create an `AudioBufferSourceNode` via [`BaseAudioContext.createBufferSource()`](../core/base-audio-context.mdx#createbuffersource), which uses default values.
+:::
+
+:::info
+To use the `pitchCorrection` option in the web environment, you need to call `npx setup-rn-audio-web react-native-audio-api` and paste its result into your bundler public directory.
 :::
 
 :::caution
 The pitch correction algorithm introduces processing latency.
 As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
-For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+Use [`getLatency()`](#getlatency) to obtain the compensation value for the current `playbackRate`.
 
-If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](/docs/sources/audio-buffer-queue-source-node)
+If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](./audio-buffer-queue-source-node.mdx).
 :::
 
 ## Example
@@ -66,13 +78,15 @@ function App() {
 
 ## Properties
 
-It inherits all properties from [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node#properties).
+Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `buffer` | [`AudioBuffer`](/docs/sources/audio-buffer) | Associated `AudioBuffer`. |
+| `detune` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+| `playbackRate` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
+| `buffer` | [`AudioBuffer`](./audio-buffer.mdx) | Associated `AudioBuffer`. |
 | `loop` | `boolean` | Boolean indicating if audio data must be replayed after when end of the associated `AudioBuffer` is reached. |
 | `loopSkip` | `boolean` | Boolean indicating if upon setting up `loopStart` we want to skip immediately to the loop start. |
 | `loopStart` | `number` | Float value indicating the time, in seconds, at which playback of the audio must begin, if loop is true. |
@@ -80,17 +94,47 @@ It inherits all properties from [`AudioBufferBaseSourceNode`](/docs/sources/audi
 
 ## Methods
 
-It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
 
-### `start` <Overridden /> {#start}
+### `getLatency`
 
-Schedules the `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](/docs/sources/audio-buffer), or starts to play immediately.
+Returns an estimated scheduling compensation for the WSOLA pitch-correction path, in seconds. Use this value when calling [`start()`](./audio-scheduled-source-node.mdx#start) — do not hardcode a fixed delay.
+
+| Condition | Returned value |
+| :---: | :---- |
+| `pitchCorrection: false` | `0.0` |
+| `pitchCorrection: true` | `0.01 + 0.02 × playbackRate` (seconds) |
+
+At `playbackRate = 1.0`, that is `0.03s`. At `playbackRate = 1.5`, that is `0.04s`. Read [`playbackRate`](#properties) and call `getLatency()` immediately before scheduling — the estimate scales with the current rate.
+
+Returns `0.0` when pitch correction is disabled.
+
+**Returns:** `number`.
+
+<details>
+<summary>Example usage</summary>
+```tsx
+const source = audioContext.createBufferSource({ pitchCorrection: true });
+source.buffer = buffer;
+source.connect(audioContext.destination);
+
+const latency = source.getLatency();
+
+// Schedule playback slightly earlier to compensate for latency
+const startTime = audioContext.currentTime + 1.0; // play in 1 second
+source.start(startTime - latency);
+```
+</details>
+
+<Heading as="h3" id="start"><code>start</code> <Overridden /></Heading>
+
+Schedules the `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](./audio-buffer.mdx), or starts to play immediately.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to 0, the node starts playing immediately. <br /> Default: `0`. |
-| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties) (or the defined [`loopEnd`](/docs/sources/audio-buffer-source-node#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a 10-second buffer is still 5 seconds. |
-| `duration` <Optional /> | `number` | The playback duration, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](/docs/sources/audio-scheduled-source-node#stop). <br /> Equivalent to calling `start(when, offset)` followed by `stop(when + duration)`. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](./audio-buffer.mdx#properties) (or the defined [`loopEnd`](./audio-buffer-source-node.mdx#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a `10`-second buffer is still `5` seconds. |
+| `duration` <Optional /> | `number` | The playback duration, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](./audio-scheduled-source-node.mdx#stop). <br /> Equivalent to calling `start(when, offset)` followed by `stop(when + duration)`. |
 
 
 #### Errors:
@@ -107,13 +151,44 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 
 ## Events
 
-### `onLoopEnded`
+Inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
 
-Sets (or remove) callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
-You can remove callback either by passing `null` or calling `remove` on the returned subscription.
+### `onpositionchanged` <MobileOnly />
+
+Sets (or removes) a callback that will be fired after processing a certain part of the audio.
+Frequency is defined by `onpositionchangedInterval`. By setting this callback you can achieve pause functionality.
+You can remove the callback by passing `null`.
+
+### `onpositionchangedInterval` <MobileOnly />
+
+Allows to set frequency for `onpositionchanged` event. Value that can be set is around `1000/x` Hz.
 
 ```ts
-const subscription = audioBufferSourceNode.onLoopEnded = () => { // setting the callback
+import { AudioContext, AudioBufferSourceNode } from 'react-native-audio-api';
+
+function App() {
+    const ctx = new AudioContext();
+    const sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = null; //set your buffer
+    let offset = 0;
+
+    sourceNode.onpositionchanged = (event) => { //setting callback
+        this.offset = event.value;
+    };
+
+    sourceNode.onpositionchangedInterval = 100; //setting frequency to ~10Hz
+
+    sourceNode.start();
+}
+```
+
+### `onloopended`
+
+Sets (or removes) a callback that will be fired when buffer source node reached the end of the loop and is looping back to `loopStart`.
+You can remove the callback either by passing `null` or calling `remove` on the returned subscription.
+
+```ts
+const subscription = audioBufferSourceNode.onloopended = () => { // setting the callback
   console.log("loop ended");
 };
 
@@ -122,14 +197,25 @@ subscription.remove(); // removal of the subscription
 
 ## Remarks
 
+#### `detune`
+- Default value is `0.0`.
+- Nominal range is -∞ to ∞.
+- For example value of `100` detune the source up by one semitone, whereas `-1200` down by one octave.
+
+#### `playbackRate`
+- Default value is `1.0`.
+- Nominal range is -∞ to ∞.
+- For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
+- When created with `pitchCorrection` it is clamped to range `-4` to `4` and uses the WSOLA pitch-correction algorithm when the rate is not `1.0`.
+
 #### `buffer`
-- If is null, it outputs a single channel of silence (all samples are equal to 0).
+- If is null, it outputs a single channel of silence (all samples are equal to `0.0`).
 
 #### `loop`
 - Default value is false.
 
 #### `loopStart`
-- Default value is 0.
+- Default value is `0.0`.
 
 #### `loopEnd`
 - Default value is `buffer.duration`.

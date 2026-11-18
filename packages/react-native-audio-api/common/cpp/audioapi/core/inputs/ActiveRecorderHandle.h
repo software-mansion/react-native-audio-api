@@ -43,11 +43,14 @@ class ActiveRecorderHandle {
   /// returns Idle, which is the only state a recorder outside the slot can be in.
   RecorderState pause(const std::shared_ptr<AudioRecorder> &expected);
 
-  /// @brief Resumes a paused session; a no-op in any other state.
+  /// @brief Resumes a paused session; a no-op in any other state. A refused resume leaves the
+  /// session paused; the returned state shows it.
   RecorderState resume();
 
-  /// @brief resume() if the slot holds @p expected; see pause(expected).
-  RecorderState resume(const std::shared_ptr<AudioRecorder> &expected);
+  /// @brief Resumes @p expected when it is the paused occupant, like MediaRecorder.resume().
+  /// @return An error when @p expected is not in the slot, so it is idle; otherwise
+  /// AudioRecorder::resume()'s result, which is Ok when it was already recording.
+  Result<NoneType, std::string> resume(const std::shared_ptr<AudioRecorder> &expected);
 
   /// @brief AudioRecorder::rerouteInput() on the occupant; Ok when the slot is empty.
   Result<NoneType, std::string> rerouteInput();

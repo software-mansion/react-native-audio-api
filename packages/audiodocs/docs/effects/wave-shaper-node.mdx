@@ -5,11 +5,17 @@ sidebar_position: 10
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
 import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { ReadOnly, Optional } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useWaveShaperPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useWaveShaperPlayground';
 
 # WaveShaperNode
 
 The `WaveShaperNode` interface represents non-linear signal distortion effects.
 Non-linear distortion is commonly used for both subtle non-linear warming, and more obvious distortion effects.
+
+Press play, then click the `WaveShaperNode` box to switch the distortion off. The chart shows the transfer curve: the further it bends away from the dashed diagonal, the harder the signal is clipped.
+
+<InteractivePlayground tag="WaveShaperNode" usePlayground={useWaveShaperPlayground} />
 
 ## Constructor
 
