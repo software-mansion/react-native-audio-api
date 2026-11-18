@@ -71,12 +71,13 @@ interface WorkletNodeOptions {
 ### `WorkletNodeCallback`
 
 ```tsx
-type WorkletNodeCallback = (audioData: Float32Array) => void;
+type WorkletNodeCallback = (audioData: Float32Array, sampleRate: number) => void;
 ```
 
 | Argument    | Description                                                                                                                                                                                                     |
 | :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `audioData` | Stable `Float32Array` reused every callback. **Time-domain:** down-mixed mono PCM (`bufferLength` samples). **Frequency-domain:** linear magnitude spectrum (`bufferLength` bins; FFT size `bufferLength * 2`). |
+| `sampleRate` | Rate of the frames the snapshot was taken from: the context's sample rate. Use it to convert `bufferLength` to time, or bin `i` to `i * sampleRate / (bufferLength * 2)` Hz. |
 
 :::caution
 Do **not** assign `audioData` to a Reanimated shared value (or any state read later on the UI thread). The native buffer pool is reused for the next snapshot and may be written from the audio thread after your callback returns.

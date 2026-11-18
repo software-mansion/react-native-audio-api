@@ -269,8 +269,6 @@ export default class AudioRecorder {
    *
    * @returns An error result when the consumer cannot be prepared for the
    *   running recording or is added already; it is then not added.
-   * @internal Extensions reach it through `addRecorderConsumer` in
-   *   `react-native-audio-api/extensions`.
    */
   addConsumer(consumer: AudioConsumer): Result<void> {
     const result = this.recorder.addConsumer(consumer.consumer);
@@ -283,8 +281,6 @@ export default class AudioRecorder {
   /**
    * Stops feeding `consumer`, closing it when a recording is running. Does
    * nothing when it was not added.
-   *
-   * @internal Extensions reach it through `removeRecorderConsumer`.
    */
   removeConsumer(consumer: AudioConsumer): void {
     this.recorder.removeConsumer(consumer.consumer);

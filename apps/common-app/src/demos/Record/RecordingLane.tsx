@@ -6,9 +6,9 @@ import {
   StrokeCap,
 } from '@shopify/react-native-skia';
 import { PaintStyle } from '@shopify/react-native-skia';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
-import { WorkletAudioContext, WorkletNode } from 'react-native-audio-worklets';
+import { RecorderWorklet } from 'react-native-audio-worklets';
 import {
   FrameInfo,
   useDerivedValue,
@@ -74,13 +74,7 @@ const RecordingLane: React.FC<RecordingLaneProps> = ({
   const seenBarCount = useSharedValue(0);
   const seenBarAt = useSharedValue(0);
 
-  const stateRef = useRef(state);
-  const workletContextRef = useRef<WorkletAudioContext | null>(null);
-  const workletNodeRef = useRef<WorkletNode | null>(null);
-  const workletReadyRef = useRef(false);
-
   useEffect(() => {
-    stateRef.current = state;
     isCapturing.value = state === RecordingState.Recording && !isInterrupted;
 
     if (state === RecordingState.Idle) {
@@ -100,9 +94,7 @@ const RecordingLane: React.FC<RecordingLaneProps> = ({
   ]);
 
   useEffect(() => {
-    const workletContext = new WorkletAudioContext({ sampleRate });
-    const workletNode = new WorkletNode(
-      workletContext,
+    const recorderWorklet = new RecorderWorklet(
       (audioData) => {
         'worklet';
 
@@ -135,64 +127,15 @@ const RecordingLane: React.FC<RecordingLaneProps> = ({
       { domain: 'time-domain', bufferLength: chunkLength }
     );
 
-    workletContextRef.current = workletContext;
-    workletNodeRef.current = workletNode;
-    let cancelled = false;
-
-    (async () => {
-      await workletContext.resume();
-      if (cancelled) {
-        return;
-      }
-      workletNode.connect(workletContext.destination);
-      workletReadyRef.current = true;
-
-      if (
-        stateRef.current === RecordingState.Recording ||
-        stateRef.current === RecordingState.Paused
-      ) {
-        Recorder.connect(workletContext, workletNode);
-      }
-    })();
+    // Fed only while a session records; isCapturing drops paused and interrupted audio.
+    Recorder.addConsumer(recorderWorklet);
 
     return () => {
-      cancelled = true;
-      workletReadyRef.current = false;
-      Recorder.disconnect();
-      workletNode.disconnect();
-      workletContextRef.current = null;
-      workletNodeRef.current = null;
-      workletContext.close().catch(() => {});
+      Recorder.removeConsumer(recorderWorklet);
     };
-    // The worklet graph lives as long as the screen; the effect below routes
-    // the recorder into it.
+    // The worklet lives as long as the screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    const workletContext = workletContextRef.current;
-    const workletNode = workletNodeRef.current;
-    if (!workletReadyRef.current || !workletContext || !workletNode) {
-      return;
-    }
-
-    if (state !== RecordingState.Recording && state !== RecordingState.Paused) {
-      Recorder.disconnect();
-      return;
-    }
-
-    let isCancelled = false;
-    workletContext.resume().then(() => {
-      if (!isCancelled) {
-        Recorder.connect(workletContext, workletNode);
-      }
-    });
-
-    return () => {
-      isCancelled = true;
-      Recorder.disconnect();
-    };
-  }, [state]);
 
   useFrameCallback((frame: FrameInfo) => {
     now.value = frame.timestamp;

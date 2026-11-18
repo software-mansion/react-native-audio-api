@@ -1,0 +1,101 @@
+---
+sidebar_position: 6
+---
+
+import { ReadOnly } from '@site/src/components/Badges';
+
+# RecorderWorklet
+
+:::warning
+Requires [`react-native-audio-worklets`](https://www.npmjs.com/package/react-native-audio-worklets), [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) **>= 0.10.0**, and [`react-native-audio-api`](https://www.npmjs.com/package/react-native-audio-api) **>= 1.1.0**, which adds [`AudioRecorder.addConsumer`](../inputs/audio-recorder.mdx#custom-consumers). See the [Worklets introduction](./introduction.mdx) for installation.
+:::
+
+`RecorderWorklet` hands snapshots of what an [`AudioRecorder`](../inputs/audio-recorder.mdx) captures to your worklet on the **UI runtime**, with no `AudioContext`. Use it to animate a level meter or a spectrum while recording. It builds snapshots the same way as [`WorkletNode`](./worklet-node.mdx), from the recorder's input instead of an audio graph.
+
+Two things differ from `WorkletNode`:
+
+- **The snapshot is mono.** Whatever the input's channel count, its channels are mixed down to one before the snapshot is taken.
+- **The sample rate is the input's**, not a context's. It depends on the device and the route (built-in microphone, headset, Bluetooth) and can change mid-recording, so read it from the callback's `sampleRate` argument rather than assuming one: a snapshot spans `bufferLength / sampleRate` seconds, and in frequency-domain mode bin `i` covers `i * sampleRate / (bufferLength * 2)` Hz.
+
+## Constructor
+
+```tsx
+import { RecorderWorklet } from 'react-native-audio-worklets';
+
+const meter = new RecorderWorklet(callback, 1024);
+
+// or with explicit options:
+const spectrum = new RecorderWorklet(callback, {
+  domain: 'frequency-domain',
+  bufferLength: 512,
+  smoothingTimeConstant: 0.6,
+});
+
+recorder.addConsumer(meter);
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `callback` | [`WorkletNodeCallback`](./worklet-node.mdx#workletnodecallback) | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
+| `options` | `number \| WorkletNodeOptions` | Optional. The same options as [`WorkletNode`](./worklet-node.mdx#workletnodeoptions). Defaults: `time-domain`, `bufferLength: 1024`. |
+
+As with `WorkletNode`, compute what you need inside the callback or copy `audioData`: its memory is refilled for the next snapshot.
+
+### Errors
+
+| Error type | Condition |
+| :---: | :---- |
+| `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
+| `IndexSizeError` | `bufferLength` or `smoothingTimeConstant` is out of range. |
+
+## How buffering works
+
+The recorder hands every captured buffer to its consumers on a worker thread, never on the audio thread. For each buffer:
+
+1. The buffer is mixed down to mono and appended to the snapshot.
+2. **Time-domain:** when `bufferLength` frames are collected, the callback is scheduled on the UI runtime.
+3. **Frequency-domain:** when `bufferLength * 2` samples are collected, native code runs window, FFT and magnitude smoothing, then schedules the callback with `bufferLength` bins.
+4. While the callback runs, new frames are **skipped**. The recording itself is not affected.
+
+## Example
+
+A level meter for whatever the recorder captures:
+
+```tsx
+import { AudioRecorder } from 'react-native-audio-api';
+import { RecorderWorklet } from 'react-native-audio-worklets';
+import { useSharedValue, withSpring } from 'react-native-reanimated';
+
+const recorder = new AudioRecorder();
+
+function LevelMeter() {
+  const level = useSharedValue(0);
+
+  useEffect(() => {
+    const meter = new RecorderWorklet((audioData) => {
+      'worklet';
+
+      let sum = 0;
+      for (let i = 0; i < audioData.length; i++) {
+        sum += audioData[i] * audioData[i];
+      }
+      level.value = withSpring(Math.min(Math.sqrt(sum / audioData.length) * 4, 1));
+    }, 1024);
+
+    recorder.addConsumer(meter);
+    return () => recorder.removeConsumer(meter);
+  }, [level]);
+
+  // ...
+}
+```
+
+## Properties
+
+| Property | Type | Description |
+| :--- | :--- | :---- |
+| `bufferLength` <ReadOnly /> | `number` | Snapshot size passed to the callback (set at construction). In frequency-domain mode, the internal FFT size is `bufferLength * 2`. |
+| `smoothingTimeConstant` | `number` | Exponential smoothing of linear magnitude bins (`0`..`1`, default `0.8`). Meaningful in frequency-domain mode. |

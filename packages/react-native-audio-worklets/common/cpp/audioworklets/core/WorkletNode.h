@@ -2,10 +2,10 @@
 
 #include <audioapi/compatibility/StableAPI.h>
 #include <audioworklets/UIWorkletsRunner.h>
+#include <audioworklets/core/UIWorkletSnapshots.h>
 #include <audioworklets/core/WorkletNodeDomain.h>
 #include <audioworklets/types/NodeOptions.h>
 
-#include <atomic>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -30,26 +30,12 @@ class WorkletNode : public audioapi::AudioNode {
       WorkletNodeDomain domain,
       const WorkletNodeOptions &options);
 
-  ~WorkletNode() override;
-
   DELETE_COPY_AND_MOVE(WorkletNode);
 
-  [[nodiscard]] WorkletNodeDomain getDomain() const {
-    return domain_;
+  /// Snapshot settings (buffer length, smoothing) are read and changed here.
+  [[nodiscard]] UIWorkletSnapshots &snapshots() {
+    return snapshots_;
   }
-
-  /// @note JS Thread only.
-  [[nodiscard]] size_t getBufferLength() const {
-    return bufferLength_;
-  }
-
-  /// @note JS Thread only.
-  [[nodiscard]] float getSmoothingTimeConstant() const {
-    return smoothingTimeConstant_.load(std::memory_order_acquire);
-  }
-
-  /// @note JS Thread only.
-  void setSmoothingTimeConstant(float smoothingTimeConstant);
 
  protected:
   void processNode(int framesToProcess) override;
@@ -58,31 +44,8 @@ class WorkletNode : public audioapi::AudioNode {
       override;
 
  private:
-  void dispatchToUI();
-  void processTimeDomain(int framesToProcess);
-  void processFrequencyDomain(int framesToProcess);
-  void doFFTAnalysis();
-  void initializeFrequencyDomain(int fftSize);
-
-  static size_t fftSizeForBufferLength(size_t bufferLength);
-
-  WorkletNodeDomain domain_;
-  const size_t bufferLength_;
-  std::atomic<float> smoothingTimeConstant_{
-      audioapi::AnalyserOptions::kDefaultSmoothingTimeConstant};
-
   std::unique_ptr<audioapi::DSPAudioBuffer> downMixBuffer_;
-  std::unique_ptr<audioapi::DSPAudioArray> timeDomainAccum_;
-
-  std::unique_ptr<audioapi::DSPAudioArray> frequencyTimeDomainAccum_;
-  std::unique_ptr<audioapi::dsp::SpectrumAnalyser> spectrumAnalyser_;
-
-  UIWorkletsRunner workletRunner_;
-  size_t framesFilled_{0};
-
-  /// @brief True while a UI-thread worklet invocation is still pending. Snapshot buffers
-  /// are not filled until the callback completes.
-  std::shared_ptr<std::atomic<bool>> busy_;
+  UIWorkletSnapshots snapshots_;
 };
 
 } // namespace audioworklets

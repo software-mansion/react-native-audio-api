@@ -1,7 +1,6 @@
 #include <audioworklets/HostObjects/WorkletNodeHostObject.h>
 
-#include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
-#include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/compatibility/StableAPI.h>
 
 #include <memory>
 
@@ -31,19 +30,20 @@ WorkletNodeHostObject::WorkletNodeHostObject(
 }
 
 size_t WorkletNodeHostObject::getMemoryPressure() const {
-  return AudioNodeHostObject::getMemoryPressure() + workletNode_->getBufferLength() * sizeof(float);
+  return AudioNodeHostObject::getMemoryPressure() +
+      workletNode_->snapshots().getBufferLength() * sizeof(float);
 }
 
 JSI_PROPERTY_GETTER_IMPL(WorkletNodeHostObject, bufferLength) {
-  return {static_cast<double>(workletNode_->getBufferLength())};
+  return {static_cast<double>(workletNode_->snapshots().getBufferLength())};
 }
 
 JSI_PROPERTY_GETTER_IMPL(WorkletNodeHostObject, smoothingTimeConstant) {
-  return {workletNode_->getSmoothingTimeConstant()};
+  return {workletNode_->snapshots().getSmoothingTimeConstant()};
 }
 
 JSI_PROPERTY_SETTER_IMPL(WorkletNodeHostObject, smoothingTimeConstant) {
-  workletNode_->setSmoothingTimeConstant(static_cast<float>(value.getNumber()));
+  workletNode_->snapshots().setSmoothingTimeConstant(static_cast<float>(value.getNumber()));
 }
 
 } // namespace audioworklets

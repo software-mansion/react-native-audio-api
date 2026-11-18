@@ -99,27 +99,27 @@ obvious in the podspec:
 
 ## API available through `StableAPI.h`
 
-| Type / header (transitive)                                                    | Purpose                                                                                                |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `audioapi::BaseAudioContextHostObject`                                        | Resolve `AudioContext` from a JSI object via `getContext()`                                            |
-| `audioapi::AudioNodeHostObject`                                               | Base HostObject for custom nodes exposed to JS                                                         |
-| `audioapi::BaseAudioContext`                                                  | Context handle; `getGraph()`, scheduling, sample rate                                                  |
-| `audioapi::AudioNode`                                                         | Base class for custom `AudioNode` implementations                                                      |
-| `audioapi::AudioScheduledSourceNodeHostObject`                                | HostObject base for scheduled source nodes (`start`/`stop`/`onended`)                                  |
-| `audioapi::AudioScheduledSourceNode`                                          | Base class for scheduled sources (e.g. worklet generators)                                             |
-| `audioapi::AudioDestinationNode`                                              | Destination passed to `BaseAudioContext::initialize` overrides                                         |
-| `audioapi::AudioEventHandlerRegistryHostObject`                               | Host object behind the global `AudioEventEmitter`; gives access to the event registry                  |
-| `audioapi::AudioConsumer`                                                     | Base class for a custom consumer: receives every recorded buffer off the audio thread                  |
-| `audioapi::AudioConsumerHostObject`                                           | HostObject that hands an `AudioConsumer` to JS `addRecorderConsumer`; subclass it to expose properties |
-| `audioapi::StreamFormat` (via `encoding/StreamFormat.h`)                      | The recorder's input format an `AudioConsumer` is prepared for                                         |
-| `audioapi::Result` (via `utils/Result.hpp`)                                   | Success or error message returned by `AudioConsumer` calls                                             |
-| `audioapi::typedAudioNode<NodeT>()` (via `HostObjects/TypedAudioNodePtr.hpp`) | Downcast a HostObject's graph node to its concrete `AudioNode` type                                    |
-| `AudioScheduledSourceNodeOptions` (via `types/NodeOptions.h`)                 | Options for scheduled source HostObjects                                                               |
-| `audioapi::utils::graph::Graph`                                               | Audio graph owned by the context                                                                       |
-| `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`)                     | Frame-size and engine constants                                                                        |
-| `audioapi::AudioBuffer`                                                       | Multi-channel float buffer                                                                             |
-| `audioapi::AudioArrayBuffer`                                                  | Single-channel float buffer; implements `jsi::MutableBuffer` for zero-copy JSI `ArrayBuffer` handoff   |
-| `DELETE_COPY_AND_MOVE` (via `utils/Macros.h`)                                 | Macro to delete copy and move constructors/assignment for extension-owned classes                      |
+| Type / header (transitive)                                                    | Purpose                                                                                                                                |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `audioapi::BaseAudioContextHostObject`                                        | Resolve `AudioContext` from a JSI object via `getContext()`                                                                            |
+| `audioapi::AudioNodeHostObject`                                               | Base HostObject for custom nodes exposed to JS                                                                                         |
+| `audioapi::BaseAudioContext`                                                  | Context handle; `getGraph()`, scheduling, sample rate                                                                                  |
+| `audioapi::AudioNode`                                                         | Base class for custom `AudioNode` implementations                                                                                      |
+| `audioapi::AudioScheduledSourceNodeHostObject`                                | HostObject base for scheduled source nodes (`start`/`stop`/`onended`)                                                                  |
+| `audioapi::AudioScheduledSourceNode`                                          | Base class for scheduled sources (e.g. worklet generators)                                                                             |
+| `audioapi::AudioConsumer`                                                     | Base class for a custom consumer: receives every recorded buffer off the audio thread                                                  |
+| `audioapi::AudioConsumerHostObject`                                           | HostObject that hands an `AudioConsumer` to JS `AudioRecorder.addConsumer`; subclass it to expose properties                           |
+| `audioapi::StreamFormat` (via `encoding/StreamFormat.h`)                      | The recorder's input format an `AudioConsumer` is prepared for                                                                         |
+| `audioapi::Result` (via `utils/Result.hpp`)                                   | Success or error message returned by `AudioConsumer` calls                                                                             |
+| `audioapi::typedAudioNode<NodeT>()` (via `HostObjects/TypedAudioNodePtr.hpp`) | Downcast a HostObject's graph node to its concrete `AudioNode` type                                                                    |
+| Node option structs (via `types/NodeOptions.h`)                               | `AudioScheduledSourceNodeOptions` for scheduled source HostObjects; `AnalyserOptions` defaults such as `kDefaultSmoothingTimeConstant` |
+| `audioapi::utils::graph::Graph`                                               | Audio graph owned by the context                                                                                                       |
+| `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`)                     | Frame-size and engine constants                                                                                                        |
+| `audioapi::AudioBuffer`                                                       | Multi-channel float buffer                                                                                                             |
+| `audioapi::DSPAudioBuffer` / `audioapi::DSPAudioArray`                        | SIMD-aligned multi-channel / single-channel buffers for DSP work                                                                       |
+| `audioapi::dsp::SpectrumAnalyser` (via `dsp/SpectrumAnalyser.h`)              | The FFT magnitude analysis behind `AnalyserNode`, for consumers that report a spectrum                                                 |
+| `audioapi::AudioArrayBuffer`                                                  | Single-channel float buffer; implements `jsi::MutableBuffer` for zero-copy JSI `ArrayBuffer` handoff                                   |
+| `DELETE_COPY_AND_MOVE` (via `utils/Macros.h`)                                 | Macro to delete copy and move constructors/assignment for extension-owned classes                                                      |
 
 ---
 
@@ -170,12 +170,12 @@ context:
      possibly while `consume` runs.
 2. **Wrap it in `audioapi::AudioConsumerHostObject`** (or a subclass) and return that object to
    JS. Its destructor calls `invalidate()`.
-3. **In TS, subclass `AudioConsumer`** from `react-native-audio-api/extensions`, passing the
-   HostObject to its constructor, and add it to a recorder with `addRecorderConsumer(recorder,
-   consumer)` (`removeRecorderConsumer` to remove it). That entry point is for extensions only:
-   it is not exported from `react-native-audio-api`, and apps never see `AudioConsumer` or the
-   recorder's consumer methods, which are `@internal`. Keep your own typed reference to the
-   HostObject for its properties: the base class's `consumer` field is internal too.
+3. **In TS, subclass `AudioConsumer`** from `react-native-audio-api`, passing the HostObject to
+   its constructor, so users can call `recorder.addConsumer(consumer)`. Keep your own typed
+   reference to the HostObject for its properties: the base class's `consumer` field is internal
+   and left out of the published types.
+
+Reference implementation: `RecorderWorklet` in `packages/react-native-audio-worklets`.
 
 ---
 
@@ -183,7 +183,7 @@ context:
 
 - Any `#include` other than `<audioapi/compatibility/StableAPI.h>`
 - `audioapi/AudioAPIModuleInstaller.h` — core global install; not for extensions
-- `audioapi/libs/**`, `audioapi/dsp/**`, `audioapi/external/**`
+- `audioapi/libs/**`, `audioapi/external/**`, and `audioapi/dsp/**` other than `SpectrumAnalyser`
 - Concrete built-in node HostObjects — reference only, not a stable base API
 
 ---

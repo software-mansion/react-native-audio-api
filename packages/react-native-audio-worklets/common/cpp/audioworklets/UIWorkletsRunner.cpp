@@ -55,7 +55,7 @@ void UIWorkletsRunner::createChannelView(size_t frameCount) {
   job_->channelView = std::make_shared<AudioChannelViews>(uiRuntime, frameCount, 1);
 }
 
-void UIWorkletsRunner::call(std::function<void()> onComplete) const {
+void UIWorkletsRunner::call(float sampleRate, std::function<void()> onComplete) const {
   auto uiRuntime = job_->uiRuntime.lock();
   auto uiScheduler = job_->uiScheduler.lock();
   if (!isActive() || !job_->serializableWorklet || !uiRuntime || !uiScheduler) {
@@ -65,6 +65,7 @@ void UIWorkletsRunner::call(std::function<void()> onComplete) const {
     return;
   }
 
+  job_->sampleRate = sampleRate;
   job_->onComplete = std::move(onComplete);
 
 #ifdef ANDROID
@@ -99,7 +100,18 @@ void UIWorkletsRunner::runUIWorkletJob(const std::shared_ptr<UIWorkletJob> &job)
     return;
   }
 
-  worklets::runSyncOnRuntime(runtime, job->serializableWorklet, *audioData);
+  try {
+    worklets::runSyncOnRuntime(
+        runtime,
+        job->serializableWorklet,
+        *audioData,
+        jsi::Value(static_cast<double>(job->sampleRate)));
+  } catch (...) {
+    if (job->onComplete) {
+      job->onComplete();
+    }
+    throw;
+  }
 
   if (job->onComplete) {
     job->onComplete();

@@ -6,11 +6,7 @@
  */
 
 import AudioRecorder from '../src/core/AudioRecorder';
-import {
-  AudioConsumer,
-  addRecorderConsumer,
-  removeRecorderConsumer,
-} from '../src/extensions';
+import AudioConsumer from '../src/core/AudioConsumer';
 import type { IAudioConsumer } from '../src/jsi-interfaces';
 
 function createNativeRecorder(addResult: { status: string; message?: string }) {
@@ -137,22 +133,6 @@ describe('AudioRecorder.connect', () => {
     recorder.disconnect();
 
     expect(native.removeConsumer).toHaveBeenCalledWith(adapter.consumer);
-  });
-});
-
-describe('react-native-audio-api/extensions', () => {
-  it('adds and removes a consumer through the recorder', () => {
-    const native = createNativeRecorder({ status: 'success' });
-    installNativeRecorder(native);
-    const recorder = new AudioRecorder();
-    const consumer = new FakeConsumer();
-
-    const result = addRecorderConsumer(recorder, consumer);
-    removeRecorderConsumer(recorder, consumer);
-
-    expect(result.status).toBe('success');
-    expect(native.addConsumer).toHaveBeenCalledWith(consumer.consumer);
-    expect(native.removeConsumer).toHaveBeenCalledWith(consumer.consumer);
   });
 });
 
