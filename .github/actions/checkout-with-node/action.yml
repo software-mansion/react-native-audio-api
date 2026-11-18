@@ -7,7 +7,7 @@ inputs:
     required: false
     default: '.nvmrc'
   cache:
-    description: 'Package manager to cache (e.g. yarn, npm). Leave empty to disable caching.'
+    description: 'Package manager to cache (e.g. pnpm, npm). Leave empty to disable caching.'
     required: false
     default: ''
 

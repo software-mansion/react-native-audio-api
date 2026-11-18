@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-yarn install --immutable
+pnpm install --frozen-lockfile
 
 if [ $# -ge 1 ] && [ "$1" = "generate_nightly_version" ]; then
     cp package.json package.json.bak
@@ -19,7 +19,7 @@ if [ $# -ge 1 ] && [ "$1" = "generate_nightly_version" ]; then
     fi
 fi
 
-yarn build
+pnpm build
 
 npm pack
 

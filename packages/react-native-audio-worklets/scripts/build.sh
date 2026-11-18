@@ -1,6 +1,6 @@
 #!/bin/bash
 
-yarn workspace react-native-audio-api build
+pnpm --filter react-native-audio-api build
 
 bob build
 
