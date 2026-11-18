@@ -372,9 +372,6 @@ export interface IAudioRecorder {
   pause: () => Promise<void>;
   resume: () => Promise<void>;
 
-  setOnAudioReady: (options: IAudioRecorderCallbackOptions) => Result<void>;
-  clearOnAudioReady: () => void;
-
   addConsumer: (consumer: IAudioConsumer) => Result<void>;
   removeConsumer: (consumer: IAudioConsumer) => void;
 

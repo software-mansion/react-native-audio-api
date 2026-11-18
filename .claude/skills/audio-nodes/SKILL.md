@@ -177,7 +177,7 @@ its file), `detach` at the end (drain, close every listed consumer, move the wri
 `finalize` closes the file with no mutex held. Disabling the file mid-session drops the buffers
 still queued for the effects worker.
 A new consumer is an `AudioConsumer` subclass, never a new slot: `AudioRecorderCallback` (JS
-`onAudioReady`, added by `AudioRecorderHostObject`) and the adapter's `RecorderAdapterConsumer`
+`onAudioReady`, created by the installer's `createAudioReadyConsumer` and added by JS `onAudioReady`) and the adapter's `RecorderAdapterConsumer`
 (added by JS `AudioRecorder.connect` through `addConsumer`, from the node HostObject's `consumer`
 getter) are listed with `AudioRecorder::addConsumer` / `removeConsumer`; the recorder knows no
 concrete consumer but the file. The adapter is split in two: `RecorderAdapterConsumer` owns the

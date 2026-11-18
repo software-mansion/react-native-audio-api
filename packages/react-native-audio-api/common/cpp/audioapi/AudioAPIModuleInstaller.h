@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/HostObjects/AudioConsumerHostObject.h>
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 #include <audioapi/HostObjects/OfflineAudioContextHostObject.h>
 #ifndef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
@@ -13,6 +14,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioRecorderOptions.h>
@@ -20,7 +22,9 @@
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
+#include <cstdint>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace audioapi {
@@ -37,6 +41,8 @@ class AudioAPIModuleInstaller {
         getCreateAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioRecorder =
         getCreateAudioRecorderFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
+    auto createAudioReadyConsumer =
+        getCreateAudioReadyConsumerFunction(jsiRuntime, audioEventHandlerRegistry);
     auto createOfflineAudioContext =
         getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
@@ -47,6 +53,8 @@ class AudioAPIModuleInstaller {
 
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioContext", createAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioRecorder", createAudioRecorder);
+    jsiRuntime->global().setProperty(
+        *jsiRuntime, "createAudioReadyConsumer", createAudioReadyConsumer);
     jsiRuntime->global().setProperty(
         *jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioBuffer", createAudioBuffer);
@@ -130,6 +138,42 @@ class AudioAPIModuleInstaller {
               jsCallInvoker);
 
           return jsi::Object::createFromHostObject(runtime, audioContextHostObject);
+        });
+  }
+
+  static jsi::Function getCreateAudioReadyConsumerFunction(
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioReadyConsumer"),
+        1,
+        [audioEventHandlerRegistry](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+#ifdef RN_AUDIO_API_AUDIO_RECORDER_DISABLED
+          throw jsi::JSError(
+              runtime,
+              "AudioRecorder is unavailable: react-native-audio-api was built with "
+              "\"disableAudioRecorder\": true.");
+#else
+          auto options = args[0].getObject(runtime);
+          auto sampleRate =
+              static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
+          auto bufferLength =
+              static_cast<size_t>(options.getProperty(runtime, "bufferLength").getNumber());
+          auto channelCount =
+              static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
+          uint64_t callbackId = std::stoull(
+              options.getProperty(runtime, "callbackId").getString(runtime).utf8(runtime));
+
+          auto consumer = std::make_shared<AudioRecorderCallback>(
+              audioEventHandlerRegistry, sampleRate, bufferLength, channelCount, callbackId);
+          return jsi::Object::createFromHostObject(
+              runtime, std::make_shared<AudioConsumerHostObject>(std::move(consumer)));
+#endif
         });
   }
 

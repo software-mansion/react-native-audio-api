@@ -6,7 +6,6 @@
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/inputs/IRecorderInput.h>
-#include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/jsi/JsiUtils.h>
@@ -24,8 +23,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
     const std::shared_ptr<react::CallInvoker> &callInvoker,
-    AudioRecorderOptions options)
-    : audioEventHandlerRegistry_(audioEventHandlerRegistry) {
+    AudioRecorderOptions options) {
   audioRecorder_ = std::make_shared<AudioRecorder>(
       audioEventHandlerRegistry,
       createPlatformRecorderInput(options),
@@ -43,8 +41,6 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disableFileOutput),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, pause),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, resume),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnAudioReady),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, addConsumer),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, removeConsumer),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
@@ -59,9 +55,6 @@ AudioRecorderHostObject::~AudioRecorderHostObject() {
   // action, iOS session deactivation) may hold the recorder past the runtime, and its last
   // release must find no jsi::Function left to destroy.
   audioRecorder_->clearOnErrorCallback();
-  if (audioReadyConsumer_ != nullptr) {
-    audioReadyConsumer_->invalidate();
-  }
   // Queued rather than called, so a start() still waiting on the lane cannot outlive this stop.
   lifecycleLane_->schedule([audioRecorder = audioRecorder_] { audioRecorder->stop(); });
 }
@@ -179,27 +172,6 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, resume) {
   });
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
-  auto options = args[0].getObject(runtime);
-
-  auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
-  auto bufferLength = static_cast<size_t>(options.getProperty(runtime, "bufferLength").getNumber());
-  auto channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
-  uint64_t callbackId =
-      std::stoull(options.getProperty(runtime, "callbackId").getString(runtime).utf8(runtime));
-
-  auto result = replaceConsumer(
-      audioReadyConsumer_,
-      std::make_shared<AudioRecorderCallback>(
-          audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId));
-  return jsiutils::toJsResult(runtime, result);
-}
-
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnAudioReady) {
-  replaceConsumer(audioReadyConsumer_, nullptr);
-  return jsi::Value::undefined();
-}
-
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, addConsumer) {
   return jsiutils::toJsResult(
       runtime, audioRecorder_->addConsumer(audioConsumerFrom(runtime, args[0])));
@@ -228,25 +200,6 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
   double duration = audioRecorder_->getCurrentDuration();
   return {duration};
-}
-
-Result<NoneType, std::string> AudioRecorderHostObject::replaceConsumer(
-    std::shared_ptr<AudioConsumer> &current,
-    std::shared_ptr<AudioConsumer> replacement) {
-  if (current != nullptr) {
-    audioRecorder_->removeConsumer(current);
-  }
-  current = nullptr;
-
-  if (replacement == nullptr) {
-    return Ok(None);
-  }
-
-  auto addResult = audioRecorder_->addConsumer(replacement);
-  if (addResult.is_ok()) {
-    current = std::move(replacement);
-  }
-  return addResult;
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, inputLatency) {

@@ -155,3 +155,94 @@ describe('react-native-audio-api/extensions', () => {
     expect(native.removeConsumer).toHaveBeenCalledWith(consumer.consumer);
   });
 });
+
+describe('AudioRecorder.onAudioReady', () => {
+  const options = { sampleRate: 16000, bufferLength: 1600, channelCount: 1 };
+
+  /** Records listener registrations, as the native registry would hand out ids. */
+  function installEventEmitter() {
+    let nextId = 1;
+    const emitter = {
+      addAudioEventListener: jest.fn(() => `sub-${nextId++}`),
+      removeAudioEventListener: jest.fn(),
+    };
+    globalThis.AudioEventEmitter = emitter as any;
+    return emitter;
+  }
+
+  function installAudioReadyConsumers() {
+    const created: { callbackId: string }[] = [];
+    (globalThis.createAudioReadyConsumer as jest.Mock).mockImplementation(
+      (consumerOptions: { callbackId: string }) => {
+        const consumer = { callbackId: consumerOptions.callbackId };
+        created.push(consumer);
+        return consumer;
+      }
+    );
+    return created;
+  }
+
+  it('adds a consumer that delivers to its own subscription', () => {
+    installEventEmitter();
+    const created = installAudioReadyConsumers();
+    const native = createNativeRecorder({ status: 'success' });
+    installNativeRecorder(native);
+    const recorder = new AudioRecorder();
+
+    const result = recorder.onAudioReady(options, () => {});
+
+    expect(result.status).toBe('success');
+    expect(globalThis.createAudioReadyConsumer).toHaveBeenLastCalledWith({
+      ...options,
+      callbackId: 'sub-1',
+    });
+    expect(native.addConsumer).toHaveBeenCalledWith(created[0]);
+  });
+
+  it('replacing the callback removes the previous consumer and its subscription', () => {
+    const emitter = installEventEmitter();
+    const created = installAudioReadyConsumers();
+    const native = createNativeRecorder({ status: 'success' });
+    installNativeRecorder(native);
+    const recorder = new AudioRecorder();
+
+    recorder.onAudioReady(options, () => {});
+    recorder.onAudioReady(options, () => {});
+
+    expect(native.removeConsumer).toHaveBeenCalledWith(created[0]);
+    expect(emitter.removeAudioEventListener).toHaveBeenCalledWith('audioReady', 'sub-1');
+    expect(native.addConsumer).toHaveBeenLastCalledWith(created[1]);
+  });
+
+  it('clearing removes the consumer and its subscription', () => {
+    const emitter = installEventEmitter();
+    const created = installAudioReadyConsumers();
+    const native = createNativeRecorder({ status: 'success' });
+    installNativeRecorder(native);
+    const recorder = new AudioRecorder();
+    recorder.onAudioReady(options, () => {});
+
+    recorder.clearOnAudioReady();
+    recorder.clearOnAudioReady();
+
+    expect(native.removeConsumer).toHaveBeenCalledTimes(1);
+    expect(native.removeConsumer).toHaveBeenCalledWith(created[0]);
+    expect(emitter.removeAudioEventListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refused consumer leaves no subscription behind', () => {
+    const emitter = installEventEmitter();
+    installAudioReadyConsumers();
+    const native = createNativeRecorder({ status: 'error', message: 'cannot prepare' });
+    installNativeRecorder(native);
+    const recorder = new AudioRecorder();
+
+    const result = recorder.onAudioReady(options, () => {});
+    recorder.clearOnAudioReady();
+
+    expect(result).toEqual({ status: 'error', message: 'cannot prepare' });
+    expect(emitter.removeAudioEventListener).toHaveBeenCalledTimes(1);
+    expect(native.removeConsumer).not.toHaveBeenCalled();
+  });
+});
+
