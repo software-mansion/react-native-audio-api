@@ -78,30 +78,39 @@ void AudioBufferSourceNode::setBuffer(
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
   processor_->setBuffer(buffer_);
+  applyStartToBuffer();
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
-  if (duration > 0 && std::isfinite(duration)) {
-    // Spec: `duration` counts buffer content, not context time.
-    processor_->setDurationBudget(duration);
-  }
+  // Spec: both wait for a buffer assigned after start().
+  startAwaitingBuffer_ = StartArguments{
+      .offset = offset,
+      .duration =
+          duration >= 0 && std::isfinite(duration) ? std::optional(duration) : std::nullopt};
+  applyStartToBuffer();
+}
 
-  if (buffer_ == nullptr) {
+void AudioBufferSourceNode::applyStartToBuffer() {
+  if (buffer_ == nullptr || !startAwaitingBuffer_) {
     return;
   }
+  const auto [offset, duration] = *std::exchange(startAwaitingBuffer_, std::nullopt);
+  const auto sampleRate = buffer_->getSampleRate();
 
   // Past the (effective) loop end, or past the buffer when not looping, playback starts
   // at that boundary instead.
-  const auto sampleRate = buffer_->getSampleRate();
-  offset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
-
+  double startOffset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
   if (loop_) {
-    offset = std::min(offset, loopEnd_);
+    startOffset = std::min(startOffset, loopEnd_);
   }
+  vReadIndex_ = sampleRate * startOffset;
 
-  vReadIndex_ = sampleRate * offset;
+  if (duration) {
+    // Spec: `duration` counts buffer content, not context time.
+    processor_->setFrameBudget(dsp::timeToSampleFrame(*duration, sampleRate));
+  }
 }
 
 void AudioBufferSourceNode::disable() {

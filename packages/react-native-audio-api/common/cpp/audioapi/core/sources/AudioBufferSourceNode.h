@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -68,6 +69,14 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
 
   // User provided buffer
   std::shared_ptr<AudioBuffer> buffer_;
+  /// start() arguments in seconds, which only become frames at the buffer's own sample rate.
+  struct StartArguments {
+    double offset;
+    std::optional<double> duration;
+  };
+  std::optional<StartArguments> startAwaitingBuffer_;
+
+  void applyStartToBuffer();
 
   EventCaller<AudioEvent::LOOP_ENDED> onLoopEndedEvent_;
   void sendOnLoopEndedEvent();
