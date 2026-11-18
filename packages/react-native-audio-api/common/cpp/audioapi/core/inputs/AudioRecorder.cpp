@@ -467,9 +467,10 @@ RecorderConsumers::Detached AudioRecorder::endSession() {
   session_.format.reset();
   session_.lastBufferSeconds.store(0.0, std::memory_order_relaxed);
   session_.recordedSeconds.store(0.0, std::memory_order_relaxed);
-  sessionRegistry_->release(weak_from_this());
 
-  return consumers_.detach();
+  auto detached = consumers_.detach();
+  sessionRegistry_->release(weak_from_this());
+  return detached;
 }
 
 void AudioRecorder::reportError(const std::string &message) {
