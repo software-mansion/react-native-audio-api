@@ -60,9 +60,9 @@ float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 
 ---
 
-### `CircularAudioArray.h` — circular float buffer (read header)
+### `CircularArray.hpp` — circular float buffer (read header)
 
-`AudioArray` subclass acting as a circular queue for streaming audio. **Not thread-safe** — use only from one thread.
+`CircularArray<Base>` template; aliases `CircularAudioArray` and `CircularDSPAudioArray`. A circular queue for streaming audio. **Not thread-safe** — use only from one thread.
 
 Key operations:
 - `push_back(AudioArray&, size)` / `push_back(float*, size)` — write frames
@@ -70,7 +70,10 @@ Key operations:
 - `pop_back(AudioArray&, size, offset)` — read newest frames
 - `getNumberOfAvailableFrames()` — how many frames ready to read
 
-Used in delay lines and streaming buffers.
+Used in delay lines and streaming buffers. For a "newest window" ring (`AnalyserNode`,
+worklets' `UIWorkletSnapshots`): size it to the window, `push_back(..., skipAvailableSpaceCheck
+= true)` and `pop_back(..., size, 0, true)`; `push_back` throws for a block larger than the
+ring, so pass only the block's newest `size` frames. Exported via `StableAPI.h`.
 
 ---
 

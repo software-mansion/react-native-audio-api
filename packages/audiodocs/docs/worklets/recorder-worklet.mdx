@@ -55,10 +55,9 @@ As with `WorkletNode`, compute what you need inside the callback or copy `audioD
 
 The recorder hands every captured buffer to its consumers on a worker thread, never on the audio thread. For each buffer:
 
-1. The buffer is mixed down to mono and appended to the snapshot.
-2. **Time-domain:** when `bufferLength` frames are collected, the callback is scheduled on the UI runtime.
-3. **Frequency-domain:** when `bufferLength * 2` samples are collected, native code runs window, FFT and magnitude smoothing, then schedules the callback with `bufferLength` bins.
-4. While the callback runs, new frames are **skipped**. The recording itself is not affected.
+1. The buffer is mixed down to mono and kept in a window of the newest frames (`bufferLength` frames in time domain, `bufferLength * 2` in frequency domain).
+2. Every `bufferLength` frames a snapshot is due, and the callback is scheduled on the UI runtime with the newest window: raw samples in time domain, or `bufferLength` bins after window, FFT and magnitude smoothing in frequency domain. Frequency-domain windows overlap by half.
+3. Only one callback runs at a time. A snapshot that falls due while the callback is still running is sent once it returns, with the newest frames, so slow callbacks see fewer snapshots but never stale ones. The recording itself is not affected.
 
 ## Example
 

@@ -16,10 +16,12 @@ namespace audioworklets {
  * time domain, or `bufferLength` linear magnitude bins of a `bufferLength * 2`-point FFT in
  * frequency domain (the same analysis as `AnalyserNode`).
  *
- * One snapshot is in flight at a time: while the UI worklet still reads the last one, pushed
- * frames are skipped, and the rest of a block that completes a snapshot is dropped. Shared by
- * `WorkletNode` (fed from the audio thread) and `RecorderWorklet` (fed from the recorder's
- * worker).
+ * Pushed frames go into a ring that always holds the newest window, so a snapshot shows the
+ * latest audio however large the pushed blocks are. A snapshot is due every `bufferLength`
+ * frames (back-to-back windows in time domain, 50% overlap in frequency domain), and is sent on
+ * the first push after it is due while no earlier one is still in flight; snapshots due while
+ * the UI worklet runs are skipped. Shared by `WorkletNode` (fed from the audio thread) and
+ * `RecorderWorklet` (fed from the recorder's worker).
  */
 class UIWorkletSnapshots {
  public:
@@ -32,7 +34,7 @@ class UIWorkletSnapshots {
 
   /// @note Producer thread only, never concurrently with reset().
   void push(const float *mono, size_t numFrames);
-  /// Drops the partly filled snapshot. @note Producer thread only.
+  /// Waits for a full window of new frames before the next snapshot. @note Producer thread only.
   void reset();
   /// The rate of the frames pushed from now on, handed to the worklet with each snapshot.
   /// @note Producer thread only, or before it starts pushing.
@@ -70,10 +72,12 @@ class UIWorkletSnapshots {
   std::atomic<float> smoothingTimeConstant_;
   float sampleRate_ = 0.0F;
 
-  /// Time domain: the next snapshot's samples. Frequency domain: the FFT input.
-  std::unique_ptr<audioapi::DSPAudioArray> accumulator_;
+  /// The newest `snapshotFrames()` pushed frames.
+  std::unique_ptr<audioapi::CircularDSPAudioArray> recentFrames_;
+  /// Frequency domain only: the window copied out of `recentFrames_` for the FFT.
+  std::unique_ptr<audioapi::DSPAudioArray> fftInput_;
   std::unique_ptr<audioapi::dsp::SpectrumAnalyser> spectrumAnalyser_;
-  size_t framesFilled_{0};
+  size_t framesUntilSnapshot_;
 
   /// True while a UI-thread worklet invocation is pending; the snapshot memory is not written
   /// until it completes.

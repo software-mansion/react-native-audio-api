@@ -22,4 +22,5 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArrayBuffer.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
+#include <audioapi/utils/CircularArray.hpp>
 #include <audioapi/utils/Macros.h>
