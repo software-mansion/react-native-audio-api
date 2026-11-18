@@ -24,6 +24,7 @@ export default abstract class BaseAudioContext<
   BrowserContext extends globalThis.BaseAudioContext =
     globalThis.BaseAudioContext,
 > {
+  /** @internal */
   readonly context: BrowserContext;
 
   readonly destination: AudioDestinationNode;
