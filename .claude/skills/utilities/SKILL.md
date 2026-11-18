@@ -239,7 +239,7 @@ RAII mutex wrapper that can hold `nullptr` (no-op). Supports `Locker::tryLock(mu
 
 - **`AudioDecoder.h`** — decodes audio files to `AudioBuffer` (FFmpeg, conditional). Read the header.
 - **`AudioFileWriter.h`** — writes PCM to audio files. Read the header.
-- **`AudioRecorderCallback.h`** — the JS `onAudioReady` `RecorderOutput` (resamples/remixes on the recorder's effects worker). Internal.
+- **`AudioRecorderCallback.h`** — the JS `onAudioReady` `AudioConsumer` (resamples/remixes on the recorder's effects worker). Internal.
 - **`worklets/WorkletsRunner.h`** — manages JS worklet execution on the audio thread. Internal.
 
 ---
@@ -262,13 +262,13 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ### `AudioBufferOffloader.hpp` — audio-thread buffers to a worker
 
-A 32-slot `AudioBufferPool` plus a `TaskOffloader<PendingFrames>` behind one deliver callback. `start(StreamFormat)` sizes the pool and starts the worker (false on an unusable format or out of memory), `push(source, numFrames)` copies into a slot through `AudioBuffer::copy` and sends it; `source` is constrained by `AudioBufferCopySource` (from `AudioBuffer.hpp`) to what `copy` takes: raw channel pointers (the audio thread) or an `AudioBuffer`, mixed to the started channel count (never blocks or allocates; drops when no slot is free), `stop()` drains every queued buffer to the callback, joins, frees the pool. The owner stops feeding `push()` before `start` / `stop`. The callback gets the lease (`PendingFrames`) and can drop it early to free the slot before slow work. Used by `AudioFileWriter` (encoder) and `RecorderOutputs` (effects worker). Declare it last in the owner, so its worker joins before what the callback touches is destroyed.
+A 32-slot `AudioBufferPool` plus a `TaskOffloader<PendingFrames>` behind one deliver callback. `start(StreamFormat)` sizes the pool and starts the worker (false on an unusable format or out of memory), `push(source, numFrames)` copies into a slot through `AudioBuffer::copy` and sends it; `source` is constrained by `AudioBufferCopySource` (from `AudioBuffer.hpp`) to what `copy` takes: raw channel pointers (the audio thread) or an `AudioBuffer`, mixed to the started channel count (never blocks or allocates; drops when no slot is free), `stop()` drains every queued buffer to the callback, joins, frees the pool. The owner stops feeding `push()` before `start` / `stop`. The callback gets the lease (`PendingFrames`) and can drop it early to free the slot before slow work. Used by `AudioFileWriter` (encoder) and `RecorderConsumers` (effects worker). Declare it last in the owner, so its worker joins before what the callback touches is destroyed.
 
 ---
 
 ### `VectorMath.h` — SIMD-optimized vector math
 
-SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onInputFrames`, `AudioFileWriter`, `AudioEncoder::encode` take one pointer per channel; `RecorderOutput::write` gets the planar pool `AudioBuffer`); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
+SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onInputFrames`, `AudioFileWriter`, `AudioEncoder::encode` take one pointer per channel; `AudioConsumer::write` gets the planar pool `AudioBuffer`); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
 
 ---
 

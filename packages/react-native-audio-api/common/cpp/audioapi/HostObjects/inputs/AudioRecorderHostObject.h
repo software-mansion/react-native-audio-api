@@ -16,7 +16,7 @@ using namespace facebook;
 
 class AudioRecorder;
 class IAudioEventHandlerRegistry;
-class RecorderOutput;
+class AudioConsumer;
 
 class AudioRecorderHostObject : public HostObject {
  public:
@@ -39,11 +39,11 @@ class AudioRecorderHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(resume);
 
-  JSI_HOST_FUNCTION_DECL(connect);
-  JSI_HOST_FUNCTION_DECL(disconnect);
-
   JSI_HOST_FUNCTION_DECL(setOnAudioReady);
   JSI_HOST_FUNCTION_DECL(clearOnAudioReady);
+
+  JSI_HOST_FUNCTION_DECL(addConsumer);
+  JSI_HOST_FUNCTION_DECL(removeConsumer);
 
   JSI_HOST_FUNCTION_DECL(setOnError);
   JSI_HOST_FUNCTION_DECL(clearOnError);
@@ -55,14 +55,13 @@ class AudioRecorderHostObject : public HostObject {
  private:
   /// Swaps @p current for @p replacement on the recorder (either may be null). @p current is left
   /// null when the replacement cannot be added.
-  Result<NoneType, std::string> replaceOutput(
-      std::shared_ptr<RecorderOutput> &current,
-      std::shared_ptr<RecorderOutput> replacement);
+  Result<NoneType, std::string> replaceConsumer(
+      std::shared_ptr<AudioConsumer> &current,
+      std::shared_ptr<AudioConsumer> replacement);
 
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  std::shared_ptr<RecorderOutput> audioReadyOutput_;
-  std::shared_ptr<RecorderOutput> adapterOutput_;
+  std::shared_ptr<AudioConsumer> audioReadyConsumer_;
   /// Lifecycle calls run FIFO here. Declared after audioRecorder_: the lane destructor drains
   /// queued tasks (including the stop queued by ~AudioRecorderHostObject) before joining.
   std::shared_ptr<SerialTaskExecutor> lifecycleLane_;

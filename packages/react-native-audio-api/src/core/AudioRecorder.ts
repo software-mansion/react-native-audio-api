@@ -19,6 +19,7 @@ import {
 import { concatAudioFiles } from './AudioFileUtils';
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
+import AudioConsumer from './AudioConsumer';
 import type AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 
@@ -45,7 +46,20 @@ export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
-  private adapterNode: IRecorderAdapterNode | null = null;
+  /**
+   * While connected: the adapter node, kept alive here, and the consumer added
+   * for it.
+   */
+  private adapter: {
+    node: IRecorderAdapterNode;
+    consumer: AudioConsumer;
+  } | null = null;
+
+  /**
+   * Kept while added, so no added consumer is garbage-collected under the
+   * recorder.
+   */
+  private readonly consumers = new Set<AudioConsumer>();
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
     globalThis.AudioEventEmitter
@@ -150,14 +164,14 @@ export default class AudioRecorder {
 
   /** Connects the recorder to a destination node. */
   connect(context: BaseAudioContext, destination: AudioNode): AudioNode {
-    if (this.adapterNode == null) {
-      const adapter = context.context.createRecorderAdapter();
-      this.adapterNode = adapter;
-      this.recorder.connect(adapter);
+    if (this.adapter == null) {
+      const node = context.context.createRecorderAdapter();
+      this.adapter = { node, consumer: new AudioConsumer(node.consumer) };
+      this.addConsumer(this.adapter.consumer);
     }
 
     // @ts-expect-error node is protected, but we need to access it here
-    this.adapterNode.connect(destination.node);
+    this.adapter.node.connect(destination.node);
 
     return destination;
   }
@@ -167,8 +181,10 @@ export default class AudioRecorder {
    * {@link connect} no longer receives recorded audio until connected again.
    */
   disconnect(): void {
-    this.recorder.disconnect();
-    this.adapterNode = null;
+    if (this.adapter != null) {
+      this.removeConsumer(this.adapter.consumer);
+      this.adapter = null;
+    }
   }
 
   /**
@@ -230,6 +246,35 @@ export default class AudioRecorder {
 
     this.onAudioReadySubscription.remove();
     this.onAudioReadySubscription = null;
+  }
+
+  /**
+   * Feeds every recorded buffer to `consumer` as well, from the next session
+   * on, or at once when a recording is running. A consumer can be added once;
+   * adding it again fails.
+   *
+   * @returns An error result when the consumer cannot be prepared for the
+   *   running recording or is added already; it is then not added.
+   * @internal Extensions reach it through `addRecorderConsumer` in
+   *   `react-native-audio-api/extensions`.
+   */
+  addConsumer(consumer: AudioConsumer): Result<void> {
+    const result = this.recorder.addConsumer(consumer.consumer);
+    if (result.status === 'success') {
+      this.consumers.add(consumer);
+    }
+    return result;
+  }
+
+  /**
+   * Stops feeding `consumer`, closing it when a recording is running. Does
+   * nothing when it was not added.
+   *
+   * @internal Extensions reach it through `removeRecorderConsumer`.
+   */
+  removeConsumer(consumer: AudioConsumer): void {
+    this.recorder.removeConsumer(consumer.consumer);
+    this.consumers.delete(consumer);
   }
 
   isRecording(): boolean {
