@@ -20,7 +20,7 @@ import StereoPannerNode from './StereoPannerNode.web';
 import PannerNode from './PannerNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
 
-export default class BaseAudioContext<
+export default abstract class BaseAudioContext<
   BrowserContext extends globalThis.BaseAudioContext =
     globalThis.BaseAudioContext,
 > {
