@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 | Library set | Default | Option | What it adds |
 | :---- | :---: | :---: | :---- |
 | FFmpeg (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | **off** | `enableFFmpeg` | Remote URL streaming (HTTP byte ranges), HLS (`.m3u8`), remote URL metadata — see [Runtime flags](./runtime-flags#where-ffmpeg-is-used). |
-| Static libs (`libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile`) | **on** | `disableStaticExternalLibs` | Decoding `ogg`, `opus`, `oga` files |
+| Static libs (`libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile`) | **on** | `disableStaticExternalLibs` | Decoding `ogg`, `opus`, `oga` files (on Android, much faster than the system decoder) |
 
 The options are independent and can be combined.
 
@@ -146,4 +146,4 @@ The app's `package.json`:
 </TabItem>
 </Tabs>
 
-This removes the bundled Opus / Ogg / Vorbis static libraries. With this option enabled, attempts to decode `.ogg`, `.opus`, or `.oga` files through `AudioContext.decodeAudioData` (or any other decoding path) will return an error — those formats are handled inside miniaudio via the now-disabled custom backends.
+This removes the bundled Opus / Ogg / Vorbis static libraries, which decode `.ogg`, `.opus` and `.oga` files inside miniaudio. Without them, decoding those files through `AudioContext.decodeAudioData` (or any other decoding path) falls back to the system decoder, which on Android is much slower.
