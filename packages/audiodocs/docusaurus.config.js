@@ -214,6 +214,13 @@ const config = {
                   resolve: { fullySpecified: false },
                 },
                 {
+                  // The 1.0 web entry re-exports `BaseAudioContext`, which is a type-only
+                  // interface and compiles to an empty module.
+                  test: /\.js$/,
+                  include: /node_modules[\\/]react-native-audio-api[\\/]/,
+                  parser: { reexportExportsPresence: false },
+                },
+                {
                   test: /\.txt$/,
                   type: 'asset/source',
                 },

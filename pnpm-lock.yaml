@@ -595,8 +595,8 @@ importers:
         specifier: 'catalog:'
         version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-native-audio-api:
-        specifier: 0.13.1
-        version: 0.13.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        specifier: 1.0.0
+        version: 1.0.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-canvas:
         specifier: ^0.1.40
         version: 0.1.40(react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))
@@ -9575,16 +9575,13 @@ packages:
       react-loadable: '*'
       webpack: 5.101.3
 
-  react-native-audio-api@0.13.1:
-    resolution: {integrity: sha512-FuUcj/flfWImRFQkxpJVJe0HueQxwliCjeI+kVcWQPOj46mkpsbEhvNF0IPRNwWiDl1GaiYka8oLShZ+Y7Y9OA==}
+  react-native-audio-api@1.0.0:
+    resolution: {integrity: sha512-fIU3g2gJ2FxPOeWaPXrog3BsGZ5QMLTIUOiviPdGo7EO3O0fsrhnoV5bmkrFk9aYwo4psC6LDDb9Cg+xzD2nOA==}
+    engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
       react: '*'
       react-native: '*'
-      react-native-worklets: '>= 0.6.0'
-    peerDependenciesMeta:
-      react-native-worklets:
-        optional: true
 
   react-native-background-timer@2.4.1:
     resolution: {integrity: sha512-TE4Kiy7jUyv+hugxDxitzu38sW1NqjCk4uE5IgU2WevLv7sZacaBc6PZKOShNRPGirLl1NWkaG3LDEkdb9Um5g==}
@@ -23304,13 +23301,11 @@ snapshots:
       react-loadable: '@docusaurus/react-loadable@6.0.0(react@19.3.0)'
       webpack: 5.101.3(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(webpack-cli@5.1.4)
 
-  react-native-audio-api@0.13.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-audio-api@1.0.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
       react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       semver: 7.8.5
-    optionalDependencies:
-      react-native-worklets: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
 
   react-native-background-timer@2.4.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)):
     dependencies:
