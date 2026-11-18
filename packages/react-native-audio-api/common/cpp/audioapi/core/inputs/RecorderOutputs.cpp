@@ -1,11 +1,12 @@
 #include <audioapi/core/inputs/RecorderOutputs.h>
 
-#include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/inputs/RecorderOutput.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
-#include <audioapi/core/utils/AudioRecorderCallback.h>
-#include <audioapi/core/utils/Locker.h>
+#include <audioapi/events/AudioEventPayload.h>
+#include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioFileProperties.h>
 
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <string>
@@ -15,62 +16,43 @@
 namespace audioapi {
 
 RecorderOutputs::RecorderOutputs(
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent,
     const PlatformFileBackend &fileBackend)
-    : audioEventHandlerRegistry_(audioEventHandlerRegistry), fileBackend_(fileBackend) {}
+    : errorEvent_(std::move(errorEvent)), fileBackend_(fileBackend) {}
+
+RecorderOutputs::~RecorderOutputs() = default;
 
 void RecorderOutputs::write(const float *const *channels, int numFrames) {
-  if (file_.isActive()) {
-    auto fileWriterLock = Locker::tryLock(file_.mutex);
-    if (fileWriterLock && file_.target) {
-      file_.target->writeAudioData(channels, numFrames);
-    }
-  }
-
-  if (callback_.isActive()) {
-    auto callbackLock = Locker::tryLock(callback_.mutex);
-    if (callbackLock && callback_.target) {
-      callback_.target->receiveAudioData(channels, numFrames);
-    }
-  }
-
-  if (adapter_.isActive()) {
-    auto adapterLock = Locker::tryLock(adapter_.mutex);
-    if (!adapterLock) {
-      return;
-    }
-    if (auto *adapterNode = adapterNodeOf(adapter_.target)) {
-      adapterNode->writeFrames(channels, static_cast<size_t>(numFrames));
-    }
-  }
+  worker_.push(channels, static_cast<size_t>(numFrames));
 }
 
 Result<NoneType, std::string> RecorderOutputs::prepare(const StreamFormat &format) {
-  std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
+  {
+    std::scoped_lock lock(outputsMutex_);
 
-  if (file_.isWanted()) {
-    auto writerResult = prepareFileWriter(format);
-    if (writerResult.is_err()) {
-      return writerResult;
+    if (fileProperties_ != nullptr) {
+      auto writer = std::make_shared<AudioFileWriter>(errorEvent_, fileProperties_, fileBackend_);
+      auto fileResult = writer->prepare(format);
+      if (fileResult.is_err()) {
+        return Err("Failed to open file for writing: " + fileResult.unwrap_err());
+      }
+      file_ = {.output = std::move(writer), .isPrepared = true};
+    }
+
+    for (auto &listed : outputs_) {
+      auto outputResult = listed.output->prepare(format);
+      if (outputResult.is_err()) {
+        return outputResult;
+      }
+      listed.isPrepared = true;
     }
   }
 
-  if (callback_.isWanted()) {
-    auto callbackResult = prepareCallback(format);
-    if (callbackResult.is_err()) {
-      return callbackResult;
-    }
-  }
-
-  if (adapter_.isWanted()) {
-    return prepareAdapterNode(format);
-  }
-
-  return Ok(None);
+  return startWorker(format);
 }
 
 Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &format) {
-  std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
+  worker_.stop();
 
   std::string failures;
   const auto noteFailure = [&failures](const Result<NoneType, std::string> &result) {
@@ -79,18 +61,29 @@ Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &for
     }
   };
 
-  if (file_.isActive()) {
-    noteFailure(reprepareFileWriter(format));
-  }
-  if (callback_.isActive()) {
-    noteFailure(prepareCallback(format));
-  }
-  if (adapter_.isActive()) {
-    if (auto *adapterNode = adapterNodeOf(adapter_.target)) {
-      adapterNode->adapterCleanup();
+  {
+    std::scoped_lock lock(outputsMutex_);
+
+    if (file_.isPrepared) {
+      auto fileResult = file_.output->reprepare(format);
+      file_.isPrepared = fileResult.is_ok();
+      if (fileResult.is_err()) {
+        noteFailure(
+            Err("Failed to continue the recording in the new input format: " +
+                fileResult.unwrap_err()));
+      }
     }
-    noteFailure(prepareAdapterNode(format));
+
+    for (auto &listed : outputs_) {
+      if (listed.isPrepared) {
+        auto outputResult = listed.output->reprepare(format);
+        listed.isPrepared = outputResult.is_ok();
+        noteFailure(outputResult);
+      }
+    }
   }
+
+  noteFailure(startWorker(format));
 
   if (failures.empty()) {
     return Ok(None);
@@ -99,60 +92,40 @@ Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &for
 }
 
 RecorderOutputs::Detached RecorderOutputs::detach() {
-  std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
-  Detached detached;
+  worker_.stop();
 
-  // moved because file writer belongs to only one session
-  file_.deactivate();
-  detached.fileWriter = std::move(file_.target);
-
-  callback_.deactivate();
-  detached.dataCallback = callback_.target;
-
-  adapter_.deactivate();
-  detached.adapterNodeHandle = adapter_.target;
-
-  return detached;
+  std::scoped_lock lock(outputsMutex_);
+  for (auto &listed : outputs_) {
+    if (listed.isPrepared) {
+      listed.output->close();
+      listed.isPrepared = false;
+    }
+  }
+  return Detached{.fileWriter = std::exchange(file_, {}).output};
 }
 
 Result<FileInfo, std::string> RecorderOutputs::finalize(Detached detached) {
-  double outputFileSize = 0.0;
-  double outputDuration = 0.0;
+  if (detached.fileWriter == nullptr) {
+    return Ok(FileInfo{});
+  }
+
+  auto fileResult = detached.fileWriter->closeFile();
+  if (fileResult.is_err()) {
+    return Err("Failed to close file: " + fileResult.unwrap_err());
+  }
+
+  const auto &session = fileResult.unwrap();
   std::vector<std::string> fileUris;
-  std::optional<std::string> closeError;
-
-  if (detached.fileWriter != nullptr) {
-    auto fileResult = detached.fileWriter->closeFile();
-
-    if (fileResult.is_ok()) {
-      const auto &session = fileResult.unwrap();
-      outputFileSize = session.sizeMB;
-      outputDuration = session.durationSec;
-      for (const auto &filePath : session.filePaths) {
-        fileUris.push_back("file://" + filePath);
-      }
-    } else {
-      closeError = "Failed to close file: " + fileResult.unwrap_err();
-    }
-  }
-
-  if (detached.dataCallback != nullptr) {
-    detached.dataCallback->cleanup();
-  }
-
-  if (auto *adapterNode = adapterNodeOf(detached.adapterNodeHandle)) {
-    adapterNode->adapterCleanup();
-  }
-
-  if (closeError.has_value()) {
-    return Err(*closeError);
+  fileUris.reserve(session.filePaths.size());
+  for (const auto &filePath : session.filePaths) {
+    fileUris.push_back("file://" + filePath);
   }
 
   return Ok(
       FileInfo{
           .paths = std::move(fileUris),
-          .size = outputFileSize,
-          .duration = outputDuration,
+          .size = session.sizeMB,
+          .duration = session.durationSec,
       });
 }
 
@@ -170,161 +143,91 @@ Result<NoneType, std::string> RecorderOutputs::enableFile(
     return Err(outputSpecResult.unwrap_err());
   }
 
-  std::scoped_lock fileLock(file_.mutex);
+  std::scoped_lock lock(outputsMutex_);
   fileProperties_ = std::move(properties);
-  file_.set(OutputState::Requested);
   return Ok(None);
 }
 
 RecorderOutputs::Detached RecorderOutputs::disableFile() {
-  std::scoped_lock fileLock(file_.mutex);
-  file_.set(OutputState::Disabled);
-  return Detached{.fileWriter = std::move(file_.target)};
+  std::scoped_lock lock(outputsMutex_);
+  fileProperties_ = nullptr;
+  return Detached{.fileWriter = std::exchange(file_, {}).output};
 }
 
-void RecorderOutputs::connect(
-    const std::shared_ptr<utils::graph::NodeHandle> &node,
+Result<NoneType, std::string> RecorderOutputs::add(
+    const std::shared_ptr<RecorderOutput> &output,
     const std::optional<StreamFormat> &currentFormat) {
-  std::scoped_lock adapterLock(adapter_.mutex);
-  adapter_.target = node;
-  adapter_.set(OutputState::Requested);
+  if (output == nullptr) {
+    return Err("Recorder output is unavailable.");
+  }
 
+  std::scoped_lock lock(outputsMutex_);
+  const bool isListed = std::ranges::any_of(
+      outputs_, [&output](const ListedOutput &listed) { return listed.output == output; });
+  if (isListed) {
+    return Err("Recorder output is already added.");
+  }
+
+  ListedOutput listed{.output = output};
   if (currentFormat.has_value()) {
-    prepareAdapterNode(*currentFormat);
-  }
-}
-
-RecorderOutputs::Detached RecorderOutputs::disconnect() {
-  std::scoped_lock adapterLock(adapter_.mutex);
-  const bool wasPrepared = adapter_.isActive();
-  adapter_.set(OutputState::Disabled);
-
-  auto adapterNodeHandle = std::move(adapter_.target);
-  if (!wasPrepared) {
-    return {};
-  }
-  return Detached{.adapterNodeHandle = std::move(adapterNodeHandle)};
-}
-
-Result<NoneType, std::string> RecorderOutputs::setCallback(
-    float sampleRate,
-    size_t bufferLength,
-    int channelCount,
-    uint64_t callbackId,
-    const std::optional<StreamFormat> &currentFormat) {
-  std::scoped_lock callbackLock(callback_.mutex);
-  callback_.target = std::make_shared<AudioRecorderCallback>(
-      audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
-  callback_.set(OutputState::Requested);
-
-  if (!currentFormat.has_value()) {
-    return Ok(None);
+    auto prepareResult = output->prepare(*currentFormat);
+    if (prepareResult.is_err()) {
+      return prepareResult;
+    }
+    listed.isPrepared = true;
   }
 
-  auto prepareResult = prepareCallback(*currentFormat);
-  if (prepareResult.is_err()) {
-    callback_.set(OutputState::Disabled);
-    callback_.target = nullptr;
-  }
-  return prepareResult;
-}
-
-void RecorderOutputs::clearCallback() {
-  std::scoped_lock callbackLock(callback_.mutex);
-  callback_.set(OutputState::Disabled);
-  callback_.target = nullptr;
-}
-
-void RecorderOutputs::setErrorCallbackId(uint64_t callbackId) {
-  std::scoped_lock outputsLock(callback_.mutex, file_.mutex);
-
-  // The ones not prepared yet take it up when they are.
-  if (file_.isActive() && file_.target != nullptr) {
-    file_.target->setOnErrorCallback(callbackId);
-  }
-  if (callback_.isActive() && callback_.target != nullptr) {
-    callback_.target->setOnErrorCallback(callbackId);
-  }
-
-  errorCallbackId_.store(callbackId, std::memory_order_release);
-}
-
-uint64_t RecorderOutputs::errorCallbackId() const {
-  return errorCallbackId_.load(std::memory_order_acquire);
-}
-
-Result<NoneType, std::string> RecorderOutputs::prepareFileWriter(const StreamFormat &format) {
-  file_.target =
-      std::make_shared<AudioFileWriter>(audioEventHandlerRegistry_, fileProperties_, fileBackend_);
-  file_.target->setOnErrorCallback(errorCallbackId());
-
-  auto fileResult = file_.target->openFile(format);
-
-  if (fileResult.is_err()) {
-    file_.deactivate();
-    file_.target = nullptr;
-    return Err("Failed to open file for writing: " + fileResult.unwrap_err());
-  }
-
-  file_.set(OutputState::Active);
+  outputs_.push_back(std::move(listed));
   return Ok(None);
 }
 
-Result<NoneType, std::string> RecorderOutputs::reprepareFileWriter(const StreamFormat &format) {
-  if (file_.target == nullptr) {
-    return Err("File writer is unavailable");
+void RecorderOutputs::remove(const std::shared_ptr<RecorderOutput> &output) {
+  bool wasPrepared = false;
+
+  {
+    std::scoped_lock lock(outputsMutex_);
+    auto listed = std::ranges::find(outputs_, output, &ListedOutput::output);
+    if (listed == outputs_.end()) {
+      return;
+    }
+    wasPrepared = listed->isPrepared;
+    outputs_.erase(listed);
   }
 
-  auto result = file_.target->reprepareStreamFormat(format);
-  if (result.is_err()) {
-    file_.deactivate();
-    return Err("Failed to continue the recording in the new input format: " + result.unwrap_err());
+  // Unlisted, so the worker no longer reaches it.
+  if (wasPrepared) {
+    output->close();
   }
+}
 
-  file_.set(OutputState::Active);
+Result<NoneType, std::string> RecorderOutputs::startWorker(const StreamFormat &format) {
+  if (!worker_.start(format)) {
+    return Err("Failed to preallocate recorder output buffers");
+  }
   return Ok(None);
 }
 
-Result<NoneType, std::string> RecorderOutputs::prepareCallback(const StreamFormat &format) {
-  if (callback_.target == nullptr) {
-    return Err("Callback output is unavailable.");
-  }
-  if (callback_.isActive()) {
-    callback_.target->cleanup();
+void RecorderOutputs::deliver(PendingFrames pending) {
+  if (pending.buffer == nullptr) {
+    return;
   }
 
-  callback_.target->setOnErrorCallback(errorCallbackId());
-  auto callbackResult = callback_.target->prepare(format);
+  const auto writeTo = [this, &pending](RecorderOutput &output) {
+    auto written = output.write(*pending.buffer, pending.numFrames);
+    if (written.is_err() && errorEvent_ != nullptr) {
+      errorEvent_->dispatch(StringPayload{.name = "message", .reason = written.unwrap_err()});
+    }
+  };
 
-  if (callbackResult.is_err()) {
-    callback_.deactivate();
-    return Err("Failed to prepare callback: " + callbackResult.unwrap_err());
+  std::scoped_lock lock(outputsMutex_);
+  if (file_.isPrepared) {
+    writeTo(*file_.output);
   }
-
-  callback_.set(OutputState::Active);
-  return Ok(None);
-}
-
-Result<NoneType, std::string> RecorderOutputs::prepareAdapterNode(const StreamFormat &format) {
-  auto *adapterNode = adapterNodeOf(adapter_.target);
-  if (adapterNode == nullptr) {
-    adapter_.deactivate();
-    return Err("Recorder adapter node is unavailable.");
+  for (const auto &listed : outputs_) {
+    if (listed.isPrepared) {
+      writeTo(*listed.output);
+    }
   }
-
-  adapterNode->init(format);
-  adapter_.set(OutputState::Active);
-  return Ok(None);
-}
-
-RecorderAdapterNode *RecorderOutputs::adapterNodeOf(
-    const std::shared_ptr<utils::graph::NodeHandle> &handle) {
-  if (handle == nullptr || handle->audioNode == nullptr) {
-    return nullptr;
-  }
-  // NOLINTBEGIN (cppcoreguidelines-pro-type-static-cast-downcast)
-  return static_cast<RecorderAdapterNode *>(handle->audioNode->asAudioNode());
-  // NOLINTEND (cppcoreguidelines-pro-type-static-cast-downcast)
 }
 
 } // namespace audioapi

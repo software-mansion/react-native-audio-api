@@ -5,7 +5,7 @@
 #include <audioapi/core/inputs/RecorderInputGate.h>
 #include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
-#include <audioapi/events/IAudioEventHandlerRegistry.h>
+#include <audioapi/events/EventCaller.hpp>
 
 #include <memory>
 #include <optional>
@@ -25,8 +25,9 @@ AudioRecorder::AudioRecorder(
               [this](const float *const *channels, int channelCount, int numFrames) {
                 onInputFrames(channels, channelCount, numFrames);
               })),
-      outputs_(audioEventHandlerRegistry, fileBackend != nullptr ? *fileBackend : osFileBackend()),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      errorEvent_(
+          std::make_shared<EventCaller<AudioEvent::RECORDER_ERROR>>(audioEventHandlerRegistry)),
+      outputs_(errorEvent_, fileBackend != nullptr ? *fileBackend : osFileBackend()),
       sessionManager_(std::move(sessionManager)) {}
 
 /// The platform input can outlive the recorder and keeps calling the gate, whose sink holds a raw
@@ -258,44 +259,23 @@ void AudioRecorder::disableFileOutput() {
   RecorderOutputs::finalize(std::move(detached));
 }
 
-void AudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node) {
+Result<NoneType, std::string> AudioRecorder::addOutput(
+    const std::shared_ptr<RecorderOutput> &output) {
   std::scoped_lock controlLock(controlMutex_);
-  outputs_.connect(node, session_.format);
+  return outputs_.add(output, session_.format);
 }
 
-void AudioRecorder::disconnect() {
-  RecorderOutputs::Detached detached;
-
-  {
-    std::scoped_lock controlLock(controlMutex_);
-    detached = outputs_.disconnect();
-  }
-
-  RecorderOutputs::finalize(std::move(detached));
-}
-
-Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
-    float sampleRate,
-    size_t bufferLength,
-    int channelCount,
-    uint64_t callbackId) {
+void AudioRecorder::removeOutput(const std::shared_ptr<RecorderOutput> &output) {
   std::scoped_lock controlLock(controlMutex_);
-  return outputs_.setCallback(sampleRate, bufferLength, channelCount, callbackId, session_.format);
-}
-
-void AudioRecorder::clearOnAudioReadyCallback() {
-  std::scoped_lock controlLock(controlMutex_);
-  outputs_.clearCallback();
+  outputs_.remove(output);
 }
 
 void AudioRecorder::setOnErrorCallback(uint64_t callbackId) {
-  std::scoped_lock controlLock(controlMutex_);
-  outputs_.setErrorCallbackId(callbackId);
+  errorEvent_->assignCallbackId(callbackId);
 }
 
 void AudioRecorder::clearOnErrorCallback() {
-  std::scoped_lock controlLock(controlMutex_);
-  outputs_.setErrorCallbackId(0);
+  errorEvent_->assignCallbackId(0);
 }
 
 double AudioRecorder::getCurrentDuration() const {
@@ -482,14 +462,7 @@ RecorderOutputs::Detached AudioRecorder::endSession() {
 }
 
 void AudioRecorder::reportError(const std::string &message) {
-  const uint64_t callbackId = outputs_.errorCallbackId();
-
-  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
-    return;
-  }
-
-  audioEventHandlerRegistry_->dispatchEvent(
-      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
+  errorEvent_->dispatch(StringPayload{.name = "message", .reason = message});
 }
 
 } // namespace audioapi

@@ -3,7 +3,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/inputs/RecorderOutput.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace audioapi {
@@ -20,20 +21,23 @@ namespace audioapi {
 /// It uses RingBuffer to store audio data and AudioParam to provide audio data in pull mode.
 /// It is used to connect native audio recording APIs with Audio API.
 ///
+/// As a RecorderOutput it is fed by the recorder it is connected to. The graph owns the node
+/// through its NodeHandle, so the recorder lists it through a shared_ptr aliasing that handle,
+/// which keeps the node alive while it is listed.
+///
 /// @note it will push silence if it is not connected to any Recorder
-class RecorderAdapterNode : public AudioNode {
+class RecorderAdapterNode : public AudioNode, public RecorderOutput {
  public:
   explicit RecorderAdapterNode(const std::shared_ptr<BaseAudioContext> &context);
 
   /// @brief Sizes the ring buffers for the recorder's stream and, when its rate differs from
-  /// the context's, the resampler.
-  /// @note A no-op on an initialized node; adapterCleanup() first to take a new format.
-  void init(const StreamFormat &streamFormat);
-  void adapterCleanup();
-
-  /// Recorder input thread, under the recorder's adapter lock. @p channels holds one pointer per
-  /// channel the node was initialized with. A burst larger than the init buffer size is dropped.
-  void writeFrames(const float *const *channels, size_t numFrames);
+  /// the context's, the resampler. Fails once the node's context is gone.
+  Result<NoneType, std::string> prepare(const StreamFormat &streamFormat) override;
+  /// A burst larger than the prepared buffer size is dropped.
+  Result<NoneType, std::string> write(const AudioBuffer &frames, size_t numFrames) override;
+  /// Waits for a render quantum in flight, then frees what prepare() sized; the node
+  /// renders silence until prepared again.
+  void close() override;
 
   [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
@@ -62,7 +66,7 @@ class RecorderAdapterNode : public AudioNode {
   size_t overflowSize_ = 0;
 
   std::atomic<bool> isInitialized_{false};
-  /// Incremented around each processNode() call; adapterCleanup waits for quiescence.
+  /// Incremented around each processNode() call; close() waits for quiescence.
   std::atomic<uint32_t> currentProcesses_{0};
 };
 

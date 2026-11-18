@@ -267,6 +267,16 @@ class AlignedAudioBuffer {
     sum(source, sourceStart, destinationStart, length);
   }
 
+  /// @brief Copies planar audio from raw memory: @p source holds one pointer per channel of this
+  /// buffer, each to at least sourceStart + length samples. No mixing: the caller matches the
+  /// channel count.
+  void
+  copy(const float *const *source, size_t sourceStart, size_t destinationStart, size_t length) {
+    for (size_t i = 0; i < getNumberOfChannels(); ++i) {
+      channels_[i]->copy(source[i], sourceStart, destinationStart, length);
+    }
+  }
+
   /// @brief Deinterleave audio data from an interleaved source buffer.
   void deinterleaveFrom(const float *source, size_t frames) {
     deinterleaveFrom(source, 0, frames);
@@ -493,6 +503,12 @@ class AlignedAudioBuffer {
 
 using AudioBuffer = AlignedAudioBuffer<alignof(std::max_align_t)>;
 using DSPAudioBuffer = AlignedAudioBuffer<DSP_ALIGNMENT>;
+
+/// What AudioBuffer::copy() can copy frames from: raw channel pointers or another buffer.
+template <typename Source>
+concept AudioBufferCopySource = requires(AudioBuffer &destination, const Source &source) {
+  destination.copy(source, size_t{0}, size_t{0}, size_t{0});
+};
 
 } // namespace audioapi
 

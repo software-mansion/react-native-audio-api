@@ -1,155 +1,120 @@
 #pragma once
 
 #include <audioapi/core/inputs/FileInfo.h>
-#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
+#include <audioapi/events/AudioEvent.h>
+#include <audioapi/utils/AudioBufferOffloader.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
-#include <atomic>
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace audioapi {
 
 class AudioFileWriter;
 class AudioFileProperties;
-class AudioRecorderCallback;
-class IAudioEventHandlerRegistry;
-class RecorderAdapterNode;
+class RecorderOutput;
 struct PlatformFileBackend;
+template <AudioEvent Event>
+class EventCaller;
 
-/// @brief What a recorder writes its frames to: the file writer, the JS callback and the adapter
-/// node. Each is requested by the app, prepared for the stream format a session delivers, and
-/// fed from the audio thread.
+/// @brief What a recorder writes its frames to: this session's file writer and the RecorderOutput
+/// list. Each is prepared for the stream format a session delivers and fed by one effects worker,
+/// so the audio thread only copies a buffer into a pool slot and hands it on. The writer is a
+/// RecorderOutput too but kept apart and typed: a new one is made for every session, and it
+/// leaves with detach() for finalize() to close, which reports its files.
 ///
 /// Control calls are not synchronized with each other: the owner serializes them, and disarms its
-/// input before reprepare() so that no frames in the old format arrive while the outputs change.
-/// write() runs on the audio thread alongside them and never blocks.
+/// input before prepare(), reprepare() and detach(), the only calls that start or stop the worker.
+/// write() runs on the audio thread alongside the rest and never blocks.
 class RecorderOutputs final {
  public:
-  /// Closing these can block, so finalize() runs with no mutex held.
+  /// Closing the file can block, so finalize() runs with no mutex held.
   struct Detached {
     std::shared_ptr<AudioFileWriter> fileWriter;
-    std::shared_ptr<AudioRecorderCallback> dataCallback;
-    std::shared_ptr<utils::graph::NodeHandle> adapterNodeHandle;
   };
 
-  /// Writes files through @p fileBackend, which must outlive the outputs.
+  /// Writes files through @p fileBackend, which must outlive the outputs. The file writer and the
+  /// listed outputs' failed writes are reported through @p errorEvent.
   RecorderOutputs(
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent,
       const PlatformFileBackend &fileBackend);
   DELETE_COPY_AND_MOVE(RecorderOutputs);
-  ~RecorderOutputs() = default;
+  ~RecorderOutputs();
 
   /// Audio thread. @p channels holds one pointer per channel of the prepared format, each to
-  /// @p numFrames float32 samples, valid only for the call. An output busy with a control call
-  /// drops the buffer.
+  /// @p numFrames float32 samples, valid only for the call. A buffer that finds no free pool slot
+  /// reaches no output.
   void write(const float *const *channels, int numFrames);
 
-  /// A session starts delivering @p format: prepares every requested output. Stops at the first
-  /// output that fails, leaving the ones before it prepared; detach() closes them again.
+  /// A session starts delivering @p format: prepares a new file writer when the file is enabled,
+  /// then every listed output, then starts the worker. Stops at the first output that fails,
+  /// leaving the ones before it prepared; detach() closes them again.
   Result<NoneType, std::string> prepare(const StreamFormat &format);
 
-  /// The session now delivers @p format: the file writer keeps its file, the callback and the
-  /// adapter node are rebuilt. Every prepared output is attempted, so none is left prepared for
-  /// the old format: one that fails stays off until the next prepare(). Returns the failures,
-  /// joined.
+  /// The session now delivers @p format. The worker first hands every queued buffer of the old
+  /// format to the outputs; then every prepared output, the file writer included, is reprepared.
+  /// Every one is attempted, so none is left prepared for the old format: one that fails stays
+  /// off until the next prepare(). Returns the failures, joined.
   Result<NoneType, std::string> reprepare(const StreamFormat &format);
 
-  /// The session ended: takes every output away from write(). The writer leaves with this
-  /// session's file; the callback and the adapter node stay requested, so the next prepare()
-  /// feeds the same ones again.
+  /// The session ended: the worker hands on what it holds and stops, the listed outputs are
+  /// closed and stay listed for the next prepare(), and the writer leaves, unclosed, with this
+  /// session's file.
   Detached detach();
 
-  /// Closes what detach(), disableFile() or disconnect() handed over. Run with no recorder
-  /// mutex held: closing the writer joins its worker thread. The file URIs are collected only
-  /// after that join, once a rotation in flight has reported its file.
+  /// Closes what detach() or disableFile() handed over. Run with no recorder mutex held: closing
+  /// the writer joins its worker thread. The file URIs are collected only after that join, once a
+  /// rotation in flight has reported its file.
   static Result<FileInfo, std::string> finalize(Detached detached);
 
   /// Takes effect at the next prepare(). Fails on properties this platform cannot write.
   Result<NoneType, std::string> enableFile(std::shared_ptr<AudioFileProperties> properties);
-  /// Hands over the writer, with the file it has open, for finalize().
+  /// Takes effect at once: hands over the writer, with the file it has open, for finalize().
+  /// Buffers still queued for the worker are not written to it.
   Detached disableFile();
 
-  /// @p node must carry a RecorderAdapterNode; the handle keeps it alive while connected. With
-  /// @p currentFormat, a session is running and the node is prepared for it at once.
-  void connect(
-      const std::shared_ptr<utils::graph::NodeHandle> &node,
+  /// With @p currentFormat, a session is running and @p output is prepared for it at once; one
+  /// that cannot be prepared, or is listed already, is not added.
+  Result<NoneType, std::string> add(
+      const std::shared_ptr<RecorderOutput> &output,
       const std::optional<StreamFormat> &currentFormat);
-  /// Hands over the node, if it was prepared, for finalize().
-  Detached disconnect();
-
-  /// With @p currentFormat, a session is running and the callback is prepared for it at once;
-  /// a callback that cannot be prepared is not kept.
-  Result<NoneType, std::string> setCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId,
-      const std::optional<StreamFormat> &currentFormat);
-  void clearCallback();
-
-  /// 0 clears it. The file writer and the callback report their errors to it.
-  void setErrorCallbackId(uint64_t callbackId);
-  [[nodiscard]] uint64_t errorCallbackId() const;
+  /// Closes @p output if it was prepared. Not listed: nothing happens.
+  void remove(const std::shared_ptr<RecorderOutput> &output);
 
  private:
-  enum class OutputState : uint8_t {
-    Disabled,
-    Requested,
-    Active,
+  template <typename Output>
+  struct PreparedOutput {
+    std::shared_ptr<Output> output;
+    bool isPrepared = false;
   };
+  using ListedOutput = PreparedOutput<RecorderOutput>;
 
-  /// One output and what guards it.
-  template <typename Target>
-  struct OutputSlot {
-    std::atomic<OutputState> state{OutputState::Disabled};
-    mutable std::mutex mutex;
-    std::shared_ptr<Target> target;
+  Result<NoneType, std::string> startWorker(const StreamFormat &format);
+  /// Worker thread.
+  void deliver(PendingFrames pending);
 
-    [[nodiscard]] bool isActive() const {
-      return state.load(std::memory_order_acquire) == OutputState::Active;
-    }
-
-    [[nodiscard]] bool isWanted() const {
-      return state.load(std::memory_order_acquire) != OutputState::Disabled;
-    }
-
-    void set(OutputState newState) {
-      state.store(newState, std::memory_order_release);
-    }
-
-    /// Active becomes Requested; Disabled stays Disabled, so an output that was never requested
-    /// cannot be switched on by a failed prepare.
-    void deactivate() {
-      auto expected = OutputState::Active;
-      state.compare_exchange_strong(expected, OutputState::Requested, std::memory_order_acq_rel);
-    }
-  };
-
-  Result<NoneType, std::string> prepareFileWriter(const StreamFormat &format);
-  Result<NoneType, std::string> reprepareFileWriter(const StreamFormat &format);
-  Result<NoneType, std::string> prepareCallback(const StreamFormat &format);
-  Result<NoneType, std::string> prepareAdapterNode(const StreamFormat &format);
-
-  static RecorderAdapterNode *adapterNodeOf(
-      const std::shared_ptr<utils::graph::NodeHandle> &handle);
-
-  OutputSlot<AudioFileWriter> file_;
-  OutputSlot<AudioRecorderCallback> callback_;
-  OutputSlot<utils::graph::NodeHandle> adapter_;
-
-  /// What the next session's file is written with.
+  /// Guards the members below between control calls and the worker; never taken on the audio
+  /// thread.
+  std::mutex outputsMutex_;
+  /// What the next session's file is written with; null while the file is disabled.
   std::shared_ptr<AudioFileProperties> fileProperties_;
-  std::atomic<uint64_t> errorCallbackId_{0};
+  /// This session's writer; empty without a session or with the file disabled.
+  PreparedOutput<AudioFileWriter> file_;
+  std::vector<ListedOutput> outputs_;
 
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent_;
   const PlatformFileBackend &fileBackend_;
+
+  /// Runs only while a session is prepared; started and stopped only while the input is disarmed.
+  /// Last, so its worker is joined before the outputs it delivers to go.
+  AudioBufferOffloader worker_{[this](PendingFrames pending) { deliver(std::move(pending)); }};
 };
 
 } // namespace audioapi

@@ -1,27 +1,25 @@
 #pragma once
 
+#include <audioapi/core/inputs/RecorderOutput.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/encoding/AudioEncoder.h>
 #include <audioapi/events/EventCaller.hpp>
-#include <audioapi/utils/AudioBufferPool.hpp>
+#include <audioapi/utils/AudioBufferOffloader.hpp>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
-#include <audioapi/utils/SpscChannel.hpp>
-#include <audioapi/utils/TaskOffloader.hpp>
 #include <atomic>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
 
 class AudioFileProperties;
-class IAudioEventHandlerRegistry;
 
 using OpenFileResult = Result<std::string, std::string>;
 
@@ -33,15 +31,6 @@ struct ClosedSession {
 };
 
 using CloseFileResult = Result<ClosedSession, std::string>;
-
-/// A filled pool buffer on its way to the worker. The default-constructed value (no buffer)
-/// is the offloader's shutdown message, which is what operator== exists for.
-struct PendingFileWrite {
-  AudioBufferLease buffer;
-  int numFrames = 0;
-
-  bool operator==(const PendingFileWrite &) const = default;
-};
 
 struct PlatformFileBackend {
   /// Maps the requested file format to the container, codec and file extension this platform
@@ -62,37 +51,44 @@ struct PlatformFileBackend {
 /// The iOS and Android backend, built once and shared by every writer.
 [[nodiscard]] const PlatformFileBackend &osFileBackend();
 
-class AudioFileWriter final {
+/// Writes a recording session to one file, or to a series of them when the properties rotate
+/// files. A RecorderOutput, so the recorder feeds and repoints it like any other, but closed
+/// through closeFile(), which reports the session's files.
+class AudioFileWriter final : public RecorderOutput {
  public:
+  /// Reports its errors through @p errorEvent, the recorder's.
   AudioFileWriter(
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       const PlatformFileBackend &backend = osFileBackend());
   /// The writer borrows @p backend, so a temporary would dangle.
   AudioFileWriter(
-      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent,
       const std::shared_ptr<AudioFileProperties> &fileProperties,
       PlatformFileBackend &&backend) = delete;
   ~AudioFileWriter();
   DELETE_COPY_AND_MOVE(AudioFileWriter);
 
-  /// JS thread. @p streamFormat's maxFramesPerBuffer bounds a single writeAudioData() call.
-  /// Fails while a session is open, until closeFile() ends it. Returns the opened file's path.
-  OpenFileResult openFile(const StreamFormat &streamFormat);
+  /// Opens the session's first file. @p streamFormat's maxFramesPerBuffer bounds a single
+  /// write(). Fails while a session is open, until closeFile() ends it.
+  Result<NoneType, std::string> prepare(const StreamFormat &streamFormat) override;
 
-  /// JS thread. Sizes and durations are summed over every file of the session. A session whose
-  /// current file a failed format change or rotation already finished is still reported, with
-  /// the files it got to; fails only when no session is open.
+  /// Sizes and durations are summed over every file of the session. A session whose current file
+  /// a failed format change or rotation already finished is still reported, with the files it got
+  /// to; fails only when no session is open.
   CloseFileResult closeFile();
+  /// Ends the session without reporting it; closeFile() is what hands its files on.
+  void close() override;
 
-  /// JS thread. Keeps the open file and re-points its encoder at @p streamFormat. Drains the
-  /// worker first, so the caller must already have stopped feeding writeAudioData() in the
-  /// old format. On failure the file is finished as far as it got. Returns the file path.
-  OpenFileResult reprepareStreamFormat(const StreamFormat &streamFormat);
+  /// Keeps the open file and re-points its encoder at @p streamFormat. Drains the worker first,
+  /// so the caller must already have stopped writing in the old format. On failure the file is
+  /// finished as far as it got.
+  Result<NoneType, std::string> reprepare(const StreamFormat &streamFormat) override;
 
-  /// Audio thread. @p channels holds one pointer per stream channel, each to numFrames float32
-  /// samples, valid only for the call. Never blocks; drops the buffer when no pool slot is free.
-  void writeAudioData(const float *const *channels, int numFrames);
+  /// Never blocks: queues the frames for the encoder's worker, dropping them when no pool slot
+  /// is free. Encode and rotation errors happen on that worker, so they are reported as the
+  /// recorder's error event from there and this always succeeds.
+  Result<NoneType, std::string> write(const AudioBuffer &frames, size_t numFrames) override;
 
   [[nodiscard]] std::string getFilePath() const;
   /// Every file the current session has opened so far, in open order.
@@ -101,29 +97,14 @@ class AudioFileWriter final {
   [[nodiscard]] double getCurrentDuration() const;
   [[nodiscard]] size_t getFileSizeBytes() const;
 
-  void setOnErrorCallback(uint64_t callbackId);
-  void clearOnErrorCallback();
-
  private:
-  static constexpr auto SPSC_OVERFLOW_STRATEGY =
-      channels::spsc::OverflowStrategy::OVERWRITE_ON_FULL;
-  static constexpr auto SPSC_WAIT_STRATEGY = channels::spsc::WaitStrategy::ATOMIC_WAIT;
-  static constexpr size_t POOL_SIZE = 32;
-  // SPSC rings hold at most (capacity - 1) elements.
-  static constexpr auto CHANNEL_CAPACITY = POOL_SIZE + 1;
-  static_assert(
-      POOL_SIZE <= CHANNEL_CAPACITY - 1,
-      "Channel must hold every in-flight slot so send() never blocks/overwrites");
   /// Checking the file size costs a stat(), so only do it every Nth encoded buffer.
   static constexpr int FILE_SIZE_CHECK_WRITE_INTERVAL = 10;
-
-  using Offloader =
-      task_offloader::TaskOffloader<PendingFileWrite, SPSC_OVERFLOW_STRATEGY, SPSC_WAIT_STRATEGY>;
 
   [[nodiscard]] bool isFileOpen() const;
   [[nodiscard]] bool rotatesFiles() const;
 
-  /// JS thread, with no worker running: also sizes the buffer pool and starts the worker.
+  /// With no worker running: also sizes the buffer pool and starts the worker.
   OpenFileResult startNextFile(const StreamFormat &streamFormat);
   /// JS thread. Joins the worker, then closes the current file into the session totals. Ok,
   /// adding nothing, when no file is left to close.
@@ -155,16 +136,13 @@ class AudioFileWriter final {
   void rotateIfFileOutgrowsCap();
   void invokeOnErrorCallback(const std::string &message);
 
-  bool initializePreallocatedInputPool();
-  void cleanupPreallocatedInputPool();
-  void createOffloader();
-  void runWriterTask(PendingFileWrite pending);
+  void runWriterTask(PendingFrames pending);
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
-  /// Declared before offloader_, so the worker thread that calls into it is joined first.
+  /// Declared before worker_, so the worker thread that calls into it is joined first.
   /// Borrowed; must outlive the writer.
   const PlatformFileBackend &backend_;
-  EventCaller<AudioEvent::RECORDER_ERROR> errorEvent_;
+  std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent_;
 
   std::atomic<bool> isFileOpen_{false};
 
@@ -175,7 +153,7 @@ class AudioFileWriter final {
   mutable std::mutex fileMutex_;
   /// Open on the current file; nullptr between files, and after a rotation fails.
   std::unique_ptr<AudioEncoder> currentEncoder_;
-  /// From a successful openFile() until closeFile(): there is a session to report, even after a
+  /// From a successful prepare() until closeFile(): there is a session to report, even after a
   /// failed format change or rotation finished its current file.
   bool isSessionOpen_{false};
   std::string sessionStem_;
@@ -185,10 +163,10 @@ class AudioFileWriter final {
   double finishedFilesSizeMB_{0.0};
   double finishedFilesDurationSec_{0.0};
 
-  /// Planar buffers of maxFramesPerBuffer x channelCount of streamFormat_ that carry audio-thread
-  /// callbacks to the worker.
-  AudioBufferPool<POOL_SIZE> inputBufferPool_;
-  std::unique_ptr<Offloader> offloader_;
+  /// Carries audio-thread buffers in streamFormat_ to the encoder. Last, so its worker is joined
+  /// before anything it calls into goes.
+  AudioBufferOffloader worker_{
+      [this](PendingFrames pending) { runWriterTask(std::move(pending)); }};
 };
 
 } // namespace audioapi

@@ -175,16 +175,36 @@ registry keeps what it recorded, as for every stop. The session's data lives in 
 atomic `SessionState`, session id, input generation, stream format; guarded by `controlMutex_`); put new
 per-session data there, and anything that changes with the phase or the pause into `SessionState`. Everything that
 happens to recorded frames lives in `RecorderOutputs` (`core/inputs/RecorderOutputs.h`, the
-recorder's `outputs_`): one `OutputSlot` per output (`file_`, `callback_`, `adapter_`: state, mutex,
-target), `prepare` at start, `follow` on a format change, `detach`/`finalize` at the end, the
-setters, and the error callback id. Put a new output in a slot of its own there. `RecorderOutputs`
+recorder's `outputs_`): a list of `RecorderOutput`s (`core/inputs/RecorderOutput.h`:
+`prepare` / `write(const AudioBuffer &, numFrames) -> Result` / `reprepare` / `close`) and this
+session's `AudioFileWriter`, itself a `RecorderOutput` but kept apart and typed in `file_` (a new
+writer per session, closed by `finalize` through `closeFile()`, which returns its files). All of
+them are fed by one effects worker (an `AudioBufferOffloader` sized per format; `worker_.stop()`
+is the drain); the writer queues into its own `AudioBufferOffloader`, so encoding and rotation
+never stall the other outputs. `prepare` at start, `follow` on a format change (drain, then
+`reprepare` each prepared output: by default `close` + `prepare`; the writer overrides it to keep
+its file), `detach` at the end (drain, close every listed output, move the writer out unclosed),
+`finalize` closes the file with no mutex held. Disabling the file mid-session drops the buffers
+still queued for the effects worker.
+A new output is a `RecorderOutput` subclass, never a new slot: `AudioRecorderCallback` (JS
+`onAudioReady`) and `RecorderAdapterNode` itself (an `AudioNode` and a `RecorderOutput`) are added
+by `AudioRecorderHostObject` with `AudioRecorder::addOutput` / `removeOutput`; the recorder knows no
+concrete output but the file. The graph owns a node through `NodeHandle::audioNode` and destroys a
+removed one only once nothing else holds its handle (`NodeHandle.h`), so a node that is an output
+is listed through an aliasing `shared_ptr<RecorderOutput>(handle, node)`: it shares the handle's
+ownership and points at the node's `RecorderOutput` base. No wrapper class is needed. Outputs are never called concurrently nor on the
+audio thread (the worker and control calls share `outputsMutex_`), so they need no locks of their
+own. Errors go through the recorder's one `EventCaller<RECORDER_ERROR>`, handed to `RecorderOutputs`
+and from there to the file writer; `setOnError` is a single `assignCallbackId`. A listed output
+never holds the event: a failed `write()` returns `Err` and `RecorderOutputs::deliver` reports it
+(the output stays open for the next frames). Only the file writer reports on its own, because its
+encode and rotation errors happen on its own worker after its `write()` returned. `RecorderOutputs`
 does not synchronize its control calls: `AudioRecorder` calls it only under `controlMutex_`, and
-disarms the gate before `reprepare()`. When anything fails after `start()` opened the input it ends the
-session like `stop()`: detach under the slot mutexes, finalize without them, so no file stays open.
-`detach()` moves the file writer out (a new one each session) but copies the callback and the
-adapter handle, which stay registered: JS `connect()` creates its adapter once, so moving the handle
-out made every later `start()` fail with "Recorder adapter node is unavailable."; `disableFile()` and
-`disconnect()` hand their output over the same way. Test outputs through `RecorderOutputs`'s public
+disarms the gate before `prepare()`, `reprepare()` and `detach()`, the only calls that start or stop
+the worker (the audio thread reads `worker_` without a lock). When anything fails after
+`start()` opened the input it ends the session like `stop()`: detach under the control mutex,
+finalize without it, so no file stays open. Listed outputs stay listed across sessions (JS
+`connect()` creates its adapter once). Test outputs through `RecorderOutputs`'s public
 API (`RecorderOutputsTest.cpp`), not through a friend of the recorder.
 
 The platform's part is only the capture stream behind `IRecorderInput` (`AndroidRecorderInput`,
@@ -202,7 +222,7 @@ changing anything the audio thread reads), and reports what it did not cause thr
 `failed`); events carry the generation of the opening they come from and are dropped once that
 opening has ended. Add shared recorder behavior to `AudioRecorder`, not to one input. State a
 consumer already owns stays with the consumer: the adapter node's ring layout
-(`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
+(`RecorderAdapterNode::write`) and the session's file paths (returned by
 `AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
 ---

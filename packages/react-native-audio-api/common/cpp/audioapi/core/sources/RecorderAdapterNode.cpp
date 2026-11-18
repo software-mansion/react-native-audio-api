@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -25,10 +26,10 @@ std::optional<size_t> RecorderAdapterNode::getOutputChannelNumber() const {
   return outputChannelNumber_.load(std::memory_order_acquire);
 }
 
-void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
+Result<NoneType, std::string> RecorderAdapterNode::prepare(const StreamFormat &streamFormat) {
   std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (isInitialized_.load(std::memory_order_acquire) || context == nullptr) {
-    return;
+  if (context == nullptr) {
+    return Err("Recorder adapter node's audio context is gone.");
   }
 
   const float sampleRate = streamFormat.layout.sampleRate;
@@ -63,9 +64,10 @@ void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   }
 
   isInitialized_.store(true, std::memory_order_release);
+  return Ok(None);
 }
 
-void RecorderAdapterNode::adapterCleanup() {
+void RecorderAdapterNode::close() {
   isInitialized_.store(false, std::memory_order_release);
   waitForProcessQuiescence();
 
@@ -75,10 +77,13 @@ void RecorderAdapterNode::adapterCleanup() {
   overflowSize_ = 0;
 }
 
-void RecorderAdapterNode::writeFrames(const float *const *channels, size_t numFrames) {
+Result<NoneType, std::string> RecorderAdapterNode::write(
+    const AudioBuffer &frames,
+    size_t numFrames) {
   for (size_t channel = 0; channel < buff_.size(); ++channel) {
-    buff_[channel]->write(channels[channel], numFrames);
+    buff_[channel]->write(frames.getChannel(channel)->begin(), numFrames);
   }
+  return Ok(None);
 }
 
 void RecorderAdapterNode::waitForProcessQuiescence() const {
