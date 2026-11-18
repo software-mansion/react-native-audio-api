@@ -9,14 +9,12 @@
 #include <audioapi/utils/SerialTaskExecutor.hpp>
 
 #include <memory>
-#include <string>
 
 namespace audioapi {
 using namespace facebook;
 
 class AudioRecorder;
 class IAudioEventHandlerRegistry;
-class AudioConsumer;
 
 class AudioRecorderHostObject : public HostObject {
  public:
@@ -39,9 +37,6 @@ class AudioRecorderHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(resume);
 
-  JSI_HOST_FUNCTION_DECL(setOnAudioReady);
-  JSI_HOST_FUNCTION_DECL(clearOnAudioReady);
-
   JSI_HOST_FUNCTION_DECL(addConsumer);
   JSI_HOST_FUNCTION_DECL(removeConsumer);
 
@@ -53,15 +48,7 @@ class AudioRecorderHostObject : public HostObject {
   JSI_PROPERTY_GETTER_DECL(inputLatency);
 
  private:
-  /// Swaps @p current for @p replacement on the recorder (either may be null). @p current is left
-  /// null when the replacement cannot be added.
-  Result<NoneType, std::string> replaceConsumer(
-      std::shared_ptr<AudioConsumer> &current,
-      std::shared_ptr<AudioConsumer> replacement);
-
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::shared_ptr<AudioRecorder> audioRecorder_;
-  std::shared_ptr<AudioConsumer> audioReadyConsumer_;
   /// Lifecycle calls run FIFO here. Declared after audioRecorder_: the lane destructor drains
   /// queued tasks (including the stop queued by ~AudioRecorderHostObject) before joining.
   std::shared_ptr<SerialTaskExecutor> lifecycleLane_;

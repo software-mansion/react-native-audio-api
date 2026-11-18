@@ -42,10 +42,18 @@ function withDefaultFileOptions(
 }
 
 export default class AudioRecorder {
-  protected onAudioReadySubscription: AudioEventSubscription | null = null;
   protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
+  /**
+   * While `onAudioReady` is set: the consumer added for it and the event
+   * subscription it delivers to.
+   */
+  private audioReady: {
+    consumer: AudioConsumer;
+    subscription: AudioEventSubscription;
+  } | null = null;
+
   /**
    * While connected: the adapter node, kept alive here, and the consumer added
    * for it.
@@ -207,27 +215,34 @@ export default class AudioRecorder {
     options: AudioRecorderCallbackOptions,
     callback: (event: OnAudioReadyEventType) => void
   ): Result<void> {
-    if (this.onAudioReadySubscription) {
-      this.recorder.clearOnAudioReady();
-      this.onAudioReadySubscription.remove();
-      this.onAudioReadySubscription = null;
-    }
+    this.clearOnAudioReady();
 
-    this.onAudioReadySubscription =
-      this.audioEventEmitter.addAudioEventListener('audioReady', (event) => {
+    const subscription = this.audioEventEmitter.addAudioEventListener(
+      'audioReady',
+      (event) => {
         const audioBuffer = new AudioBuffer(event.buffer);
         callback({
           ...event,
           buffer: audioBuffer,
         });
-      });
+      }
+    );
+    const consumer = new AudioConsumer(
+      globalThis.createAudioReadyConsumer({
+        sampleRate: options.sampleRate,
+        bufferLength: options.bufferLength,
+        channelCount: options.channelCount,
+        callbackId: subscription.subscriptionId,
+      })
+    );
 
-    return this.recorder.setOnAudioReady({
-      sampleRate: options.sampleRate,
-      bufferLength: options.bufferLength,
-      channelCount: options.channelCount,
-      callbackId: this.onAudioReadySubscription.subscriptionId,
-    });
+    const result = this.addConsumer(consumer);
+    if (result.status === 'success') {
+      this.audioReady = { consumer, subscription };
+    } else {
+      subscription.remove();
+    }
+    return result;
   }
 
   /**
@@ -238,14 +253,13 @@ export default class AudioRecorder {
    * registered.
    */
   clearOnAudioReady(): void {
-    if (!this.onAudioReadySubscription) {
+    if (this.audioReady == null) {
       return;
     }
 
-    this.recorder.clearOnAudioReady();
-
-    this.onAudioReadySubscription.remove();
-    this.onAudioReadySubscription = null;
+    this.removeConsumer(this.audioReady.consumer);
+    this.audioReady.subscription.remove();
+    this.audioReady = null;
   }
 
   /**

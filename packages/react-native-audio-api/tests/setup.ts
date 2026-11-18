@@ -4,6 +4,7 @@ import type { IAudioEventEmitter } from '../src/jsi-interfaces';
 // Mock global objects that might be needed
 globalThis.createAudioContext = jest.fn();
 globalThis.createAudioRecorder = jest.fn();
+globalThis.createAudioReadyConsumer = jest.fn();
 globalThis.AudioEventEmitter = {} as IAudioEventEmitter;
 
 // Set up global test environment
