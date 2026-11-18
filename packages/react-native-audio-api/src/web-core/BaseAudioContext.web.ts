@@ -21,17 +21,17 @@ import PannerNode from './PannerNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
 
 export default abstract class BaseAudioContext<
-  BrowserContext extends globalThis.BaseAudioContext =
+  BrowserAudioContext extends globalThis.BaseAudioContext =
     globalThis.BaseAudioContext,
 > {
   /** @internal */
-  readonly context: BrowserContext;
+  readonly context: BrowserAudioContext;
 
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
   readonly sampleRate: number;
 
-  constructor(context: BrowserContext) {
+  constructor(context: BrowserAudioContext) {
     this.context = context;
     this.sampleRate = context.sampleRate;
     this.destination = new AudioDestinationNode(this, context.destination);
