@@ -387,6 +387,56 @@ TEST_F(AudioRecorderTest, AStopReleasesTheSessionAndKeepsWhatItWrote) {
   EXPECT_EQ(kept->paths, stopResult.unwrap().paths);
 }
 
+/// Counts its prepares and closes; close() waits while holdClose is set, so a test can act while
+/// a stop is closing it.
+class HeldClosingConsumer : public AudioConsumer {
+ public:
+  Result<NoneType, std::string> prepare(const StreamFormat &) override {
+    ++prepares;
+    return Ok(None);
+  }
+  Result<NoneType, std::string> consume(const AudioBuffer &, size_t) override {
+    return Ok(None);
+  }
+  void close() override {
+    ++closes;
+    isClosing = true;
+    while (holdClose.load()) {
+      std::this_thread::yield();
+    }
+  }
+
+  std::atomic<bool> holdClose{false};
+  std::atomic<bool> isClosing{false};
+  std::atomic<int> prepares{0};
+  std::atomic<int> closes{0};
+};
+
+TEST_F(AudioRecorderTest, AConsumerSharedWithAnotherRecorderIsClosedBeforeTheSessionIsReleased) {
+  auto shared = std::make_shared<HeldClosingConsumer>();
+  auto other = makeOtherRecorder();
+  ASSERT_TRUE(recorder_->addConsumer(shared).is_ok());
+  ASSERT_TRUE(other->addConsumer(shared).is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  shared->holdClose = true;
+  std::thread stopping([this] { EXPECT_TRUE(recorder_->stop().is_ok()); });
+  while (!shared->isClosing.load()) {
+    std::this_thread::yield();
+  }
+
+  // Still closing the shared consumer: the next session must not prepare it yet.
+  EXPECT_TRUE(other->start().is_err());
+  EXPECT_EQ(shared->prepares.load(), 1);
+
+  shared->holdClose = false;
+  stopping.join();
+  ASSERT_TRUE(other->start().is_ok());
+  EXPECT_EQ(shared->prepares.load(), 2);
+  EXPECT_EQ(shared->closes.load(), 1);
+  EXPECT_TRUE(other->stop().is_ok());
+}
+
 TEST_F(AudioRecorderTest, AnInputThatFailsToOpenLeavesTheRecorderIdle) {
   input_->openError = "no microphone";
 
