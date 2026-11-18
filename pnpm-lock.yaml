@@ -269,6 +269,7 @@ overrides:
   react-native-audio-api-monorepo>@typescript-eslint/eslint-plugin: 8.58.1
   react-native-audio-api-monorepo>@typescript-eslint/parser: 8.58.1
   webpack: 5.101.3
+  d3: 7.9.0
 
 importers:
 
@@ -5554,8 +5555,8 @@ packages:
     resolution: {integrity: sha512-kfjD3BDQu/FOatpZ6JdMSyIoDwTxIpI29ySTI2J5ZlDaH1WbuJGQJ2Q9oJkWTEZEW98j6idezoomSD3Cn2zwiw==}
     engines: {node: '>=12'}
 
-  d3@7.9.2:
-    resolution: {integrity: sha512-ZKb/mONPVKzaO5UlcWcwN8bS4ezvQaYu+bsou+XgNABdGC800kwH651ADTbbTxMPHW13UlvbQafdmJQDk1w7Mg==}
+  d3@7.9.0:
+    resolution: {integrity: sha512-e1U46jVP+w7Iut8Jt8ri1YsPOvFpg46k+K8TpCb0P+zjCkjkPnV7WzfDJzMHy1LnA+wj5pLT1wjO901gLXeEhA==}
     engines: {node: '>=12'}
 
   dagre-d3-es@7.0.14:
@@ -17880,7 +17881,7 @@ snapshots:
       d3-selection: 3.0.1
       d3-transition: 3.0.2(d3-selection@3.0.1)
 
-  d3@7.9.2:
+  d3@7.9.0:
     dependencies:
       d3-array: 3.2.5
       d3-axis: 3.0.1
@@ -17915,7 +17916,7 @@ snapshots:
 
   dagre-d3-es@7.0.14:
     dependencies:
-      d3: 7.9.2
+      d3: 7.9.0
       lodash-es: 4.18.1
 
   dargs@7.0.0: {}
@@ -21189,7 +21190,7 @@ snapshots:
       cytoscape: 3.34.4
       cytoscape-cose-bilkent: 4.1.0(cytoscape@3.34.4)
       cytoscape-fcose: 2.2.0(cytoscape@3.34.4)
-      d3: 7.9.2
+      d3: 7.9.0
       d3-sankey: 0.12.3
       dagre-d3-es: 7.0.14
       dayjs: 1.11.23
