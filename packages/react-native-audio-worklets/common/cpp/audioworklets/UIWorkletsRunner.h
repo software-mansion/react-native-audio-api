@@ -55,9 +55,11 @@ class UIWorkletsRunner {
 
   /// @brief Schedules the worklet to run on the UI thread with the pre-built
   /// `Float32Array` view from `createChannelView`.
-  /// @param onComplete Invoked on the UI thread once the worklet returns.
-  /// @note Audio Thread only.
-  void call(std::function<void()> onComplete) const;
+  /// @param sampleRate Passed to the worklet after the view: the rate of the snapshot's frames.
+  /// @param onComplete Always invoked once: on the UI thread after the worklet returns, or on the
+  /// calling thread when the call is skipped.
+  /// @note Producer thread only, and not again until the previous call's onComplete has run.
+  void call(float sampleRate, std::function<void()> onComplete) const;
 
  private:
   struct UIWorkletJob {
@@ -66,6 +68,7 @@ class UIWorkletsRunner {
     std::weak_ptr<worklets::UIScheduler> uiScheduler;
     std::shared_ptr<worklets::Serializable> serializableWorklet;
     std::shared_ptr<AudioChannelViews> channelView;
+    float sampleRate = 0.0F;
     std::function<void()> onComplete;
   };
 

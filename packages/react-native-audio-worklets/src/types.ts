@@ -25,8 +25,15 @@ export interface WorkletNodeOptions {
  *   - **Frequency-domain:** linear magnitude spectrum of length `bufferLength`
  *       (internal FFT size is `bufferLength * 2`; same window + FFT path as
  *       `AnalyserNode`, with `smoothingTimeConstant` applied at runtime).
+ *
+ * @param sampleRate - Rate of the frames the snapshot was taken from: the
+ *   context's for a `WorkletNode`, the recorder input's for a `RecorderWorklet`
+ *   (it changes when the input route does).
  */
-export type WorkletNodeCallback = (audioData: Float32Array) => void;
+export type WorkletNodeCallback = (
+  audioData: Float32Array,
+  sampleRate: number
+) => void;
 
 /**
  * Invoked synchronously on the audio worklet runtime each render quantum.

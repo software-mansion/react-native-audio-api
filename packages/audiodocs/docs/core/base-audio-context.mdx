@@ -11,7 +11,7 @@ import AudioGraphFigure from '@site/src/components/AudioGraphFigure';
 
 The `BaseAudioContext` interface acts as a supervisor of audio-processing graphs. It provides key processing parameters such as current time, output destination or sample rate.
 Additionally, it is responsible for nodes creation and audio-processing graph's lifecycle management.
-However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](./audio-context.mdx), [`OfflineAudioContext`](./offline-audio-context.mdx), or [`WorkletAudioContext`](../worklets/worklet-audio-context.mdx).
+However, `BaseAudioContext` itself cannot be directly utilized, instead its functionalities must be accessed through one of its derived interfaces: [`AudioContext`](./audio-context.mdx) or [`OfflineAudioContext`](./offline-audio-context.mdx).
 
 #### Audio graph
 
@@ -35,7 +35,7 @@ Each call has a system-level audio callback buffer size, which is a varying numb
 but render quantum size does not have to be a divisor of the system-level audio callback buffer size.
 
 :::info
-Concept of system-level audio callback does not apply to [`OfflineAudioContext`](./offline-audio-context.mdx) or [`WorkletAudioContext`](../worklets/worklet-audio-context.mdx).
+Concept of system-level audio callback does not apply to [`OfflineAudioContext`](./offline-audio-context.mdx).
 :::
 
 ## Properties

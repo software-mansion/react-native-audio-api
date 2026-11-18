@@ -6,9 +6,9 @@ import {
   useCanvasRef,
   useCanvasSize,
 } from '@shopify/react-native-skia';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
-import { WorkletAudioContext, WorkletNode } from 'react-native-audio-worklets';
+import { RecorderWorklet } from 'react-native-audio-worklets';
 import {
   cancelAnimation,
   Easing,
@@ -193,7 +193,7 @@ function resumeWaveformScroll(
       duration: remainingDurationMs,
       easing: Easing.linear,
     },
-    (finished) => {
+    (finished?: boolean) => {
       if (!finished) {
         return;
       }
@@ -231,11 +231,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   const lifetimeCanvasHeightSV = useSharedValue(0);
   const numBarsSV = useSharedValue(0);
   const isInterruptedSV = useSharedValue(false);
-
-  const stateRef = useRef(state);
-  const workletContextRef = useRef<WorkletAudioContext | null>(null);
-  const workletNodeRef = useRef<WorkletNode | null>(null);
-  const workletReadyRef = useRef(false);
 
   const numBars = useMemo(() => {
     if (size.width === 0) {
@@ -331,10 +326,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   }, [lifetimeSize]);
 
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
-
-  useEffect(() => {
     numBarsSV.value = numBars;
     canvasHeightSV.value = size.height;
     lifetimeCanvasHeightSV.value = lifetimeSize.height;
@@ -361,16 +352,8 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   }, [numBars, barHeights]);
 
   useEffect(() => {
-    if (workletContextRef.current != null) {
-      return;
-    }
-
-    const workletContext = new WorkletAudioContext({
-      sampleRate: constants.sampleRate,
-    });
-    const workletNode = new WorkletNode(
-      workletContext,
-      (audioData) => {
+    const recorderWorklet = new RecorderWorklet(
+      (audioData, sampleRate) => {
         'worklet';
 
         const canvasHeight = canvasHeightSV.value;
@@ -381,7 +364,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
           return;
         }
 
-        durationMS.value += (audioData.length / constants.sampleRate) * 1000;
+        durationMS.value += (audioData.length / sampleRate) * 1000;
 
         let maxValue = 0;
         for (let i = 0; i < audioData.length; i++) {
@@ -428,67 +411,13 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
       }
     );
 
-    workletContextRef.current = workletContext;
-    workletNodeRef.current = workletNode;
-
-    let cancelled = false;
-
-    const startWorkletGraph = async () => {
-      await workletContext.resume();
-      if (cancelled) {
-        return;
-      }
-
-      workletNode.connect(workletContext.destination);
-      workletReadyRef.current = true;
-
-      const currentState = stateRef.current;
-      if (
-        currentState === RecordingState.Recording ||
-        currentState === RecordingState.Paused
-      ) {
-        Recorder.connect(workletContext, workletNode);
-      }
-    };
-
-    startWorkletGraph();
+    Recorder.addConsumer(recorderWorklet);
 
     return () => {
-      cancelled = true;
-      workletReadyRef.current = false;
-      Recorder.disconnect();
-      workletNode.disconnect();
-      workletContextRef.current = null;
-      workletNodeRef.current = null;
-      workletContext.close().catch(() => {});
+      Recorder.removeConsumer(recorderWorklet);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    const workletContext = workletContextRef.current;
-    const workletNode = workletNodeRef.current;
-
-    if (!workletReadyRef.current || !workletContext || !workletNode) {
-      return;
-    }
-
-    const shouldRouteAudio =
-      state === RecordingState.Recording || state === RecordingState.Paused;
-
-    if (!shouldRouteAudio) {
-      Recorder.disconnect();
-      return;
-    }
-
-    workletContext.resume().then(() => {
-      Recorder.connect(workletContext, workletNode);
-    });
-
-    return () => {
-      Recorder.disconnect();
-    };
-  }, [state]);
 
   useEffect(() => {
     if (state === RecordingState.Recording && isInterrupted) {
