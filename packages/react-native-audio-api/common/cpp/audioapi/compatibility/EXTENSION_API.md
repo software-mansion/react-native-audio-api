@@ -117,6 +117,7 @@ obvious in the podspec:
 | `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`)                     | Frame-size and engine constants                                                                                                        |
 | `audioapi::AudioBuffer`                                                       | Multi-channel float buffer                                                                                                             |
 | `audioapi::DSPAudioBuffer` / `audioapi::DSPAudioArray`                        | SIMD-aligned multi-channel / single-channel buffers for DSP work                                                                       |
+| `audioapi::CircularDSPAudioArray` (via `utils/CircularArray.hpp`)             | Ring of the newest frames; `push_back` then `pop_back` the latest window, as `AnalyserNode` does                                       |
 | `audioapi::dsp::SpectrumAnalyser` (via `dsp/SpectrumAnalyser.h`)              | The FFT magnitude analysis behind `AnalyserNode`, for consumers that report a spectrum                                                 |
 | `audioapi::AudioArrayBuffer`                                                  | Single-channel float buffer; implements `jsi::MutableBuffer` for zero-copy JSI `ArrayBuffer` handoff                                   |
 | `DELETE_COPY_AND_MOVE` (via `utils/Macros.h`)                                 | Macro to delete copy and move constructors/assignment for extension-owned classes                                                      |

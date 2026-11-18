@@ -14,9 +14,11 @@ UIWorkletSnapshots::UIWorkletSnapshots(
       domain_(domain),
       bufferLength_(options.bufferLength),
       smoothingTimeConstant_(options.smoothingTimeConstant),
+      framesUntilSnapshot_(snapshotFrames()),
       busy_(std::make_shared<std::atomic<bool>>(false)) {
-  accumulator_ = std::make_unique<audioapi::DSPAudioArray>(snapshotFrames());
+  recentFrames_ = std::make_unique<audioapi::CircularDSPAudioArray>(snapshotFrames());
   if (domain_ == WorkletNodeDomain::FrequencyDomain) {
+    fftInput_ = std::make_unique<audioapi::DSPAudioArray>(snapshotFrames());
     spectrumAnalyser_ =
         std::make_unique<audioapi::dsp::SpectrumAnalyser>(static_cast<int>(snapshotFrames()));
   }
@@ -33,28 +35,33 @@ size_t UIWorkletSnapshots::snapshotFrames() const {
 
 void UIWorkletSnapshots::push(const float *mono, size_t numFrames) {
   if (!runner_.isActive() || runner_.channelView() == nullptr || mono == nullptr ||
-      numFrames == 0 || busy_->load(std::memory_order_acquire)) {
+      numFrames == 0) {
     return;
   }
 
-  const size_t framesToCopy = std::min(numFrames, snapshotFrames() - framesFilled_);
-  accumulator_->copy(mono, 0, framesFilled_, framesToCopy);
-  framesFilled_ += framesToCopy;
+  // Frames older than the newest window would be overwritten within this push anyway.
+  const size_t framesToKeep = std::min(numFrames, snapshotFrames());
+  recentFrames_->push_back(mono + numFrames - framesToKeep, framesToKeep, true);
+  framesUntilSnapshot_ -= std::min(framesUntilSnapshot_, numFrames);
 
-  if (framesFilled_ == snapshotFrames()) {
-    const auto &channelBuffer = runner_.channelView()->channelBuffer(0);
-    if (domain_ == WorkletNodeDomain::TimeDomain) {
-      channelBuffer->copy(*accumulator_, 0, 0, bufferLength_);
-    } else {
-      spectrumAnalyser_->analyze(*accumulator_, getSmoothingTimeConstant());
-      channelBuffer->copy(spectrumAnalyser_->getMagnitudeData(), 0, 0, bufferLength_);
-    }
-    dispatchToUI();
+  if (framesUntilSnapshot_ > 0 || busy_->load(std::memory_order_acquire)) {
+    return;
   }
+
+  const auto &channelBuffer = runner_.channelView()->channelBuffer(0);
+  if (domain_ == WorkletNodeDomain::TimeDomain) {
+    recentFrames_->pop_back(channelBuffer->begin(), bufferLength_, 0, true);
+  } else {
+    recentFrames_->pop_back(*fftInput_, snapshotFrames(), 0, true);
+    spectrumAnalyser_->analyze(*fftInput_, getSmoothingTimeConstant());
+    channelBuffer->copy(spectrumAnalyser_->getMagnitudeData(), 0, 0, bufferLength_);
+  }
+  framesUntilSnapshot_ = bufferLength_;
+  dispatchToUI();
 }
 
 void UIWorkletSnapshots::reset() {
-  framesFilled_ = 0;
+  framesUntilSnapshot_ = snapshotFrames();
 }
 
 void UIWorkletSnapshots::deactivate() {
@@ -62,8 +69,6 @@ void UIWorkletSnapshots::deactivate() {
 }
 
 void UIWorkletSnapshots::dispatchToUI() {
-  framesFilled_ = 0;
-
   // push() already saw busy_ false, and only this thread sets it true.
   busy_->store(true, std::memory_order_relaxed);
   runner_.call(sampleRate_, [busy = busy_] { busy->store(false, std::memory_order_release); });
