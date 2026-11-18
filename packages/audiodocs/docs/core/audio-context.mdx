@@ -60,7 +60,15 @@ Returns the context time of the sample leaving the output device now, together w
 The pair is measured on the audio thread from the platform's own presentation timestamps, so output latency is already included and it is not limited to the render-quantum steps `currentTime` moves in. Both values are `0` until the context has rendered its first block. While the context is suspended the values stop advancing.
 
 ```tsx
-const { contextTime, performanceTime } = audioContext.getOutputTimestamp();
+await audioContext.resume();
+
+// Before the first rendered block both values are 0, which would map onto the wrong time.
+let timestamp = audioContext.getOutputTimestamp();
+while (timestamp.performanceTime === 0) {
+  await new Promise(requestAnimationFrame);
+  timestamp = audioContext.getOutputTimestamp();
+}
+const { contextTime, performanceTime } = timestamp;
 
 // The context time at which a sound is heard at `perfMs` (a performance.now() value):
 const heardAt = (perfMs: number) =>

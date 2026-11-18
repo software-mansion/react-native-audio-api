@@ -26,15 +26,15 @@ struct OutputPresentation {
 /// time of now.
 /// @param presentation the latest frame/moment pair the platform reported.
 /// @param renderedFrames frames the graph has rendered
+/// @param nowNs the `steady_clock` moment to report the position at.
 [[nodiscard]] inline AudioTimestamp outputTimestampAt(
     const OutputPresentation &presentation,
     float sampleRate,
     std::size_t renderedFrames,
-    bool isPlaying) {
+    bool isPlaying,
+    std::int64_t nowNs = steadyClockNowNs()) {
   constexpr double NANOSECONDS_PER_SECOND = 1e9;
   constexpr double NANOSECONDS_PER_MILLISECOND = 1e6;
-
-  const auto nowNs = steadyClockNowNs();
 
   auto frame = static_cast<double>(presentation.contextFrame);
   auto timeNs = static_cast<double>(presentation.presentationTimeNs);

@@ -357,9 +357,12 @@ std::optional<OutputPresentation> AndroidAudioPlayer::getOutputPresentation() {
   {
     std::scoped_lock lock(streamMutex_);
     // An anchor from before the last start may belong to a stream a rebuild replaced, whose
-    // positions the current stream does not continue. A device timestamp from before it is
-    // AAudio's stale pre-pause report, which would interpolate across the pause.
-    if (isRunningLocked() && anchor->hostTimeNs >= streamStartedAtNs_) {
+    // positions the current stream does not continue, and extrapolating it would span the pause.
+    if (anchor->hostTimeNs < streamStartedAtNs_) {
+      return std::nullopt;
+    }
+    // A device timestamp from before the start is AAudio's stale pre-pause report.
+    if (isRunningLocked()) {
       const auto presented = mStream_->getTimestamp(CLOCK_MONOTONIC);
       if (presented && presented.value().timestamp >= streamStartedAtNs_) {
         return OutputPresentation{
