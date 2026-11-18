@@ -57,6 +57,12 @@ void MiniAudioDecoder::teardownDecoder() {
   resetOpenMetadata();
 }
 
+void MiniAudioDecoder::discardFailedDecoder() {
+  decoder_.reset();
+  memoryCopy_.clear();
+  resetOpenMetadata();
+}
+
 void MiniAudioDecoder::close() {
   teardownDecoder();
 }
@@ -75,7 +81,7 @@ DecoderResult MiniAudioDecoder::open(const LocalFileSource &source) {
   decoder_ = std::make_unique<ma_decoder>();
   const ma_result result = ma_decoder_init_file(source.path.c_str(), &config, decoder_.get());
   if (result != MA_SUCCESS) {
-    teardownDecoder();
+    discardFailedDecoder();
     return Err("MiniAudioDecoder::open failed: " + parseMiniAudioError(result));
   }
 
@@ -104,7 +110,7 @@ DecoderResult MiniAudioDecoder::open(const EncodedMemorySource &source) {
   const ma_result result =
       ma_decoder_init_memory(memoryCopy_.data(), memoryCopy_.size(), &config, decoder_.get());
   if (result != MA_SUCCESS) {
-    teardownDecoder();
+    discardFailedDecoder();
     return Err("MiniAudioDecoder::open failed: " + parseMiniAudioError(result));
   }
 
