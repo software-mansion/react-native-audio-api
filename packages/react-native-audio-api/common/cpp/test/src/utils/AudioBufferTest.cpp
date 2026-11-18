@@ -12,6 +12,11 @@ static const float SQRT_HALF = sqrtf(0.5f);
 static constexpr size_t BUF_SIZE = 10;
 static constexpr float SR = 44100.0f;
 
+static_assert(AudioBufferCopySource<const float *const *>);
+static_assert(AudioBufferCopySource<AudioBuffer>);
+static_assert(!AudioBufferCopySource<int>);
+static_assert(!AudioBufferCopySource<std::vector<float>>);
+
 class AudioBufferTest : public ::testing::Test {
  protected:
   static void fillChannel(AudioBuffer &buf, size_t ch, float value) {
@@ -228,6 +233,22 @@ TEST_F(AudioBufferTest, NormalizeScalesToUnitPeak) {
 // ---------------------------------------------------------------------------
 // Sum — same channel count
 // ---------------------------------------------------------------------------
+
+TEST_F(AudioBufferTest, CopyFromRawChannelPointersCopiesTheRangePerChannel) {
+  const std::vector<float> left{1.0f, 2.0f, 3.0f, 4.0f};
+  const std::vector<float> right{10.0f, 20.0f, 30.0f, 40.0f};
+  const float *const channels[] = {left.data(), right.data()};
+  AudioBuffer dst(4, 2, SR);
+
+  dst.copy(channels, 1, 2, 2);
+
+  const auto samples = [&dst](size_t channel) {
+    const auto &array = *dst.getChannel(channel);
+    return std::vector<float>(array.begin(), array.end());
+  };
+  EXPECT_EQ(samples(0), (std::vector{0.0f, 0.0f, 2.0f, 3.0f}));
+  EXPECT_EQ(samples(1), (std::vector{0.0f, 0.0f, 20.0f, 30.0f}));
+}
 
 TEST_F(AudioBufferTest, SumSameChannelCount) {
   AudioBuffer dst(BUF_SIZE, 2, SR);
