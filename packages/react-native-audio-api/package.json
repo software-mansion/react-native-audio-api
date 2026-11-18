@@ -43,6 +43,24 @@
         "default": "./lib/commonjs/mock/index.js"
       }
     },
+    "./extensions": {
+      "react-native": {
+        "types": "./lib/typescript/module/extensions.d.ts",
+        "default": "./lib/module/extensions.js"
+      },
+      "module": {
+        "types": "./lib/typescript/module/extensions.d.ts",
+        "default": "./lib/module/extensions.js"
+      },
+      "module-sync": {
+        "types": "./lib/typescript/module/extensions.d.ts",
+        "default": "./lib/module/extensions.js"
+      },
+      "default": {
+        "types": "./lib/typescript/commonjs/extensions.d.ts",
+        "default": "./lib/commonjs/extensions.js"
+      }
+    },
     "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },

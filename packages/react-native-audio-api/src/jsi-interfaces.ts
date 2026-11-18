@@ -341,13 +341,19 @@ export interface IAnalyserNode extends IAudioNode {
   getByteTimeDomainData: (array: Uint8Array) => void;
 }
 
-export interface IRecorderAdapterNode extends IAudioNode {}
+export interface IRecorderAdapterNode extends IAudioNode {
+  /** The node's end the recorder feeds; add it with `addConsumer`. */
+  readonly consumer: IAudioConsumer;
+}
 
 export interface IWaveShaperNode extends IAudioNode {
   oversample: OverSampleType;
 
   setCurve(curve: Float32Array | null): void;
 }
+/** A native `AudioConsumerHostObject`; opaque to JS. */
+export interface IAudioConsumer {}
+
 export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOptions {
   callbackId: string;
 }
@@ -366,12 +372,11 @@ export interface IAudioRecorder {
   pause: () => Promise<void>;
   resume: () => Promise<void>;
 
-  // Graph integration methods
-  connect: (node: IRecorderAdapterNode) => void;
-  disconnect: () => void;
-
   setOnAudioReady: (options: IAudioRecorderCallbackOptions) => Result<void>;
   clearOnAudioReady: () => void;
+
+  addConsumer: (consumer: IAudioConsumer) => Result<void>;
+  removeConsumer: (consumer: IAudioConsumer) => void;
 
   setOnError: (options: { callbackId: string }) => void;
   clearOnError: () => void;

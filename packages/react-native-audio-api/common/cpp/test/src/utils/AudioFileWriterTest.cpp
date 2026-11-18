@@ -97,7 +97,7 @@ class AudioFileWriterTest : public ::testing::Test {
     ASSERT_LE(count, kWriterPoolSize);
     const AudioBuffer frames(kFramesPerBuffer, kChannelCount, 48000.0F);
     for (int buffer = 0; buffer < count; ++buffer) {
-      ASSERT_TRUE(writer_->write(frames, kFramesPerBuffer).is_ok());
+      ASSERT_TRUE(writer_->consume(frames, kFramesPerBuffer).is_ok());
     }
   }
 

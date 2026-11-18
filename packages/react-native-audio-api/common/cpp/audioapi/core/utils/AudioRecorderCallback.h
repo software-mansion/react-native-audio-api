@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/inputs/RecorderOutput.h>
+#include <audioapi/core/AudioConsumer.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/encoding/StreamFormat.h>
@@ -22,7 +22,7 @@ class IAudioEventHandlerRegistry;
 
 /// Delivers recorded audio to a JS `onAudioReady` callback, resampling and remixing from
 /// the input stream's format to the one JS asked for.
-class AudioRecorderCallback final : public RecorderOutput {
+class AudioRecorderCallback final : public AudioConsumer {
  public:
   AudioRecorderCallback(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -33,8 +33,9 @@ class AudioRecorderCallback final : public RecorderOutput {
 
   /// Builds the converter from @p streamFormat to the callback's format.
   Result<NoneType, std::string> prepare(const StreamFormat &streamFormat) override;
-  /// Fails when the ring has no room for the frames; what fit is still emitted.
-  Result<NoneType, std::string> write(const AudioBuffer &frames, size_t numFrames) override;
+  /// Converts the frames to the callback's format and emits every full callback buffer. Fails
+  /// when the ring has no room for them; what fit is still emitted.
+  Result<NoneType, std::string> consume(const AudioBuffer &frames, size_t numFrames) override;
   /// Emits what is left, even short of a full callback buffer.
   void close() override;
 

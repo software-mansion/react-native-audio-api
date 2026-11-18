@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/inputs/RecorderOutput.h>
+#include <audioapi/core/AudioConsumer.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/encoding/AudioEncoder.h>
 #include <audioapi/events/EventCaller.hpp>
@@ -52,9 +52,9 @@ struct PlatformFileBackend {
 [[nodiscard]] const PlatformFileBackend &osFileBackend();
 
 /// Writes a recording session to one file, or to a series of them when the properties rotate
-/// files. A RecorderOutput, so the recorder feeds and repoints it like any other, but closed
+/// files. An AudioConsumer, so the recorder feeds and repoints it like any other, but closed
 /// through closeFile(), which reports the session's files.
-class AudioFileWriter final : public RecorderOutput {
+class AudioFileWriter final : public AudioConsumer {
  public:
   /// Reports its errors through @p errorEvent, the recorder's.
   AudioFileWriter(
@@ -70,7 +70,7 @@ class AudioFileWriter final : public RecorderOutput {
   DELETE_COPY_AND_MOVE(AudioFileWriter);
 
   /// Opens the session's first file. @p streamFormat's maxFramesPerBuffer bounds a single
-  /// write(). Fails while a session is open, until closeFile() ends it.
+  /// consume(). Fails while a session is open, until closeFile() ends it.
   Result<NoneType, std::string> prepare(const StreamFormat &streamFormat) override;
 
   /// Sizes and durations are summed over every file of the session. A session whose current file
@@ -81,14 +81,14 @@ class AudioFileWriter final : public RecorderOutput {
   void close() override;
 
   /// Keeps the open file and re-points its encoder at @p streamFormat. Drains the worker first,
-  /// so the caller must already have stopped writing in the old format. On failure the file is
+  /// so the caller must already have stopped feeding it in the old format. On failure the file is
   /// finished as far as it got.
   Result<NoneType, std::string> reprepare(const StreamFormat &streamFormat) override;
 
   /// Never blocks: queues the frames for the encoder's worker, dropping them when no pool slot
   /// is free. Encode and rotation errors happen on that worker, so they are reported as the
   /// recorder's error event from there and this always succeeds.
-  Result<NoneType, std::string> write(const AudioBuffer &frames, size_t numFrames) override;
+  Result<NoneType, std::string> consume(const AudioBuffer &frames, size_t numFrames) override;
 
   [[nodiscard]] std::string getFilePath() const;
   /// Every file the current session has opened so far, in open order.

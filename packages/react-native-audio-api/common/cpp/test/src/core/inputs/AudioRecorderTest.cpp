@@ -5,7 +5,6 @@
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/AudioRecorderCallback.h>
-#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <test/src/core/inputs/FakeRecorderInput.h>
@@ -44,17 +43,14 @@ class AudioRecorderTest : public ::testing::Test {
     return log_.encodedBuffers.load();
   }
 
-  /// Connects an adapter node to the recorder as AudioRecorderHostObject does, through a pointer
-  /// aliasing the node's handle, and returns it.
-  RecorderAdapterNode *connectAdapter() {
+  /// Adds an adapter node's consumer to the recorder, as JS `AudioRecorder.connect` does, and
+  /// returns it.
+  RecorderAdapterConsumer *connectAdapter() {
     adapterContext_ = std::make_shared<OfflineAudioContext>(
         2, 512, 48000.0F, std::make_shared<MockAudioEventHandlerRegistry>());
-    auto adapter = std::make_unique<RecorderAdapterNode>(adapterContext_);
-    auto *adapterNode = adapter.get();
-    adapterHandle_ = std::make_shared<utils::graph::NodeHandle>(std::move(adapter));
-    EXPECT_TRUE(
-        recorder_->addOutput(std::shared_ptr<RecorderOutput>(adapterHandle_, adapterNode)).is_ok());
-    return adapterNode;
+    adapterNode_ = std::make_unique<RecorderAdapterNode>(adapterContext_);
+    EXPECT_TRUE(recorder_->addConsumer(adapterNode_->consumer()).is_ok());
+    return adapterNode_->consumer().get();
   }
 
   /// A JS callback delivering mono buffers of FRAMES frames at @p sampleRate.
@@ -63,13 +59,13 @@ class AudioRecorderTest : public ::testing::Test {
   }
 
   /// Expects exactly @p count buffers to reach the JS callback. Exact only once the session is
-  /// stopped, which joins the outputs' worker thread and flushes what the callback still holds.
+  /// stopped, which joins the consumers' worker thread and flushes what the callback still holds.
   void expectAudioReadyEvents(int count) {
     EXPECT_CALL(*registry_, dispatchEvent(AudioEvent::AUDIO_READY, CALLBACK_ID, testing::_))
         .Times(count);
   }
 
-  /// A second recorder reporting to the same registry, without outputs.
+  /// A second recorder reporting to the same registry, without consumers.
   std::shared_ptr<AudioRecorder> makeOtherRecorder() {
     return std::make_shared<AudioRecorder>(
         nullptr, std::make_shared<FakeRecorderInput>(), sessions_, &backend_);
@@ -86,7 +82,7 @@ class AudioRecorderTest : public ::testing::Test {
   std::shared_ptr<testing::NiceMock<MockAudioEventHandlerRegistry>> registry_ =
       std::make_shared<testing::NiceMock<MockAudioEventHandlerRegistry>>();
   std::shared_ptr<OfflineAudioContext> adapterContext_;
-  std::shared_ptr<utils::graph::NodeHandle> adapterHandle_;
+  std::unique_ptr<RecorderAdapterNode> adapterNode_;
 
   FakeEncoderLog log_;
   PlatformFileBackend backend_;
@@ -133,7 +129,7 @@ TEST_F(AudioRecorderTest, FramesOutsideRecordingAreDropped) {
   EXPECT_EQ(encodedBuffers(), 2);
 }
 
-TEST_F(AudioRecorderTest, FramesInALayoutTheOutputsDoNotExpectAreDropped) {
+TEST_F(AudioRecorderTest, FramesInALayoutTheConsumersDoNotExpectAreDropped) {
   enableFileOutput();
   ASSERT_TRUE(recorder_->start().is_ok());
 
@@ -143,7 +139,7 @@ TEST_F(AudioRecorderTest, FramesInALayoutTheOutputsDoNotExpectAreDropped) {
   EXPECT_EQ(encodedBuffers(), 0);
 }
 
-TEST_F(AudioRecorderTest, OutputsArePreparedForTheFormatTheStartedInputDelivers) {
+TEST_F(AudioRecorderTest, ConsumersArePreparedForTheFormatTheStartedInputDelivers) {
   auto *adapter = connectAdapter();
   input_->formatAfterStart = StreamFormat{
       .layout = {.sampleRate = 48000.0F, .channelCount = 2},
@@ -152,7 +148,7 @@ TEST_F(AudioRecorderTest, OutputsArePreparedForTheFormatTheStartedInputDelivers)
 
   ASSERT_TRUE(recorder_->start().is_ok());
 
-  EXPECT_EQ(adapter->buff_.size(), 2U);
+  EXPECT_EQ(adapter->preparedChannelCount(), 2U);
   ASSERT_TRUE(recorder_->stop().is_ok());
 }
 
@@ -498,7 +494,7 @@ TEST_F(AudioRecorderTest, AResumeWhoseFormatCannotBeReadIsUndone) {
   EXPECT_EQ(encodedBuffers(), 1);
 }
 
-TEST_F(AudioRecorderTest, AnInputFormatChangeMidRecordingRepreparesTheOutputs) {
+TEST_F(AudioRecorderTest, AnInputFormatChangeMidRecordingRepreparesTheConsumers) {
   enableFileOutput();
   ASSERT_TRUE(recorder_->start().is_ok());
 
@@ -527,7 +523,7 @@ TEST_F(AudioRecorderTest, AnUnavailableInputFormatLeavesTheSessionAsItIs) {
 TEST_F(AudioRecorderTest, AMonoCallbackIsFedFromAMultichannelInput) {
   input_->format.layout.channelCount = 2;
   expectAudioReadyEvents(2);
-  ASSERT_TRUE(recorder_->addOutput(makeCallback()).is_ok());
+  ASSERT_TRUE(recorder_->addConsumer(makeCallback()).is_ok());
 
   ASSERT_TRUE(recorder_->start().is_ok());
   input_->deliverFrames(FRAMES);
@@ -537,7 +533,7 @@ TEST_F(AudioRecorderTest, AMonoCallbackIsFedFromAMultichannelInput) {
 
 TEST_F(AudioRecorderTest, ACallbackIsFedAgainByTheNextSession) {
   expectAudioReadyEvents(2);
-  ASSERT_TRUE(recorder_->addOutput(makeCallback()).is_ok());
+  ASSERT_TRUE(recorder_->addConsumer(makeCallback()).is_ok());
 
   ASSERT_TRUE(recorder_->start().is_ok());
   input_->deliverFrames(FRAMES);
@@ -551,8 +547,8 @@ TEST_F(AudioRecorderTest, ACallbackIsFedAgainByTheNextSession) {
 TEST_F(AudioRecorderTest, AClearedCallbackIsNotFed) {
   expectAudioReadyEvents(0);
   auto callback = makeCallback();
-  ASSERT_TRUE(recorder_->addOutput(callback).is_ok());
-  recorder_->removeOutput(callback);
+  ASSERT_TRUE(recorder_->addConsumer(callback).is_ok());
+  recorder_->removeConsumer(callback);
 
   ASSERT_TRUE(recorder_->start().is_ok());
   input_->deliverFrames(FRAMES);
@@ -563,13 +559,13 @@ TEST_F(AudioRecorderTest, AnInvalidatedCallbackReleasesItsHandlerOnceAndIsNoLong
   expectAudioReadyEvents(0);
   EXPECT_CALL(*registry_, unregisterHandler(AudioEvent::AUDIO_READY, CALLBACK_ID)).Times(1);
   auto callback = makeCallback();
-  ASSERT_TRUE(recorder_->addOutput(callback).is_ok());
+  ASSERT_TRUE(recorder_->addConsumer(callback).is_ok());
   ASSERT_TRUE(recorder_->start().is_ok());
 
   callback->invalidate();
   input_->deliverFrames(FRAMES);
   ASSERT_TRUE(recorder_->stop().is_ok());
-  recorder_->removeOutput(callback);
+  recorder_->removeConsumer(callback);
   callback.reset();
 }
 
@@ -577,13 +573,13 @@ TEST_F(AudioRecorderTest, ACallbackSetWhileRecordingIsFedAtOnce) {
   expectAudioReadyEvents(1);
   ASSERT_TRUE(recorder_->start().is_ok());
 
-  ASSERT_TRUE(recorder_->addOutput(makeCallback()).is_ok());
+  ASSERT_TRUE(recorder_->addConsumer(makeCallback()).is_ok());
   input_->deliverFrames(FRAMES);
   ASSERT_TRUE(recorder_->stop().is_ok());
 }
 
 TEST_F(AudioRecorderTest, ACallbackThatCannotBePreparedFailsTheStart) {
-  ASSERT_TRUE(recorder_->addOutput(makeCallback(/*sampleRate=*/0.0F)).is_ok());
+  ASSERT_TRUE(recorder_->addConsumer(makeCallback(/*sampleRate=*/0.0F)).is_ok());
 
   auto result = recorder_->start();
 
@@ -597,7 +593,7 @@ TEST_F(AudioRecorderTest, ACallbackThatCannotBePreparedFailsTheStart) {
 TEST_F(AudioRecorderTest, AnInputFormatChangeFlushesTheCallbackBeforeRepreparingIt) {
   // Half a callback buffer in the old format, emitted on its own, then a full one in the new.
   expectAudioReadyEvents(2);
-  ASSERT_TRUE(recorder_->addOutput(makeCallback()).is_ok());
+  ASSERT_TRUE(recorder_->addConsumer(makeCallback()).is_ok());
   ASSERT_TRUE(recorder_->start().is_ok());
   input_->deliverFrames(FRAMES / 2);
 
@@ -607,18 +603,18 @@ TEST_F(AudioRecorderTest, AnInputFormatChangeFlushesTheCallbackBeforeRepreparing
   ASSERT_TRUE(recorder_->stop().is_ok());
 }
 
-TEST_F(AudioRecorderTest, AnOutputThatCannotFollowAFormatChangeDoesNotHoldTheOthersBack) {
+TEST_F(AudioRecorderTest, AConsumerThatCannotFollowAFormatChangeDoesNotHoldTheOthersBack) {
   input_->format.layout.channelCount = 2;
   enableFileOutput();
   auto *adapter = connectAdapter();
   ASSERT_TRUE(recorder_->start().is_ok());
-  ASSERT_EQ(adapter->buff_.size(), 2U);
+  ASSERT_EQ(adapter->preparedChannelCount(), 2U);
   log_.failNextReprepare.store(true);
 
   input_->format.layout.channelCount = 1;
   input_->events->formatChanged();
 
-  EXPECT_EQ(adapter->buff_.size(), 1U);
+  EXPECT_EQ(adapter->preparedChannelCount(), 1U);
   input_->deliverFrames(FRAMES);
   EXPECT_TRUE(recorder_->stop().is_ok());
   EXPECT_EQ(encodedBuffers(), 0);
@@ -638,31 +634,33 @@ TEST_F(AudioRecorderTest, AFileThatCannotFollowAFormatChangeIsStillReturned) {
   EXPECT_EQ(log_.closedFiles.load(), 1);
 }
 
-TEST_F(AudioRecorderTest, StartFailsWhenTheConnectedAdapterNodesContextIsGone) {
+TEST_F(AudioRecorderTest, AnAdapterWhoseContextIsGoneDoesNotStopTheRecording) {
   enableFileOutput();
-  connectAdapter();
+  auto *adapter = connectAdapter();
   adapterContext_.reset();
 
-  EXPECT_TRUE(recorder_->start().is_err());
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->deliverFrames(FRAMES);
+  auto stopResult = recorder_->stop();
 
-  EXPECT_TRUE(recorder_->isIdle());
-  EXPECT_FALSE(input_->isOpen);
-  EXPECT_EQ(log_.closedFiles.load(), 1);
+  ASSERT_TRUE(stopResult.is_ok());
+  EXPECT_EQ(stopResult.unwrap().paths.size(), 1U);
+  EXPECT_EQ(adapter->preparedChannelCount(), 0U);
 }
 
 TEST_F(AudioRecorderTest, AConnectedAdapterNodeIsFedAgainByTheNextSession) {
   auto *adapter = connectAdapter();
   ASSERT_TRUE(recorder_->start().is_ok());
   ASSERT_TRUE(recorder_->stop().is_ok());
-  EXPECT_TRUE(adapter->buff_.empty());
+  EXPECT_EQ(adapter->preparedChannelCount(), 0U);
 
   ASSERT_TRUE(recorder_->start().is_ok());
 
-  EXPECT_EQ(adapter->buff_.size(), 1U);
+  EXPECT_EQ(adapter->preparedChannelCount(), 1U);
   ASSERT_TRUE(recorder_->stop().is_ok());
 }
 
-TEST_F(AudioRecorderTest, AFileThatFailsToCloseStillLeavesTheOtherOutputsCleanedUp) {
+TEST_F(AudioRecorderTest, AFileThatFailsToCloseStillLeavesTheOtherConsumersCleanedUp) {
   enableFileOutput();
   auto *adapter = connectAdapter();
   ASSERT_TRUE(recorder_->start().is_ok());
@@ -671,7 +669,7 @@ TEST_F(AudioRecorderTest, AFileThatFailsToCloseStillLeavesTheOtherOutputsCleaned
   auto stopResult = recorder_->stop();
 
   ASSERT_TRUE(stopResult.is_err());
-  EXPECT_TRUE(adapter->buff_.empty());
+  EXPECT_EQ(adapter->preparedChannelCount(), 0U);
   EXPECT_TRUE(recorder_->isIdle());
 }
 
@@ -979,7 +977,7 @@ TEST_F(AudioRecorderTest, AStopBoundToAnOpeningARerouteMovedPastLeavesTheSession
   EXPECT_TRUE(recorder_->stop().is_ok());
 }
 
-TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyOutput) {
+TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyConsumer) {
   EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 0.0);
   ASSERT_TRUE(recorder_->start().is_ok());
 

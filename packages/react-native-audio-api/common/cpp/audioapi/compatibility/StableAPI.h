@@ -8,11 +8,13 @@
  * internal and may change without notice.
  */
 
+#include <audioapi/HostObjects/AudioConsumerHostObject.h>
 #include <audioapi/HostObjects/AudioNodeHostObject.h>
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 #include <audioapi/HostObjects/TypedAudioNodePtr.hpp>
 #include <audioapi/HostObjects/events/AudioEventHandlerRegistryHostObject.h>
 #include <audioapi/HostObjects/sources/AudioScheduledSourceNodeHostObject.h>
+#include <audioapi/core/AudioConsumer.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>

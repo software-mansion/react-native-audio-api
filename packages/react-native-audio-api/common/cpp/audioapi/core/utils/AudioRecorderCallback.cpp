@@ -121,7 +121,7 @@ AudioRecorderCallback::pushChannels(const AudioBuffer &frames, size_t start, int
 
 /// Resamples/remixes if needed, pushes into the circular buffer and emits to JS once a full
 /// callback buffer has accumulated.
-Result<NoneType, std::string> AudioRecorderCallback::write(
+Result<NoneType, std::string> AudioRecorderCallback::consume(
     const AudioBuffer &frames,
     size_t numFrames) {
   const auto frameCount = static_cast<int>(numFrames);

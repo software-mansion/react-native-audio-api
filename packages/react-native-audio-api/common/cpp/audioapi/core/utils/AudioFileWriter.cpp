@@ -358,7 +358,9 @@ void AudioFileWriter::rotateIfFileOutgrowsCap() {
   }
 }
 
-Result<NoneType, std::string> AudioFileWriter::write(const AudioBuffer &frames, size_t numFrames) {
+Result<NoneType, std::string> AudioFileWriter::consume(
+    const AudioBuffer &frames,
+    size_t numFrames) {
   if (isFileOpen()) {
     worker_.push(frames, numFrames);
   }

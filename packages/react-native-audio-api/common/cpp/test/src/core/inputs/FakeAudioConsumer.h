@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/core/inputs/RecorderOutput.h>
+#include <audioapi/core/AudioConsumer.h>
 
 #include <atomic>
 #include <cstddef>
@@ -14,16 +14,16 @@
 namespace audioapi::test_support {
 
 /// Records how a recorder drives it. Read its log once the session that fed it has ended, which
-/// joins the worker that writes to it.
-class FakeRecorderOutput final : public RecorderOutput {
+/// joins the worker that feeds it.
+class FakeAudioConsumer final : public AudioConsumer {
  public:
-  enum class Call { Prepare, Write, Close };
+  enum class Call { Prepare, Consume, Close };
 
   struct LoggedCall {
     Call call;
-    /// Prepare: the format's channel count. Write: the buffer's channel count.
+    /// Prepare: the format's channel count. Consume: the buffer's channel count.
     size_t channelCount = 0;
-    /// Write only.
+    /// Consume only.
     size_t numFrames = 0;
     std::thread::id thread;
 
@@ -33,15 +33,15 @@ class FakeRecorderOutput final : public RecorderOutput {
   Result<NoneType, std::string> prepare(const StreamFormat &format) override {
     log(Call::Prepare, static_cast<size_t>(format.layout.channelCount), 0);
     if (failPrepare.load()) {
-      return Err("Fake output cannot be prepared");
+      return Err("Fake consumer cannot be prepared");
     }
     return Ok(None);
   }
 
-  Result<NoneType, std::string> write(const AudioBuffer &frames, size_t numFrames) override {
-    log(Call::Write, frames.getNumberOfChannels(), numFrames);
-    if (failWrite.load()) {
-      return Err("Fake output cannot be written");
+  Result<NoneType, std::string> consume(const AudioBuffer &frames, size_t numFrames) override {
+    log(Call::Consume, frames.getNumberOfChannels(), numFrames);
+    if (failConsume.load()) {
+      return Err("Fake consumer cannot consume");
     }
     return Ok(None);
   }
@@ -59,19 +59,19 @@ class FakeRecorderOutput final : public RecorderOutput {
     return kinds;
   }
 
-  [[nodiscard]] std::vector<LoggedCall> writes() const {
+  [[nodiscard]] std::vector<LoggedCall> consumed() const {
     std::scoped_lock lock(mutex_);
-    std::vector<LoggedCall> written;
+    std::vector<LoggedCall> consumedCalls;
     for (const auto &logged : log_) {
-      if (logged.call == Call::Write) {
-        written.push_back(logged);
+      if (logged.call == Call::Consume) {
+        consumedCalls.push_back(logged);
       }
     }
-    return written;
+    return consumedCalls;
   }
 
   std::atomic<bool> failPrepare{false};
-  std::atomic<bool> failWrite{false};
+  std::atomic<bool> failConsume{false};
 
  private:
   void log(Call call, size_t channelCount, size_t numFrames) {

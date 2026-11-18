@@ -1,6 +1,6 @@
-#include <audioapi/core/inputs/RecorderOutputs.h>
+#include <audioapi/core/inputs/RecorderConsumers.h>
 
-#include <audioapi/core/inputs/RecorderOutput.h>
+#include <audioapi/core/AudioConsumer.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/EventCaller.hpp>
@@ -15,20 +15,20 @@
 
 namespace audioapi {
 
-RecorderOutputs::RecorderOutputs(
+RecorderConsumers::RecorderConsumers(
     std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent,
     const PlatformFileBackend &fileBackend)
     : errorEvent_(std::move(errorEvent)), fileBackend_(fileBackend) {}
 
-RecorderOutputs::~RecorderOutputs() = default;
+RecorderConsumers::~RecorderConsumers() = default;
 
-void RecorderOutputs::write(const float *const *channels, int numFrames) {
+void RecorderConsumers::write(const float *const *channels, int numFrames) {
   worker_.push(channels, static_cast<size_t>(numFrames));
 }
 
-Result<NoneType, std::string> RecorderOutputs::prepare(const StreamFormat &format) {
+Result<NoneType, std::string> RecorderConsumers::prepare(const StreamFormat &format) {
   {
-    std::scoped_lock lock(outputsMutex_);
+    std::scoped_lock lock(consumersMutex_);
 
     if (fileProperties_ != nullptr) {
       auto writer = std::make_shared<AudioFileWriter>(errorEvent_, fileProperties_, fileBackend_);
@@ -36,13 +36,13 @@ Result<NoneType, std::string> RecorderOutputs::prepare(const StreamFormat &forma
       if (fileResult.is_err()) {
         return Err("Failed to open file for writing: " + fileResult.unwrap_err());
       }
-      file_ = {.output = std::move(writer), .isPrepared = true};
+      file_ = {.consumer = std::move(writer), .isPrepared = true};
     }
 
-    for (auto &listed : outputs_) {
-      auto outputResult = listed.output->prepare(format);
-      if (outputResult.is_err()) {
-        return outputResult;
+    for (auto &listed : consumers_) {
+      auto consumerResult = listed.consumer->prepare(format);
+      if (consumerResult.is_err()) {
+        return consumerResult;
       }
       listed.isPrepared = true;
     }
@@ -51,7 +51,7 @@ Result<NoneType, std::string> RecorderOutputs::prepare(const StreamFormat &forma
   return startWorker(format);
 }
 
-Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &format) {
+Result<NoneType, std::string> RecorderConsumers::reprepare(const StreamFormat &format) {
   worker_.stop();
 
   std::string failures;
@@ -62,10 +62,10 @@ Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &for
   };
 
   {
-    std::scoped_lock lock(outputsMutex_);
+    std::scoped_lock lock(consumersMutex_);
 
     if (file_.isPrepared) {
-      auto fileResult = file_.output->reprepare(format);
+      auto fileResult = file_.consumer->reprepare(format);
       file_.isPrepared = fileResult.is_ok();
       if (fileResult.is_err()) {
         noteFailure(
@@ -74,11 +74,11 @@ Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &for
       }
     }
 
-    for (auto &listed : outputs_) {
+    for (auto &listed : consumers_) {
       if (listed.isPrepared) {
-        auto outputResult = listed.output->reprepare(format);
-        listed.isPrepared = outputResult.is_ok();
-        noteFailure(outputResult);
+        auto consumerResult = listed.consumer->reprepare(format);
+        listed.isPrepared = consumerResult.is_ok();
+        noteFailure(consumerResult);
       }
     }
   }
@@ -91,20 +91,20 @@ Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &for
   return Err(failures);
 }
 
-RecorderOutputs::Detached RecorderOutputs::detach() {
+RecorderConsumers::Detached RecorderConsumers::detach() {
   worker_.stop();
 
-  std::scoped_lock lock(outputsMutex_);
-  for (auto &listed : outputs_) {
+  std::scoped_lock lock(consumersMutex_);
+  for (auto &listed : consumers_) {
     if (listed.isPrepared) {
-      listed.output->close();
+      listed.consumer->close();
       listed.isPrepared = false;
     }
   }
-  return Detached{.fileWriter = std::exchange(file_, {}).output};
+  return Detached{.fileWriter = std::exchange(file_, {}).consumer};
 }
 
-Result<FileInfo, std::string> RecorderOutputs::finalize(Detached detached) {
+Result<FileInfo, std::string> RecorderConsumers::finalize(Detached detached) {
   if (detached.fileWriter == nullptr) {
     return Ok(FileInfo{});
   }
@@ -129,7 +129,7 @@ Result<FileInfo, std::string> RecorderOutputs::finalize(Detached detached) {
       });
 }
 
-Result<NoneType, std::string> RecorderOutputs::enableFile(
+Result<NoneType, std::string> RecorderConsumers::enableFile(
     std::shared_ptr<AudioFileProperties> properties) {
   if (properties == nullptr) {
     return Err("File output requires file properties");
@@ -143,89 +143,90 @@ Result<NoneType, std::string> RecorderOutputs::enableFile(
     return Err(outputSpecResult.unwrap_err());
   }
 
-  std::scoped_lock lock(outputsMutex_);
+  std::scoped_lock lock(consumersMutex_);
   fileProperties_ = std::move(properties);
   return Ok(None);
 }
 
-RecorderOutputs::Detached RecorderOutputs::disableFile() {
-  std::scoped_lock lock(outputsMutex_);
+RecorderConsumers::Detached RecorderConsumers::disableFile() {
+  std::scoped_lock lock(consumersMutex_);
   fileProperties_ = nullptr;
-  return Detached{.fileWriter = std::exchange(file_, {}).output};
+  return Detached{.fileWriter = std::exchange(file_, {}).consumer};
 }
 
-Result<NoneType, std::string> RecorderOutputs::add(
-    const std::shared_ptr<RecorderOutput> &output,
+Result<NoneType, std::string> RecorderConsumers::add(
+    const std::shared_ptr<AudioConsumer> &consumer,
     const std::optional<StreamFormat> &currentFormat) {
-  if (output == nullptr) {
-    return Err("Recorder output is unavailable.");
+  if (consumer == nullptr) {
+    return Err("Recorder consumer is unavailable.");
   }
 
-  std::scoped_lock lock(outputsMutex_);
-  const bool isListed = std::ranges::any_of(
-      outputs_, [&output](const ListedOutput &listed) { return listed.output == output; });
+  std::scoped_lock lock(consumersMutex_);
+  const bool isListed = std::ranges::any_of(consumers_, [&consumer](const ListedConsumer &listed) {
+    return listed.consumer == consumer;
+  });
   if (isListed) {
-    return Err("Recorder output is already added.");
+    return Err("Recorder consumer is already added.");
   }
 
-  ListedOutput listed{.output = output};
+  ListedConsumer listed{.consumer = consumer};
   if (currentFormat.has_value()) {
-    auto prepareResult = output->prepare(*currentFormat);
+    auto prepareResult = consumer->prepare(*currentFormat);
     if (prepareResult.is_err()) {
       return prepareResult;
     }
     listed.isPrepared = true;
   }
 
-  outputs_.push_back(std::move(listed));
+  consumers_.push_back(std::move(listed));
   return Ok(None);
 }
 
-void RecorderOutputs::remove(const std::shared_ptr<RecorderOutput> &output) {
+void RecorderConsumers::remove(const std::shared_ptr<AudioConsumer> &consumer) {
   bool wasPrepared = false;
 
   {
-    std::scoped_lock lock(outputsMutex_);
-    auto listed = std::ranges::find(outputs_, output, &ListedOutput::output);
-    if (listed == outputs_.end()) {
+    std::scoped_lock lock(consumersMutex_);
+    auto listed = std::ranges::find(consumers_, consumer, &ListedConsumer::consumer);
+    if (listed == consumers_.end()) {
       return;
     }
     wasPrepared = listed->isPrepared;
-    outputs_.erase(listed);
+    consumers_.erase(listed);
   }
 
   // Unlisted, so the worker no longer reaches it.
   if (wasPrepared) {
-    output->close();
+    consumer->close();
   }
 }
 
-Result<NoneType, std::string> RecorderOutputs::startWorker(const StreamFormat &format) {
+Result<NoneType, std::string> RecorderConsumers::startWorker(const StreamFormat &format) {
   if (!worker_.start(format)) {
-    return Err("Failed to preallocate recorder output buffers");
+    return Err("Failed to preallocate recorder consumer buffers");
   }
   return Ok(None);
 }
 
-void RecorderOutputs::deliver(PendingFrames pending) {
+void RecorderConsumers::deliver(PendingFrames pending) {
   if (pending.buffer == nullptr) {
     return;
   }
 
-  const auto writeTo = [this, &pending](RecorderOutput &output) {
-    auto written = output.write(*pending.buffer, pending.numFrames);
-    if (written.is_err() && errorEvent_ != nullptr) {
-      errorEvent_->dispatch(StringPayload{.name = "message", .reason = written.unwrap_err()});
+  const auto feed = [this, &pending](AudioConsumer &consumer) {
+    auto consumed = consumer.consume(*pending.buffer, pending.numFrames);
+    if (consumed.is_err() && errorEvent_ != nullptr) {
+      errorEvent_->dispatch(StringPayload{.name = "message", .reason = consumed.unwrap_err()});
     }
   };
 
-  std::scoped_lock lock(outputsMutex_);
+  std::scoped_lock lock(consumersMutex_);
   if (file_.isPrepared) {
-    writeTo(*file_.output);
+    feed(*file_.consumer);
   }
-  for (const auto &listed : outputs_) {
+  for (const auto &listed : consumers_) {
     if (listed.isPrepared) {
-      writeTo(*listed.output);
+      feed(*listed.consumer);
     }
   }
 }
