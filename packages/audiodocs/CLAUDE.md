@@ -311,6 +311,12 @@ was missing in 0.13.1, and 0.13.1 ships no web `PannerNode` at all); reach for t
 behind the wrappers (`ctx.context`, `node.node`) for documentation-only plumbing such as meters.
 `usePannerPlayground` splices a browser `PannerNode` between two wrapper gains this way.
 
+Pitfall: since 1.0 the web `AudioContext` wraps `listener.positionX` … `upZ` in `AudioParam`s while
+it is constructed, and Firefox has none of those attributes (only `setPosition` / `setOrientation`),
+so every context would throw there. `src/polyfills/audioListenerParams.ts` (a `clientModules` entry,
+loaded before any page code) fills them in with facades that remember the pose and apply
+automation immediately. Do not remove it until Firefox ships listener `AudioParam`s.
+
 `PeriodicWave` is not a node, so its playground (`PeriodicWaveExample/`) follows the
 `OscillatorExample` pattern (own context, play button, waveform) instead of `useEffectPlayground`.
 

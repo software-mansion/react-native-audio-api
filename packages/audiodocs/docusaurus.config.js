@@ -162,6 +162,7 @@ const config = {
     },
   },
     clientModules: [
+    require.resolve('./src/polyfills/audioListenerParams.ts'),
     require.resolve('./src/wasm-loader.js'),
   ],
 
