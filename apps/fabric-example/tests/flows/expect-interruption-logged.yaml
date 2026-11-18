@@ -1,0 +1,4 @@
+executionPrerequisite: Audio I/O Playground is in the foreground, shortly after its audio session was interrupted
+steps:
+  - echo: The log panel lists its newest lines first and only the visible ones are readable
+  - await: { text: { in: { id: log }, contains: "'interruption' event" } }

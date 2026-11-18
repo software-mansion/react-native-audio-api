@@ -99,3 +99,23 @@ One of the alternative testing frameworks is [Appium](https://github.com/appium/
 * It supports physical iPhones and Android devices.
 * The tests can be written in a programming language (including JS and Java), which allows for extending them with custom instructions such as a prompt for a human to do something and provide feedback.
 * It can be controlled by agents through [`appium-mcp`](https://github.com/appium/appium-mcp).
+
+## Running the tests
+The "split a flow into multiple files" approach is implemented in `apps/fabric-example/tests/`. Each test is a bash script that alternates between Argent fragments from `flows/` and prompts answered in the terminal.
+
+Build and start FabricExample on the device (`yarn ios`, with Metro running), install the Argent CLI (`npm i -g @swmansion/argent`), then run a test from the repository root:
+
+```sh
+bash apps/fabric-example/tests/recording-and-playback.sh
+```
+
+| Test | Device | The person |
+|---|---|---|
+| `recording-and-playback.sh` | simulator or iPhone | speaks, then judges the played take |
+| `recording-interruption.sh` | physical iPhone | speaks, interrupts the recording, then judges the played take |
+
+With more than one simulator booted, or for a physical iPhone, set `E2E_DEVICE=<udid>`. A build signed for a physical iPhone also needs `APP_BUNDLE_ID`. The iOS simulator never interrupts an audio session, so the interruption test only passes on hardware.
+
+On a simulator each run is recorded with `apps/fabric-example/scripts/record-session-ios.sh` and the log path is printed as `Log: <path>` at the end. The test's flows, prompts, answers and the notes the person typed are written as `[test]` lines next to the library's native logs. A run on a physical iPhone is not recorded, because the recorder streams logs through `simctl`.
+
+A test stops with a non-zero exit code at the first failed fragment, unanswered prompt or "n" answer, and prints `PASS: <test>` otherwise. `apps/fabric-example/tests/README.md` describes how to write a new test.
