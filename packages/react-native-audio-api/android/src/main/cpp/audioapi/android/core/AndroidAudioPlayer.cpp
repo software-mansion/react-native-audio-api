@@ -198,14 +198,26 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
 
   keepAudioThreadOnOneCore();
 
+  // Oboe counts a device write into getFramesWritten() only after the device callback returns.
+  const auto framesWritten = oboeStream->getFramesWritten();
+  if (framesWritten != lastFramesWritten_) {
+    // Oboe's block adapter holds back less than one block of what we rendered for the previous
+    // write. Anything else means the position jumped (new stream, AAudio skipping an underrun).
+    const auto framesHeldByAdapter = streamFramesDelivered_ - framesWritten;
+    if (framesHeldByAdapter < 0 || framesHeldByAdapter >= RENDER_QUANTUM_SIZE) {
+      streamFramesDelivered_ = framesWritten;
+    }
+    lastFramesWritten_ = framesWritten;
+  }
+
   if (isRunning_.load(std::memory_order_acquire)) {
-    // Oboe counts this buffer into getFramesWritten() only after the callback returns.
     publishOutputAnchor(
         {.contextFrame = renderedFrames_,
          .hostTimeNs = steadyClockNowNs(),
-         .streamFrame = oboeStream->getFramesWritten(),
+         .streamFrame = streamFramesDelivered_,
          .isValid = true});
   }
+  streamFramesDelivered_ += numFrames;
 
   const CurrentRenderScope renderScope(currentRenders_);
 

@@ -70,6 +70,13 @@ class AndroidAudioPlayer : public AudioPlayer,
   uint32_t callbacksUntilAffinityCheck_{0};
   /// `steady_clock` time of the last `startStreamLocked`; guarded by `streamMutex_`.
   std::int64_t streamStartedAtNs_ = 0;
+  /// Stream position of the next frame `onAudioReady` renders. On API 30 and lower Oboe splits
+  /// one device write into several fixed-size callbacks, which all see the same
+  /// `getFramesWritten()`. Audio Thread only.
+  std::int64_t streamFramesDelivered_ = 0;
+  /// `getFramesWritten()` seen by the previous callback; a change marks a new device write.
+  /// Audio Thread only.
+  std::int64_t lastFramesWritten_ = -1;
 
   bool openAudioStreamLocked();
   bool rebuildStreamLocked();
