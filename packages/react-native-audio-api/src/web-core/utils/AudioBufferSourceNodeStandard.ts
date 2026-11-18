@@ -2,7 +2,7 @@ import { InvalidStateError } from '../../errors';
 import AudioBuffer from '../AudioBuffer.web';
 import AudioNode from '../AudioNode.web';
 import AudioParam from '../AudioParam.web';
-import BaseAudioContext from '../BaseAudioContext.web';
+import type BaseAudioContext from '../BaseAudioContext.web';
 import { AudioBufferSourceNodeBackend } from '../types.web';
 
 export default class AudioBufferSourceNodeStandard implements AudioBufferSourceNodeBackend {
