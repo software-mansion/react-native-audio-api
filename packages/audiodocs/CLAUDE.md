@@ -319,6 +319,12 @@ Pitfall: the 1.0 web entry re-exports `BaseAudioContext`, a type-only interface 
 an empty module; `docusaurus.config.js` disables `reexportExportsPresence` for
 `react-native-audio-api` so webpack does not fail the client build on it.
 
+Pitfall: since 1.0 the web `AudioContext` wraps `listener.positionX` … `upZ` in `AudioParam`s while
+it is constructed, and Firefox has none of those attributes (only `setPosition` / `setOrientation`),
+so every context would throw there. `src/polyfills/audioListenerParams.ts` (a `clientModules` entry,
+loaded before any page code) fills them in with facades that remember the pose and apply
+automation immediately. Do not remove it until Firefox ships listener `AudioParam`s.
+
 `PeriodicWave` is not a node, so its playground (`PeriodicWaveExample/`) follows the
 `OscillatorExample` pattern (own context, play button, waveform) instead of `useEffectPlayground`.
 
