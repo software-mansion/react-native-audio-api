@@ -84,6 +84,10 @@ JSI_PROPERTY_GETTER_IMPL(AudioDecodeStreamHostObject, duration) {
 // TypeScript `AudioDecodeStream` forwards one operation at a time, so the queue never holds
 // more than that operation and a `close`.
 JSI_HOST_FUNCTION_IMPL(AudioDecodeStreamHostObject, read) {
+  if (promiseVendor_ == nullptr) {
+    throw jsi::JSError(runtime, "Cannot read from a closed decode stream");
+  }
+
   // Zero, which the stream rejects, for anything that is not a positive frame count.
   const double requested = args[0].getNumber();
   const auto frameCount =
@@ -105,6 +109,10 @@ JSI_HOST_FUNCTION_IMPL(AudioDecodeStreamHostObject, read) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioDecodeStreamHostObject, seek) {
+  if (promiseVendor_ == nullptr) {
+    throw jsi::JSError(runtime, "Cannot seek in a closed decode stream");
+  }
+
   const auto seconds = args[0].getNumber();
 
   return promiseVendor_->createAsyncPromise([stream = stream_, seconds]() -> PromiseResolver {
@@ -120,7 +128,16 @@ JSI_HOST_FUNCTION_IMPL(AudioDecodeStreamHostObject, seek) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioDecodeStreamHostObject, close) {
+  if (lane_ == nullptr) {
+    return jsi::Value::undefined();
+  }
+
   lane_->schedule([stream = stream_]() { stream->close(); });
+  // Nothing runs on the lane after a close, so it is let go now rather than when the
+  // collector reaches this object: a closed stream does not keep a worker thread. Its deleter
+  // lets the close run, then joins the worker on a thread of its own.
+  promiseVendor_.reset();
+  lane_.reset();
   return jsi::Value::undefined();
 }
 

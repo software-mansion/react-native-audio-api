@@ -16,7 +16,7 @@ using namespace facebook;
 /// @brief JS handle on an open `AudioDecodeStream`.
 /// @note `read`, `seek` and `close` run on a lane owned by this object, in the order JS called
 /// them: the stream is never touched by two threads at once, and a `close` waits for the reads
-/// requested before it.
+/// requested before it. `close` gives the lane up: `read` and `seek` throw afterwards.
 class AudioDecodeStreamHostObject : public HostObject {
  public:
   explicit AudioDecodeStreamHostObject(

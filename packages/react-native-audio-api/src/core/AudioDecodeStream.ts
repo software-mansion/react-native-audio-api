@@ -1,3 +1,4 @@
+import { AudioApiError } from '../errors';
 import { IAudioDecodeStream } from '../jsi-interfaces';
 import {
   assertValidDecodeStreamFrameCount,
@@ -35,6 +36,9 @@ export default class AudioDecodeStream {
   private lastOperation: Promise<void> = Promise.resolve();
 
   /** @internal */
+  private closed: boolean = false;
+
+  /** @internal */
   constructor(stream: IAudioDecodeStream) {
     this.stream = stream;
     this.sampleRate = stream.sampleRate;
@@ -53,6 +57,7 @@ export default class AudioDecodeStream {
    */
   public async read(frameCount: number): Promise<AudioBuffer | null> {
     assertValidDecodeStreamFrameCount(frameCount);
+    this.assertOpen('read from');
 
     return this.runInOrder(async () => {
       const buffer = await this.stream.read(frameCount);
@@ -69,6 +74,7 @@ export default class AudioDecodeStream {
    */
   public async seek(seconds: number): Promise<void> {
     assertValidDecodeStreamPosition(seconds);
+    this.assertOpen('seek in');
 
     return this.runInOrder(() => this.stream.seek(seconds));
   }
@@ -78,10 +84,21 @@ export default class AudioDecodeStream {
    * and seeks requested afterwards reject.
    */
   public close(): void {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
+
     this.runInOrder(() => Promise.resolve(this.stream.close())).catch(
       // Nothing awaits a close: a failure has no caller to reach.
       () => undefined
     );
+  }
+
+  private assertOpen(action: 'read from' | 'seek in'): void {
+    if (this.closed) {
+      throw new AudioApiError(`Cannot ${action} a closed decode stream`);
+    }
   }
 
   /** Runs `operation` once every operation requested before it has settled. */

@@ -6,7 +6,10 @@ import { IAudioDecoder } from '../jsi-interfaces';
 import { AudioDecodeStreamOptions, DecodeDataInput } from '../types';
 import { isRemoteSource, resolveLocalFilePath } from '../utils/paths';
 import { base64ToArrayBuffer } from '../utils';
-import { assertSupportedDecodeStringSource } from '../utils/validation';
+import {
+  assertSupportedDecodeStringSource,
+  assertValidDecodeStreamSampleRate,
+} from '../utils/validation';
 import AudioBuffer from './AudioBuffer';
 import AudioDecodeStream from './AudioDecodeStream';
 
@@ -85,10 +88,13 @@ class AudioDecoder {
       return response.arrayBuffer();
     }
 
+    // A bundled asset is named after its resource (asset_example_file): a
+    // file:// URI or an absolute path is a file, which the reader of bundled
+    // assets cannot open.
+    const isFile =
+      stringSource.startsWith('file://') || stringSource.startsWith('/');
     const useAndroidBundledAssetReader =
-      Platform.OS === 'android' &&
-      !stringSource.startsWith('file://') &&
-      !__DEV__;
+      Platform.OS === 'android' && !isFile && !__DEV__;
 
     // special workaround, because android bundled assets are passed as f.e. asset_example_file
     // which has to be handled on native side and extension is not passed with it so decode using memory
@@ -133,6 +139,9 @@ class AudioDecoder {
     input: DecodeDataInput,
     options: AudioDecodeStreamOptions = {}
   ): Promise<AudioDecodeStream> {
+    // The native side converts the rate to an integer, which is undefined for
+    // a NaN, an infinity or a value out of range.
+    assertValidDecodeStreamSampleRate(options.sampleRate);
     const sampleRate = options.sampleRate ?? 0;
 
     // Before any await, for the reason given in decodeAudioDataImplementation.

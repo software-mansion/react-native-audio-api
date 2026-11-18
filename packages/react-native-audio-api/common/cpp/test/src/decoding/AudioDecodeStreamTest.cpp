@@ -292,6 +292,22 @@ TEST(AudioDecodeStreamTest, ReadsFromAMemoryBlock) {
   std::remove(path.c_str());
 }
 
+TEST(AudioDecodeStreamTest, RejectsASampleRateNoDecoderCanTake) {
+  const std::string path = writeRampWavFile("decode-stream-sample-rate.wav");
+  const auto bytes = readFileBytes(path);
+
+  for (const float rate :
+       {std::numeric_limits<float>::quiet_NaN(),
+        std::numeric_limits<float>::infinity(),
+        -1.0F,
+        1.0e12F}) {
+    EXPECT_TRUE(audiodecoding::AudioDecodeStream::openWithFilePath(path, rate).is_err());
+    EXPECT_TRUE(audiodecoding::AudioDecodeStream::openWithMemoryBlock(bytes, rate).is_err());
+  }
+
+  std::remove(path.c_str());
+}
+
 TEST(AudioDecodeStreamTest, RejectsASourceThatCannotBeDecoded) {
   const std::vector<uint8_t> invalid = {0x00, 0x01, 0x02};
 

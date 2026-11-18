@@ -11,9 +11,26 @@
 
 namespace audioapi::audiodecoding {
 
+namespace {
+
+/// The highest rate the Web Audio API lets a context run at.
+constexpr float MAX_OUTPUT_SAMPLE_RATE = 768000.0F;
+constexpr auto INVALID_SAMPLE_RATE_MESSAGE = "Cannot open a decode stream: invalid sample rate";
+
+/// Whether @p sampleRate can be handed to a decoder: `0` keeps the rate of the source.
+/// Converting a NaN, an infinity or a value out of range to `int` is undefined behavior.
+bool isOutputSampleRate(float sampleRate) {
+  return std::isfinite(sampleRate) && sampleRate >= 0.0F && sampleRate <= MAX_OUTPUT_SAMPLE_RATE;
+}
+
+} // namespace
+
 AudioDecodeStream::OpenResult AudioDecodeStream::openWithFilePath(
     const std::string &path,
     float sampleRate) {
+  if (!isOutputSampleRate(sampleRate)) {
+    return Err(INVALID_SAMPLE_RATE_MESSAGE);
+  }
   return open(
       decoding::LocalFileSource{.path = path, .sampleRate = static_cast<int>(sampleRate)},
       0,
@@ -24,6 +41,9 @@ AudioDecodeStream::OpenResult AudioDecodeStream::openWithMemoryBlock(
     std::vector<uint8_t> encodedBytes,
     float sampleRate) {
   constexpr auto errorMessage = "Cannot decode audio data: unsupported or invalid audio format";
+  if (!isOutputSampleRate(sampleRate)) {
+    return Err(INVALID_SAMPLE_RATE_MESSAGE);
+  }
   if (encodedBytes.empty()) {
     return Err(errorMessage);
   }

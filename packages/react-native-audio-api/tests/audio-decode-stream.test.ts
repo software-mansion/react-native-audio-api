@@ -168,6 +168,48 @@ describe('openAudioDecodeStream', () => {
     expect(decoder.openStreamWithMemoryBlock).not.toHaveBeenCalled();
   });
 
+  // The native side converts the rate to an integer, which is undefined for
+  // these values.
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, -44100, 0, 1e12])(
+    'rejects a sample rate of %p without reaching the decoder',
+    async (sampleRate) => {
+      const decoder = installDecoder(createNativeStream());
+      const { openAudioDecodeStream } = loadAudioDecoder();
+
+      await expect(
+        openAudioDecodeStream('/tmp/audio.wav', { sampleRate })
+      ).rejects.toThrow('sampleRate must be a number in [3000, 768000]');
+      await expect(
+        openAudioDecodeStream(new ArrayBuffer(8), { sampleRate })
+      ).rejects.toThrow('sampleRate must be a number in [3000, 768000]');
+      expect(decoder.openStreamWithFilePath).not.toHaveBeenCalled();
+      expect(decoder.openStreamWithMemoryBlock).not.toHaveBeenCalled();
+    }
+  );
+
+  // In an Android release build, a bundled asset comes as the name of its
+  // resource, read through the native module: a path is not one.
+  it('opens an absolute path as a file in an Android release build', async () => {
+    const decoder = installDecoder(createNativeStream());
+    const reactNative = require('react-native') as {
+      Platform: { OS: string };
+    };
+    reactNative.Platform.OS = 'android';
+    const globalWithDev = globalThis as { __DEV__?: boolean };
+    const wasDev = globalWithDev.__DEV__;
+    globalWithDev.__DEV__ = false;
+    const { openAudioDecodeStream } = loadAudioDecoder();
+
+    await openAudioDecodeStream('/data/user/0/app/files/audio.wav');
+    globalWithDev.__DEV__ = wasDev;
+
+    expect(decoder.openStreamWithFilePath).toHaveBeenCalledWith(
+      '/data/user/0/app/files/audio.wav',
+      0
+    );
+    expect(decoder.openStreamWithMemoryBlock).not.toHaveBeenCalled();
+  });
+
   it('rejects when the source cannot be opened', async () => {
     const decoder = installDecoder(createNativeStream());
     decoder.openStreamWithFilePath.mockRejectedValue(
@@ -290,6 +332,27 @@ describe('AudioDecodeStream', () => {
       null,
     ]);
     await settleOperations();
+    expect(nativeStream.close).toHaveBeenCalledTimes(1);
+  });
+
+  // The native stream gives its worker thread up when it is closed: nothing
+  // may reach it afterwards.
+  it('rejects reads and seeks once closed, without reaching the native stream', async () => {
+    const nativeStream = createNativeStream();
+    const stream = await openStream(nativeStream);
+
+    stream.close();
+    stream.close();
+
+    await expect(stream.read(512)).rejects.toThrow(
+      'Cannot read from a closed decode stream'
+    );
+    await expect(stream.seek(1)).rejects.toThrow(
+      'Cannot seek in a closed decode stream'
+    );
+    await settleOperations();
+    expect(nativeStream.read).not.toHaveBeenCalled();
+    expect(nativeStream.seek).not.toHaveBeenCalled();
     expect(nativeStream.close).toHaveBeenCalledTimes(1);
   });
 

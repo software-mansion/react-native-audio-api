@@ -137,7 +137,8 @@ A stream only holds the chunk being read.
 
 #### Returns `Promise<AudioDecodeStream>`
 
-Rejects when the source cannot be opened, with the errors [`decodeAudioData`](./decoding.mdx#decodeaudiodata) rejects with.
+Rejects when the source cannot be opened, with the errors [`decodeAudioData`](./decoding.mdx#decodeaudiodata) rejects with,
+and with a `RangeError` when `sampleRate` is not a number between `3000` and `768000`.
 
 :::info
 A remote source is downloaded before it is opened, and encoded bytes are kept in memory while the stream is open.
@@ -208,7 +209,8 @@ The chunks of a stream, put end to end, hold exactly the samples [`decodeAudioDa
 An [`AudioBuffer`](../sources/audio-buffer.mdx) of `frameCount` frames, shorter only when the source ends inside it, and `null` once the source has ended.
 
 A source the decoder fails on midway also ends with `null`, as [`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns what was decoded before the failure.
-Compare the frames read with `duration * sampleRate` to tell a truncated source from a complete one.
+A count of frames read well below `duration * sampleRate` hints at a truncated source. It is only a hint:
+`duration` is `0` when the source does not report one, and the duration of a container is an estimate.
 
 ##### Errors
 

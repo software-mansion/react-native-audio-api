@@ -5,6 +5,7 @@ import {
   DecodeDataInput,
 } from '../types';
 import { base64ToArrayBuffer } from '../utils';
+import { assertValidDecodeStreamSampleRate } from '../utils/validation';
 import AudioBuffer from './AudioBuffer.web';
 import AudioDecodeStream from './AudioDecodeStream.web';
 import OfflineAudioContext from './OfflineAudioContext.web';
@@ -91,6 +92,8 @@ export default class AudioDecoder {
     input: DecodeDataInput,
     options: AudioDecodeStreamOptions = {}
   ): Promise<AudioDecodeStream> {
+    assertValidDecodeStreamSampleRate(options.sampleRate);
+
     const decoded = await this.decodeAudioDataInstance(
       input,
       options.sampleRate,

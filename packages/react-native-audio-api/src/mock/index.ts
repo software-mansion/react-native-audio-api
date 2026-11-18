@@ -1198,7 +1198,18 @@ const openAudioDecodeStream = (
   _input: DecodeDataInput,
   options?: AudioDecodeStreamOptions
 ): Promise<AudioDecodeStreamMock> => {
-  return Promise.resolve(new AudioDecodeStreamMock(options?.sampleRate));
+  const sampleRate = options?.sampleRate;
+  if (
+    sampleRate !== undefined &&
+    (!Number.isFinite(sampleRate) || sampleRate < 3000 || sampleRate > 768000)
+  ) {
+    return Promise.reject(
+      new RangeErrorMock(
+        `sampleRate must be a number in [3000, 768000]: ${sampleRate}`
+      )
+    );
+  }
+  return Promise.resolve(new AudioDecodeStreamMock(sampleRate));
 };
 
 const decodePCMInBase64 = (_base64Data: string): Promise<AudioBufferMock> => {

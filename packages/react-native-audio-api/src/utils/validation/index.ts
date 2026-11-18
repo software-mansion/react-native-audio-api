@@ -47,4 +47,5 @@ export {
 export {
   assertValidDecodeStreamFrameCount,
   assertValidDecodeStreamPosition,
+  assertValidDecodeStreamSampleRate,
 } from './decodeStream';

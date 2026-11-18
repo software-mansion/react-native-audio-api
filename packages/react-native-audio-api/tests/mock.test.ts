@@ -285,6 +285,14 @@ describe('React Native Audio API Mocks', () => {
       });
     });
 
+    it('should reject a decode stream at an invalid sample rate', async () => {
+      await expect(
+        MockAPI.openAudioDecodeStream(new ArrayBuffer(8), {
+          sampleRate: Number.NaN,
+        })
+      ).rejects.toThrow('sampleRate must be a number');
+    });
+
     it('should hand out a decode stream in chunks until it ends', async () => {
       const stream = await MockAPI.openAudioDecodeStream(new ArrayBuffer(8));
 
