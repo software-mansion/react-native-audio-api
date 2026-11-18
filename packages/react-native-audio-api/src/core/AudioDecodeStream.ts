@@ -24,6 +24,16 @@ export default class AudioDecodeStream {
   /** @internal */
   private readonly stream: IAudioDecodeStream;
 
+  /**
+   * Settles when the operation requested last has. Each operation waits for it
+   * before reaching the native stream, whose serial lane then holds one of them
+   * at a time: a burst of reads waits here, instead of blocking the JS thread
+   * on a full lane.
+   *
+   * @internal
+   */
+  private lastOperation: Promise<void> = Promise.resolve();
+
   /** @internal */
   constructor(stream: IAudioDecodeStream) {
     this.stream = stream;
@@ -44,8 +54,10 @@ export default class AudioDecodeStream {
   public async read(frameCount: number): Promise<AudioBuffer | null> {
     assertValidDecodeStreamFrameCount(frameCount);
 
-    const buffer = await this.stream.read(frameCount);
-    return buffer === null ? null : new AudioBuffer(buffer);
+    return this.runInOrder(async () => {
+      const buffer = await this.stream.read(frameCount);
+      return buffer === null ? null : new AudioBuffer(buffer);
+    });
   }
 
   /**
@@ -58,7 +70,7 @@ export default class AudioDecodeStream {
   public async seek(seconds: number): Promise<void> {
     assertValidDecodeStreamPosition(seconds);
 
-    await this.stream.seek(seconds);
+    return this.runInOrder(() => this.stream.seek(seconds));
   }
 
   /**
@@ -66,6 +78,22 @@ export default class AudioDecodeStream {
    * and seeks requested afterwards reject.
    */
   public close(): void {
-    this.stream.close();
+    this.runInOrder(() => Promise.resolve(this.stream.close())).catch(
+      // Nothing awaits a close: a failure has no caller to reach.
+      () => undefined
+    );
+  }
+
+  /** Runs `operation` once every operation requested before it has settled. */
+  private runInOrder<Result>(
+    operation: () => Promise<Result>
+  ): Promise<Result> {
+    const result = this.lastOperation.then(operation);
+    // A failed operation must not fail the ones requested after it.
+    this.lastOperation = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
   }
 }

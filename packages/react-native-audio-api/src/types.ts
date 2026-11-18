@@ -351,7 +351,7 @@ export type DecodeDataInput = number | string | ArrayBuffer;
 export interface AudioDecodeStreamOptions {
   /**
    * Sample rate of the decoded audio, in Hz. Defaults to the sample rate of the
-   * source.
+   * source; on web, where the browser resamples what it decodes, to 44100.
    */
   sampleRate?: number;
   /** Options of the request that downloads a remote source. */

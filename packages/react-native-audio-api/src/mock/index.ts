@@ -22,6 +22,7 @@ import type {
   ConstantSourceOptions,
   ConvolverOptions,
   DelayOptions,
+  AudioDecodeStreamOptions,
   DecodeDataInput,
   GainOptions,
   OscillatorOptions,
@@ -1123,12 +1124,16 @@ const decodeAudioData = (_audioData: ArrayBuffer): Promise<AudioBufferMock> => {
 
 /** Hands out the one second of silence the mocked `decodeAudioData` returns. */
 class AudioDecodeStreamMock {
-  public readonly sampleRate: number = 44100;
+  public readonly sampleRate: number;
   public readonly numberOfChannels: number = 2;
   public readonly duration: number = 1;
 
   private position: number = 0;
   private closed: boolean = false;
+
+  constructor(sampleRate: number = 44100) {
+    this.sampleRate = sampleRate;
+  }
 
   private get length(): number {
     return this.duration * this.sampleRate;
@@ -1190,9 +1195,10 @@ class AudioDecodeStreamMock {
 }
 
 const openAudioDecodeStream = (
-  _input: DecodeDataInput
+  _input: DecodeDataInput,
+  options?: AudioDecodeStreamOptions
 ): Promise<AudioDecodeStreamMock> => {
-  return Promise.resolve(new AudioDecodeStreamMock());
+  return Promise.resolve(new AudioDecodeStreamMock(options?.sampleRate));
 };
 
 const decodePCMInBase64 = (_base64Data: string): Promise<AudioBufferMock> => {

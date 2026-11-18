@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 #include <test/src/utils/TestWavFile.h>
 
+#include <unistd.h>
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <limits>
@@ -20,8 +22,13 @@ constexpr uint32_t sampleRate = 48000;
 constexpr uint16_t channelCount = 2;
 constexpr size_t frameCount = sampleRate / 2;
 
+/// A path of its own for each test of each process: instances of a parameterized test, and
+/// `ctest -j` runs of the same binary, would otherwise write and remove the same file.
 std::string testFilePath(const std::string &name) {
-  return ::testing::TempDir() + name;
+  const auto *test = ::testing::UnitTest::GetInstance()->current_test_info();
+  std::string scope = std::string(test->test_suite_name()) + "-" + test->name();
+  std::replace(scope.begin(), scope.end(), '/', '-');
+  return ::testing::TempDir() + std::to_string(::getpid()) + "-" + scope + "-" + name;
 }
 
 float leftSampleAt(size_t frame) {

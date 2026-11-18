@@ -273,6 +273,18 @@ describe('React Native Audio API Mocks', () => {
   });
 
   describe('Utility Functions', () => {
+    it('should open a decode stream at the requested sample rate', async () => {
+      const stream = await MockAPI.openAudioDecodeStream(new ArrayBuffer(8), {
+        sampleRate: 22050,
+      });
+
+      expect(stream.sampleRate).toBe(22050);
+      await expect(stream.read(30000)).resolves.toMatchObject({
+        length: 22050,
+        sampleRate: 22050,
+      });
+    });
+
     it('should hand out a decode stream in chunks until it ends', async () => {
       const stream = await MockAPI.openAudioDecodeStream(new ArrayBuffer(8));
 

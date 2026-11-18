@@ -61,6 +61,10 @@ const installDecoder = (stream: IAudioDecodeStream) => {
   return decoder;
 };
 
+/** Lets the operations a stream has queued reach the native stream. */
+const settleOperations = () =>
+  new Promise<void>((resolve) => setImmediate(resolve));
+
 const loadAudioDecoder = (): AudioDecoderExports => {
   return require('../src/core/AudioDecoder') as AudioDecoderExports;
 };
@@ -129,9 +133,11 @@ describe('openAudioDecodeStream', () => {
     const { openAudioDecodeStream } = loadAudioDecoder();
     const arrayBuffer = new ArrayBuffer(8);
     const fetchOptions = { headers: { Authorization: 'token' } };
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValue({ arrayBuffer: () => Promise.resolve(arrayBuffer) });
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () => Promise.resolve(arrayBuffer),
+    });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     await openAudioDecodeStream('https://example.com/audio.mp3', {
@@ -144,6 +150,22 @@ describe('openAudioDecodeStream', () => {
     );
     expect(decoder.openStreamWithMemoryBlock).toHaveBeenCalledTimes(1);
     expect(decoder.openStreamWithFilePath).not.toHaveBeenCalled();
+  });
+
+  // An error page is not audio: it would fail later, as an invalid format.
+  it('rejects a download the server refused, with its status', async () => {
+    const decoder = installDecoder(createNativeStream());
+    const { openAudioDecodeStream } = loadAudioDecoder();
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    }) as unknown as typeof fetch;
+
+    await expect(
+      openAudioDecodeStream('https://example.com/missing.mp3')
+    ).rejects.toThrow('HTTP 404');
+    expect(decoder.openStreamWithMemoryBlock).not.toHaveBeenCalled();
   });
 
   it('rejects when the source cannot be opened', async () => {
@@ -229,8 +251,60 @@ describe('AudioDecodeStream', () => {
     const stream = await openStream(nativeStream);
 
     stream.close();
+    await settleOperations();
 
     expect(nativeStream.close).toHaveBeenCalledTimes(1);
+  });
+
+  // The native lane blocks its caller, the JS thread, once its queue is full:
+  // a burst of reads must wait in JS.
+  it('hands the native stream one operation at a time, in order', async () => {
+    const nativeStream = createNativeStream();
+    const pendingReads: Array<(buffer: IAudioBuffer | null) => void> = [];
+    nativeStream.read.mockImplementation(
+      () => new Promise((resolve) => pendingReads.push(resolve))
+    );
+    const stream = await openStream(nativeStream);
+
+    const reads = [1024, 2048, 4096].map((frameCount) =>
+      stream.read(frameCount)
+    );
+    stream.close();
+    await settleOperations();
+
+    expect(nativeStream.read.mock.calls).toEqual([[1024]]);
+
+    pendingReads[0]!(createNativeBuffer(1024));
+    await settleOperations();
+    expect(nativeStream.read.mock.calls).toEqual([[1024], [2048]]);
+    expect(nativeStream.close).not.toHaveBeenCalled();
+
+    pendingReads[1]!(createNativeBuffer(2048));
+    await settleOperations();
+    pendingReads[2]!(null);
+
+    const chunks = await Promise.all(reads);
+    expect(chunks.map((chunk) => chunk?.length ?? null)).toEqual([
+      1024,
+      2048,
+      null,
+    ]);
+    await settleOperations();
+    expect(nativeStream.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps reading after a read has failed', async () => {
+    const nativeStream = createNativeStream();
+    nativeStream.read
+      .mockRejectedValueOnce(new Error('Cannot decode'))
+      .mockResolvedValueOnce(createNativeBuffer(512));
+    const stream = await openStream(nativeStream);
+
+    const failed = stream.read(512);
+    const next = stream.read(512);
+
+    await expect(failed).rejects.toThrow('Cannot decode');
+    await expect(next).resolves.toMatchObject({ length: 512 });
   });
 });
 

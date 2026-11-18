@@ -60,10 +60,13 @@ export default class AudioDecoder {
     sampleRate: number,
     fetchOptions?: RequestInit
   ): Promise<AudioBuffer> {
-    const arrayBuffer = await fetch(url, fetchOptions).then((res) =>
-      res.arrayBuffer()
-    );
-    return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      throw new AudioApiError(
+        `Failed to download audio data: HTTP ${response.status}`
+      );
+    }
+    return this.decodeFromArrayBuffer(await response.arrayBuffer(), sampleRate);
   }
 
   public async decodeAudioDataInstance(

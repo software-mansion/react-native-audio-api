@@ -80,6 +80,9 @@ JSI_PROPERTY_GETTER_IMPL(AudioDecodeStreamHostObject, duration) {
   return {stream_->duration()};
 }
 
+// Scheduling on the lane waits when its queue is full, and these run on the JS thread. The
+// TypeScript `AudioDecodeStream` forwards one operation at a time, so the queue never holds
+// more than that operation and a `close`.
 JSI_HOST_FUNCTION_IMPL(AudioDecodeStreamHostObject, read) {
   // Zero, which the stream rejects, for anything that is not a positive frame count.
   const double requested = args[0].getNumber();

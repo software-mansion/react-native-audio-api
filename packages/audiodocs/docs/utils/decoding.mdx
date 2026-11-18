@@ -123,10 +123,12 @@ const buffer = await decodeAudioData(data, 4800, 2, true);
 ### `openAudioDecodeStream`
 
 Opens an audio source to decode it a few frames at a time, instead of as one [`AudioBuffer`](../sources/audio-buffer.mdx).
+Use it for work that goes through the audio once — waveforms, spectra, loudness, beat detection, speech recognition.
 
-[`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns the whole source as decoded samples, so its memory follows the duration of the audio:
-about 21 MB per minute of stereo sound at 44.1 kHz, whatever the size of the file. A stream only holds the chunk being read.
-Use it for work that goes through the audio once — waveforms, spectra, loudness, beat detection, speech recognition — on sources too long to hold decoded.
+:::tip
+[`decodeAudioData`](./decoding.mdx#decodeaudiodata) holds the whole source decoded: about 21 MB per minute of stereo sound at 44.1 kHz, whatever the size of the file.
+A stream only holds the chunk being read.
+:::
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
@@ -146,8 +148,8 @@ That is the size of the file, not of its decoded audio. To keep memory lowest, o
 
 | Parameter | Type | Default | Description |
 | :---: | :---: | :---: | :---- |
-| `sampleRate` <Optional /> | `number` | sample rate of the source | Sample rate of the decoded audio, in Hz. |
-| `fetchOptions` <Optional /> | `[RequestInit](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265)` | — | Additional fetch options when `input` is a remote URL (for example, auth headers). |
+| `sampleRate` <Optional /> | `number` | source rate | Sample rate of the decoded audio, in Hz. On web the default is `44100`. |
+| `fetchOptions` <Optional /> | [`RequestInit`](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265) | — | Fetch options for a remote `input` (for example, auth headers). |
 
 <details>
 <summary>Example computing a waveform without holding the decoded file</summary>
@@ -184,7 +186,7 @@ Returned by [`openAudioDecodeStream`](./decoding.mdx#openaudiodecodestream).
 
 | Name | Type | Description |
 | :----: | :----: | :-------- |
-| `sampleRate` <ReadOnly /> | `number` | Sample rate of the decoded audio, in Hz: the requested one, or the one of the source. |
+| `sampleRate` <ReadOnly /> | `number` | Sample rate of the decoded audio, in Hz: the requested one, or the default of [`AudioDecodeStreamOptions`](./decoding.mdx#audiodecodestreamoptions). |
 | `numberOfChannels` <ReadOnly /> | `number` | Number of channels of the decoded audio. |
 | `duration` <ReadOnly /> | `number` | Duration reported by the source, in seconds; `0` when it is unknown. |
 
@@ -193,7 +195,7 @@ Returned by [`openAudioDecodeStream`](./decoding.mdx#openaudiodecodestream).
 #### `read`
 
 Decodes the next frames of the source. Each read continues where the previous one stopped, and reads run one at a time, in the order they were requested.
-Await each read before requesting the next: reads queue behind one another, and requesting dozens at once blocks the JS thread until the decoder catches up.
+Reads requested together wait for one another without blocking the JS thread.
 
 The chunks of a stream, put end to end, hold exactly the samples [`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns for the same source and sample rate, whatever the chunk size.
 

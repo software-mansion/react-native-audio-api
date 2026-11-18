@@ -76,7 +76,13 @@ class AudioDecoder {
     assertSupportedDecodeStringSource(stringSource);
 
     if (isRemoteSource(stringSource)) {
-      return fetch(stringSource, fetchOptions).then((res) => res.arrayBuffer());
+      const response = await fetch(stringSource, fetchOptions);
+      if (!response.ok) {
+        throw new AudioApiError(
+          `Failed to download audio data: HTTP ${response.status}`
+        );
+      }
+      return response.arrayBuffer();
     }
 
     const useAndroidBundledAssetReader =
