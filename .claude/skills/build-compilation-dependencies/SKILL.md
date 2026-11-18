@@ -193,6 +193,7 @@ For full per-line analysis see [build-details.md](build-details.md#android-andro
 - Header search paths split: `pod_target_xcconfig` (library compilation) vs `xcconfig` (app consumers)
 - `rnaa_utils.rb` resolves dynamic paths at `pod install` time (not hardcoded)
 - JSI internals use distinct names (`HostObject`, `RuntimeInstanceCache`, `RuntimeObserver`) instead of generic names like `JsiHostObject` / `RuntimeAwareCache` / `RuntimeLifecycleMonitor` — `react-native-skia` publishes headers with those generic names and CocoaPods can resolve the wrong file when both libraries are in the same app
+- An intermittent `pod install` failure `ArgumentError - pathname contains null byte` (CocoaPods `project.rb`, `base_path.realdirpath`) is Ruby bug #22479. `File.realdirpath` can return a corrupted path for paths behind pnpm's relative `node_modules` symlinks when GC runs mid-call. The fabric-example Podfile patches `Pathname#realdirpath` to use `realpath` for existing paths. Remove the patch once CI's Ruby includes the fix (3.4.13+ / 4.0.10+). Upgrading CocoaPods, pinning Ruby 3.2, or cleaning Pods does not fix it.
 
 For full per-line analysis see [build-details.md](build-details.md#ios-rnaudioapipodspec--detailed-analysis).
 

@@ -10,6 +10,17 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+# File.realdirpath can return a path with NUL bytes behind pnpm's relative symlinks,
+# which crashes `pod install` (https://bugs.ruby-lang.org/issues/22479).
+# File.realpath does not have this bug.
+# TODO: Remove once CI's Ruby includes the fix (3.4.13+ / 4.0.10+).
+class ::Pathname
+  alias_method :realdirpath_with_gc_bug, :realdirpath
+  def realdirpath(*args)
+    exist? ? realpath(*args) : realdirpath_with_gc_bug(*args)
+  end
+end
+
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
