@@ -65,7 +65,7 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
 
     osc.start();
 
-    osc.onended = () => {
+    osc.onEnded = () => {
       if (osc === oscillatorRef.current) {
         setIsPlaying(false);
       }

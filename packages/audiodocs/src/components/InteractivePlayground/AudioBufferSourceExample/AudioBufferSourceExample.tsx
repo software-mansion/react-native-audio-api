@@ -43,7 +43,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
 
   const stopSound = useCallback(() => {
     if (bufferSourceRef.current) {
-      bufferSourceRef.current.onended = null; // Prevent onended from firing on manual stop
+      bufferSourceRef.current.onEnded = () => {}; // Prevent onEnded from firing on manual stop
       bufferSourceRef.current.stop();
       bufferSourceRef.current = null;
     }
@@ -77,7 +77,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
     bufferSourceRef.current = source;
     setIsPlaying(true);
 
-    source.onended = () => {
+    source.onEnded = () => {
       if (source === bufferSourceRef.current) {
         bufferSourceRef.current = null;
         setIsPlaying(false);

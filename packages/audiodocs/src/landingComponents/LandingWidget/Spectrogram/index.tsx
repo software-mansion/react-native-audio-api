@@ -13,7 +13,7 @@ const minFrequency = 80;
 
 interface SpectrogramRenderingContext {
   analyser: AnalyserNode;
-  fftOutput: Uint8Array;
+  fftOutput: Uint8Array<ArrayBuffer>;
   barWidth: number;
   bucketCount: number;
   totalBarHeight: number;

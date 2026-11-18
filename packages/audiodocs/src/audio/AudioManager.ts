@@ -61,7 +61,9 @@ class AudioManager {
     if (!this.eventListeners.has(type)) {
       this.eventListeners.set(type, []);
     }
-    this.eventListeners.get(type)?.push(listener);
+    // The map holds listeners of every event type; dispatchEvent only calls a listener
+    // with events of the type it was registered for.
+    this.eventListeners.get(type)?.push(listener as (event: AudioManagerEvent) => void);
   }
 
   addUpdateEventListener(id: string, listener: (event: AudioManagerUpdatePayload) => void) {

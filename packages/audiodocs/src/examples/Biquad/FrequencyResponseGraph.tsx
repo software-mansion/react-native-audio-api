@@ -128,7 +128,7 @@ const FrequencyResponseGraph: React.FC = () => {
     source.buffer = buffer;
     bufferSourceRef.current = source;
     source.connect(filterRef.current!);
-    source.onended = () => {
+    source.onEnded = () => {
       if (bufferSourceRef.current === source) {
         bufferSourceRef.current = null;
         setIsPlaying(false);
