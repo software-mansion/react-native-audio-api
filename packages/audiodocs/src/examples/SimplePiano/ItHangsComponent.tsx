@@ -39,22 +39,22 @@ const SimplePiano: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferMapRef = useRef<PR<AudioBuffer>>({});
 
-  const onKeyPressIn = async (which: KeyName) => {
+  const onKeyPressIn = (which: KeyName) => {
     const audioContext = audioContextRef.current;
-    let buffer = bufferMapRef.current[which];
+    const buffer = bufferMapRef.current[which];
 
     if (!audioContext || !buffer) {
       return;
     }
 
-    const source = await audioContext.createBufferSource();
+    const source = audioContext.createBufferSource();
     source.buffer = buffer;
 
     source.connect(audioContext.destination);
     source.start();
   };
 
-  const onKeyPressOut = (which: KeyName) => {};
+  const onKeyPressOut = (_which: KeyName) => {};
 
   useEffect(() => {
     if (!audioContextRef.current) {

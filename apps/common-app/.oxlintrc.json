@@ -1,7 +1,7 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
   "categories": {
-    "correctness": "off"
+    "correctness": "error"
   },
   "options": {
     "typeAware": true
@@ -215,12 +215,16 @@
     "react/rules-of-hooks": [
       "error"
     ],
-    "react/exhaustive-deps": [
-      "error"
-    ],
+    "react/exhaustive-deps": "warn",
     "typescript/dot-notation": [
       "warn"
     ],
-    "react-native/no-inline-styles": "warn"
+    "react-native/no-inline-styles": "warn",
+    "react/refs": "warn",
+    "react/immutability": "warn",
+    "react/set-state-in-effect": "warn",
+    "react/purity": "warn",
+    "react/preserve-manual-memoization": "warn",
+    "typescript/no-floating-promises": "off"
   }
 }

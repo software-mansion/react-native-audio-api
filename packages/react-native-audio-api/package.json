@@ -111,7 +111,7 @@
     "build:ios": "cd ../../apps/fabric-example/ios && pod install && xcodebuild build -workspace FabricExample.xcworkspace -scheme FabricExample -destination 'generic/platform=iOS Simulator' -quiet",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm lint:js && pnpm lint:cpp && pnpm lint:ios && pnpm lint:kotlin",
-    "lint:js": "oxlint src",
+    "lint:js": "oxlint src tests",
     "lint:cpp": "./scripts/cpplint.sh",
     "lint:ios": "pnpm format:ios -Werror",
     "lint:kotlin": "ktlint 'android/src/main/java/**/*.kt'",

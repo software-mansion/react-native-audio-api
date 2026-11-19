@@ -45,6 +45,7 @@ import type {
   ScenarioStatus,
   StepResult,
 } from './types';
+import { describeError } from '../AudioIOPlayground/log';
 
 const AudioPipelineStress: FC = () => {
   const resourcesRef = useRef(new StressResourceOwner(staticAsset));
@@ -729,9 +730,7 @@ const AudioPipelineStress: FC = () => {
                 steps,
                 'expected-recording-failure',
                 'Recorder rejected the wrong category as expected',
-                startError instanceof Error
-                  ? startError.message
-                  : String(startError)
+                describeError(startError)
               );
 
               resourcesRef.current.recorder?.clearOnAudioReady();
@@ -782,14 +781,12 @@ const AudioPipelineStress: FC = () => {
     } finally {
       await resourcesRef.current.cleanup();
 
-      if (!isMountedRef.current || currentRunId !== runIdRef.current) {
-        return;
-      }
+      if (isMountedRef.current && currentRunId === runIdRef.current) {
+        setRunnerState(stopRequestedRef.current ? 'finished' : 'finished');
 
-      setRunnerState(stopRequestedRef.current ? 'finished' : 'finished');
-
-      if (!stopRequestedRef.current && scenarioResults.length === 0) {
-        setVisibleStep('Suite finished.');
+        if (!stopRequestedRef.current && scenarioResults.length === 0) {
+          setVisibleStep('Suite finished.');
+        }
       }
     }
   };

@@ -4,10 +4,16 @@ export interface SampleSource {
   id: SampleSourceId;
   label: string;
   fileName: string;
-  /** Name of the decoded buffer in the code snippet shown next to the playground. */
+  /**
+   * Name of the decoded buffer in the code snippet shown next to the
+   * playground.
+   */
   codeVariable: string;
   url?: string;
-  /** Built at runtime from two other samples, one per channel, instead of downloaded. */
+  /**
+   * Built at runtime from two other samples, one per channel, instead of
+   * downloaded.
+   */
   compose?: { left: SampleSourceId; right: SampleSourceId };
 }
 
@@ -39,16 +45,18 @@ export const SAMPLE_SOURCES: Record<SampleSourceId, SampleSource> = {
 
 export const DEFAULT_SAMPLE_SOURCES: SampleSourceId[] = ['music', 'voice'];
 
-export function sampleSourceOptions(ids: SampleSourceId[]): Array<{ value: SampleSourceId; label: string }> {
+export function sampleSourceOptions(
+  ids: SampleSourceId[]
+): Array<{ value: SampleSourceId; label: string }> {
   return ids.map((id) => ({ value: id, label: SAMPLE_SOURCES[id].label }));
 }
 
 const encodedSampleCache = new Map<string, Promise<ArrayBuffer>>();
 
 /**
- * Downloads a sample once per page and hands out a fresh copy of the bytes on every call,
- * because `decodeAudioData` detaches the buffer it receives and every playground decodes
- * with its own AudioContext.
+ * Downloads a sample once per page and hands out a fresh copy of the bytes on
+ * every call, because `decodeAudioData` detaches the buffer it receives and
+ * every playground decodes with its own AudioContext.
  */
 export async function fetchSampleBytes(url: string): Promise<ArrayBuffer> {
   let pending = encodedSampleCache.get(url);
@@ -68,7 +76,10 @@ export async function fetchSampleBytes(url: string): Promise<ArrayBuffer> {
   return bytes.slice(0);
 }
 
-/** Warms the download cache for a sample and, for a composed one, for both of its parts. */
+/**
+ * Warms the download cache for a sample and, for a composed one, for both of
+ * its parts.
+ */
 export function prefetchSample(id: SampleSourceId): void {
   const sample = SAMPLE_SOURCES[id];
   if (sample.compose) {
@@ -77,6 +88,6 @@ export function prefetchSample(id: SampleSourceId): void {
     return;
   }
   if (sample.url) {
-    void fetchSampleBytes(sample.url).catch(() => undefined);
+    fetchSampleBytes(sample.url).catch(() => undefined);
   }
 }

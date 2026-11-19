@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Button, View } from 'react-native';
 import {
   AnalyserNode,
@@ -32,8 +27,10 @@ const TimeChart: React.FC<ChartProps> = (props) => {
         ? window.devicePixelRatio
         : 1;
 
-    const cssWidth = Number(canvas.dataset.cssWidth) || canvas.clientWidth || 300;
-    const cssHeight = Number(canvas.dataset.cssHeight) || canvas.clientHeight || 150;
+    const cssWidth =
+      Number(canvas.dataset.cssWidth) || canvas.clientWidth || 300;
+    const cssHeight =
+      Number(canvas.dataset.cssHeight) || canvas.clientHeight || 150;
 
     const scaledWidth = Math.max(1, Math.floor(cssWidth * dpr));
     const scaledHeight = Math.max(1, Math.floor(cssHeight * dpr));
@@ -103,7 +100,7 @@ const TimeChart: React.FC<ChartProps> = (props) => {
       }}
     </CanvasSizer>
   );
-}
+};
 
 const FFT_SIZE = 512;
 
@@ -111,23 +108,24 @@ const AudioVisualizer: React.FC = () => {
   const isPlayingRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [times, setTimes] = useState<Uint8Array>(new Uint8Array(FFT_SIZE).fill(127));
+  const [times, setTimes] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
-
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
     } else {
       if (!audioContextRef.current || !analyserRef.current) {
-        return
+        return;
       }
 
-      bufferSourceRef.current = await audioContextRef.current.createBufferSource();
+      bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(analyserRef.current);
 
@@ -157,7 +155,7 @@ const AudioVisualizer: React.FC = () => {
     }
 
     requestAnimationFrame(draw);
-  }
+  };
 
   useEffect(() => {
     if (!audioContextRef.current) {
@@ -174,11 +172,13 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-02.mp3')
+      audioBufferRef.current = await fetch(
+        '/react-native-audio-api/audio/music/example-music-02.mp3'
+      )
         .then((response) => response.arrayBuffer())
         .then((arrayBuffer) =>
           audioContextRef.current!.decodeAudioData(arrayBuffer)
-        )
+        );
 
       setIsLoading(false);
     };
@@ -195,14 +195,17 @@ const AudioVisualizer: React.FC = () => {
       <View style={{ flex: 0.2 }} />
       <TimeChart data={times} dataSize={FFT_SIZE} />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
+        <View
+          style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
-          }}>
-        <Button
+          }}
+        >
+          <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
@@ -215,4 +218,3 @@ const AudioVisualizer: React.FC = () => {
 };
 
 export default AudioVisualizer;
-

@@ -73,7 +73,7 @@ const Record: FC = () => {
     try {
       await selectInput(input);
     } catch (error) {
-      Alert.alert('Input Device Error', `${error}`);
+      Alert.alert('Input Device Error', String(error));
     }
   };
 
@@ -96,7 +96,7 @@ const Record: FC = () => {
       color: 0xff6200,
       showStopAction: true,
       deepLinkUri: 'audioapi-example://record',
-      usesChronometer: true
+      usesChronometer: true,
     });
   };
 

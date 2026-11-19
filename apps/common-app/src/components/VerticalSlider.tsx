@@ -7,7 +7,6 @@ import Animated, {
   withSpring,
   useAnimatedProps,
 } from 'react-native-reanimated';
-import { runOnJS } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 const SLIDER_HEIGHT = 100;
@@ -31,7 +30,7 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
   labelColor = '#333',
   valueColor = '#555',
   onValueChange,
-  possibleValues
+  possibleValues,
 }) => {
   const progress = useSharedValue(value);
   const startValue = useSharedValue(0);
@@ -140,7 +139,11 @@ const VerticalSlider: React.FC<VerticalSliderProps> = ({
           </Animated.View>
         </GestureDetector>
       </View>
-      <AText style={[styles.sliderValue, { color: valueColor }]} editable={false} animatedProps={displayProps} />
+      <AText
+        style={[styles.sliderValue, { color: valueColor }]}
+        editable={false}
+        animatedProps={displayProps}
+      />
       {/* <Text style={[styles.sliderValue, { color: valueColor }]}>
         {getDisplayValue()}
       </Text> */}
