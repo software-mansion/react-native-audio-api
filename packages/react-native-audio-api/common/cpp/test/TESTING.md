@@ -2,12 +2,12 @@
 
 `common/cpp/test/` — Google Test, modes by **runtime cost**.
 
-| Mode | What | Default binary |
-| --- | --- | --- |
-| **smoke** | Fast suites (PR + coverage). Disjoint from extended. | `tests` |
-| **extended** | Slow suites by **category** | `tests_asan` (ASan+UBSan) |
-| **full** | smoke, then all extended categories | each mode’s default |
-| **affected** | the suites whose paths (in `filters.sh`) your changes touch; nothing if none | each mode’s default |
+| Mode         | What                                                                         | Default binary            |
+| ------------ | ---------------------------------------------------------------------------- | ------------------------- |
+| **smoke**    | Fast suites (PR + coverage). Disjoint from extended.                         | `tests`                   |
+| **extended** | Slow suites by **category**                                                  | `tests_asan` (ASan+UBSan) |
+| **full**     | smoke, then all extended categories                                          | each mode’s default       |
+| **affected** | the suites whose paths (in `filters.sh`) your changes touch; nothing if none | each mode’s default       |
 
 ```bash
 pnpm test:cpp                          # smoke
@@ -26,13 +26,13 @@ bash common/cpp/test/run-tests.sh --help
 
 Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
-`affected` diffs against `CPP_TEST_BASE` if set, `HEAD^1` on a pull request in GitHub Actions (the checkout is a merge commit whose first parent is the base branch), and otherwise the merge-base with `origin/main`, counting uncommitted and untracked files. `TEST_ALL=1` runs every suite; CI sets it outside pull requests, and `validate.sh --full` sets it too. If the base can't be resolved, every suite runs.
+`affected` diffs against the base from `scripts/base-ref.sh`, the one `pnpm check` and CI use: `BASE_REF` if set, `HEAD^1` on a pull request in GitHub Actions (the checkout is a merge commit whose first parent is the base branch), and otherwise the merge-base with `origin/main`, counting uncommitted and untracked files. `TEST_ALL=1` runs every suite; CI sets it outside pull requests and when a shared path changes. If the base can't be resolved, every suite runs.
 
 ### Categories
 
-| Category | Contents | CI |
-| --- | --- | --- |
-| `graph` | Slow graph (`AudioGraph*`, `Graph*`, `HostGraph*`, `Seeds/*`, …) | `affected`, when graph code or tests change |
+| Category | Contents                                                         | CI                                          |
+| -------- | ---------------------------------------------------------------- | ------------------------------------------- |
+| `graph`  | Slow graph (`AudioGraph*`, `Graph*`, `HostGraph*`, `Seeds/*`, …) | `affected`, when graph code or tests change |
 
 **`GraphNodeGrowthTest` is smoke**, not `graph`: it is short (~100–200 ms) and needs unsanitized `AudioThreadGuard` (asserts `GTEST_SKIP` under ASan/TSan).
 

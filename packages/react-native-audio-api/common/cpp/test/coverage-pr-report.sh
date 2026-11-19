@@ -6,7 +6,7 @@ Usage: coverage-pr-report.sh <output.md>
 
 Writes a Markdown coverage report for a pull request comment: the totals from
 run-coverage.sh, then diff-cover's coverage of the lines changed since the base
-filters.sh picks (cpp_test_base_ref). Run run-coverage.sh first. Needs
+scripts/base-ref.sh picks (BASE_REF overrides it). Run run-coverage.sh first. Needs
 diff-cover on PATH.
 
 The report fits in a GitHub comment: per-file details are collapsed and
@@ -43,7 +43,7 @@ for file in coverage.lcov coverage-totals.md; do
   fi
 done
 
-BASE_REF="$(cpp_test_base_ref)"
+base="$(base_ref)"
 mkdir -p "$(dirname "$OUTPUT")"
 
 PATCH_REPORT="$(mktemp)"
@@ -52,7 +52,7 @@ trap 'rm -f "$PATCH_REPORT"' EXIT
 (
   cd "$(git rev-parse --show-toplevel)"
   diff-cover "${BUILD_DIR}/coverage.lcov" \
-    --compare-branch="$BASE_REF" \
+    --compare-branch="$base" \
     --format "markdown:${PATCH_REPORT}" >/dev/null
 )
 

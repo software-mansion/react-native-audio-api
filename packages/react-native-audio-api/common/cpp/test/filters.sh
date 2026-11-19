@@ -83,34 +83,9 @@ cpp_test_paths_for_suite() {
   esac
 }
 
-# The revision the current changes are measured against: CPP_TEST_BASE when set;
-# HEAD^1 on a pull request in GitHub Actions, whose checkout is a merge commit with
-# the base branch as first parent (needs fetch-depth 2); otherwise the merge-base
-# with origin/main.
-cpp_test_base_ref() {
-  if [[ -n "${CPP_TEST_BASE:-}" ]]; then
-    printf '%s' "$CPP_TEST_BASE"
-  elif [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
-    printf 'HEAD^1'
-  else
-    git merge-base origin/main HEAD
-  fi
-}
-
-# Files the current changes touch since cpp_test_base_ref, one per line, relative to
-# the repository root. Uncommitted and untracked files count too.
-cpp_test_changed_files() {
-  local base
-  base="$(cpp_test_base_ref)" || return 1
-
-  local root
-  root="$(git rev-parse --show-toplevel)" || return 1
-  (
-    cd "$root" &&
-      git diff --name-only "$base" -- &&
-      git ls-files --others --exclude-standard
-  )
-}
+# base_ref (BASE_REF overrides it) and changed_files.
+# shellcheck source=../../../../../scripts/base-ref.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../../../scripts/base-ref.sh"
 
 # Prints the suites to run, one per line: smoke and/or extended categories whose
 # paths match a changed file. TEST_ALL=1 selects every suite (CI sets it outside
@@ -126,7 +101,7 @@ cpp_test_affected_suites() {
   fi
 
   local changed
-  if ! changed="$(cpp_test_changed_files)"; then
+  if ! changed="$(changed_files)"; then
     echo "warning: could not determine changed files; running every suite" >&2
     printf '%s\n' "${suites[@]}"
     return
