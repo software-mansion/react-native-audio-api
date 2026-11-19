@@ -47,7 +47,7 @@ const items = [
   },
 ];
 
-function RadonBannerInner(): JSX.Element {
+function RadonBannerInner(): React.JSX.Element {
   const item = useRef(items[Math.floor(Math.random() * items.length)]);
 
   return (
