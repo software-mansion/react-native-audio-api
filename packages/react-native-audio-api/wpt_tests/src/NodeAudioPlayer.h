@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioPlayer.h>
 
 #include <atomic>
+#include <optional>
 #include <thread>
 
 namespace audioapi {
@@ -23,6 +24,10 @@ class NodeAudioPlayer final : public AudioPlayer {
   [[nodiscard]] bool isRunning() const override;
   [[nodiscard]] double getOutputLatency() const override;
   [[nodiscard]] double getBaseLatency() const override;
+
+  /// The virtual device plays a quantum at the deadline the render loop paced it to, with no
+  /// output latency between the two.
+  [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
 
  private:
   void run();

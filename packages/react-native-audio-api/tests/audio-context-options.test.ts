@@ -45,4 +45,16 @@ describe('AudioContext options', () => {
       'voiceCommunication'
     );
   });
+
+  it('returns the native output timestamp unchanged', () => {
+    const timestamp = { contextTime: 1.25, performanceTime: 98765.4 };
+    const nativeContext = {
+      getOutputTimestamp: jest.fn(() => timestamp),
+    } as unknown as IAudioContext;
+    globalThis.createAudioContext = jest.fn(() => nativeContext);
+    const AudioContext = require('../src/core/AudioContext')
+      .default as typeof import('../src/core/AudioContext').default;
+
+    expect(new AudioContext().getOutputTimestamp()).toEqual(timestamp);
+  });
 });
