@@ -3,7 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { colors } from '../styles';
 
-interface SectionTitleProps {
+export interface SectionTitleProps {
   title: string;
 }
 

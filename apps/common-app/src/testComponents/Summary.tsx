@@ -5,7 +5,7 @@ import { layout } from '../styles';
 import type { SummaryItem } from './types';
 import SummaryBadge from './SummaryBadge';
 
-interface SummaryProps {
+export interface SummaryProps {
   items: SummaryItem[];
 }
 
