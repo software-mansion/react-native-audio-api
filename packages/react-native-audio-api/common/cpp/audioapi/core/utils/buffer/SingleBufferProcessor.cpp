@@ -1,5 +1,6 @@
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <memory>
@@ -7,6 +8,10 @@
 namespace audioapi {
 
 CursorState SingleBufferProcessor::advance(double rate) {
+  if (isFrameBudgetSpent()) {
+    return {.atEndOfBuffer = true};
+  }
+
   const double currentPosition = position_;
   const auto index = static_cast<size_t>(currentPosition);
   const auto factor = static_cast<float>(currentPosition - static_cast<double>(index));
@@ -31,6 +36,8 @@ CursorState SingleBufferProcessor::advance(double rate) {
       (currentPosition >= static_cast<double>(endFrame_) ||
        currentPosition < static_cast<double>(startFrame_));
 
+  spendFrameBudget(std::fabs(rate));
+
   return {.index = index, .nextIndex = nextIndex, .factor = factor, .atEndOfBuffer = atEnd};
 }
 
@@ -38,11 +45,14 @@ size_t SingleBufferProcessor::remainingInContiguousBlock() const {
   if (atBoundary()) {
     return 0;
   }
-  if (direction_ == BufferProcessingDirection::REVERSE) {
-    // +1 because we read down to and including startFrame_
-    return currentIndex() - startFrame_ + 1;
+  // +1 in reverse because we read down to and including startFrame_
+  const size_t framesToEdge = direction_ == BufferProcessingDirection::REVERSE
+      ? currentIndex() - startFrame_ + 1
+      : endFrame_ - currentIndex();
+  if (!frameBudget_) {
+    return framesToEdge;
   }
-  return endFrame_ - currentIndex();
+  return std::min(framesToEdge, static_cast<size_t>(std::ceil(*frameBudget_)));
 }
 
 void SingleBufferProcessor::consume(size_t frames) {
@@ -51,6 +61,7 @@ void SingleBufferProcessor::consume(size_t frames) {
   } else {
     position_ += static_cast<double>(frames);
   }
+  spendFrameBudget(static_cast<double>(frames));
 }
 
 size_t SingleBufferProcessor::currentIndex() const {
@@ -66,12 +77,12 @@ std::shared_ptr<const AudioBuffer> SingleBufferProcessor::getNextBuffer() const 
 }
 
 bool SingleBufferProcessor::atBoundary() const {
-  return position_ < static_cast<double>(startFrame_) ||
+  return isFrameBudgetSpent() || position_ < static_cast<double>(startFrame_) ||
       position_ >= static_cast<double>(endFrame_);
 }
 
 bool SingleBufferProcessor::shouldStop() const {
-  return !loop_;
+  return !loop_ || isFrameBudgetSpent();
 }
 
 void SingleBufferProcessor::handleBoundary() {
