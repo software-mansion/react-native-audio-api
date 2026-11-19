@@ -14,7 +14,7 @@ UIWorkletSnapshots::UIWorkletSnapshots(
       domain_(domain),
       bufferLength_(options.bufferLength),
       smoothingTimeConstant_(options.smoothingTimeConstant),
-      framesUntilSnapshot_(snapshotFrames()),
+      framesUntilSnapshot_(static_cast<std::ptrdiff_t>(snapshotFrames())),
       busy_(std::make_shared<std::atomic<bool>>(false)) {
   recentFrames_ = std::make_unique<audioapi::CircularDSPAudioArray>(snapshotFrames());
   if (domain_ == WorkletNodeDomain::FrequencyDomain) {
@@ -42,7 +42,7 @@ void UIWorkletSnapshots::push(const float *mono, size_t numFrames) {
   // Frames older than the newest window would be overwritten within this push anyway.
   const size_t framesToKeep = std::min(numFrames, snapshotFrames());
   recentFrames_->push_back(mono + numFrames - framesToKeep, framesToKeep, true);
-  framesUntilSnapshot_ -= std::min(framesUntilSnapshot_, numFrames);
+  framesUntilSnapshot_ -= static_cast<std::ptrdiff_t>(numFrames);
 
   if (framesUntilSnapshot_ > 0 || busy_->load(std::memory_order_acquire)) {
     return;
@@ -56,12 +56,15 @@ void UIWorkletSnapshots::push(const float *mono, size_t numFrames) {
     spectrumAnalyser_->analyze(*fftInput_, getSmoothingTimeConstant());
     channelBuffer->copy(spectrumAnalyser_->getMagnitudeData(), 0, 0, bufferLength_);
   }
-  framesUntilSnapshot_ = bufferLength_;
+  // The next one is due a whole number of periods after this one was, however late this push
+  // took it; any that fell due while the callback was busy are skipped, not caught up on.
+  const auto period = static_cast<std::ptrdiff_t>(bufferLength_);
+  framesUntilSnapshot_ = period - (-framesUntilSnapshot_ % period);
   dispatchToUI();
 }
 
 void UIWorkletSnapshots::reset() {
-  framesUntilSnapshot_ = snapshotFrames();
+  framesUntilSnapshot_ = static_cast<std::ptrdiff_t>(snapshotFrames());
 }
 
 void UIWorkletSnapshots::deactivate() {

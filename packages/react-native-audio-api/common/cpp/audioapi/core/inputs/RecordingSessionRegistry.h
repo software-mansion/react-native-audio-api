@@ -31,7 +31,7 @@ class RecordingSessionRegistry {
   DELETE_COPY_AND_MOVE(RecordingSessionRegistry);
 
   /// A session of @p recorder is starting; returns its id. Fails while another recorder's session
-  /// holds the claim.
+  /// holds the claim, until that recorder calls release(), even once its last owner is gone.
   Result<RecordingSessionId, std::string> claim(const std::shared_ptr<AudioRecorder> &recorder);
 
   /// The session of @p recorder has ended, or its start failed after claim(). Also called from the
@@ -53,7 +53,9 @@ class RecordingSessionRegistry {
 
  private:
   mutable std::mutex mutex_;
-  std::weak_ptr<AudioRecorder> occupant_;
+  /// Set from claim() until release(). The recorder inside may already have expired: it still
+  /// closes its consumers in its destructor and releases only then.
+  std::optional<std::weak_ptr<AudioRecorder>> occupant_;
   std::optional<FileInfo> keptRecording_;
   RecordingSessionId lastClaimedSession_ = 0;
   /// Outlives consumption, so a late recording of an older session is not kept after it.

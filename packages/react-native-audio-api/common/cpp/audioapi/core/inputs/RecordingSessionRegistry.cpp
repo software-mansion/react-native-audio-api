@@ -21,7 +21,7 @@ Result<RecordingSessionId, std::string> RecordingSessionRegistry::claim(
     const std::shared_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
-  if (!occupant_.expired() && !isSameRecorder(occupant_, recorder)) {
+  if (occupant_ && !isSameRecorder(*occupant_, recorder)) {
     return Err("Another recording is already in progress");
   }
 
@@ -32,7 +32,7 @@ Result<RecordingSessionId, std::string> RecordingSessionRegistry::claim(
 void RecordingSessionRegistry::release(const std::weak_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
-  if (isSameRecorder(occupant_, recorder)) {
+  if (occupant_ && isSameRecorder(*occupant_, recorder)) {
     occupant_.reset();
   }
 }
@@ -58,7 +58,7 @@ std::optional<FileInfo> RecordingSessionRegistry::consumeLastRecordingResult() {
 
 std::shared_ptr<AudioRecorder> RecordingSessionRegistry::occupant() const {
   std::scoped_lock lock(mutex_);
-  return occupant_.lock();
+  return occupant_ ? occupant_->lock() : nullptr;
 }
 
 } // namespace audioapi

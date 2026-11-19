@@ -77,7 +77,8 @@ class UIWorkletSnapshots {
   /// Frequency domain only: the window copied out of `recentFrames_` for the FFT.
   std::unique_ptr<audioapi::DSPAudioArray> fftInput_;
   std::unique_ptr<audioapi::dsp::SpectrumAnalyser> spectrumAnalyser_;
-  size_t framesUntilSnapshot_;
+  /// Frames left until the next snapshot is due; negative while it is overdue, by that many.
+  std::ptrdiff_t framesUntilSnapshot_;
 
   /// True while a UI-thread worklet invocation is pending; the snapshot memory is not written
   /// until it completes.

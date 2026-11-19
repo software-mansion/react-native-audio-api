@@ -192,8 +192,8 @@ and from there to the file writer; `setOnError` is a single `assignCallbackId`. 
 never holds the event: a failed `consume()` returns `Err` and `RecorderConsumers::deliver` reports it
 (the consumer stays prepared for the next frames). Only the file writer reports on its own, because its
 encode and rotation errors happen on its own worker after its `consume()` returned. `RecorderConsumers`
-does not synchronize its control calls: `AudioRecorder` calls it only under `controlMutex_`, and
-disarms the gate before `prepare()`, `follow()` and `detach()`, the only calls that start or stop
+does not synchronize its control calls: `AudioRecorder` makes them only under `controlMutex_` (the
+audio thread's `write()` from `onInputFrames()` holds no mutex), and disarms the gate before `prepare()`, `follow()` and `detach()`, the only calls that start or stop
 the worker (the audio thread reads `worker_` without a lock). When anything fails after
 `start()` opened the input it ends the session like `stop()`: detach under the control mutex,
 finalize without it, so no file stays open. Listed consumers stay listed across sessions (JS
