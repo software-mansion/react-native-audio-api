@@ -869,7 +869,7 @@ export default MyRecorder;
 
 ### Custom consumers {#custom-consumers}
 
-A consumer receives every buffer the recorder captures, alongside the file, [`onAudioReady`](#onaudioready) and [`connect`](#connect). Concrete consumers come from extension packages, such as [`RecorderWorklet`](../worklets/recorder-worklet.mdx). One consumer can be added to several recorders; only the one that is recording feeds it.
+A consumer receives the buffers the recorder captures, alongside the file, [`onAudioReady`](#onaudioready) and [`connect`](#connect). Delivery happens off the audio thread, so when consumers fall behind under load the recorder drops buffers rather than blocking capture; a consumer cannot assume it sees every captured frame. Concrete consumers come from extension packages, such as [`RecorderWorklet`](../worklets/recorder-worklet.mdx). One consumer can be added to several recorders; only the one that is recording feeds it.
 
 <table className="table-vertical-top">
   <thead>
@@ -883,7 +883,7 @@ A consumer receives every buffer the recorder captures, alongside the file, [`on
       </div></td>
       <td>
         <div class="text-content">
-          Feeds every recorded buffer to `consumer` as well, from the next recording on, or at once when a recording is running. Returns `Result<void>`: an error when the consumer is added already or cannot be prepared for the running recording, in which case it is not added.
+          Feeds the recorded buffers to `consumer` as well (buffers can be dropped under load), from the next recording on, or at once when a recording is running. Returns `Result<void>`: an error when the consumer is added already or cannot be prepared for the running recording, in which case it is not added.
         </div>
         ```tsx
           audioRecorder.addConsumer(consumer);
