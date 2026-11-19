@@ -20,6 +20,7 @@ import type {
   IIRFilterOptions,
   OscillatorOptions,
   OscillatorType,
+  RecordingClock,
   OverSampleType,
   Result,
   StereoPannerOptions,
@@ -378,10 +379,10 @@ export interface IAudioRecorder {
   setOnError: (options: { callbackId: string }) => void;
   clearOnError: () => void;
 
-  getCurrentDuration: () => number;
   getFilePath: () => string | null;
 
   readonly inputLatency: number;
+  readonly clock: RecordingClock;
 }
 
 export interface IAudioDecoder {

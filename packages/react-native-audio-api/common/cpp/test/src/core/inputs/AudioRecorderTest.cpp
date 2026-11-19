@@ -889,24 +889,38 @@ TEST_F(AudioRecorderTest, AStopBoundToAnOpeningARerouteMovedPastLeavesTheSession
 }
 
 TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyConsumer) {
-  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 0.0);
+  auto clock = recorder_->getDurationClock();
+  EXPECT_DOUBLE_EQ(clock->load(), 0.0);
   ASSERT_TRUE(recorder_->start().is_ok());
 
   input_->deliverFrames(480);
-  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 480.0 / 48000.0);
+  EXPECT_DOUBLE_EQ(clock->load(), 480.0 / 48000.0);
 
   recorder_->pause();
   input_->deliverFrames(480);
-  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 480.0 / 48000.0);
+  EXPECT_DOUBLE_EQ(clock->load(), 480.0 / 48000.0);
   ASSERT_TRUE(recorder_->resume().is_ok());
 
   input_->format.layout.sampleRate = 24000.0F;
   input_->events->formatChanged();
   input_->deliverFrames(480);
-  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 480.0 / 48000.0 + 480.0 / 24000.0);
+  EXPECT_DOUBLE_EQ(clock->load(), 480.0 / 48000.0 + 480.0 / 24000.0);
 
   ASSERT_TRUE(recorder_->stop().is_ok());
-  EXPECT_DOUBLE_EQ(recorder_->getCurrentDuration(), 0.0);
+  EXPECT_DOUBLE_EQ(clock->load(), 0.0);
+}
+
+TEST_F(AudioRecorderTest, TheDurationClockFollowsTheRecordingAndOutlivesTheRecorder) {
+  auto clock = recorder_->getDurationClock();
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  input_->deliverFrames(FRAMES);
+  EXPECT_DOUBLE_EQ(clock->load(), FRAMES / 48000.0);
+
+  std::weak_ptr<AudioRecorder> destroyed = recorder_;
+  recorder_.reset();
+  EXPECT_TRUE(destroyed.expired());
+  EXPECT_DOUBLE_EQ(clock->load(), 0.0);
 }
 
 TEST_F(AudioRecorderTest, InputLatencyIsZeroWhileIdleAndUsesTheLastBufferOtherwise) {

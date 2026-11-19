@@ -12,6 +12,7 @@ import {
   FileDirectory,
   FileFormat,
   FileInfo,
+  RecordingClock,
   Result,
 } from '../types';
 // Imported for {@link concatAudioFiles} in enableFileOutput docs.
@@ -73,8 +74,11 @@ export default class AudioRecorder {
     globalThis.AudioEventEmitter
   );
 
+  private readonly durationClock: RecordingClock;
+
   constructor(options?: AudioRecorderOptions) {
     this.recorder = globalThis.createAudioRecorder(options ?? {});
+    this.durationClock = this.recorder.clock;
   }
 
   static isRecordingOngoing(): boolean {
@@ -296,7 +300,15 @@ export default class AudioRecorder {
   }
 
   getCurrentDuration(): number {
-    return this.recorder.getCurrentDuration();
+    return this.durationClock.currentDuration;
+  }
+
+  /**
+   * The duration as a {@link RecordingClock}: capture it in a UI worklet to read
+   * the duration on the UI thread, every frame if needed.
+   */
+  get clock(): RecordingClock {
+    return this.durationClock;
   }
 
   get inputLatency(): number {

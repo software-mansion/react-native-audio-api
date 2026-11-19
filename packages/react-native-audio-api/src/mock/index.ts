@@ -1106,6 +1106,10 @@ class AudioRecorderMock {
     return this._currentDuration;
   }
 
+  get clock(): { readonly currentDuration: number } {
+    return { currentDuration: this._currentDuration };
+  }
+
   getInputLatency(): number {
     return 0.01;
   }

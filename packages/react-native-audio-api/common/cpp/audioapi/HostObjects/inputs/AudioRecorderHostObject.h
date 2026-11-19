@@ -43,9 +43,8 @@ class AudioRecorderHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(setOnError);
   JSI_HOST_FUNCTION_DECL(clearOnError);
 
-  JSI_HOST_FUNCTION_DECL(getCurrentDuration);
-
   JSI_PROPERTY_GETTER_DECL(inputLatency);
+  JSI_PROPERTY_GETTER_DECL(clock);
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;

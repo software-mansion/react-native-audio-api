@@ -14,6 +14,7 @@ import {
   Easing,
   SharedValue,
   useDerivedValue,
+  useFrameCallback,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -341,6 +342,12 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     isInterruptedSV,
   ]);
 
+  const recordingClock = useMemo(() => Recorder.clock, []);
+  useFrameCallback(() => {
+    'worklet';
+    durationMS.value = recordingClock.currentDuration * 1000;
+  });
+
   useEffect(() => {
     if (numBars <= 0) {
       return;
@@ -353,7 +360,7 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
 
   useEffect(() => {
     const recorderWorklet = new RecorderWorklet(
-      (audioData, sampleRate) => {
+      (audioData) => {
         'worklet';
 
         const canvasHeight = canvasHeightSV.value;
@@ -363,8 +370,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
         if (isInterruptedSV.value || canvasHeight <= 0 || activeNumBars <= 0) {
           return;
         }
-
-        durationMS.value += (audioData.length / sampleRate) * 1000;
 
         let maxValue = 0;
         for (let i = 0; i < audioData.length; i++) {
