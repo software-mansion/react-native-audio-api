@@ -17,11 +17,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Spacer } from './components';
 import Container from './components/Container';
 import { demos, DemoScreen } from './demos';
-import {
-  Example,
-  Examples,
-  MainStackProps,
-} from './examples';
+import { Example, Examples, MainStackProps } from './examples';
 import { otherScreens } from './other';
 import { colors, layout } from './styles';
 
@@ -186,6 +182,9 @@ const linking = {
   config: {
     screens: {
       RecordDemo: 'record',
+      // audioapi-example://orchestra?url=ws://host:8765 — what the conductor
+      // dashboard's QR code encodes.
+      Orchestra: 'orchestra',
     },
   },
 };
@@ -204,7 +203,8 @@ const App: FC = () => {
             headerTintColor: colors.white,
             headerBackTitle: 'Back',
             headerBackAccessibilityLabel: 'Go back',
-          }}>
+          }}
+        >
           <Stack.Screen
             name="MainTabs"
             component={MainTabsScreen}

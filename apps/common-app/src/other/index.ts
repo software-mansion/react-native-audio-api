@@ -7,6 +7,7 @@ import AudioParamPipeline from './AudioParamPipeline';
 import AudioPipelineStress from './AudioPipelineStress';
 import AudioIOPlayground from './AudioIOPlayground';
 import LatencyValidation from './LatencyValidation';
+import OutputTimestampSync from './OutputTimestampSync';
 
 /** Screens shown under the 'Other' bottom tab (stress tests, internal tooling). */
 export const otherScreens: Example[] = [
@@ -39,5 +40,11 @@ export const otherScreens: Example[] = [
     title: 'Latency Validation',
     Icon: icons.CircleCheck,
     screen: LatencyValidation,
+  },
+  {
+    key: 'OutputTimestampSync',
+    title: 'Output Timestamp Sync',
+    Icon: icons.Timer,
+    screen: OutputTimestampSync,
   },
 ];
