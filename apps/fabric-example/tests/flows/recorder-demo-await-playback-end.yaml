@@ -1,0 +1,5 @@
+executionPrerequisite: The Recorder demo is playing a take
+steps:
+  - await:
+      text: { in: { id: record-status }, equals: Idle }
+      timeout: 20000
