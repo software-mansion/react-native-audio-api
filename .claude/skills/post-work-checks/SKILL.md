@@ -155,7 +155,7 @@ pnpm --filter react-native-audio-api format:js
 
 # Shared C++
 pnpm --filter react-native-audio-api format:common
-pnpm --filter react-native-audio-api lint:cpp
+pnpm --filter react-native-audio-api lint:cpp   # clang-tidy; needs `pnpm setup:clangd` once
 
 # Android
 pnpm --filter react-native-audio-api format:android:cpp

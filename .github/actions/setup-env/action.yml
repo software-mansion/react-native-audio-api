@@ -7,9 +7,16 @@ inputs:
   tools:
     description: >
       JSON array of tools to install, e.g. '["cmake", "clang-format"]'.
-      Known: cmake, cpplint, ktlint, clang-format, llvm (clang + llvm-cov), diff-cover.
+      Known: cmake, ktlint, clang-format, clang-tidy, llvm (clang + llvm-cov), diff-cover.
+      With cmake, CMake builds use Clang (CC=clang, CXX=clang++).
     required: false
     default: '[]'
+  directory:
+    description: >
+      The workspace package the job is for, e.g. packages/react-native-audio-api. Keys the
+      per-package caches (clang-tidy's clangd build directory).
+    required: false
+    default: ''
   install:
     description: Install the workspace dependencies ('false' sets up only Node and pnpm).
     required: false
@@ -27,7 +34,7 @@ runs:
       env:
         TOOLS: ${{ inputs.tools }}
       run: |
-        unknown=$(jq -r '.[] | select(IN("cmake", "cpplint", "ktlint", "clang-format", "llvm", "diff-cover") | not)' <<<"$TOOLS")
+        unknown=$(jq -r '.[] | select(IN("cmake", "ktlint", "clang-format", "clang-tidy", "llvm", "diff-cover") | not)' <<<"$TOOLS")
         if [ -n "$unknown" ]; then
           echo "::error::setup-env: unknown tools: $unknown"
           exit 1
@@ -53,10 +60,13 @@ runs:
       with:
         cmake-version: '4.0.x'
 
-    - name: Install cpplint
-      if: contains(fromJSON(inputs.tools), 'cpplint')
+    # Build C++ with Clang, as the NDK and Xcode do, not the runner's GCC.
+    - name: Use Clang for CMake builds
+      if: contains(fromJSON(inputs.tools), 'cmake')
       shell: bash
-      run: pipx install 'cpplint==2.0.2'
+      run: |
+        echo "CC=clang" >> "$GITHUB_ENV"
+        echo "CXX=clang++" >> "$GITHUB_ENV"
 
     - name: Install ktlint
       if: contains(fromJSON(inputs.tools), 'ktlint')
@@ -69,15 +79,30 @@ runs:
         sudo mv ktlint /usr/local/bin/
         ktlint --version
 
-    - name: Install clang-format 23
-      if: contains(fromJSON(inputs.tools), 'clang-format')
+    # Same LLVM release as Homebrew's llvm, so CI matches local runs.
+    - name: Install LLVM 23 tools
+      if: contains(fromJSON(inputs.tools), 'clang-format') || contains(fromJSON(inputs.tools), 'clang-tidy')
       shell: bash
+      env:
+        TOOLS: ${{ inputs.tools }}
       run: |
         set -euo pipefail
         curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
-        sudo apt-get install -y clang-format-23
-        sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-23 200
-        clang-format --version
+        for tool in clang-format clang-tidy; do
+          if jq -e --arg tool "$tool" 'index($tool)' <<<"$TOOLS" >/dev/null; then
+            sudo apt-get install -y "${tool}-23"
+            sudo update-alternatives --install "/usr/bin/${tool}" "$tool" "/usr/bin/${tool}-23" 200
+            "$tool" --version
+          fi
+        done
+
+    # Saves the googletest download when clang-tidy re-configures the project.
+    - name: Cache the clangd build directory
+      if: contains(fromJSON(inputs.tools), 'clang-tidy') && inputs.directory != ''
+      uses: actions/cache@v6
+      with:
+        path: ${{ inputs.directory }}/common/cpp/clangd/build
+        key: clangd-${{ runner.os }}-${{ inputs.directory }}-${{ hashFiles(format('{0}/common/cpp/clangd/CMakeLists.txt', inputs.directory)) }}
 
     - name: Install diff-cover
       if: contains(fromJSON(inputs.tools), 'diff-cover')

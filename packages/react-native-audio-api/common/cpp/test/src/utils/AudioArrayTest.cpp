@@ -9,8 +9,6 @@ using namespace audioapi;
 
 static constexpr size_t ARR_SIZE = 128;
 
-// NOLINTBEGIN
-
 class AudioArrayTest : public ::testing::Test {
  protected:
   static void fill(AudioArray &arr, float value) {

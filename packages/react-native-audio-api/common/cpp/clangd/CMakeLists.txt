@@ -1,6 +1,19 @@
-# internal cmake script for instructing how to build the audio api to generate compile_commands.json that cursor uses
+# Generates compile_commands.json for clangd and clang-tidy. Nothing is built.
 
 cmake_minimum_required(VERSION 3.12.0)
+
+# CMake 4 sets no macOS SDK, so Homebrew clang tools can't find the standard
+# library. Added to the host targets only: CMake drops a repeated -isysroot, and
+# the iOS targets need the simulator SDK.
+if(APPLE)
+  execute_process(
+    COMMAND xcrun --sdk macosx --show-sdk-path
+    OUTPUT_VARIABLE MACOS_SDK_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(COMMON_CPP_DIR ${CMAKE_SOURCE_DIR}/..)
@@ -29,7 +42,7 @@ set(FFMPEG_INCLUDE_DIR ${COMMON_CPP_DIR}/audioapi/external/include_ffmpeg)
 set(EXTERNAL_DIR ${COMMON_CPP_DIR}/audioapi/external)
 set(JNI_LIBS_DIR ${COMMON_CPP_DIR}/../../android/src/main/jniLibs)
 
-add_library(rnaudioapi_cursor STATIC ${COMMON_CPP_SOURCES} ${ANDROID_CPP_SOURCES})
+add_library(audioapi_compile_db STATIC ${COMMON_CPP_SOURCES} ${ANDROID_CPP_SOURCES})
 
 foreach(lib IN ITEMS opus opusfile ogg vorbis vorbisenc vorbisfile crypto ssl)
   add_library(${lib} STATIC IMPORTED)
@@ -41,7 +54,7 @@ foreach (lib IN ITEMS avcodec avformat avutil swresample)
   set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/${ANDROID_ABI}/lib${lib}.so)
 endforeach()
 
-target_compile_definitions(rnaudioapi_cursor PRIVATE
+target_compile_definitions(audioapi_compile_db PRIVATE
   RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
 )
 
@@ -56,23 +69,23 @@ set(COMMON_EXTRA_INCLUDES
   "${COMMON_CPP_DIR}/../../ios"
   "${googletest_SOURCE_DIR}/googletest/include"
 )
-target_include_directories(rnaudioapi_cursor PRIVATE ${COMMON_EXTRA_INCLUDES})
+target_include_directories(audioapi_compile_db PRIVATE ${COMMON_EXTRA_INCLUDES})
 
-target_include_directories(rnaudioapi_cursor PUBLIC ${INCLUDE_LIBRARIES})
+target_include_directories(audioapi_compile_db PUBLIC ${INCLUDE_LIBRARIES})
 
-target_link_libraries(rnaudioapi_cursor ${LINK_LIBRARIES} gtest gmock gtest_main)
+target_link_libraries(audioapi_compile_db ${LINK_LIBRARIES} gtest gmock gtest_main)
 
 # Mirrors common/cpp/test/CMakeLists.txt's definitions exactly.
-add_library(rnaudioapi_cursor_test OBJECT ${TEST_CPP_SOURCES})
-target_compile_definitions(rnaudioapi_cursor_test PRIVATE
+add_library(audioapi_compile_db_test OBJECT ${TEST_CPP_SOURCES})
+target_compile_definitions(audioapi_compile_db_test PRIVATE
   RN_AUDIO_API_TEST=1
   RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1
   MA_NO_LIBOPUS=1
   MA_NO_LIBVORBIS=1
 )
-target_include_directories(rnaudioapi_cursor_test PRIVATE ${COMMON_EXTRA_INCLUDES})
+target_include_directories(audioapi_compile_db_test PRIVATE ${COMMON_EXTRA_INCLUDES})
 # OBJECT libs never link, but this still pulls in gtest/gmock's include dirs.
-target_link_libraries(rnaudioapi_cursor_test PRIVATE gtest gmock gtest_main)
+target_link_libraries(audioapi_compile_db_test PRIVATE gtest gmock gtest_main)
 
 # Headers have no compile command of their own, so clangd falls back to
 # "inferred from <whatever .cpp/.mm you most recently opened>" — session-order
@@ -85,15 +98,21 @@ list(FILTER COMMON_CPP_HEADERS EXCLUDE REGEX "/audioapi/external/")
 list(FILTER COMMON_CPP_HEADERS EXCLUDE REGEX "/audioapi/libs/")
 list(FILTER COMMON_CPP_HEADERS EXCLUDE REGEX "/audioapi/dsp/r8brain/")
 
-add_library(rnaudioapi_cursor_headers OBJECT ${COMMON_CPP_HEADERS})
+add_library(audioapi_compile_db_headers OBJECT ${COMMON_CPP_HEADERS})
 set_source_files_properties(${COMMON_CPP_HEADERS} PROPERTIES
   HEADER_FILE_ONLY OFF
   LANGUAGE CXX
 )
-target_compile_definitions(rnaudioapi_cursor_headers PRIVATE
+target_compile_definitions(audioapi_compile_db_headers PRIVATE
   RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
 )
-target_include_directories(rnaudioapi_cursor_headers PRIVATE ${COMMON_EXTRA_INCLUDES})
+target_include_directories(audioapi_compile_db_headers PRIVATE ${COMMON_EXTRA_INCLUDES})
+
+if(MACOS_SDK_PATH)
+  foreach(host_target IN ITEMS audioapi_compile_db audioapi_compile_db_test audioapi_compile_db_headers)
+    target_compile_options(${host_target} PRIVATE -isysroot "${MACOS_SDK_PATH}")
+  endforeach()
+endif()
 
 # Android JNI glue (android/src/main/cpp/audioapi) isn't built here: it only
 # compiles correctly with the NDK's own clang++ (--target/--sysroot); bolting
@@ -113,14 +132,14 @@ if(APPLE)
   file(GLOB_RECURSE IOS_MM_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.mm")
   file(GLOB_RECURSE IOS_M_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.m")
 
-  add_library(rnaudioapi_cursor_ios OBJECT ${IOS_MM_SOURCES})
-  add_library(rnaudioapi_cursor_ios_objc OBJECT ${IOS_M_SOURCES})
+  add_library(audioapi_compile_db_ios OBJECT ${IOS_MM_SOURCES})
+  add_library(audioapi_compile_db_ios_objc OBJECT ${IOS_M_SOURCES})
   set_source_files_properties(${IOS_MM_SOURCES} ${IOS_M_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 
-  target_compile_definitions(rnaudioapi_cursor_ios PRIVATE
+  target_compile_definitions(audioapi_compile_db_ios PRIVATE
     RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
   )
-  target_compile_definitions(rnaudioapi_cursor_ios_objc PRIVATE
+  target_compile_definitions(audioapi_compile_db_ios_objc PRIVATE
     RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
   )
 
@@ -139,8 +158,8 @@ if(APPLE)
     endif()
   endif()
   if(IOS_SDK_PATH)
-    target_compile_options(rnaudioapi_cursor_ios PRIVATE -isysroot "${IOS_SDK_PATH}")
-    target_compile_options(rnaudioapi_cursor_ios_objc PRIVATE -isysroot "${IOS_SDK_PATH}")
+    target_compile_options(audioapi_compile_db_ios PRIVATE -isysroot "${IOS_SDK_PATH}")
+    target_compile_options(audioapi_compile_db_ios_objc PRIVATE -isysroot "${IOS_SDK_PATH}")
   endif()
 
   # Reuse whatever `pod install` already resolved for the example app rather
@@ -199,8 +218,8 @@ if(APPLE)
   endforeach()
   list(REMOVE_DUPLICATES IOS_FRAMEWORK_FLAGS)
 
-  target_compile_options(rnaudioapi_cursor_ios PRIVATE ${IOS_FRAMEWORK_FLAGS})
-  target_compile_options(rnaudioapi_cursor_ios_objc PRIVATE ${IOS_FRAMEWORK_FLAGS})
+  target_compile_options(audioapi_compile_db_ios PRIVATE ${IOS_FRAMEWORK_FLAGS})
+  target_compile_options(audioapi_compile_db_ios_objc PRIVATE ${IOS_FRAMEWORK_FLAGS})
 
   set(IOS_EXTRA_INCLUDES
     "${COMMON_CPP_DIR}"
@@ -211,8 +230,8 @@ if(APPLE)
     "${IOS_DIR}/audioapi/ios/system"
     ${IOS_POD_INCLUDE_DIRS}
   )
-  target_include_directories(rnaudioapi_cursor_ios PRIVATE ${IOS_EXTRA_INCLUDES})
-  target_include_directories(rnaudioapi_cursor_ios_objc PRIVATE ${IOS_EXTRA_INCLUDES})
+  target_include_directories(audioapi_compile_db_ios PRIVATE ${IOS_EXTRA_INCLUDES})
+  target_include_directories(audioapi_compile_db_ios_objc PRIVATE ${IOS_EXTRA_INCLUDES})
 
   # Same reasoning as the common headers above. These headers also rely on
   # their .mm caller having already #imported AVFoundation (see the
@@ -220,18 +239,40 @@ if(APPLE)
   # reproduces that here.
   file(GLOB_RECURSE IOS_HEADERS CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.h")
 
-  add_library(rnaudioapi_cursor_ios_headers OBJECT ${IOS_HEADERS})
+  add_library(audioapi_compile_db_ios_headers OBJECT ${IOS_HEADERS})
   set_source_files_properties(${IOS_HEADERS} PROPERTIES
     HEADER_FILE_ONLY OFF
     LANGUAGE OBJCXX
     COMPILE_FLAGS "-include AVFoundation/AVFoundation.h"
   )
-  target_compile_definitions(rnaudioapi_cursor_ios_headers PRIVATE
+  target_compile_definitions(audioapi_compile_db_ios_headers PRIVATE
     RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
   )
-  target_include_directories(rnaudioapi_cursor_ios_headers PRIVATE ${IOS_EXTRA_INCLUDES})
-  target_compile_options(rnaudioapi_cursor_ios_headers PRIVATE ${IOS_FRAMEWORK_FLAGS})
+  target_include_directories(audioapi_compile_db_ios_headers PRIVATE ${IOS_EXTRA_INCLUDES})
+  target_compile_options(audioapi_compile_db_ios_headers PRIVATE ${IOS_FRAMEWORK_FLAGS})
   if(IOS_SDK_PATH)
-    target_compile_options(rnaudioapi_cursor_ios_headers PRIVATE -isysroot "${IOS_SDK_PATH}")
+    target_compile_options(audioapi_compile_db_ios_headers PRIVATE -isysroot "${IOS_SDK_PATH}")
+  endif()
+
+  # The example app's XCTests. XCTest.framework is in the platform, not the SDK.
+  file(GLOB IOS_TEST_SOURCES CONFIGURE_DEPENDS "${FABRIC_EXAMPLE_IOS_DIR}/FabricExampleTests/*.mm")
+  execute_process(
+    COMMAND xcrun --sdk iphonesimulator --show-sdk-platform-path
+    OUTPUT_VARIABLE IOS_PLATFORM_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  add_library(audioapi_compile_db_ios_tests OBJECT ${IOS_TEST_SOURCES})
+  set_source_files_properties(${IOS_TEST_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+  target_compile_definitions(audioapi_compile_db_ios_tests PRIVATE
+    RN_AUDIO_API_TEST=${RN_AUDIO_API_TEST}
+  )
+  target_include_directories(audioapi_compile_db_ios_tests PRIVATE ${IOS_EXTRA_INCLUDES})
+  target_compile_options(audioapi_compile_db_ios_tests PRIVATE ${IOS_FRAMEWORK_FLAGS})
+  if(IOS_PLATFORM_PATH)
+    target_compile_options(audioapi_compile_db_ios_tests PRIVATE "-F${IOS_PLATFORM_PATH}/Developer/Library/Frameworks")
+  endif()
+  if(IOS_SDK_PATH)
+    target_compile_options(audioapi_compile_db_ios_tests PRIVATE -isysroot "${IOS_SDK_PATH}")
   endif()
 endif()
