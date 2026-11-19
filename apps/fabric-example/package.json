@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "check": "bash ../../scripts/run-steps.sh lint",
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
+    "typecheck": "tsc --noEmit",
     "test": "exit 0",
     "android": "react-native run-android",
     "ios": "react-native run-ios",

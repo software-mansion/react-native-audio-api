@@ -244,7 +244,7 @@ catalogs:
       version: 19.3.0
 
 overrides:
-  typescript: ~6.0.3
+  typescript: 7.0.2
   webpack: 5.101.3
   d3: 7.9.0
 
@@ -280,41 +280,41 @@ importers:
         specifier: 7.0.2006
         version: 7.0.2006
       typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
+        specifier: 7.0.2
+        version: 7.0.2
 
   apps/common-app:
     dependencies:
       '@callstack/liquid-glass':
         specifier: 0.8.2
-        version: 0.8.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 0.8.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-native-community/slider':
         specifier: 5.2.2
         version: 5.2.2
       '@react-native-menu/menu':
         specifier: 2.1.2
-        version: 2.1.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 2.1.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-native-segmented-control/segmented-control':
         specifier: 2.6.0
-        version: 2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-navigation/bottom-tabs':
         specifier: 8.0.0-alpha.57
-        version: 8.0.0-alpha.57(bdd4de7ea4ca2baaf30b7e43e446fc54)
+        version: 8.0.0-alpha.57(2801aa21f7991d25be4ec0db24aa8153)
       '@react-navigation/elements':
         specifier: 3.0.0-alpha.55
-        version: 3.0.0-alpha.55(bdd4de7ea4ca2baaf30b7e43e446fc54)
+        version: 3.0.0-alpha.55(2801aa21f7991d25be4ec0db24aa8153)
       '@react-navigation/native':
         specifier: 8.0.0-alpha.51
-        version: 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-navigation/native-stack':
         specifier: 8.0.0-alpha.59
-        version: 8.0.0-alpha.59(bdd4de7ea4ca2baaf30b7e43e446fc54)
+        version: 8.0.0-alpha.59(2801aa21f7991d25be4ec0db24aa8153)
       '@shopify/react-native-skia':
         specifier: 2.11.0
-        version: 2.11.0(14e28dcd4e165fd3aca97217ed6314e4)
+        version: 2.11.0(5f1dba517d91da3e93054e796d903c5c)
       '@swmansion/react-native-bottom-sheet':
         specifier: 1.1.0
-        version: 1.1.0(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 1.1.0(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-audio-api:
         specifier: workspace:*
         version: link:../../packages/react-native-audio-api
@@ -323,28 +323,28 @@ importers:
         version: link:../../packages/react-native-audio-worklets
       react-native-background-timer:
         specifier: 2.4.1
-        version: 2.4.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))
+        version: 2.4.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))
       react-native-gesture-handler:
         specifier: 3.1.0
-        version: 3.1.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 3.1.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-nano-icons:
         specifier: 1.0.1
-        version: 1.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+        version: 1.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       react-native-reanimated:
         specifier: 'catalog:'
-        version: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-safe-area-context:
         specifier: 5.9.0
-        version: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-screens:
         specifier: 4.30.0
-        version: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-svg:
         specifier: 'catalog:'
-        version: 15.15.4(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 15.15.4(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-worklets:
         specifier: 'catalog:'
-        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
     devDependencies:
       '@babel/core':
         specifier: 'catalog:'
@@ -357,7 +357,7 @@ importers:
         version: 7.29.2
       '@react-native-community/cli':
         specifier: 'catalog:'
-        version: 20.2.0(supports-color@8.1.1)(typescript@6.0.3)
+        version: 20.2.0(supports-color@8.1.1)(typescript@7.0.2)
       '@react-native-community/cli-platform-android':
         specifier: 'catalog:'
         version: 20.2.0
@@ -390,19 +390,19 @@ importers:
         version: 5.0.0(eslint@8.57.1(supports-color@8.1.1))
       jest:
         specifier: 'catalog:'
-        version: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+        version: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       react:
         specifier: 'catalog:'
         version: 19.3.0
       react-native:
         specifier: 'catalog:'
-        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-test-renderer:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
       typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
+        specifier: 7.0.2
+        version: 7.0.2
 
   apps/fabric-example:
     dependencies:
@@ -414,13 +414,13 @@ importers:
         version: 19.3.0
       react-native:
         specifier: 'catalog:'
-        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-native-svg:
         specifier: 'catalog:'
-        version: 15.15.4(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 15.15.4(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-worklets:
         specifier: 'catalog:'
-        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
     devDependencies:
       '@babel/core':
         specifier: 'catalog:'
@@ -430,7 +430,7 @@ importers:
         version: 7.29.2
       '@react-native-community/cli':
         specifier: 'catalog:'
-        version: 20.2.0(supports-color@8.1.1)(typescript@6.0.3)
+        version: 20.2.0(supports-color@8.1.1)(typescript@7.0.2)
       '@react-native-community/cli-platform-android':
         specifier: 'catalog:'
         version: 20.2.0
@@ -469,22 +469,22 @@ importers:
         version: 7.29.7(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
       '@docusaurus/core':
         specifier: 3.9.2
-        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/plugin-debug':
         specifier: 3.9.2
-        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/plugin-google-tag-manager':
         specifier: 3.9.2
-        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/preset-classic':
         specifier: 3.9.2
-        version: 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/theme-common':
         specifier: 3.9.2
-        version: 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+        version: 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/theme-mermaid':
         specifier: 3.9.2
-        version: 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
@@ -502,10 +502,10 @@ importers:
         version: 5.2.2
       '@shopify/react-native-skia':
         specifier: 1.10.2
-        version: 1.10.2(c60ac181796d643ce2d067127b987401)
+        version: 1.10.2(df44cd3b0c3caf01d9d3fe3ff658656e)
       '@swmansion/t-rex-ui':
         specifier: 1.3.3
-        version: 1.3.3(7bb9905b33a1c36e9336e62c637659e6)
+        version: 1.3.3(516791b306a1cbd4b6ee0452a5fed1f7)
       '@types/three':
         specifier: ^0.180.0
         version: 0.180.0
@@ -553,25 +553,25 @@ importers:
         version: 4.7.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-native:
         specifier: 'catalog:'
-        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-native-audio-api:
         specifier: 1.0.0
-        version: 1.0.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 1.0.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-canvas:
         specifier: ^0.1.40
-        version: 0.1.40(react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))
+        version: 0.1.40(react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))
       react-native-gesture-handler:
         specifier: ^2.16.0
-        version: 2.33.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 2.33.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-reanimated:
         specifier: 'catalog:'
-        version: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        version: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-web:
         specifier: ^0.21.1
         version: 0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-native-worklets:
         specifier: 'catalog:'
-        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       recharts:
         specifier: ^3.7.0
         version: 3.10.1(@types/react@19.2.14)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.1)(react@19.3.0)(redux@5.0.1)
@@ -599,7 +599,7 @@ importers:
         version: 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/theme-classic':
         specifier: 3.9.2
-        version: 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/tsconfig':
         specifier: 3.9.2
         version: 3.9.2
@@ -616,8 +616,8 @@ importers:
         specifier: ^3.5.0
         version: 3.6.0(esbuild@0.20.2)(supports-color@8.1.1)
       typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
+        specifier: 7.0.2
+        version: 7.0.2
       webpack:
         specifier: 5.101.3
         version: 5.101.3(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(webpack-cli@5.1.4)
@@ -646,13 +646,13 @@ importers:
         version: 7.28.5(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
       '@docusaurus/core':
         specifier: 3.9.2
-        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/preset-classic':
         specifier: 3.9.2
-        version: 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/theme-mermaid':
         specifier: 3.9.2
-        version: 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
@@ -667,7 +667,7 @@ importers:
         version: 7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.2.14)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@swmansion/t-rex-ui':
         specifier: 1.3.3
-        version: 1.3.3(7bb9905b33a1c36e9336e62c637659e6)
+        version: 1.3.3(516791b306a1cbd4b6ee0452a5fed1f7)
       babel-loader:
         specifier: ^9.2.1
         version: 9.2.1(@babel/core@7.29.0(supports-color@8.1.1))(webpack@5.101.3)
@@ -704,7 +704,7 @@ importers:
         version: 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/theme-classic':
         specifier: 3.9.2
-        version: 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+        version: 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/tsconfig':
         specifier: 3.9.2
         version: 3.9.2
@@ -712,8 +712,8 @@ importers:
         specifier: ^19.1.1
         version: 19.2.14
       typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
+        specifier: 7.0.2
+        version: 7.0.2
 
   packages/react-native-audio-api:
     dependencies:
@@ -804,19 +804,19 @@ importers:
         version: 0.11.0
       jest:
         specifier: 'catalog:'
-        version: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+        version: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       react:
         specifier: 'catalog:'
         version: 19.3.0
       react-native:
         specifier: 'catalog:'
-        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-native-builder-bob:
         specifier: 'catalog:'
-        version: 0.33.1(supports-color@8.1.1)(typescript@6.0.3)
+        version: 0.33.1(supports-color@8.1.1)(typescript@7.0.2)
       typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
+        specifier: 7.0.2
+        version: 7.0.2
       wpt-runner:
         specifier: ^7.0.0
         version: 7.0.0(@noble/hashes@1.8.0)
@@ -853,19 +853,19 @@ importers:
         version: 19.3.0
       react-native:
         specifier: 'catalog:'
-        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-native-audio-api:
         specifier: workspace:*
         version: link:../react-native-audio-api
       react-native-builder-bob:
         specifier: 'catalog:'
-        version: 0.33.1(supports-color@8.1.1)(typescript@6.0.3)
+        version: 0.33.1(supports-color@8.1.1)(typescript@7.0.2)
       react-native-worklets:
         specifier: 'catalog:'
-        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+        version: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
+        specifier: 7.0.2
+        version: 7.0.2
 
   packages/test-app-screen:
     devDependencies:
@@ -877,7 +877,7 @@ importers:
         version: 19.3.0
       react-native:
         specifier: 'catalog:'
-        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+        version: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       react-native-audio-api:
         specifier: workspace:*
         version: link:../react-native-audio-api
@@ -4121,6 +4121,126 @@ packages:
   '@types/yargs@17.0.35':
     resolution: {integrity: sha512-qUHkeCyQFxMXg79wQfTtfndEC+N9ZZg76HJftDJp+qH2tV7Gj4OJi7l+PiWwJ+pWtW8GwSmqsDj/oymhrTWXjg==}
 
+  '@typescript/typescript-aix-ppc64@7.0.2':
+    resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [ppc64]
+    os: [aix]
+
+  '@typescript/typescript-darwin-arm64@7.0.2':
+    resolution: {integrity: sha512-gowzar9MwS/aRWp6f3a4KUqzRjAZjOsmGNCM6LcTgXum+dBfgsBVMN+AgvOCCbguXyick6LJhpBszxMebJ8syA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@typescript/typescript-darwin-x64@7.0.2':
+    resolution: {integrity: sha512-SZ9xZInqApNlNGc9s0W1VSsktYSOe9cFqNOIqmN1Gs8SmkjKZYFt017G4VwPxASInODuAdbTW7sXiFUf893RgA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@typescript/typescript-freebsd-arm64@7.0.2':
+    resolution: {integrity: sha512-W5NH4y/J0plIIS5b2xvTEkU7JFxyqdMAOgf+Ilhl0vHQXKO5dZoxd+C/jEtq56c4F3wk71RB4BMRQ2XdI+bwYQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [freebsd]
+
+  '@typescript/typescript-freebsd-x64@7.0.2':
+    resolution: {integrity: sha512-UMGDx5sTpzNw3WiPebH7l90IWfJggEd+egHt/q6p7/Cm3zqoV7VxkGXt+3DxPIw8CcmvAB0j3sVVfbhX+M4Tpw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@typescript/typescript-linux-arm64@7.0.2':
+    resolution: {integrity: sha512-Qh4eU4/y3yDjnfjjyPYihMj5/ODIlmt+Bzu17OI+fiSRDW57QmU5SiN63exPRNJPKUzcc1INa1NXdrJ+MqHjUQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@typescript/typescript-linux-arm@7.0.2':
+    resolution: {integrity: sha512-gffT3xPz9sR7j/YJExkyPntrI0P2EP9XbOyWzth2/Gs0RstK+90RBcO0ncXoXy/beYll1SXw846Nf2zdnEz0QQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm]
+    os: [linux]
+
+  '@typescript/typescript-linux-loong64@7.0.2':
+    resolution: {integrity: sha512-uEHck9i8hoAzXPiYRib1O7miOnz23SxIeVl6F4LXox+qov1K35jHcEW6VHKvZI+pyvl7fZEP4MCU5LYvIq1GuQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [loong64]
+    os: [linux]
+
+  '@typescript/typescript-linux-mips64el@7.0.2':
+    resolution: {integrity: sha512-R4KvAMnE43W5Qeqb0Ly56O3mWMWIAgsMyz36DCaycd5nbg/9kzm0liw3JocfRqyJY0KPmzFjbswozXyW0DnIYA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [mips64el]
+    os: [linux]
+
+  '@typescript/typescript-linux-ppc64@7.0.2':
+    resolution: {integrity: sha512-DORx5b3sd/4S7eayxm4FQv+A7CrkUIGRaHiwI8oiHTAI1fAPWhF4J0vAlkC8biAlHSVVwxMQ3tjZ2/DVbnQiiA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [ppc64]
+    os: [linux]
+
+  '@typescript/typescript-linux-riscv64@7.0.2':
+    resolution: {integrity: sha512-wf0jqEDOjrPRnKwYRyyJDRo11KMbvMFrU+q4zqKyChODBzvlkbhNQfKvLxQCcwTpdDaXSHZTVuh0JoCrKCUMHQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [riscv64]
+    os: [linux]
+
+  '@typescript/typescript-linux-s390x@7.0.2':
+    resolution: {integrity: sha512-IkwJc3L7yhytWd/ewjyxNDfOmswCm9GWMJT/ue/dU4aZNbwZeYAetq42VyLmsmSjvoX7z74X6ZaYCtzAr0EuGw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [s390x]
+    os: [linux]
+
+  '@typescript/typescript-linux-x64@7.0.2':
+    resolution: {integrity: sha512-EYdf2cNg7rgCWJnxCdJ+F3V39O8ihb37eHAu1LK8oAFizgTQbPOK7zHHXbPt8rX24COqODXeI3sIf0fCXG7H/A==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@typescript/typescript-netbsd-arm64@7.0.2':
+    resolution: {integrity: sha512-+polYF4MF04aPpO5FTkHran9yUQDSXqy5GiSDKpsll5jy3l3+g9QLhpf39T+ePtefhXLOGrLl0QIjkQP6VnelA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [netbsd]
+
+  '@typescript/typescript-netbsd-x64@7.0.2':
+    resolution: {integrity: sha512-8YIT0EHM/3dq10ZOVF/A7pc/YSMtbcecct4rWtexrnSCHOPcpC2KTLXfTCR6vDpnSiY12heNb1GiN/wu+T/FyA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [netbsd]
+
+  '@typescript/typescript-openbsd-arm64@7.0.2':
+    resolution: {integrity: sha512-APT8+ClYnuYm1u9+kgGXoMj2VzWzcymwh2gNSQVySHfkRDGOTVkoWLjCmOQSaO+PoqQ57B0flRp9SA+7GnnkzQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [openbsd]
+
+  '@typescript/typescript-openbsd-x64@7.0.2':
+    resolution: {integrity: sha512-yX7s+Q0Dln0Dt9tEzZsAjXXR/+ytBM7AlglaqyeMPxQszJ1JhlJdZ6jLA+IzldHtflX81em7lDao1xXu+aRRkg==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [openbsd]
+
+  '@typescript/typescript-sunos-x64@7.0.2':
+    resolution: {integrity: sha512-dLJDGaLZ1D4HPQn62u1n8mBDkJREwMsAkCdkwd4Ieqw+x3TUyTsqY0YiBCtE6H6OzzgGk3iuZ3vFWRS+E8/d1g==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [sunos]
+
+  '@typescript/typescript-win32-arm64@7.0.2':
+    resolution: {integrity: sha512-Gyl1Vy6OsWesLzmq+EP0Fb7b4Nid5232AvcA2SFcdYreldpNtYFFofPjnt62y9hQy7VTaZp65ICJjuAQRaVcIQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@typescript/typescript-win32-x64@7.0.2':
+    resolution: {integrity: sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [win32]
+
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
     deprecated: Potential CWE-502 - Update to 1.3.1 or higher
@@ -5054,7 +5174,7 @@ packages:
       '@types/node': '*'
       cosmiconfig: '>=7'
       ts-node: '>=10'
-      typescript: ~6.0.3
+      typescript: 7.0.2
 
   cosmiconfig@5.2.1:
     resolution: {integrity: sha512-H65gsXo1SKjf8zmrJ67eJk8aIRKV5ff2D4uKZIBZShbhGSpEmsQOPW/SKMKYhSTrqR7ufy6RP69rPogdaPh/kA==}
@@ -5068,7 +5188,7 @@ packages:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: ~6.0.3
+      typescript: 7.0.2
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -5077,7 +5197,7 @@ packages:
     resolution: {integrity: sha512-hr4ihw+DBqcvrsEDioRO31Z17x71pUYoNe/4h6Z0wB72p7MU7/9gH8Q3s12NFhHPfYBBOV3qyfUxmr/Yn3shnQ==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: ~6.0.3
+      typescript: 7.0.2
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -9906,7 +10026,7 @@ packages:
       '@swc/core': '>=1.2.50'
       '@swc/wasm': '>=1.2.50'
       '@types/node': '*'
-      typescript: ~6.0.3
+      typescript: 7.0.2
     peerDependenciesMeta:
       '@swc/core':
         optional: true
@@ -9974,9 +10094,9 @@ packages:
   typedarray-to-buffer@3.1.5:
     resolution: {integrity: sha512-zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==}
 
-  typescript@6.0.3:
-    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
-    engines: {node: '>=14.17'}
+  typescript@7.0.2:
+    resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
+    engines: {node: '>=16.20.0'}
     hasBin: true
 
   ua-parser-js@1.0.41:
@@ -11605,10 +11725,10 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@callstack/liquid-glass@0.8.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@callstack/liquid-glass@0.8.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
   '@chevrotain/cst-dts-gen@13.2.0':
     dependencies:
@@ -11689,14 +11809,14 @@ snapshots:
       '@commitlint/types': 17.8.1
       '@types/node': 20.5.1
       chalk: 4.1.2
-      cosmiconfig: 8.3.6(typescript@6.0.3)
-      cosmiconfig-typescript-loader: 4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@6.0.3))(ts-node@10.9.2(@types/node@20.5.1)(typescript@6.0.3))(typescript@6.0.3)
+      cosmiconfig: 8.3.6(typescript@7.0.2)
+      cosmiconfig-typescript-loader: 4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@7.0.2))(ts-node@10.9.2(@types/node@20.5.1)(typescript@7.0.2))(typescript@7.0.2)
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       lodash.uniq: 4.5.0
       resolve-from: 5.0.0
-      ts-node: 10.9.2(@types/node@20.5.1)(typescript@6.0.3)
-      typescript: 6.0.3
+      ts-node: 10.9.2(@types/node@20.5.1)(typescript@7.0.2)
+      typescript: 7.0.2
     transitivePeerDependencies:
       - '@swc/core'
       - '@swc/wasm'
@@ -12156,7 +12276,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@docusaurus/bundler@3.9.2(csso@5.0.5)(esbuild@0.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/bundler@3.9.2(csso@5.0.5)(esbuild@0.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@docusaurus/babel': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12175,7 +12295,7 @@ snapshots:
       mini-css-extract-plugin: 2.10.2(webpack@5.101.3)
       null-loader: 4.0.1(webpack@5.101.3)
       postcss: 8.5.32
-      postcss-loader: 7.3.4(postcss@8.5.32)(typescript@6.0.3)(webpack@5.101.3)
+      postcss-loader: 7.3.4(postcss@8.5.32)(typescript@7.0.2)(webpack@5.101.3)
       postcss-preset-env: 10.6.1(postcss@8.5.32)
       terser-webpack-plugin: 5.6.1(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(webpack@5.101.3)
       tslib: 2.9.1
@@ -12199,10 +12319,10 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@docusaurus/core@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/core@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
       '@docusaurus/babel': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/bundler': 3.9.2(csso@5.0.5)(esbuild@0.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/bundler': 3.9.2(csso@5.0.5)(esbuild@0.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/logger': 3.9.2
       '@docusaurus/mdx-loader': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12352,13 +12472,13 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@docusaurus/plugin-content-blog@3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-content-blog@3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/logger': 3.9.2
       '@docusaurus/mdx-loader': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-common': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12399,13 +12519,13 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/logger': 3.9.2
       '@docusaurus/mdx-loader': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/module-type-aliases': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-common': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12445,9 +12565,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-content-pages@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-content-pages@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/mdx-loader': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12481,9 +12601,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-css-cascade-layers@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-css-cascade-layers@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12514,9 +12634,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-debug@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-debug@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       fs-extra: 11.3.6
@@ -12548,9 +12668,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-google-analytics@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-google-analytics@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       react: 19.3.0
@@ -12580,9 +12700,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-google-gtag@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-google-gtag@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@types/gtag.js': 0.0.12
@@ -12613,9 +12733,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-google-tag-manager@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-google-tag-manager@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       react: 19.3.0
@@ -12645,9 +12765,9 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-sitemap@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-sitemap@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/logger': 3.9.2
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12682,14 +12802,14 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/plugin-svgr@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/plugin-svgr@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@6.0.3)
-      '@svgr/webpack': 8.1.0(supports-color@8.1.1)(typescript@6.0.3)
+      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@7.0.2)
+      '@svgr/webpack': 8.1.0(supports-color@8.1.1)(typescript@7.0.2)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       tslib: 2.9.1
@@ -12718,22 +12838,22 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/preset-classic@3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/preset-classic@3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-blog': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-pages': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-css-cascade-layers': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-debug': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-google-analytics': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-google-gtag': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-google-tag-manager': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-sitemap': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-svgr': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/theme-classic': 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/theme-search-algolia': 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-blog': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-pages': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-css-cascade-layers': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-debug': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-google-analytics': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-google-gtag': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-google-tag-manager': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-sitemap': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-svgr': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/theme-classic': 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/theme-search-algolia': 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
@@ -12769,16 +12889,16 @@ snapshots:
       '@types/react': 19.2.14
       react: 19.3.0
 
-  '@docusaurus/theme-classic@3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/theme-classic@3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/logger': 3.9.2
       '@docusaurus/mdx-loader': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/module-type-aliases': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-blog': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-pages': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-blog': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-pages': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/theme-translations': 3.9.2
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -12821,11 +12941,11 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/theme-common@3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)':
+  '@docusaurus/theme-common@3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)':
     dependencies:
       '@docusaurus/mdx-loader': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/module-type-aliases': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-common': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@types/history': 4.7.11
@@ -12854,11 +12974,11 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@docusaurus/theme-mermaid@3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/theme-mermaid@3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/module-type-aliases': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/types': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       mermaid: 12.3.0
@@ -12890,13 +13010,13 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@docusaurus/theme-search-algolia@3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)':
+  '@docusaurus/theme-search-algolia@3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)':
     dependencies:
       '@docsearch/react': 4.7.1(@algolia/client-search@5.61.0)(@types/react@19.2.14)(algoliasearch@5.61.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/logger': 3.9.2
-      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-content-docs': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/theme-common': 3.9.2(@docusaurus/plugin-content-docs@3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/theme-translations': 3.9.2
       '@docusaurus/utils': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
       '@docusaurus/utils-validation': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
@@ -13340,7 +13460,7 @@ snapshots:
       jest-util: 29.7.0
       slash: 3.0.0
 
-  '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))':
+  '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))':
     dependencies:
       '@jest/console': 29.7.0
       '@jest/reporters': 29.7.0(supports-color@8.1.1)
@@ -13354,7 +13474,7 @@ snapshots:
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      jest-config: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -14069,10 +14189,10 @@ snapshots:
       fast-glob: 3.3.3
       picocolors: 1.1.1
 
-  '@react-native-community/cli-config@20.2.0(typescript@6.0.3)':
+  '@react-native-community/cli-config@20.2.0(typescript@7.0.2)':
     dependencies:
       '@react-native-community/cli-tools': 20.2.0
-      cosmiconfig: 9.0.1(typescript@6.0.3)
+      cosmiconfig: 9.0.1(typescript@7.0.2)
       deepmerge: 4.3.1
       fast-glob: 3.3.3
       joi: 17.13.3
@@ -14080,9 +14200,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@react-native-community/cli-doctor@20.2.0(typescript@6.0.3)':
+  '@react-native-community/cli-doctor@20.2.0(typescript@7.0.2)':
     dependencies:
-      '@react-native-community/cli-config': 20.2.0(typescript@6.0.3)
+      '@react-native-community/cli-config': 20.2.0(typescript@7.0.2)
       '@react-native-community/cli-platform-android': 20.2.0
       '@react-native-community/cli-platform-apple': 20.2.0
       '@react-native-community/cli-platform-ios': 20.2.0
@@ -14154,11 +14274,11 @@ snapshots:
     dependencies:
       joi: 17.13.3
 
-  '@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3)':
+  '@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2)':
     dependencies:
       '@react-native-community/cli-clean': 20.2.0
-      '@react-native-community/cli-config': 20.2.0(typescript@6.0.3)
-      '@react-native-community/cli-doctor': 20.2.0(typescript@6.0.3)
+      '@react-native-community/cli-config': 20.2.0(typescript@7.0.2)
+      '@react-native-community/cli-doctor': 20.2.0(typescript@7.0.2)
       '@react-native-community/cli-server-api': 20.2.0(supports-color@8.1.1)
       '@react-native-community/cli-tools': 20.2.0
       '@react-native-community/cli-types': 20.2.0
@@ -14179,15 +14299,15 @@ snapshots:
 
   '@react-native-community/slider@5.2.2': {}
 
-  '@react-native-menu/menu@2.1.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@react-native-menu/menu@2.1.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  '@react-native-segmented-control/segmented-control@2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@react-native-segmented-control/segmented-control@2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
   '@react-native/asset-utils@0.88.0': {}
 
@@ -14247,7 +14367,7 @@ snapshots:
       tinyglobby: 0.2.16
       yargs: 17.7.3
 
-  '@react-native/community-cli-plugin@0.88.0(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(supports-color@8.1.1)':
+  '@react-native/community-cli-plugin@0.88.0(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
       '@react-native/asset-utils': 0.88.0
       '@react-native/dev-middleware': 0.88.0(supports-color@8.1.1)
@@ -14257,7 +14377,7 @@ snapshots:
       metro: 0.87.1(supports-color@8.1.1)
       semver: 7.8.5
     optionalDependencies:
-      '@react-native-community/cli': 20.2.0(supports-color@8.1.1)(typescript@6.0.3)
+      '@react-native-community/cli': 20.2.0(supports-color@8.1.1)(typescript@7.0.2)
       '@react-native/metro-config': 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
     transitivePeerDependencies:
       - bufferutil
@@ -14334,23 +14454,23 @@ snapshots:
 
   '@react-native/typescript-config@0.88.0': {}
 
-  '@react-native/virtualized-lists@0.88.0(@types/react@19.2.14)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@react-native/virtualized-lists@0.88.0(@types/react@19.2.14)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       invariant: 2.2.4
       nullthrows: 1.1.1
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
     optionalDependencies:
       '@types/react': 19.2.14
 
-  '@react-navigation/bottom-tabs@8.0.0-alpha.57(bdd4de7ea4ca2baaf30b7e43e446fc54)':
+  '@react-navigation/bottom-tabs@8.0.0-alpha.57(2801aa21f7991d25be4ec0db24aa8153)':
     dependencies:
-      '@react-navigation/elements': 3.0.0-alpha.55(bdd4de7ea4ca2baaf30b7e43e446fc54)
-      '@react-navigation/native': 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-navigation/elements': 3.0.0-alpha.55(2801aa21f7991d25be4ec0db24aa8153)
+      '@react-navigation/native': 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
-      react-native-safe-area-context: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      react-native-screens: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native-safe-area-context: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-screens: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
     transitivePeerDependencies:
       - '@callstack/liquid-glass'
 
@@ -14363,32 +14483,32 @@ snapshots:
       use-latest-callback: 0.3.5(react@19.3.0)
       warn-once: 0.1.1
 
-  '@react-navigation/elements@3.0.0-alpha.55(bdd4de7ea4ca2baaf30b7e43e446fc54)':
+  '@react-navigation/elements@3.0.0-alpha.55(2801aa21f7991d25be4ec0db24aa8153)':
     dependencies:
-      '@callstack/liquid-glass': 0.8.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      '@react-navigation/native': 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@callstack/liquid-glass': 0.8.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-navigation/native': 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
-      react-native-safe-area-context: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      react-native-screens: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native-safe-area-context: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-screens: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       use-latest-callback: 0.3.5(react@19.3.0)
       use-sync-external-store: 1.6.0(react@19.3.0)
 
   '@react-navigation/material-symbols@8.0.0-alpha.1': {}
 
-  '@react-navigation/native-stack@8.0.0-alpha.59(bdd4de7ea4ca2baaf30b7e43e446fc54)':
+  '@react-navigation/native-stack@8.0.0-alpha.59(2801aa21f7991d25be4ec0db24aa8153)':
     dependencies:
-      '@react-navigation/elements': 3.0.0-alpha.55(bdd4de7ea4ca2baaf30b7e43e446fc54)
-      '@react-navigation/native': 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-navigation/elements': 3.0.0-alpha.55(2801aa21f7991d25be4ec0db24aa8153)
+      '@react-navigation/native': 8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
-      react-native-safe-area-context: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      react-native-screens: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native-safe-area-context: 5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-screens: 4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       warn-once: 0.1.1
     transitivePeerDependencies:
       - '@callstack/liquid-glass'
 
-  '@react-navigation/native@8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@react-navigation/native@8.0.0-alpha.51(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       '@react-navigation/core': 8.0.0-alpha.41(react@19.3.0)
       '@react-navigation/material-symbols': 8.0.0-alpha.1
@@ -14396,7 +14516,7 @@ snapshots:
       fast-deep-equal: 3.1.3
       nanoid: 5.1.16
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       sf-symbols-typescript: 2.2.0
       standard-navigation: 0.0.8(react@19.3.0)
       use-latest-callback: 0.3.5(react@19.3.0)
@@ -14421,16 +14541,16 @@ snapshots:
 
   '@resvg/resvg-wasm@2.4.0': {}
 
-  '@shopify/react-native-skia@1.10.2(c60ac181796d643ce2d067127b987401)':
+  '@shopify/react-native-skia@1.10.2(df44cd3b0c3caf01d9d3fe3ff658656e)':
     dependencies:
       canvaskit-wasm: 0.39.1
       react: 19.3.0
       react-reconciler: 0.27.0(react@19.3.0)
     optionalDependencies:
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
-      react-native-reanimated: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native-reanimated: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
 
-  '@shopify/react-native-skia@2.11.0(14e28dcd4e165fd3aca97217ed6314e4)':
+  '@shopify/react-native-skia@2.11.0(5f1dba517d91da3e93054e796d903c5c)':
     dependencies:
       canvaskit-wasm: 0.41.0
       react: 19.3.0
@@ -14440,9 +14560,9 @@ snapshots:
       react-native-skia-apple-tvos: 152.0.0
       react-reconciler: 0.31.0(react@19.3.0)
     optionalDependencies:
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
-      react-native-reanimated: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      react-native-worklets: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native-reanimated: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-worklets: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
 
   '@shuding/opentype.js@1.4.0-beta.0':
     dependencies:
@@ -14535,12 +14655,12 @@ snapshots:
       '@svgr/babel-plugin-transform-react-native-svg': 8.1.0(@babel/core@7.29.0(supports-color@8.1.1))
       '@svgr/babel-plugin-transform-svg-component': 8.0.0(@babel/core@7.29.0(supports-color@8.1.1))
 
-  '@svgr/core@8.1.0(supports-color@8.1.1)(typescript@6.0.3)':
+  '@svgr/core@8.1.0(supports-color@8.1.1)(typescript@7.0.2)':
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@svgr/babel-preset': 8.1.0(@babel/core@7.29.0(supports-color@8.1.1))
       camelcase: 6.3.0
-      cosmiconfig: 8.3.6(typescript@6.0.3)
+      cosmiconfig: 8.3.6(typescript@7.0.2)
       snake-case: 3.0.4
     transitivePeerDependencies:
       - supports-color
@@ -14551,57 +14671,57 @@ snapshots:
       '@babel/types': 7.29.8
       entities: 4.5.0
 
-  '@svgr/plugin-jsx@8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@6.0.3))(supports-color@8.1.1)':
+  '@svgr/plugin-jsx@8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@7.0.2))(supports-color@8.1.1)':
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@svgr/babel-preset': 8.1.0(@babel/core@7.29.0(supports-color@8.1.1))
-      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@6.0.3)
+      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@7.0.2)
       '@svgr/hast-util-to-babel-ast': 8.0.0
       svg-parser: 2.1.0
     transitivePeerDependencies:
       - supports-color
 
-  '@svgr/plugin-svgo@8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@6.0.3))(typescript@6.0.3)':
+  '@svgr/plugin-svgo@8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@7.0.2))(typescript@7.0.2)':
     dependencies:
-      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@6.0.3)
-      cosmiconfig: 8.3.6(typescript@6.0.3)
+      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@7.0.2)
+      cosmiconfig: 8.3.6(typescript@7.0.2)
       deepmerge: 4.3.1
       svgo: 3.3.5
     transitivePeerDependencies:
       - typescript
 
-  '@svgr/webpack@8.1.0(supports-color@8.1.1)(typescript@6.0.3)':
+  '@svgr/webpack@8.1.0(supports-color@8.1.1)(typescript@7.0.2)':
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@babel/plugin-transform-react-constant-elements': 7.29.7(@babel/core@7.29.0(supports-color@8.1.1))
       '@babel/preset-env': 7.29.2(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
       '@babel/preset-react': 7.28.5(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
-      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@6.0.3)
-      '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@6.0.3))(supports-color@8.1.1)
-      '@svgr/plugin-svgo': 8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@6.0.3))(typescript@6.0.3)
+      '@svgr/core': 8.1.0(supports-color@8.1.1)(typescript@7.0.2)
+      '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@7.0.2))(supports-color@8.1.1)
+      '@svgr/plugin-svgo': 8.1.0(@svgr/core@8.1.0(supports-color@8.1.1)(typescript@7.0.2))(typescript@7.0.2)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  '@swmansion/react-native-bottom-sheet@1.1.0(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@swmansion/react-native-bottom-sheet@1.1.0(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
     optionalDependencies:
       react-dom: 19.3.0(react@19.3.0)
       react-native-web: 0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
 
-  '@swmansion/t-rex-ui@1.3.3(7bb9905b33a1c36e9336e62c637659e6)':
+  '@swmansion/t-rex-ui@1.3.3(516791b306a1cbd4b6ee0452a5fed1f7)':
     dependencies:
       '@docsearch/core': 4.7.1(@types/react@19.2.14)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@docsearch/css': 4.7.1
       '@docsearch/sidepanel': 4.7.1(@algolia/client-search@5.61.0)(@types/react@19.2.14)(algoliasearch@5.61.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)
-      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/core': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@docusaurus/module-type-aliases': 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
-      '@docusaurus/plugin-debug': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/preset-classic': 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
-      '@docusaurus/theme-search-algolia': 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
+      '@docusaurus/plugin-debug': 3.9.2(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/preset-classic': 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
+      '@docusaurus/theme-search-algolia': 3.9.2(@algolia/client-search@5.61.0)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.3.0))(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(search-insights@2.17.3)(supports-color@8.1.1)(typescript@7.0.2)(webpack-cli@5.1.4)
       '@emotion/react': 11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       '@mui/material': 7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.2.14)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -15027,6 +15147,66 @@ snapshots:
   '@types/yargs@17.0.35':
     dependencies:
       '@types/yargs-parser': 21.0.3
+
+  '@typescript/typescript-aix-ppc64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-darwin-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-darwin-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-freebsd-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-freebsd-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-arm@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-loong64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-mips64el@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-ppc64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-riscv64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-s390x@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-netbsd-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-netbsd-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-openbsd-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-openbsd-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-sunos-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-win32-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-win32-x64@7.0.2':
+    optional: true
 
   '@ungap/structured-clone@1.3.0': {}
 
@@ -16091,12 +16271,12 @@ snapshots:
     dependencies:
       layout-base: 2.0.1
 
-  cosmiconfig-typescript-loader@4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@6.0.3))(ts-node@10.9.2(@types/node@20.5.1)(typescript@6.0.3))(typescript@6.0.3):
+  cosmiconfig-typescript-loader@4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@7.0.2))(ts-node@10.9.2(@types/node@20.5.1)(typescript@7.0.2))(typescript@7.0.2):
     dependencies:
       '@types/node': 20.5.1
-      cosmiconfig: 8.3.6(typescript@6.0.3)
-      ts-node: 10.9.2(@types/node@20.5.1)(typescript@6.0.3)
-      typescript: 6.0.3
+      cosmiconfig: 8.3.6(typescript@7.0.2)
+      ts-node: 10.9.2(@types/node@20.5.1)(typescript@7.0.2)
+      typescript: 7.0.2
 
   cosmiconfig@5.2.1:
     dependencies:
@@ -16113,31 +16293,31 @@ snapshots:
       path-type: 4.0.0
       yaml: 1.10.3
 
-  cosmiconfig@8.3.6(typescript@6.0.3):
+  cosmiconfig@8.3.6(typescript@7.0.2):
     dependencies:
       import-fresh: 3.3.1
       js-yaml: 4.1.1
       parse-json: 5.2.0
       path-type: 4.0.0
     optionalDependencies:
-      typescript: 6.0.3
+      typescript: 7.0.2
 
-  cosmiconfig@9.0.1(typescript@6.0.3):
+  cosmiconfig@9.0.1(typescript@7.0.2):
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.1
       js-yaml: 4.1.1
       parse-json: 5.2.0
     optionalDependencies:
-      typescript: 6.0.3
+      typescript: 7.0.2
 
-  create-jest@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)):
+  create-jest@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2)):
     dependencies:
       '@jest/types': 29.6.3
       chalk: 4.1.2
       exit: 0.1.2
       graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      jest-config: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       jest-util: 29.7.0
       prompts: 2.4.2
     transitivePeerDependencies:
@@ -18160,16 +18340,16 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)):
+  jest-cli@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2)):
     dependencies:
-      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
       chalk: 4.1.2
-      create-jest: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      create-jest: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       exit: 0.1.2
       import-local: 3.2.0
-      jest-config: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      jest-config: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       jest-util: 29.7.0
       jest-validate: 29.7.0
       yargs: 17.7.3
@@ -18179,7 +18359,7 @@ snapshots:
       - supports-color
       - ts-node
 
-  jest-config@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)):
+  jest-config@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2)):
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@jest/test-sequencer': 29.7.0
@@ -18205,7 +18385,7 @@ snapshots:
       strip-json-comments: 3.1.1
     optionalDependencies:
       '@types/node': 18.19.130
-      ts-node: 10.9.2(@types/node@18.19.130)(typescript@6.0.3)
+      ts-node: 10.9.2(@types/node@18.19.130)(typescript@7.0.2)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -18431,12 +18611,12 @@ snapshots:
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  jest@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3)):
+  jest@29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2)):
     dependencies:
-      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
       '@jest/types': 29.6.3
       import-local: 3.2.0
-      jest-cli: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3))
+      jest-cli: 29.7.0(@types/node@18.19.130)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2))
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -20397,9 +20577,9 @@ snapshots:
       '@csstools/utilities': 2.0.0(postcss@8.5.32)
       postcss: 8.5.32
 
-  postcss-loader@7.3.4(postcss@8.5.32)(typescript@6.0.3)(webpack@5.101.3):
+  postcss-loader@7.3.4(postcss@8.5.32)(typescript@7.0.2)(webpack@5.101.3):
     dependencies:
-      cosmiconfig: 8.3.6(typescript@6.0.3)
+      cosmiconfig: 8.3.6(typescript@7.0.2)
       jiti: 1.21.7
       postcss: 8.5.32
       semver: 7.8.5
@@ -20884,17 +21064,17 @@ snapshots:
       react-loadable: '@docusaurus/react-loadable@6.0.0(react@19.3.0)'
       webpack: 5.101.3(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(webpack-cli@5.1.4)
 
-  react-native-audio-api@1.0.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-audio-api@1.0.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       semver: 7.8.5
 
-  react-native-background-timer@2.4.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)):
+  react-native-background-timer@2.4.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)):
     dependencies:
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  react-native-builder-bob@0.33.1(supports-color@8.1.1)(typescript@6.0.3):
+  react-native-builder-bob@0.33.1(supports-color@8.1.1)(typescript@7.0.2):
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@babel/plugin-transform-strict-mode': 7.27.1(@babel/core@7.29.0(supports-color@8.1.1))
@@ -20904,7 +21084,7 @@ snapshots:
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
       babel-plugin-module-resolver: 5.0.3
       browserslist: 4.28.2
-      cosmiconfig: 9.0.1(typescript@6.0.3)
+      cosmiconfig: 9.0.1(typescript@7.0.2)
       cross-spawn: 7.0.6
       dedent: 0.7.0
       del: 6.1.1
@@ -20924,33 +21104,33 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  react-native-canvas@0.1.40(react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)):
+  react-native-canvas@0.1.40(react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)):
     dependencies:
       ctx-polyfill: 1.1.4
-      react-native-webview: 14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-webview: 14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
 
-  react-native-gesture-handler@2.33.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-gesture-handler@2.33.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       '@egjs/hammerjs': 2.0.17
       '@types/react-test-renderer': 19.1.0
       hoist-non-react-statics: 3.3.2
       invariant: 2.2.4
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  react-native-gesture-handler@3.1.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-gesture-handler@3.1.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       '@types/react-test-renderer': 19.1.0
       invariant: 2.2.4
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  react-native-is-edge-to-edge@1.3.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-is-edge-to-edge@1.3.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  react-native-nano-icons@1.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
+  react-native-nano-icons@1.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
     dependencies:
       '@expo/config-plugins': 9.1.7(supports-color@8.1.1)
       '@xmldom/xmldom': 0.9.12
@@ -20961,30 +21141,30 @@ snapshots:
       pathkit-wasm: 1.0.0
       plist: 3.1.0
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       svg2ttf: 6.1.0
       xcode: 3.0.1
     transitivePeerDependencies:
       - supports-color
 
-  react-native-reanimated@4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-reanimated@4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
-      react-native-is-edge-to-edge: 1.3.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
-      react-native-worklets: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native-is-edge-to-edge: 1.3.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-worklets: 0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       semver: 7.8.5
 
-  react-native-safe-area-context@5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-safe-area-context@5.9.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  react-native-screens@4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-screens@4.30.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
       react-freeze: 1.0.4(react@19.3.0)
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       warn-once: 0.1.1
 
   react-native-skia-android@152.0.0: {}
@@ -20995,12 +21175,12 @@ snapshots:
 
   react-native-skia-apple-tvos@152.0.0: {}
 
-  react-native-svg@15.15.4(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-svg@15.15.4(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       css-select: 5.2.2
       css-tree: 1.1.3
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       warn-once: 0.1.1
 
   react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
@@ -21018,14 +21198,14 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       escape-string-regexp: 4.0.0
       invariant: 2.2.4
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
-  react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
+  react-native-worklets@0.13.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
     dependencies:
       '@babel/core': 7.29.0(supports-color@8.1.1)
       '@babel/generator': 7.29.8
@@ -21044,20 +21224,20 @@ snapshots:
       '@react-native/metro-config': 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)
       convert-source-map: 2.0.0
       react: 19.3.0
-      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
       semver: 7.8.5
       whatwg-fetch: 3.6.20
     transitivePeerDependencies:
       - supports-color
 
-  react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1):
+  react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1):
     dependencies:
       '@react-native/asset-utils': 0.88.0
       '@react-native/codegen': 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))
-      '@react-native/community-cli-plugin': 0.88.0(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(supports-color@8.1.1)
+      '@react-native/community-cli-plugin': 0.88.0(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(supports-color@8.1.1)
       '@react-native/gradle-plugin': 0.88.0
       '@react-native/normalize-colors': 0.88.0
-      '@react-native/virtualized-lists': 0.88.0(@types/react@19.2.14)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-native/virtualized-lists': 0.88.0(@types/react@19.2.14)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       anser: 1.4.10
       ansi-regex: 5.0.1
       base64-js: 1.5.1
@@ -22143,7 +22323,7 @@ snapshots:
 
   ts-dedent@2.3.0: {}
 
-  ts-node@10.9.2(@types/node@18.19.130)(typescript@6.0.3):
+  ts-node@10.9.2(@types/node@18.19.130)(typescript@7.0.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.12
@@ -22157,12 +22337,12 @@ snapshots:
       create-require: 1.1.1
       diff: 4.0.4
       make-error: 1.3.6
-      typescript: 6.0.3
+      typescript: 7.0.2
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optional: true
 
-  ts-node@10.9.2(@types/node@20.5.1)(typescript@6.0.3):
+  ts-node@10.9.2(@types/node@20.5.1)(typescript@7.0.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.12
@@ -22176,7 +22356,7 @@ snapshots:
       create-require: 1.1.1
       diff: 4.0.4
       make-error: 1.3.6
-      typescript: 6.0.3
+      typescript: 7.0.2
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 
@@ -22225,7 +22405,28 @@ snapshots:
     dependencies:
       is-typedarray: 1.0.0
 
-  typescript@6.0.3: {}
+  typescript@7.0.2:
+    optionalDependencies:
+      '@typescript/typescript-aix-ppc64': 7.0.2
+      '@typescript/typescript-darwin-arm64': 7.0.2
+      '@typescript/typescript-darwin-x64': 7.0.2
+      '@typescript/typescript-freebsd-arm64': 7.0.2
+      '@typescript/typescript-freebsd-x64': 7.0.2
+      '@typescript/typescript-linux-arm': 7.0.2
+      '@typescript/typescript-linux-arm64': 7.0.2
+      '@typescript/typescript-linux-loong64': 7.0.2
+      '@typescript/typescript-linux-mips64el': 7.0.2
+      '@typescript/typescript-linux-ppc64': 7.0.2
+      '@typescript/typescript-linux-riscv64': 7.0.2
+      '@typescript/typescript-linux-s390x': 7.0.2
+      '@typescript/typescript-linux-x64': 7.0.2
+      '@typescript/typescript-netbsd-arm64': 7.0.2
+      '@typescript/typescript-netbsd-x64': 7.0.2
+      '@typescript/typescript-openbsd-arm64': 7.0.2
+      '@typescript/typescript-openbsd-x64': 7.0.2
+      '@typescript/typescript-sunos-x64': 7.0.2
+      '@typescript/typescript-win32-arm64': 7.0.2
+      '@typescript/typescript-win32-x64': 7.0.2
 
   ua-parser-js@1.0.41: {}
 

@@ -74,7 +74,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "esbuild": "^0.20.2",
     "esbuild-register": "^3.5.0",
-    "typescript": "~6.0.3",
+    "typescript": "catalog:",
     "webpack": "^5.101.3",
     "webpack-cli": "^5.0.1"
   },

@@ -18,7 +18,7 @@ minimumReleaseAgeExclude:
   - '@react-native-segmented-control/segmented-control'
 
 overrides:
-  typescript: ~6.0.3
+  typescript: 7.0.2
   # needed as swm/t-rex-ui pins docusaurus at 3.9.2 which is not compatible with webpack >=
   webpack: 5.101.3
   # webpack does not load entry module and skips d3-transitions which throws on higher versions
@@ -51,7 +51,7 @@ catalog:
   react-native-svg: '15.15.4'
   react-native-worklets: '0.13.0'
   react-test-renderer: '19.3.0'
-  typescript: '~6.0.3'
+  typescript: '7.0.2'
 
 # Allow postinstall for git hooks registration
 allowBuilds:

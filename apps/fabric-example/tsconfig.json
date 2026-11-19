@@ -6,6 +6,7 @@
       "@/*": ["../common-app/src/*"]
     }
   },
+  "include": ["**/*", "../common-app/types.d.ts"],
   "exclude": [
     "**/node_modules",
     "**/Pods",
