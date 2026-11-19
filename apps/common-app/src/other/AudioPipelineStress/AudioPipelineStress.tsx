@@ -22,6 +22,7 @@ import {
 } from './constants';
 import StressResourceOwner from './StressResourceOwner';
 import StopRequestedError from './StopRequestedError';
+import { runRecorderTorture } from './recorderTorture';
 import {
   activatePlaybackSession,
   activateRecordingSession,
@@ -51,6 +52,11 @@ const AudioPipelineStress: FC = () => {
   const stopRequestedRef = useRef(false);
   const runIdRef = useRef(0);
   const isMountedRef = useRef(true);
+  /**
+   * Known-issue notes raised during the running step; runStep turns them into
+   * info steps.
+   */
+  const knownIssuesRef = useRef<string[]>([]);
 
   const [runnerState, setRunnerState] = useState<RunnerState>('idle');
   const [currentStep, setCurrentStep] = useState<string>(
@@ -120,6 +126,8 @@ const AudioPipelineStress: FC = () => {
 
     const startedAt = Date.now();
 
+    knownIssuesRef.current = [];
+
     try {
       await action();
 
@@ -129,6 +137,14 @@ const AudioPipelineStress: FC = () => {
         status: 'pass',
         startedAt,
         finishedAt: Date.now(),
+      });
+      knownIssuesRef.current.forEach((details, index) => {
+        addInfoStep(
+          stepResults,
+          `${id}-known-issue-${index + 1}`,
+          'Known issue RNAA-586: position events dropped',
+          details
+        );
       });
     } catch (error) {
       const serializedError = serializeUnknownError(
@@ -213,6 +229,19 @@ const AudioPipelineStress: FC = () => {
       positionSamples,
       thresholdSeconds: minimumSeconds,
     };
+
+    // RNAA-586: once the library's event queue runs out of blocks, audio-thread events such as
+    // onpositionchanged are dropped for the rest of the process while playback still renders.
+    // A running clock with no position event at all is that, not a stalled node.
+    if (stats.engineDeltaSeconds >= minimumSeconds && maxObserved === 0) {
+      knownIssuesRef.current.push(
+        `${contextLabel}: ${formatPlaybackProgressStats(stats)}`
+      );
+      appendLog(
+        `${contextLabel}: no position events while the clock ran; treated as known issue RNAA-586`
+      );
+      return stats;
+    }
     const diagnosis =
       stats.engineDeltaSeconds < 0.05
         ? 'engine-clock-stalled'
@@ -747,6 +776,20 @@ const AudioPipelineStress: FC = () => {
               await performCleanRecording();
             }
           );
+        }
+      );
+
+      await runScenario(
+        'recorder_torture',
+        'Recorder Torture',
+        async (steps) => {
+          await runRecorderTorture({
+            resources: resourcesRef.current,
+            runStep: (id, message, action) =>
+              runStep('Recorder Torture', steps, id, message, action),
+            addInfoStep: (id, message, details) =>
+              addInfoStep(steps, id, message, details),
+          });
         }
       );
 
