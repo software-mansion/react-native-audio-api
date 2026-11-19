@@ -686,6 +686,25 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### clock
+      </div></td>
+      <td>
+        <div class="text-content">
+          `RecordingClock` - the recorder's duration, readable from a worklet. Its `currentDuration` is what [getCurrentDuration()](#getcurrentduration) returns, in seconds. Capture it in a UI worklet to read the duration on the UI thread, every frame if needed, without going through the JS thread. It never keeps the recorder alive, and reads `0` once the recording ends.
+        </div>
+        ```tsx
+          const clock = audioRecorder.clock;
+
+          useFrameCallback(() => {
+            'worklet';
+            elapsedMs.value = clock.currentDuration * 1000;
+          });
+        ```
+      </td>
+    </tr>
   </tbody>
 </table>
 
@@ -842,6 +861,46 @@ export default MyRecorder;
         </div>
         ```tsx
           audioRecorder.disconnect();
+        ```
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+### Custom consumers {#custom-consumers}
+
+A consumer receives the buffers the recorder captures, alongside the file, [`onAudioReady`](#onaudioready) and [`connect`](#connect). Delivery happens off the audio thread, so when consumers fall behind under load the recorder drops buffers rather than blocking capture; a consumer cannot assume it sees every captured frame. Concrete consumers come from extension packages, such as [`RecorderWorklet`](../worklets/recorder-worklet.mdx). One consumer can be added to several recorders; only the one that is recording feeds it.
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### addConsumer
+      </div></td>
+      <td>
+        <div class="text-content">
+          Feeds the recorded buffers to `consumer` as well (buffers can be dropped under load), from the next recording on, or at once when a recording is running. Returns `Result<void>`: an error when the consumer is added already or cannot be prepared for the running recording, in which case it is not added.
+        </div>
+        ```tsx
+          audioRecorder.addConsumer(consumer);
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### removeConsumer
+      </div></td>
+      <td>
+        <div class="text-content">
+          Stops feeding `consumer`, closing it when a recording is running. Does nothing when it was not added.
+        </div>
+        ```tsx
+          audioRecorder.removeConsumer(consumer);
         ```
       </td>
     </tr>

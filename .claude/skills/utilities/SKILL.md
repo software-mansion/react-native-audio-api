@@ -33,7 +33,7 @@ Holds N channels of `AudioArrayBuffer`. Handles up/down-mixing automatically on 
 
 `sum()` and `copy()` between different channel counts apply the speaker mixing gains (4 → 2 halves, 4 → 1 quarters). When the extra channels are a node's own intermediate results and not a speaker layout (`ConvolverNode` true stereo), sum channel by channel with `getChannel(i)->sum(...)`.
 
-Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
+Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `copy(const float *const *channels, srcStart, dstStart, length)` (planar raw memory, one pointer per channel, no mixing); the `AudioBufferCopySource` concept, declared next to it, is true for every type `copy` accepts as a source, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
 
 Channel layout constants: `ChannelType` (namespace scope, shared by every alignment): `MONO=0`, `LEFT=0`, `RIGHT=1`, `CENTER=2`, `LFE=3`, `SURROUND_LEFT=4`, `SURROUND_RIGHT=5`.
 
@@ -60,9 +60,9 @@ float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 
 ---
 
-### `CircularAudioArray.h` — circular float buffer (read header)
+### `CircularArray.hpp` — circular float buffer (read header)
 
-`AudioArray` subclass acting as a circular queue for streaming audio. **Not thread-safe** — use only from one thread.
+`CircularArray<Base>` template; aliases `CircularAudioArray` and `CircularDSPAudioArray`. A circular queue for streaming audio. **Not thread-safe** — use only from one thread.
 
 Key operations:
 - `push_back(AudioArray&, size)` / `push_back(float*, size)` — write frames
@@ -70,7 +70,10 @@ Key operations:
 - `pop_back(AudioArray&, size, offset)` — read newest frames
 - `getNumberOfAvailableFrames()` — how many frames ready to read
 
-Used in delay lines and streaming buffers.
+Used in delay lines and streaming buffers. For a "newest window" ring (`AnalyserNode`,
+worklets' `UIWorkletSnapshots`): size it to the window, `push_back(..., skipAvailableSpaceCheck
+= true)` and `pop_back(..., size, 0, true)`; `push_back` throws for a block larger than the
+ring, so pass only the block's newest `size` frames. Exported via `StableAPI.h`.
 
 ---
 
@@ -239,7 +242,7 @@ RAII mutex wrapper that can hold `nullptr` (no-op). Supports `Locker::tryLock(mu
 
 - **`AudioDecoder.h`** — decodes audio files to `AudioBuffer` (FFmpeg, conditional). Read the header.
 - **`AudioFileWriter.h`** — writes PCM to audio files. Read the header.
-- **`AudioRecorderCallback.h`** — callback adapter for the platform recorder. Internal.
+- **`AudioRecorderCallback.h`** — the JS `onAudioReady` `AudioConsumer` (resamples/remixes on the recorder's effects worker). Internal.
 - **`worklets/WorkletsRunner.h`** — manages JS worklet execution on the audio thread. Internal.
 
 ---
@@ -256,13 +259,19 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ### `AudioBufferPool.hpp` — preallocated planar buffers by pointer
 
-`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, dropping it anywhere returns the buffer, and a null lease is the shutdown message, so the message struct needs a defaulted `operator==`. Not `shared_ptr`: its control block would allocate on the audio thread.
+`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). For the usual case (the audio thread copies each buffer for a worker) use `AudioBufferOffloader` below rather than wiring a pool to a `TaskOffloader` yourself. The lease travels through the `TaskOffloader` message by move, dropping it anywhere returns the buffer, and a null lease is the shutdown message, so the message struct needs a defaulted `operator==`. Not `shared_ptr`: its control block would allocate on the audio thread.
+
+---
+
+### `AudioBufferOffloader.hpp` — audio-thread buffers to a worker
+
+A 32-slot `AudioBufferPool` plus a `TaskOffloader<PendingFrames>` behind one deliver callback. `start(StreamFormat)` sizes the pool and starts the worker (false on an unusable format or out of memory), `push(source, numFrames)` copies into a slot through `AudioBuffer::copy` and sends it; `source` is constrained by `AudioBufferCopySource` (from `AudioBuffer.hpp`) to what `copy` takes: raw channel pointers (the audio thread) or an `AudioBuffer`, mixed to the started channel count (never blocks or allocates; drops when no slot is free), `stop()` drains every queued buffer to the callback, joins, frees the pool. The owner stops feeding `push()` before `start` / `stop`. The callback gets the lease (`PendingFrames`) and can drop it early to free the slot before slow work. Used by `AudioFileWriter` (encoder) and `RecorderConsumers` (effects worker). Declare it last in the owner, so its worker joins before what the callback touches is destroyed.
 
 ---
 
 ### `VectorMath.h` — SIMD-optimized vector math
 
-SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onInputFrames`, `AudioFileWriter`, `AudioRecorderCallback`, `AudioEncoder::encode` all take one pointer per channel); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
+SIMD-accelerated array operations (Apple Accelerate/vDSP when `HAVE_ACCELERATE` is set by the podspec, otherwise ARM NEON / x86 SSE2). Use for per-channel hot-path processing. Read the header for available functions before writing manual loops. `interleave`/`deinterleave` handle any channel count (planar pointers <-> channel-interleaved); on Accelerate stereo goes through `vDSP_ctoz`/`vDSP_ztoc` and N channels through one strided `vDSP_vsadd` per channel, so platform code should call these rather than hand-roll a repack. The recorder pipeline is planar end to end (`AudioRecorder::onInputFrames`, `AudioFileWriter`, `AudioEncoder::encode` take one pointer per channel; `AudioConsumer::write` gets the planar pool `AudioBuffer`); the only repacks are Oboe's interleaved input on Android and the encoder backends' fused interleave-while-quantize.
 
 ---
 

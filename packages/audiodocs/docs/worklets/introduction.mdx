@@ -62,18 +62,14 @@ Import `react-native-audio-worklets` before creating any worklet node. The packa
 ```tsx
 import 'react-native-audio-api';
 import {
-  WorkletAudioContext,
+  RecorderWorklet,
   WorkletNode,
   WorkletProcessingNode,
   WorkletSourceNode,
 } from 'react-native-audio-worklets';
 ```
 
-## WorkletAudioContext
-
-Worklet nodes accept any [`BaseAudioContext`](../core/base-audio-context.mdx), but [`WorkletAudioContext`](./worklet-audio-context.mdx) is the dedicated context for worklet graphs that do not need speaker output. It renders on a background thread and discards audio at `destination`, which keeps visualization or analysis graphs separate from your main [`AudioContext`](../core/audio-context.mdx) playback session.
-
-See the [`WorkletAudioContext`](./worklet-audio-context.mdx) page for constructor options, lifecycle (`resume` / `suspend` / `close`), and usage patterns.
+Worklet nodes accept any [`BaseAudioContext`](../core/base-audio-context.mdx). To visualize microphone input without building an audio graph, add a [`RecorderWorklet`](./recorder-worklet.mdx) to an [`AudioRecorder`](../inputs/audio-recorder.mdx) instead.
 
 :::tip
 If you only use core audio nodes and never import `react-native-audio-worklets`, you do **not** need `react-native-worklets` installed — the main library builds without it.

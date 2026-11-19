@@ -7,15 +7,41 @@
 
 namespace audioapi::test {
 
-// TODO: replace this testcase with more meaningful ones.
-TEST(RecorderAdapterNodeTest, TrivialConstructAndInit) {
-  auto registry = std::make_shared<MockAudioEventHandlerRegistry>();
-  auto context = std::make_shared<OfflineAudioContext>(2, 128, 44100.0f, registry);
+namespace {
+
+const StreamFormat MONO_44K{
+    .layout = {.sampleRate = 44100.0f, .channelCount = 1},
+    .maxFramesPerBuffer = 256,
+};
+
+std::shared_ptr<OfflineAudioContext> makeContext() {
+  return std::make_shared<OfflineAudioContext>(
+      2, 128, 44100.0f, std::make_shared<MockAudioEventHandlerRegistry>());
+}
+
+} // namespace
+
+TEST(RecorderAdapterNodeTest, ItsConsumerSizesTheNodeForTheRecordersFormat) {
+  auto context = makeContext();
   RecorderAdapterNode adapter(context);
-  adapter.init(
-      StreamFormat{
-          .layout = {.sampleRate = 44100.0f, .channelCount = 1}, .maxFramesPerBuffer = 256});
-  adapter.adapterCleanup();
+
+  ASSERT_TRUE(adapter.consumer()->prepare(MONO_44K).is_ok());
+
+  EXPECT_EQ(adapter.consumer()->preparedChannelCount(), 1U);
+  EXPECT_EQ(adapter.getOutputChannelNumber(), 1U);
+  adapter.consumer()->close();
+  EXPECT_EQ(adapter.consumer()->preparedChannelCount(), 0U);
+}
+
+TEST(RecorderAdapterNodeTest, ItsConsumerOutlivesTheNodesContext) {
+  auto context = makeContext();
+  auto consumer = RecorderAdapterNode(context).consumer();
+
+  context.reset();
+
+  ASSERT_TRUE(consumer->prepare(MONO_44K).is_ok());
+  EXPECT_EQ(consumer->preparedChannelCount(), 1U);
+  consumer->close();
 }
 
 } // namespace audioapi::test

@@ -29,4 +29,17 @@ throwException(jsi::Runtime &runtime, const char *name, const std::string &messa
   throw jsi::JSError(runtime, std::move(error));
 }
 
+jsi::Object toJsResult(jsi::Runtime &runtime, const Result<NoneType, std::string> &result) {
+  auto jsResult = jsi::Object(runtime);
+  jsResult.setProperty(
+      runtime,
+      "status",
+      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
+  if (result.is_err()) {
+    jsResult.setProperty(
+        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
+  }
+  return jsResult;
+}
+
 } // namespace audioapi::jsiutils

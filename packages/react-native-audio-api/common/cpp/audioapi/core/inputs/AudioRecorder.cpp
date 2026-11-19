@@ -5,7 +5,7 @@
 #include <audioapi/core/inputs/RecorderInputGate.h>
 #include <audioapi/core/inputs/RecordingSessionRegistry.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
-#include <audioapi/events/IAudioEventHandlerRegistry.h>
+#include <audioapi/events/EventCaller.hpp>
 
 #include <memory>
 #include <optional>
@@ -21,8 +21,9 @@ AudioRecorder::AudioRecorder(
     const PlatformFileBackend *fileBackend)
     : input_(std::move(input)),
       inputGate_(std::make_shared<RecorderInputGate>(this)),
-      outputs_(audioEventHandlerRegistry, fileBackend != nullptr ? *fileBackend : osFileBackend()),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry),
+      errorEvent_(
+          std::make_shared<EventCaller<AudioEvent::RECORDER_ERROR>>(audioEventHandlerRegistry)),
+      consumers_(errorEvent_, fileBackend != nullptr ? *fileBackend : osFileBackend()),
       sessionRegistry_(std::move(sessionRegistry)) {}
 
 /// The platform input can outlive the recorder and keeps calling the gate, which holds a raw
@@ -54,7 +55,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
   }
 
   Result<NoneType, std::string> startResult = Ok(None);
-  RecorderOutputs::Detached abandoned;
+  RecorderConsumers::Detached abandoned;
 
   while (true) {
     // With the control mutex released: it can wait seconds for a Bluetooth link, and every other
@@ -91,7 +92,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
       auto formatResult = input_->getCurrentFormat();
       if (formatResult.is_ok()) {
         session_.format = formatResult.unwrap();
-        startResult = outputs_.prepare(*session_.format);
+        startResult = consumers_.prepare(*session_.format);
       } else {
         startResult = Err("Recorder input format is unavailable: " + formatResult.unwrap_err());
       }
@@ -106,13 +107,13 @@ Result<NoneType, std::string> AudioRecorder::start() {
     break;
   }
 
-  RecorderOutputs::finalize(std::move(abandoned));
+  RecorderConsumers::finalize(std::move(abandoned));
   return startResult;
 }
 
 Result<FileInfo, std::string> AudioRecorder::stop(std::optional<uint64_t> openedGeneration) {
   RecordingSessionId stoppedSession = 0;
-  RecorderOutputs::Detached detached;
+  RecorderConsumers::Detached detached;
 
   {
     std::scoped_lock controlLock(controlMutex_);
@@ -128,7 +129,7 @@ Result<FileInfo, std::string> AudioRecorder::stop(std::optional<uint64_t> opened
     detached = endSession();
   }
 
-  auto stopResult = RecorderOutputs::finalize(std::move(detached));
+  auto stopResult = RecorderConsumers::finalize(std::move(detached));
   if (stopResult.is_ok()) {
     sessionRegistry_->keepRecording(stoppedSession, stopResult.unwrap());
   }
@@ -158,7 +159,7 @@ Result<NoneType, std::string> AudioRecorder::resume() {
       break;
   }
 
-  // The input may come back in another format, so nothing is delivered until the outputs
+  // The input may come back in another format, so nothing is delivered until the consumers
   // follow it.
   const auto phaseBefore = session_.phase.load(std::memory_order_acquire);
   enterPhase(Phase::Paused);
@@ -175,7 +176,7 @@ Result<NoneType, std::string> AudioRecorder::resume() {
     }
   } else if (resumeResult.is_ok()) {
     // A running input whose format cannot be read would leave the session reading as recording
-    // while nothing reaches the outputs, so the resume is undone instead.
+    // while nothing reaches the consumers, so the resume is undone instead.
     input_->pause();
   }
 
@@ -234,7 +235,7 @@ void AudioRecorder::onInputFormatChanged(uint64_t openedGeneration) {
   }
 
   // Unreadable while the platform rebuilds its input graph. The gate is left as it is: arming it
-  // would feed frames of an unknown format to the outputs, and disarming it would silence the
+  // would feed frames of an unknown format to the consumers, and disarming it would silence the
   // session for good if no later notification arrives.
   auto formatResult = input_->getCurrentFormat();
   if (formatResult.is_err()) {
@@ -265,62 +266,37 @@ Result<NoneType, std::string> AudioRecorder::enableFileOutput(
     return Err("File output cannot be changed while a recording session is active");
   }
 
-  return outputs_.enableFile(std::move(properties));
+  return consumers_.enableFile(std::move(properties));
 }
 
 void AudioRecorder::disableFileOutput() {
-  RecorderOutputs::Detached detached;
+  RecorderConsumers::Detached detached;
 
   {
     std::scoped_lock controlLock(controlMutex_);
-    detached = outputs_.disableFile();
+    detached = consumers_.disableFile();
   }
 
-  RecorderOutputs::finalize(std::move(detached));
+  RecorderConsumers::finalize(std::move(detached));
 }
 
-void AudioRecorder::connect(const std::shared_ptr<utils::graph::NodeHandle> &node) {
+Result<NoneType, std::string> AudioRecorder::addConsumer(
+    const std::shared_ptr<AudioConsumer> &consumer) {
   std::scoped_lock controlLock(controlMutex_);
-  outputs_.connect(node, session_.format);
+  return consumers_.add(consumer, session_.format);
 }
 
-void AudioRecorder::disconnect() {
-  RecorderOutputs::Detached detached;
-
-  {
-    std::scoped_lock controlLock(controlMutex_);
-    detached = outputs_.disconnect();
-  }
-
-  RecorderOutputs::finalize(std::move(detached));
-}
-
-Result<NoneType, std::string> AudioRecorder::setOnAudioReadyCallback(
-    float sampleRate,
-    size_t bufferLength,
-    int channelCount,
-    uint64_t callbackId) {
+void AudioRecorder::removeConsumer(const std::shared_ptr<AudioConsumer> &consumer) {
   std::scoped_lock controlLock(controlMutex_);
-  return outputs_.setCallback(sampleRate, bufferLength, channelCount, callbackId, session_.format);
-}
-
-void AudioRecorder::clearOnAudioReadyCallback() {
-  std::scoped_lock controlLock(controlMutex_);
-  outputs_.clearCallback();
+  consumers_.remove(consumer);
 }
 
 void AudioRecorder::setOnErrorCallback(uint64_t callbackId) {
-  std::scoped_lock controlLock(controlMutex_);
-  outputs_.setErrorCallbackId(callbackId);
+  errorEvent_->assignCallbackId(callbackId);
 }
 
 void AudioRecorder::clearOnErrorCallback() {
-  std::scoped_lock controlLock(controlMutex_);
-  outputs_.setErrorCallbackId(0);
-}
-
-double AudioRecorder::getCurrentDuration() const {
-  return session_.recordedSeconds.load(std::memory_order_relaxed);
+  errorEvent_->assignCallbackId(0);
 }
 
 bool AudioRecorder::isIdle() const {
@@ -371,11 +347,11 @@ void AudioRecorder::onInputFrames(const float *const *channels, int channelCount
   const double bufferSeconds = static_cast<double>(numFrames) / session_.format->layout.sampleRate;
   session_.lastBufferSeconds.store(bufferSeconds, std::memory_order_relaxed);
   // The only writer while the gate is armed, so a load and a store need no read-modify-write.
-  session_.recordedSeconds.store(
-      session_.recordedSeconds.load(std::memory_order_relaxed) + bufferSeconds,
+  session_.recordedSeconds->store(
+      session_.recordedSeconds->load(std::memory_order_relaxed) + bufferSeconds,
       std::memory_order_relaxed);
 
-  outputs_.write(channels, numFrames);
+  consumers_.write(channels, numFrames);
 }
 
 void AudioRecorder::enterPhase(Phase phase) {
@@ -395,10 +371,10 @@ Result<NoneType, std::string> AudioRecorder::repointOutputsAt(const StreamFormat
     return Ok(None);
   }
 
-  // Nothing may deliver frames in the old format once the outputs start following the new one.
+  // Nothing may deliver frames in the old format once the consumers start following the new one.
   inputGate_->disarmAndWait();
   session_.format = format;
-  auto followResult = outputs_.follow(format);
+  auto followResult = consumers_.follow(format);
 
   if (session_.phase.load(std::memory_order_acquire) == Phase::Recording) {
     inputGate_->arm();
@@ -480,27 +456,21 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
   return Ok(None);
 }
 
-RecorderOutputs::Detached AudioRecorder::endSession() {
+RecorderConsumers::Detached AudioRecorder::endSession() {
   enterPhase(Phase::Idle);
   input_->close();
   ++session_.inputGeneration;
   session_.format.reset();
   session_.lastBufferSeconds.store(0.0, std::memory_order_relaxed);
-  session_.recordedSeconds.store(0.0, std::memory_order_relaxed);
-  sessionRegistry_->release(weak_from_this());
+  session_.recordedSeconds->store(0.0, std::memory_order_relaxed);
 
-  return outputs_.detach();
+  auto detached = consumers_.detach();
+  sessionRegistry_->release(weak_from_this());
+  return detached;
 }
 
 void AudioRecorder::reportError(const std::string &message) {
-  const uint64_t callbackId = outputs_.errorCallbackId();
-
-  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
-    return;
-  }
-
-  audioEventHandlerRegistry_->dispatchEvent(
-      AudioEvent::RECORDER_ERROR, callbackId, StringPayload{.name = "message", .reason = message});
+  errorEvent_->dispatch(StringPayload{.name = "message", .reason = message});
 }
 
 } // namespace audioapi

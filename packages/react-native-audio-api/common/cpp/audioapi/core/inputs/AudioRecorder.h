@@ -1,11 +1,11 @@
 #pragma once
 
 #include <audioapi/core/inputs/FileInfo.h>
-#include <audioapi/core/inputs/RecorderOutputs.h>
+#include <audioapi/core/inputs/RecorderConsumers.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/inputs/RecordingSessionRegistry.h>
-#include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
+#include <audioapi/events/AudioEvent.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
 
@@ -23,10 +23,13 @@ class AudioFileProperties;
 class IAudioEventHandlerRegistry;
 class IRecorderInput;
 class RecorderInputGate;
+class AudioConsumer;
 struct PlatformFileBackend;
+template <AudioEvent Event>
+class EventCaller;
 
 /// @brief A microphone recorder session, shared by every platform: when capture runs, which
-/// format it delivers, and when its outputs (RecorderOutputs) are prepared and fed. The
+/// format it delivers, and when its consumers (RecorderConsumers) are prepared and fed. The
 /// platform's part is the capture stream behind IRecorderInput.
 class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
  public:
@@ -51,13 +54,13 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
 
   /// @brief Reopens capture on the input the platform selects now: after a route change
   /// (Android's AudioInputRouter) or a disconnected stream. A different stream format re-points the
-  /// outputs without splitting the file.
+  /// consumers without splitting the file.
   Result<NoneType, std::string> rerouteInput(
       std::optional<uint64_t> openedGeneration = std::nullopt);
 
   /// The platform reconfigured the input it opened at @p openedGeneration on its own, as iOS does
-  /// on a route change: the outputs follow the format it delivers now. A failure to follow turns
-  /// that output off and is reported; the session goes on. Ignored once that opening has ended.
+  /// on a route change: the consumers follow the format it delivers now. A failure to follow turns
+  /// that consumer off and is reported; the session goes on. Ignored once that opening has ended.
   void onInputFormatChanged(uint64_t openedGeneration);
 
   /// The platform gave up recovering the input it opened at @p openedGeneration: reported, the
@@ -70,20 +73,20 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// Closes the file immediately when called mid-recording.
   void disableFileOutput();
 
-  void connect(const std::shared_ptr<utils::graph::NodeHandle> &node);
-  void disconnect();
-
-  Result<NoneType, std::string> setOnAudioReadyCallback(
-      float sampleRate,
-      size_t bufferLength,
-      int channelCount,
-      uint64_t callbackId);
-  void clearOnAudioReadyCallback();
+  /// Fed by every session from now on; mid-session, prepared for the running one at once. Fails,
+  /// adding nothing, when it cannot be prepared or is added already.
+  Result<NoneType, std::string> addConsumer(const std::shared_ptr<AudioConsumer> &consumer);
+  /// Closed at once if a session had prepared it.
+  void removeConsumer(const std::shared_ptr<AudioConsumer> &consumer);
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
 
-  [[nodiscard]] double getCurrentDuration() const;
+  /// The seconds recorded in the current session, for readers on any thread; `0` when idle.
+  /// Holding it keeps only the value alive, never the recorder.
+  [[nodiscard]] std::shared_ptr<const std::atomic<double>> getDurationClock() const {
+    return session_.recordedSeconds;
+  }
 
   [[nodiscard]] bool isIdle() const;
   [[nodiscard]] bool isRecording() const;
@@ -97,7 +100,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
 
   /// Where the session is. What holds in each phase:
   ///
-  /// | Phase     | input                    | gate     | outputs                           |
+  /// | Phase     | input                    | gate     | consumers                         |
   /// |-----------|--------------------------|----------|-----------------------------------|
   /// | Idle      | closed                   | disarmed | not prepared                      |
   /// | Starting  | closed, route on its way | disarmed | not prepared                      |
@@ -123,20 +126,23 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
     /// Written only by the audio thread, through the armed gate.
     std::atomic<double> lastBufferSeconds{0.0};
     /// Of the frames delivered while recording, each counted at the sample rate it arrived in.
-    std::atomic<double> recordedSeconds{0.0};
+    /// Shared with getDurationClock() readers, so it is reset in place and never reassigned: a
+    /// clock taken before a new session must keep reading it.
+    std::shared_ptr<std::atomic<double>> recordedSeconds =
+        std::make_shared<std::atomic<double>>(0.0);
   };
 
   /// Audio thread, through the armed gate only. @p channels holds @p channelCount pointers, each to
   /// numFrames float32 samples, valid only for the call.
   void onInputFrames(const float *const *channels, int channelCount, int numFrames);
 
-  /// The only place the session changes phase: frames reach the outputs exactly while
+  /// The only place the session changes phase: frames reach the consumers exactly while
   /// recording, so it arms the gate for Recording and disarms it for any other phase. The caller
   /// holds controlMutex_.
   void enterPhase(Phase phase);
 
-  /// Has the outputs follow @p format when it differs from the one they are prepared for
-  /// (RecorderOutputs::follow()), with the gate disarmed meanwhile. Leaves the gate as the
+  /// Has the consumers follow @p format when it differs from the one they are prepared for
+  /// (RecorderConsumers::follow()), with the gate disarmed meanwhile. Leaves the gate as the
   /// phase requires: armed again only when recording. The caller holds controlMutex_.
   Result<NoneType, std::string> repointOutputsAt(const StreamFormat &format);
 
@@ -146,10 +152,10 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
       std::optional<uint64_t> openedGeneration,
       uint64_t &reopenedGeneration);
 
-  /// Ends the session from any phase: closes the input, releases the session's claim and takes
-  /// the outputs away from the audio thread; RecorderOutputs::finalize() on the result is the
-  /// caller's, with no mutex held. The caller holds controlMutex_.
-  RecorderOutputs::Detached endSession();
+  /// Ends the session from any phase: closes the input, releases the session's claim and the
+  /// listed consumers, and takes the file away from the audio thread; RecorderConsumers::finalize()
+  /// on the result is the caller's, with no mutex held. The caller holds controlMutex_.
+  RecorderConsumers::Detached endSession();
 
   /// Delivers @p message to the JS error callback, if one is registered. Any thread.
   void reportError(const std::string &message);
@@ -158,8 +164,8 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   SessionState session_;
   std::shared_ptr<IRecorderInput> input_;
   std::shared_ptr<RecorderInputGate> inputGate_;
-  RecorderOutputs outputs_;
-  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent_;
+  RecorderConsumers consumers_;
   std::shared_ptr<RecordingSessionRegistry> sessionRegistry_;
 };
 

@@ -12,6 +12,7 @@ import {
   FileDirectory,
   FileFormat,
   FileInfo,
+  RecordingClock,
   Result,
 } from '../types';
 // Imported for {@link concatAudioFiles} in enableFileOutput docs.
@@ -19,6 +20,7 @@ import {
 import { concatAudioFiles } from './AudioFileUtils';
 import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
+import AudioConsumer from './AudioConsumer';
 import type AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 
@@ -41,18 +43,42 @@ function withDefaultFileOptions(
 }
 
 export default class AudioRecorder {
-  protected onAudioReadySubscription: AudioEventSubscription | null = null;
   protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
-  private adapterNode: IRecorderAdapterNode | null = null;
+  /**
+   * While `onAudioReady` is set: the consumer added for it and the event
+   * subscription it delivers to.
+   */
+  private audioReady: {
+    consumer: AudioConsumer;
+    subscription: AudioEventSubscription;
+  } | null = null;
+
+  /**
+   * While connected: the adapter node, kept alive here, and the consumer added
+   * for it.
+   */
+  private adapter: {
+    node: IRecorderAdapterNode;
+    consumer: AudioConsumer;
+  } | null = null;
+
+  /**
+   * Kept while added, so no added consumer is garbage-collected under the
+   * recorder.
+   */
+  private readonly consumers = new Set<AudioConsumer>();
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
     globalThis.AudioEventEmitter
   );
 
+  private readonly durationClock: RecordingClock;
+
   constructor(options?: AudioRecorderOptions) {
     this.recorder = globalThis.createAudioRecorder(options ?? {});
+    this.durationClock = this.recorder.clock;
   }
 
   static isRecordingOngoing(): boolean {
@@ -150,14 +176,14 @@ export default class AudioRecorder {
 
   /** Connects the recorder to a destination node. */
   connect(context: BaseAudioContext, destination: AudioNode): AudioNode {
-    if (this.adapterNode == null) {
-      const adapter = context.context.createRecorderAdapter();
-      this.adapterNode = adapter;
-      this.recorder.connect(adapter);
+    if (this.adapter == null) {
+      const node = context.context.createRecorderAdapter();
+      this.adapter = { node, consumer: new AudioConsumer(node.consumer) };
+      this.addConsumer(this.adapter.consumer);
     }
 
     // @ts-expect-error node is protected, but we need to access it here
-    this.adapterNode.connect(destination.node);
+    this.adapter.node.connect(destination.node);
 
     return destination;
   }
@@ -167,8 +193,10 @@ export default class AudioRecorder {
    * {@link connect} no longer receives recorded audio until connected again.
    */
   disconnect(): void {
-    this.recorder.disconnect();
-    this.adapterNode = null;
+    if (this.adapter != null) {
+      this.removeConsumer(this.adapter.consumer);
+      this.adapter = null;
+    }
   }
 
   /**
@@ -191,27 +219,34 @@ export default class AudioRecorder {
     options: AudioRecorderCallbackOptions,
     callback: (event: OnAudioReadyEventType) => void
   ): Result<void> {
-    if (this.onAudioReadySubscription) {
-      this.recorder.clearOnAudioReady();
-      this.onAudioReadySubscription.remove();
-      this.onAudioReadySubscription = null;
-    }
+    this.clearOnAudioReady();
 
-    this.onAudioReadySubscription =
-      this.audioEventEmitter.addAudioEventListener('audioReady', (event) => {
+    const subscription = this.audioEventEmitter.addAudioEventListener(
+      'audioReady',
+      (event) => {
         const audioBuffer = new AudioBuffer(event.buffer);
         callback({
           ...event,
           buffer: audioBuffer,
         });
-      });
+      }
+    );
+    const consumer = new AudioConsumer(
+      globalThis.createAudioReadyConsumer({
+        sampleRate: options.sampleRate,
+        bufferLength: options.bufferLength,
+        channelCount: options.channelCount,
+        callbackId: subscription.subscriptionId,
+      })
+    );
 
-    return this.recorder.setOnAudioReady({
-      sampleRate: options.sampleRate,
-      bufferLength: options.bufferLength,
-      channelCount: options.channelCount,
-      callbackId: this.onAudioReadySubscription.subscriptionId,
-    });
+    const result = this.addConsumer(consumer);
+    if (result.status === 'success') {
+      this.audioReady = { consumer, subscription };
+    } else {
+      subscription.remove();
+    }
+    return result;
   }
 
   /**
@@ -222,14 +257,38 @@ export default class AudioRecorder {
    * registered.
    */
   clearOnAudioReady(): void {
-    if (!this.onAudioReadySubscription) {
+    if (this.audioReady == null) {
       return;
     }
 
-    this.recorder.clearOnAudioReady();
+    this.removeConsumer(this.audioReady.consumer);
+    this.audioReady.subscription.remove();
+    this.audioReady = null;
+  }
 
-    this.onAudioReadySubscription.remove();
-    this.onAudioReadySubscription = null;
+  /**
+   * Feeds every recorded buffer to `consumer` as well, from the next session
+   * on, or at once when a recording is running. A consumer can be added once;
+   * adding it again fails.
+   *
+   * @returns An error result when the consumer cannot be prepared for the
+   *   running recording or is added already; it is then not added.
+   */
+  addConsumer(consumer: AudioConsumer): Result<void> {
+    const result = this.recorder.addConsumer(consumer.consumer);
+    if (result.status === 'success') {
+      this.consumers.add(consumer);
+    }
+    return result;
+  }
+
+  /**
+   * Stops feeding `consumer`, closing it when a recording is running. Does
+   * nothing when it was not added.
+   */
+  removeConsumer(consumer: AudioConsumer): void {
+    this.recorder.removeConsumer(consumer.consumer);
+    this.consumers.delete(consumer);
   }
 
   isRecording(): boolean {
@@ -241,7 +300,15 @@ export default class AudioRecorder {
   }
 
   getCurrentDuration(): number {
-    return this.recorder.getCurrentDuration();
+    return this.durationClock.currentDuration;
+  }
+
+  /**
+   * The duration as a {@link RecordingClock}: capture it in a UI worklet to read
+   * the duration on the UI thread, every frame if needed.
+   */
+  get clock(): RecordingClock {
+    return this.durationClock;
   }
 
   get inputLatency(): number {

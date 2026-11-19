@@ -71,12 +71,13 @@ interface WorkletNodeOptions {
 ### `WorkletNodeCallback`
 
 ```tsx
-type WorkletNodeCallback = (audioData: Float32Array) => void;
+type WorkletNodeCallback = (audioData: Float32Array, sampleRate: number) => void;
 ```
 
 | Argument | Description |
 | :--- | :---- |
 | `audioData` | Stable `Float32Array` reused every callback. **Time-domain:** down-mixed mono PCM (`bufferLength` samples). **Frequency-domain:** linear magnitude spectrum (`bufferLength` bins; FFT size `bufferLength * 2`). |
+| `sampleRate` | Rate of the frames the snapshot was taken from: the context's sample rate. Use it to convert `bufferLength` to time, or bin `i` to `i * sampleRate / (bufferLength * 2)` Hz. |
 
 :::caution
 Do **not** assign `audioData` to a Reanimated shared value (or any state read later on the UI thread). The native buffer pool is reused for the next snapshot and may be written from the audio thread after your callback returns.
@@ -96,13 +97,9 @@ Do **not** assign `audioData` to a Reanimated shared value (or any state read la
 
 ## How buffering works
 
-1. Each render quantum appends down-mixed mono frames into an internal buffer.
-2. **Time-domain:** when `bufferLength` frames are collected, the callback is scheduled.
-3. **Frequency-domain:** when `bufferLength * 2` PCM samples are collected, native code runs window + FFT + magnitude smoothing, then schedules the callback with `bufferLength` bins.
-4. While the callback is running, new frames are **skipped** (audio still passes through).
-5. After the callback completes, accumulation starts again from the beginning.
-
-If a single quantum contains more frames than needed to fill the buffer, only the frames required to reach `bufferLength` are copied — the rest are discarded.
+1. Each render quantum adds its down-mixed mono frames to a window of the newest frames (`bufferLength` frames in time domain, `bufferLength * 2` in frequency domain).
+2. Every `bufferLength` frames a snapshot is due, and the callback is scheduled with the newest window: raw samples in time domain, or `bufferLength` bins after window + FFT + magnitude smoothing in frequency domain. Frequency-domain windows overlap by half.
+3. Only one callback runs at a time. A snapshot that falls due while the callback is still running is sent once it returns, with the newest frames (audio still passes through).
 
 ## Example
 

@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { StyleSheet, TextInput } from 'react-native';
+import Animated, {
+  useAnimatedProps,
+  useFrameCallback,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import { audioRecorder as Recorder } from '../../singletons';
 import { colors } from '../../styles';
@@ -7,11 +12,14 @@ import { RecordingState } from './types';
 
 const ZERO_DURATION = '00:00:000';
 
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+
 interface RecordingTimeProps {
   state: RecordingState;
 }
 
 function formatDuration(elapsedSeconds: number): string {
+  'worklet';
   const minutes = Math.floor((elapsedSeconds % 3600) / 60)
     .toString()
     .padStart(2, '0');
@@ -26,23 +34,39 @@ function formatDuration(elapsedSeconds: number): string {
 }
 
 const RecordingTime: React.FC<RecordingTimeProps> = ({ state }) => {
-  const [duration, setDuration] = useState(ZERO_DURATION);
+  const recordingClock = useMemo(() => Recorder.clock, []);
+  const duration = useSharedValue(ZERO_DURATION);
+  const isTicking =
+    state === RecordingState.Recording || state === RecordingState.Paused;
+
+  const ticker = useFrameCallback(() => {
+    'worklet';
+    const next = formatDuration(recordingClock.currentDuration);
+
+    if (next !== duration.value) {
+      duration.value = next;
+    }
+  }, false);
 
   useEffect(() => {
-    if (![RecordingState.Recording, RecordingState.Paused].includes(state)) {
-      setDuration(ZERO_DURATION);
-      return;
+    ticker.setActive(isTicking);
+    if (!isTicking) {
+      duration.value = ZERO_DURATION;
     }
+  }, [isTicking, ticker, duration]);
 
-    const showCurrentDuration = () =>
-      setDuration(formatDuration(Recorder.getCurrentDuration()));
+  const animatedProps = useAnimatedProps(() => ({
+    text: duration.value,
+    defaultValue: duration.value,
+  }));
 
-    showCurrentDuration();
-    const interval = setInterval(showCurrentDuration, 100);
-    return () => clearInterval(interval);
-  }, [state]);
-
-  return <Text style={styles.text}>{duration}</Text>;
+  return (
+    <AnimatedTextInput
+      style={styles.text}
+      editable={false}
+      animatedProps={animatedProps}
+    />
+  );
 };
 
 export default RecordingTime;

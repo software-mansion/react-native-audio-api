@@ -7,10 +7,10 @@
 namespace facebook::react {
 
 NativeAudioWorkletsModule::NativeAudioWorkletsModule(std::shared_ptr<CallInvoker> jsInvoker)
-    : NativeAudioWorkletsModuleCxxSpec(jsInvoker), jsInvoker_(std::move(jsInvoker)) {}
+    : NativeAudioWorkletsModuleCxxSpec(std::move(jsInvoker)) {}
 
 bool NativeAudioWorkletsModule::install(jsi::Runtime &runtime) {
-  audioworklets::AudioWorkletsInstaller::inject(runtime, jsInvoker_);
+  audioworklets::AudioWorkletsInstaller::inject(runtime);
   return true;
 }
 

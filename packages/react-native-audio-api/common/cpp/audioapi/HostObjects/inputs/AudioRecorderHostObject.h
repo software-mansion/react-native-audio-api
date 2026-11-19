@@ -5,6 +5,7 @@
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/Macros.h>
+#include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/SerialTaskExecutor.hpp>
 
 #include <memory>
@@ -36,18 +37,14 @@ class AudioRecorderHostObject : public HostObject {
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(resume);
 
-  JSI_HOST_FUNCTION_DECL(connect);
-  JSI_HOST_FUNCTION_DECL(disconnect);
-
-  JSI_HOST_FUNCTION_DECL(setOnAudioReady);
-  JSI_HOST_FUNCTION_DECL(clearOnAudioReady);
+  JSI_HOST_FUNCTION_DECL(addConsumer);
+  JSI_HOST_FUNCTION_DECL(removeConsumer);
 
   JSI_HOST_FUNCTION_DECL(setOnError);
   JSI_HOST_FUNCTION_DECL(clearOnError);
 
-  JSI_HOST_FUNCTION_DECL(getCurrentDuration);
-
   JSI_PROPERTY_GETTER_DECL(inputLatency);
+  JSI_PROPERTY_GETTER_DECL(clock);
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;

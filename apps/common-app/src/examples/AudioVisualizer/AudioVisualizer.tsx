@@ -27,10 +27,7 @@ function linearMagnitudeToByte(linear: number) {
   const db = linear > 0 ? 20 * Math.log10(linear) : ANALYSER_MIN_DB;
   const normalized = Math.max(
     0,
-    Math.min(
-      1,
-      (db - ANALYSER_MIN_DB) / (ANALYSER_MAX_DB - ANALYSER_MIN_DB)
-    )
+    Math.min(1, (db - ANALYSER_MIN_DB) / (ANALYSER_MAX_DB - ANALYSER_MIN_DB))
   );
 
   return Math.round(normalized * 255);
@@ -50,8 +47,10 @@ const AudioVisualizer: React.FC = () => {
   const frequencyWorkletRef = useRef<WorkletNode | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  const timeDataSV = useSharedValue(new Uint8Array(FFT_SIZE).fill(127));
-  const frequencyDataSV = useSharedValue(
+  const timeDataSV = useSharedValue<Uint8Array>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
+  const frequencyDataSV = useSharedValue<Uint8Array>(
     new Uint8Array(FREQUENCY_BIN_COUNT).fill(0)
   );
   const timeDataTickSV = useSharedValue(0);
