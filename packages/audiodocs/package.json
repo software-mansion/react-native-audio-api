@@ -75,7 +75,6 @@
     "esbuild": "^0.20.2",
     "esbuild-register": "^3.5.0",
     "eslint-plugin-mdx": "^2.2.0",
-    "prettier": "^2.8.4",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.18.0",
     "webpack": "^5.101.3",
