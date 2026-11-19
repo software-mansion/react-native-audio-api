@@ -7,6 +7,11 @@ cd "$SCRIPT_DIR"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 PACKAGE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
+# Codegen for rnaudioworkletsJSI.h, so no iOS or Android build is needed.
+node "$PACKAGE_ROOT/node_modules/react-native/scripts/generate-codegen-artifacts.js" \
+  --path "$PACKAGE_ROOT" --source library --targetPlatform ios \
+  --outputPath "$SCRIPT_DIR/build/codegen" >/dev/null
+
 cmake -B build .
 cp build/compile_commands.json "$PACKAGE_ROOT/compile_commands.json"
 
