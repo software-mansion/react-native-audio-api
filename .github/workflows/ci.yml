@@ -48,8 +48,8 @@ jobs:
               - *toolchain
               - 'package.json'
               - 'tsconfig.json'
-              - '.eslintrc.js'
-              - 'prettier.config.js'
+              - '.oxlintrc.json'
+              - '.oxfmtrc.json'
               - 'scripts/run-steps.sh'
               - '.github/workflows/ci.yml'
               - '.github/workflows/check-package.yml'
