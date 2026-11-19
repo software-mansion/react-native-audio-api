@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <audioapi/decoding/AudioDecoding.h>
+#include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/encoding/AudioFileConcatenator.h>
 #include <audioapi/jsi/JsiPromise.h>
 
@@ -77,7 +78,7 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, probeDuration) {
     const auto size = arrayBuffer.size(runtime);
 
     auto promise = promiseVendor_->createAsyncPromise(
-        [bytes = std::vector<uint8_t>(data, data + size), sampleRate]() -> PromiseResolver {
+        [bytes = decoding::EncodedBytes(data, data + size), sampleRate]() -> PromiseResolver {
           auto result =
               audiodecoding::probeDurationWithMemory(bytes.data(), bytes.size(), sampleRate);
           if (result.is_err()) {

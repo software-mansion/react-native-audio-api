@@ -15,6 +15,7 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/core/types/PannerTypes.h>
+#include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
@@ -203,7 +204,7 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
 };
 
 struct AudioFileSourceOptions : AudioScheduledSourceNodeOptions {
-  std::vector<uint8_t> data;
+  decoding::EncodedBytes data;
   std::string filePath;
   std::string sourceUrl;
   std::map<std::string, std::string> httpHeaders;

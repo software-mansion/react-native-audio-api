@@ -79,9 +79,9 @@ void AndroidMemoryDataSource::reset() {
 decoding::DecoderResult attachMemoryExtractorViaDataSource(
     AMediaExtractor *extractor,
     AndroidMemoryDataSource &dataSource,
-    std::vector<uint8_t> &encodedMemory,
+    decoding::EncodedBytes &encodedMemory,
     MemoryDataSourceContext &memorySourceContext,
-    std::vector<uint8_t> data) {
+    decoding::EncodedBytes data) {
   if (__builtin_available(android 28, *)) {
     encodedMemory = std::move(data);
     memorySourceContext = {encodedMemory.data(), encodedMemory.size()};
