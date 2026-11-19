@@ -1,3 +1,4 @@
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { icons } from 'lucide-react-native';
 
 import PedalBoard from './PedalBoard/PedalBoard';
@@ -10,8 +11,17 @@ interface SimplifiedIconProps {
   size?: number;
 }
 
+type DemoParamList = {
+  RecordDemo: undefined;
+  PedalBoard: undefined;
+  Crossfade: undefined;
+  VoiceChat: undefined;
+};
+
+export type DemoStackProps = StackNavigationProp<DemoParamList>;
+
 export interface DemoScreen {
-  key: string;
+  key: keyof DemoParamList;
   title: string;
   subtitle: string;
   icon: React.FC<SimplifiedIconProps>;

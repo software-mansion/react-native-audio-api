@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout } from '../styles';
 
-interface SummaryBadgeProps {
+export interface SummaryBadgeProps {
   label: string;
   value: string;
 }

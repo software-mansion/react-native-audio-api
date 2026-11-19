@@ -6,7 +6,7 @@ import StatusPill from './StatusPill';
 import StepRow from './StepRow';
 import type { ScenarioItem } from './types';
 
-interface ScenarioCardProps {
+export interface ScenarioCardProps {
   scenario: ScenarioItem;
 }
 

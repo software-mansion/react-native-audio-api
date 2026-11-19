@@ -193,7 +193,7 @@ function resumeWaveformScroll(
       duration: remainingDurationMs,
       easing: Easing.linear,
     },
-    (finished) => {
+    (finished?: boolean) => {
       if (!finished) {
         return;
       }

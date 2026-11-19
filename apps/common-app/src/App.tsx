@@ -16,7 +16,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Spacer } from './components';
 import Container from './components/Container';
-import { demos, DemoScreen } from './demos';
+import { demos, DemoScreen, DemoStackProps } from './demos';
 import {
   Example,
   Examples,
@@ -58,7 +58,7 @@ const TestsScreen: FC = () => {
 };
 
 const DemoAppsScreen: FC = () => {
-  const navigation = useNavigation<MainStackProps>();
+  const navigation = useNavigation<DemoStackProps>();
 
   const renderItem: ListRenderItem<DemoScreen> = ({ item }) => (
     <Pressable
@@ -120,7 +120,13 @@ const OtherScreen: FC = () => {
   );
 };
 
-const MainTabs = createBottomTabNavigator<MainStackProps>();
+type MainTabsParamList = {
+  Tests: undefined;
+  DemoApps: undefined;
+  Other: undefined;
+};
+
+const MainTabs = createBottomTabNavigator<MainTabsParamList>();
 
 const tabBarIcon = ({
   routeName,

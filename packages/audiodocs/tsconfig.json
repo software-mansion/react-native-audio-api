@@ -2,9 +2,11 @@
   // This file is not used in compilation. It is here just for a nice editor experience.
   "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
-    "baseUrl": ".",
-    // Docusaurus uses TS >= 5.1. Until they migrate, suppress this warning.
-    "ignoreDeprecations": "6.0"
+    // TypeScript 7 removed baseUrl, which @docusaurus/tsconfig still sets.
+    "baseUrl": null,
+    "paths": {
+      "@site/*": ["./*"]
+    }
   },
   "include": ["src", "types.d.ts"],
   "exclude": [".docusaurus", "build"]
