@@ -3,6 +3,7 @@
 #include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderOutputs.h>
 #include <audioapi/core/inputs/RecorderState.h>
+#include <audioapi/core/inputs/RecordingSessionRegistry.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/Macros.h>
@@ -29,11 +30,13 @@ struct PlatformFileBackend;
 /// platform's part is the capture stream behind IRecorderInput.
 class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
  public:
-  /// Writes files through @p fileBackend, which must outlive the recorder; nullptr selects the
-  /// platform's (osFileBackend()).
+  /// Reports its sessions to @p sessionRegistry (ActiveRecorderHandle::global() for the app's
+  /// recorders). Writes files through @p fileBackend, which must outlive the recorder; nullptr
+  /// selects the platform's (osFileBackend()).
   AudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       std::shared_ptr<IRecorderInput> input,
+      std::shared_ptr<RecordingSessionRegistry> sessionRegistry,
       const PlatformFileBackend *fileBackend = nullptr);
 
   DELETE_COPY_AND_MOVE(AudioRecorder);
@@ -97,17 +100,24 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// | Phase     | input                    | gate     | outputs                           |
   /// |-----------|--------------------------|----------|-----------------------------------|
   /// | Idle      | closed                   | disarmed | not prepared                      |
+  /// | Starting  | closed, route on its way | disarmed | not prepared                      |
   /// | Recording | open, started            | armed    | prepared for SessionState::format |
   /// | Paused    | open, stopped by pause() | disarmed | prepared for SessionState::format |
   /// | Rerouting | closed, route on its way | disarmed | prepared for the old format       |
-  enum class Phase : uint8_t { Idle, Recording, Paused, Rerouting };
+  ///
+  /// Starting already holds the session's claim, so only the start that won it acquires a route.
+  enum class Phase : uint8_t { Idle, Starting, Recording, Paused, Rerouting };
 
   struct SessionState {
     std::atomic<Phase> phase{Phase::Idle};
-    /// Recording or Paused: what a reroute brings the session back as.
-    std::atomic<Phase> phaseAfterReroute{Phase::Recording};
+    /// Recording or Paused: what Starting or Rerouting brings the session to once the input is
+    /// open.
+    std::atomic<Phase> phaseAfterOpening{Phase::Recording};
 
-    /// Bumped every time the input is closed, so it identifies one opening of the input.
+    /// The session registry's id for the current session; set by start().
+    RecordingSessionId id = 0;
+    /// Bumped every time the input is closed, and by a reroute while Starting, so it identifies one
+    /// opening of the input, or the route a start waits for.
     uint64_t inputGeneration = 0;
     std::optional<StreamFormat> format;
     /// Written only by the audio thread, through the armed gate.
@@ -136,9 +146,9 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
       std::optional<uint64_t> openedGeneration,
       uint64_t &reopenedGeneration);
 
-  /// Ends the session from any phase: closes the input and takes the outputs away from the audio
-  /// thread; RecorderOutputs::finalize() on the result is the caller's, with no mutex held. The
-  /// caller holds controlMutex_.
+  /// Ends the session from any phase: closes the input, releases the session's claim and takes
+  /// the outputs away from the audio thread; RecorderOutputs::finalize() on the result is the
+  /// caller's, with no mutex held. The caller holds controlMutex_.
   RecorderOutputs::Detached endSession();
 
   /// Delivers @p message to the JS error callback, if one is registered. Any thread.
@@ -150,6 +160,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   std::shared_ptr<RecorderInputGate> inputGate_;
   RecorderOutputs outputs_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  std::shared_ptr<RecordingSessionRegistry> sessionRegistry_;
 };
 
 } // namespace audioapi

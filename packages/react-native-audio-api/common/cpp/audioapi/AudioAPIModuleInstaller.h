@@ -178,9 +178,7 @@ class AudioAPIModuleInstaller {
         jsi::PropNameID::forAscii(*jsiRuntime, "isRecordingOngoing"),
         0,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
-            -> jsi::Value {
-          return jsi::Value(ActiveRecorderHandle::global().isRecordingOngoing());
-        });
+            -> jsi::Value { return {ActiveRecorderHandle::global()->isRecordingOngoing()}; });
   }
 
   static jsi::Function getConsumeLastRecordingResultFunction(jsi::Runtime *jsiRuntime) {
@@ -190,7 +188,7 @@ class AudioAPIModuleInstaller {
         0,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
             -> jsi::Value {
-          auto result = ActiveRecorderHandle::global().consumeLastRecordingResult();
+          auto result = ActiveRecorderHandle::global()->consumeLastRecordingResult();
           if (!result.has_value()) {
             return jsi::Value::null();
           }

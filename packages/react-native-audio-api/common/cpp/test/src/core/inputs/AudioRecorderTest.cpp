@@ -1,7 +1,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/inputs/IRecorderInput.h>
+#include <audioapi/core/inputs/RecordingSessionRegistry.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
@@ -26,7 +26,7 @@ class AudioRecorderTest : public ::testing::Test {
  protected:
   void SetUp() override {
     backend_ = makeFakeBackend(log_);
-    recorder_ = std::make_shared<AudioRecorder>(registry_, input_, &backend_);
+    recorder_ = std::make_shared<AudioRecorder>(registry_, input_, sessions_, &backend_);
   }
 
   void TearDown() override {
@@ -61,6 +61,17 @@ class AudioRecorderTest : public ::testing::Test {
         .Times(count);
   }
 
+  /// A second recorder reporting to the same registry, without outputs.
+  std::shared_ptr<AudioRecorder> makeOtherRecorder() {
+    return std::make_shared<AudioRecorder>(
+        nullptr, std::make_shared<FakeRecorderInput>(), sessions_, &backend_);
+  }
+
+  /// False while a session of another recorder holds the registry's claim.
+  bool anotherRecorderCanStart() {
+    return makeOtherRecorder()->start().is_ok();
+  }
+
   static constexpr int FRAMES = 128;
   static constexpr uint64_t CALLBACK_ID = 99;
 
@@ -72,6 +83,8 @@ class AudioRecorderTest : public ::testing::Test {
   FakeEncoderLog log_;
   PlatformFileBackend backend_;
   std::shared_ptr<FakeRecorderInput> input_ = std::make_shared<FakeRecorderInput>();
+  std::shared_ptr<RecordingSessionRegistry> sessions_ =
+      std::make_shared<RecordingSessionRegistry>();
   std::shared_ptr<AudioRecorder> recorder_;
 };
 
@@ -148,6 +161,202 @@ TEST_F(AudioRecorderTest, StartWhileRecordingIsRefused) {
 
 TEST_F(AudioRecorderTest, StopWhileIdleFails) {
   EXPECT_TRUE(recorder_->stop().is_err());
+  EXPECT_FALSE(sessions_->consumeLastRecordingResult().has_value());
+}
+
+TEST_F(AudioRecorderTest, AStartWhileAnotherRecorderRecordsIsRefusedBeforeItsRouteIsAcquired) {
+  auto other = makeOtherRecorder();
+  ASSERT_TRUE(other->start().is_ok());
+
+  auto result = recorder_->start();
+
+  ASSERT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "Another recording is already in progress");
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_TRUE(input_->openPurposes.empty());
+  EXPECT_EQ(input_->routesAcquired.load(), 0);
+  EXPECT_TRUE(other->isRecording());
+  EXPECT_FALSE(anotherRecorderCanStart());
+}
+
+TEST_F(AudioRecorderTest, AStartWaitingForItsRouteHoldsTheSessionAndReadsAsRecording) {
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->isRecording());
+    EXPECT_FALSE(anotherRecorderCanStart());
+    EXPECT_TRUE(recorder_->start().is_err());
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_EQ(input_->routesAcquired.load(), 1);
+  EXPECT_EQ(input_->openPurposes.size(), 1U);
+}
+
+// The race the claim decides: the start that comes second has not touched routing when it is
+// refused, even though the first one is not recording yet.
+TEST_F(AudioRecorderTest, AStartRacingAStartThatWaitsForItsRouteIsRefusedBeforeItsRouteIsAcquired) {
+  auto otherInput = std::make_shared<FakeRecorderInput>();
+  auto other = std::make_shared<AudioRecorder>(nullptr, otherInput, sessions_, &backend_);
+  input_->duringAcquireRoute = [&other] {
+    auto result = other->start();
+    ASSERT_TRUE(result.is_err());
+    EXPECT_EQ(result.unwrap_err(), "Another recording is already in progress");
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_TRUE(other->isIdle());
+  EXPECT_EQ(otherInput->routesAcquired.load(), 0);
+  EXPECT_TRUE(otherInput->openPurposes.empty());
+}
+
+TEST_F(AudioRecorderTest, AStopWhileAStartWaitsForItsRouteAbandonsTheStart) {
+  enableFileOutput();
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->stop().is_ok());
+  };
+
+  auto result = recorder_->start();
+
+  ASSERT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), "Recorder was stopped before it started");
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_TRUE(input_->openPurposes.empty());
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+  EXPECT_EQ(log_.closedFiles.load(), 0);
+  EXPECT_FALSE(sessions_->consumeLastRecordingResult().has_value());
+  EXPECT_TRUE(anotherRecorderCanStart());
+}
+
+// The session the second start began is not the one the first start claimed.
+TEST_F(AudioRecorderTest, AStopAndStartWhileAStartWaitsForItsRouteLeaveTheNewSessionRecording) {
+  input_->duringAcquireRoute = [this] {
+    ASSERT_TRUE(recorder_->stop().is_ok());
+    ASSERT_TRUE(recorder_->start().is_ok());
+  };
+
+  EXPECT_TRUE(recorder_->start().is_err());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_EQ(input_->openPurposes.size(), 1U);
+  EXPECT_EQ(input_->routesAcquired.load(), 2);
+  EXPECT_EQ(input_->routesReleased.load(), 1);
+}
+
+TEST_F(AudioRecorderTest, APauseWhileAStartWaitsForItsRouteOpensTheInputStopped) {
+  input_->duringAcquireRoute = [this] {
+    recorder_->pause();
+    EXPECT_TRUE(recorder_->isPaused());
+    // The input opens stopped, so resuming has to wait for it.
+    EXPECT_TRUE(recorder_->resume().is_err());
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isPaused());
+  EXPECT_TRUE(input_->isOpen);
+  EXPECT_FALSE(input_->running.load());
+  EXPECT_TRUE(recorder_->resume().is_ok());
+  EXPECT_TRUE(recorder_->isRecording());
+}
+
+// The route the start waits for was settled before the device changed: the start acquires again
+// and opens only once, on the new device.
+TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsForItsRouteOpensTheInputOnTheNewDevice) {
+  enableFileOutput();
+  static constexpr int32_t NEW_DEVICE = 7;
+  input_->duringAcquireRoute = [this] {
+    input_->routedDeviceId = NEW_DEVICE;
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_EQ(input_->openPurposes, std::vector<InputOpenPurpose>{InputOpenPurpose::StartSession});
+  EXPECT_EQ(input_->openedDeviceIds, (std::vector<std::optional<int32_t>>{NEW_DEVICE}));
+  EXPECT_EQ(input_->routesAcquired.load(), 2);
+  EXPECT_EQ(input_->routesReleased.load(), 1);
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(encodedBuffers(), 1);
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+}
+
+TEST_F(AudioRecorderTest, ADeviceChangeDuringEveryRouteWaitOfAStartIsFollowedToTheLast) {
+  static constexpr int32_t SECOND_DEVICE = 7;
+  static constexpr int32_t THIRD_DEVICE = 9;
+  input_->duringAcquireRoute = [this] {
+    input_->routedDeviceId = SECOND_DEVICE;
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    input_->duringAcquireRoute = [this] {
+      input_->routedDeviceId = THIRD_DEVICE;
+      EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    };
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_EQ(input_->openedDeviceIds, (std::vector<std::optional<int32_t>>{THIRD_DEVICE}));
+  EXPECT_EQ(input_->routesAcquired.load(), 3);
+  EXPECT_EQ(input_->routesReleased.load(), 2);
+}
+
+TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsKeepsASessionPausedMeanwhilePaused) {
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    recorder_->pause();
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isPaused());
+  EXPECT_EQ(input_->openPurposes.size(), 1U);
+  EXPECT_TRUE(input_->isOpen);
+  EXPECT_FALSE(input_->running.load());
+}
+
+TEST_F(AudioRecorderTest, AStopWhileAStartAcquiresItsRouteAgainAbandonsTheStart) {
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->rerouteInput().is_ok());
+    input_->duringAcquireRoute = [this] {
+      EXPECT_TRUE(recorder_->stop().is_ok());
+    };
+  };
+
+  EXPECT_TRUE(recorder_->start().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_TRUE(input_->openPurposes.empty());
+  EXPECT_EQ(input_->routesAcquired.load(), 2);
+  EXPECT_EQ(input_->routesReleased.load(), 2);
+  EXPECT_TRUE(anotherRecorderCanStart());
+}
+
+TEST_F(AudioRecorderTest, AStartWhoseInputFailsToOpenReleasesTheSession) {
+  input_->openError = "device busy";
+
+  EXPECT_TRUE(recorder_->start().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+  EXPECT_TRUE(anotherRecorderCanStart());
+}
+
+TEST_F(AudioRecorderTest, AStopReleasesTheSessionAndKeepsWhatItWrote) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  EXPECT_FALSE(anotherRecorderCanStart());
+
+  auto stopResult = recorder_->stop();
+
+  ASSERT_TRUE(stopResult.is_ok());
+  EXPECT_TRUE(anotherRecorderCanStart());
+  auto kept = sessions_->consumeLastRecordingResult();
+  ASSERT_TRUE(kept.has_value());
+  EXPECT_EQ(kept->paths, stopResult.unwrap().paths);
 }
 
 TEST_F(AudioRecorderTest, AnInputThatFailsToOpenLeavesTheRecorderIdle) {
@@ -159,6 +368,7 @@ TEST_F(AudioRecorderTest, AnInputThatFailsToOpenLeavesTheRecorderIdle) {
   EXPECT_EQ(result.unwrap_err(), "no microphone");
   EXPECT_TRUE(recorder_->isIdle());
   EXPECT_EQ(input_->routesReleased.load(), 1);
+  EXPECT_TRUE(anotherRecorderCanStart());
 }
 
 TEST_F(AudioRecorderTest, AnInputThatFailsToStartIsClosedBeforeAnyFileIsOpened) {
@@ -169,6 +379,8 @@ TEST_F(AudioRecorderTest, AnInputThatFailsToStartIsClosedBeforeAnyFileIsOpened) 
   EXPECT_TRUE(recorder_->isIdle());
   EXPECT_FALSE(input_->isOpen);
   EXPECT_EQ(log_.closedFiles.load(), 0);
+  EXPECT_TRUE(anotherRecorderCanStart());
+  EXPECT_FALSE(sessions_->consumeLastRecordingResult().has_value());
 
   input_->startError.reset();
   EXPECT_TRUE(recorder_->start().is_ok());
@@ -525,6 +737,10 @@ TEST_F(AudioRecorderTest, DestroyingARecordingRecorderFinalizesItsFile) {
   recorder_.reset();
 
   EXPECT_EQ(log_.closedFiles.load(), 1);
+  EXPECT_TRUE(anotherRecorderCanStart());
+  auto kept = sessions_->consumeLastRecordingResult();
+  ASSERT_TRUE(kept.has_value());
+  EXPECT_EQ(kept->paths.size(), 1U);
 }
 
 TEST_F(AudioRecorderTest, EventsFromAnEarlierOpeningOfTheInputAreIgnored) {
@@ -570,38 +786,35 @@ TEST_F(AudioRecorderTest, ALostInputThatCannotBeReopenedEndsTheSession) {
   EXPECT_EQ(log_.closedFiles.load(), 1);
 }
 
-TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteStaysConsumable) {
+TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteIsKept) {
   enableFileOutput();
-  auto &handle = ActiveRecorderHandle::global();
-  ASSERT_TRUE(handle.tryStart(recorder_).is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
   input_->openError = "device gone";
 
   EXPECT_TRUE(recorder_->rerouteInput().is_err());
 
   EXPECT_TRUE(recorder_->isIdle());
-  EXPECT_FALSE(handle.isRecordingOngoing());
-  auto recording = handle.consumeLastRecordingResult();
-  ASSERT_TRUE(recording.has_value());
-  EXPECT_EQ(recording->paths.size(), 1U);
+  EXPECT_TRUE(anotherRecorderCanStart());
+  auto kept = sessions_->consumeLastRecordingResult();
+  ASSERT_TRUE(kept.has_value());
+  EXPECT_EQ(kept->paths.size(), 1U);
 }
 
 // The cleanup of a failed reroute runs after the control mutex is released, so a later reroute
 // can reopen the input first; that cleanup must not end the session the later reroute restored.
 TEST_F(AudioRecorderTest, AStopBoundToAnOpeningARerouteMovedPastLeavesTheSessionRecording) {
   enableFileOutput();
-  auto &handle = ActiveRecorderHandle::global();
-  ASSERT_TRUE(handle.tryStart(recorder_).is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
   // start() opens the input at the recorder's first generation.
   constexpr uint64_t FIRST_OPENING = 0;
   ASSERT_TRUE(recorder_->rerouteInput().is_ok());
 
-  EXPECT_TRUE(handle.stopAndReturnInfo(recorder_, FIRST_OPENING).is_err());
   EXPECT_TRUE(recorder_->stop(FIRST_OPENING).is_err());
 
   EXPECT_TRUE(recorder_->isRecording());
-  EXPECT_TRUE(handle.isRecordingOngoing());
+  EXPECT_FALSE(anotherRecorderCanStart());
   EXPECT_EQ(log_.closedFiles.load(), 0);
-  EXPECT_TRUE(handle.stopAndReturnInfo(recorder_).is_ok());
+  EXPECT_TRUE(recorder_->stop().is_ok());
 }
 
 TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyOutput) {

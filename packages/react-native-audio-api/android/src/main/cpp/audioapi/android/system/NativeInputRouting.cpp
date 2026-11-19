@@ -16,7 +16,7 @@ void NativeInputRouting::registerNatives() {
 }
 
 jboolean NativeInputRouting::rerouteActiveCapture(jni::alias_ref<jni::JClass> /*clazz*/) {
-  return static_cast<jboolean>(ActiveRecorderHandle::global().rerouteInput().is_ok());
+  return static_cast<jboolean>(ActiveRecorderHandle::global()->rerouteInput().is_ok());
 }
 
 std::optional<int32_t> NativeInputRouting::acquireInputRoute() {
