@@ -125,6 +125,7 @@ Adds an event listener for notification actions.
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface RecordingNotificationInfo {
   title?: string;
@@ -148,6 +149,7 @@ interface RecordingNotificationInfo {
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface EventEmptyType {}
 
@@ -165,6 +167,7 @@ type RecordingNotificationEventName = keyof RecordingNotificationEvent;
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type NotificationCallback<Name extends RecordingNotificationEventName> = (
   event: RecordingNotificationEvent[Name]

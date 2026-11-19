@@ -84,6 +84,7 @@ Do **not** assign `audioData` to a Reanimated shared value (or any state read la
 - **Safe:** compute a scalar inside the callback and assign that (e.g. `amplitude.value = rms`).
 - **Safe:** copy samples if you need waveform data later — `Float32Array.from(audioData)`.
 - **Unsafe:** `waveform.value = audioData` — you keep a live alias, not a frozen snapshot.
+
 :::
 
 ### Errors

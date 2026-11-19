@@ -89,6 +89,7 @@ Returns `0.0` when pitch correction is disabled.
 
 <details>
 <summary>Example usage</summary>
+
 ```tsx
 const source = audioContext.createBufferQueueSource({ pitchCorrection: true });
 source.connect(audioContext.destination);
@@ -244,6 +245,7 @@ audioBufferQueueSourceNode.onbufferended = (event) => { //setting callback
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface OnBufferEndEventType {
   bufferId: string; // the ID of the buffer that has ended
