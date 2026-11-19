@@ -2,7 +2,7 @@ import { InvalidStateError, RangeError } from '../../../errors';
 
 import AudioParam from '../../AudioParam.web';
 import AudioBuffer from '../../AudioBuffer.web';
-import BaseAudioContext from '../../BaseAudioContext.web';
+import type BaseAudioContext from '../../BaseAudioContext.web';
 import AudioNode from '../../AudioNode.web';
 
 import { clamp } from '../../../utils';

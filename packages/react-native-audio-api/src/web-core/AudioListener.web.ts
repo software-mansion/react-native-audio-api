@@ -1,5 +1,5 @@
 import AudioParam from './AudioParam.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 
 export default class AudioListener {
   readonly context: BaseAudioContext;

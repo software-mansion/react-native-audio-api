@@ -1,7 +1,7 @@
 import { OscillatorType, OscillatorOptions } from '../types';
 import { InvalidStateError } from '../errors';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import AudioParam from './AudioParam.web';
 import PeriodicWave from './PeriodicWave.web';
 

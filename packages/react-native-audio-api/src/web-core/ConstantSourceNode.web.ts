@@ -1,6 +1,6 @@
 import AudioParam from './AudioParam.web';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import { ConstantSourceOptions } from '../types';
 
 export default class ConstantSourceNode extends AudioScheduledSourceNode {

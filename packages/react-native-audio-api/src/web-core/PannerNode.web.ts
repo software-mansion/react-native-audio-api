@@ -1,7 +1,7 @@
 import { DistanceModelType, PannerOptions, PanningModelType } from '../types';
 import AudioNode from './AudioNode.web';
 import AudioParam from './AudioParam.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 
 export default class PannerNode extends AudioNode {
   readonly positionX: AudioParam;
