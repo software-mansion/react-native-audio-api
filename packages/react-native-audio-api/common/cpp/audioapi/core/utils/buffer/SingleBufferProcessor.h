@@ -48,8 +48,8 @@ class SingleBufferProcessor : public BufferProcessorBase {
 
   /// @brief Limit playback to this many buffer frames, counted across loop iterations.
   /// @note A spent budget is a boundary the processor stops at, even when looping.
-  void setFrameBudget(size_t frames) {
-    frameBudget_ = static_cast<double>(frames);
+  void setFrameBudget(double frames) {
+    frameBudget_ = frames;
   }
 
  protected:

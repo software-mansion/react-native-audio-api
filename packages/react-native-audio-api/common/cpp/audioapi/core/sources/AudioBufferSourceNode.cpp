@@ -45,7 +45,8 @@ void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
 
 void AudioBufferSourceNode::setLoopStart(double loopStart) {
   if (loopSkip_) {
-    vReadIndex_ = loopStart * getContextSampleRate();
+    vReadIndex_ =
+        loopStart * (buffer_ != nullptr ? buffer_->getSampleRate() : getContextSampleRate());
   }
   loopStart_ = loopStart;
 }
@@ -109,7 +110,12 @@ void AudioBufferSourceNode::applyStartToBuffer() {
 
   if (duration) {
     // Spec: `duration` counts buffer content, not context time.
-    processor_->setFrameBudget(dsp::timeToSampleFrame(*duration, sampleRate));
+    // Seconds-to-frames conversion leaves float noise that would otherwise add a whole frame.
+    constexpr double kWholeFrameTolerance = 1e-6;
+    const double frames = *duration * sampleRate;
+    const double wholeFrames = std::round(frames);
+    processor_->setFrameBudget(
+        std::fabs(frames - wholeFrames) < kWholeFrameTolerance ? wholeFrames : frames);
   }
 }
 
@@ -152,9 +158,10 @@ void AudioBufferSourceNode::runBufferProcessor(
     return;
   }
 
-  const float sampleRate = getContextSampleRate();
-  const double startFrame = getVirtualStartFrame(sampleRate);
-  const double endFrame = getVirtualEndFrame(sampleRate);
+  const float bufferSampleRate = buffer_->getSampleRate();
+  const double startFrame = getVirtualStartFrame(bufferSampleRate);
+  const double endFrame = getVirtualEndFrame(bufferSampleRate);
+  const double resampleRatio = bufferSampleRate / getContextSampleRate();
 
   // start(when, offset=duration) sets vReadIndex_ to endFrame, so clamp it
   if (playbackRate < 0 && vReadIndex_ >= endFrame && endFrame > startFrame) {
@@ -164,7 +171,12 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setPosition(vReadIndex_);
   processor_->setEndFrame(static_cast<size_t>(endFrame));
   processor_->setStartFrame(static_cast<size_t>(startFrame));
-  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
+  processor_->process(
+      processingBuffer,
+      startOffset,
+      offsetLength,
+      playbackRate * resampleRatio,
+      interpolate || resampleRatio != 1.0);
 
   if (processor_->atBoundary() && processor_->shouldStop()) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;

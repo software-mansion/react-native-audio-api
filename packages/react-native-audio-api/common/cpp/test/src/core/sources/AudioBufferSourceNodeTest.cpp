@@ -523,8 +523,85 @@ TEST_F(AudioBufferSourceNodeTest, StartDurationCountsContentOfBufferAssignedAfte
     }
   }
 
-  EXPECT_EQ(played, DURATION_FRAMES);
+  // The buffer runs at half the context rate, so each buffer frame lasts two output frames.
+  EXPECT_EQ(played, 2 * DURATION_FRAMES);
   EXPECT_TRUE(node->isFinished());
+}
+
+/// Spec: `duration` is compared against unrounded buffer time, so a fractional frame counts.
+TEST_F(AudioBufferSourceNodeTest, StartDurationKeepsFractionalBufferFrames) {
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.playbackRate = 0.25f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+
+  auto buffer = makeSilentBuffer(8 * QUANTUM);
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+
+  constexpr double DURATION_FRAMES = 1.5;
+  node->start(0.0, 0.0, DURATION_FRAMES / SAMPLE_RATE);
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  context->processGraph(out.get(), QUANTUM);
+  size_t played = 0;
+  for (float sample : out->getChannel(0)->span()) {
+    played += sample != 0.0f ? 1 : 0;
+  }
+
+  EXPECT_EQ(played, 6U);
+}
+
+/// A buffer at half the context rate feeds WSOLA one buffer frame per two output frames.
+TEST_F(AudioBufferSourceNodeTest, PitchCorrectionReadsBufferAtItsOwnSampleRate) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.pitchCorrection = true;
+  baseOptions.playbackRate = 2.0f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+  auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
+      static_cast<size_t>(WsolaTimeStretcher::MAX_PLAYBACK_RATE * QUANTUM),
+      1,
+      static_cast<float>(SAMPLE_RATE));
+  node->initStretch(1, static_cast<float>(SAMPLE_RATE), playbackRateBuffer);
+  node->setBuffer(
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE)),
+      makeOutputBuffer());
+  node->start(0.0);
+
+  constexpr int QUANTA = 3;
+  for (int q = 0; q < QUANTA; ++q) {
+    processGraph();
+  }
+
+  // Each quantum stretches 2 * QUANTUM output-rate frames, which is QUANTUM buffer frames.
+  EXPECT_DOUBLE_EQ(
+      node->getCurrentPosition(), static_cast<double>(QUANTA * QUANTUM) / BUFFER_SAMPLE_RATE);
+}
+
+/// Spec: loop points are buffer time, so they become frames at the buffer's sample rate.
+TEST_F(AudioBufferSourceNodeTest, LoopPointsUseBufferSampleRate) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->setLoop(true);
+  constexpr size_t LOOP_END_FRAMES = 3 * QUANTUM / 8;
+  node->setLoopEnd(static_cast<double>(LOOP_END_FRAMES) / BUFFER_SAMPLE_RATE);
+  node->setBuffer(
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE)),
+      makeOutputBuffer());
+  node->start(0.0);
+
+  processGraph();
+
+  // One quantum reads QUANTUM / 2 buffer frames, wrapping once past the loop end.
+  constexpr size_t EXPECTED_FRAMES = QUANTUM / 2 - LOOP_END_FRAMES;
+  EXPECT_DOUBLE_EQ(
+      node->getCurrentPosition(), static_cast<double>(EXPECTED_FRAMES) / BUFFER_SAMPLE_RATE);
 }
 
 /// Spec: start() keeps `offset` for a buffer assigned later, and counts it in that buffer's time.
