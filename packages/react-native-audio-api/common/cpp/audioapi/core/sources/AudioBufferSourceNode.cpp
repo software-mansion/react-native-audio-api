@@ -110,12 +110,7 @@ void AudioBufferSourceNode::applyStartToBuffer() {
 
   if (duration) {
     // Spec: `duration` counts buffer content, not context time.
-    // Seconds-to-frames conversion leaves float noise that would otherwise add a whole frame.
-    constexpr double kWholeFrameTolerance = 1e-6;
-    const double frames = *duration * sampleRate;
-    const double wholeFrames = std::round(frames);
-    processor_->setFrameBudget(
-        std::fabs(frames - wholeFrames) < kWholeFrameTolerance ? wholeFrames : frames);
+    processor_->setFrameBudget(dsp::timeToFractionalFrames(*duration, sampleRate));
   }
 }
 
