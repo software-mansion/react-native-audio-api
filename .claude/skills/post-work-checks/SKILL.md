@@ -68,8 +68,8 @@ Hooks run when lefthook is installed (`lefthook install`).
 
 | Hook | Command |
 |---|---|
-| Format check | `pnpm format:check` (JS via Prettier, C++ via clang-format, Kotlin via ktlint) |
-| Lint | `pnpm lint` (JS/TS + C++ + Kotlin) |
+| Format check | `pnpm format:check` (JS/TS via oxfmt, C++ via clang-format, Kotlin via ktlint) |
+| Lint | `pnpm lint` (JS/TS via oxlint with type-aware rules, C++, Kotlin) |
 | Type check | `pnpm typecheck` (only when staged files match `*.{js,ts,jsx,tsx}`) |
 | Commit message | `commitlint` |
 

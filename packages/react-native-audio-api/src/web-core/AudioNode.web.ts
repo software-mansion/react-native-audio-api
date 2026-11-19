@@ -25,7 +25,7 @@ export default class AudioNode {
   }
 
   public get channelCountMode(): ChannelCountMode {
-    return this.node.channelCountMode as ChannelCountMode;
+    return this.node.channelCountMode;
   }
 
   public set channelCountMode(value: ChannelCountMode) {
@@ -33,7 +33,7 @@ export default class AudioNode {
   }
 
   public get channelInterpretation(): ChannelInterpretation {
-    return this.node.channelInterpretation as ChannelInterpretation;
+    return this.node.channelInterpretation;
   }
 
   public set channelInterpretation(value: ChannelInterpretation) {
