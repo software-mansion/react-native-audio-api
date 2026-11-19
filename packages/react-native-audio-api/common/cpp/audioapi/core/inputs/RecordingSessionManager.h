@@ -32,7 +32,7 @@ class RecordingSessionManager final {
   static const std::shared_ptr<RecordingSessionManager> &global();
 
   /// A session of @p recorder is starting; returns its id. Fails while another recorder's session
-  /// holds the claim.
+  /// holds the claim, until that recorder calls release(), even once its last owner is gone.
   Result<uint64_t, std::string> claim(const std::shared_ptr<AudioRecorder> &recorder);
 
   /// The session of @p recorder has ended, or its start failed after claim(). Also called from the
@@ -60,7 +60,9 @@ class RecordingSessionManager final {
   [[nodiscard]] std::shared_ptr<AudioRecorder> occupant() const;
 
   mutable std::mutex mutex_;
-  std::weak_ptr<AudioRecorder> occupant_;
+  /// Set from claim() until release(). The recorder inside may already have expired: it still
+  /// closes its consumers in its destructor and releases only then.
+  std::optional<std::weak_ptr<AudioRecorder>> occupant_;
   std::optional<FileInfo> keptRecording_;
   uint64_t lastClaimedSession_ = 0;
   /// Outlives consumption, so a late recording of an older session is not kept after it.

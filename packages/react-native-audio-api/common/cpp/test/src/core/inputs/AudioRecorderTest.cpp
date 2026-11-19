@@ -437,6 +437,31 @@ TEST_F(AudioRecorderTest, AConsumerSharedWithAnotherRecorderIsClosedBeforeTheSes
   EXPECT_TRUE(other->stop().is_ok());
 }
 
+TEST_F(AudioRecorderTest, ARecorderDestroyedMidSessionHoldsTheClaimUntilItsConsumersAreClosed) {
+  auto shared = std::make_shared<HeldClosingConsumer>();
+  auto other = makeOtherRecorder();
+  ASSERT_TRUE(recorder_->addConsumer(shared).is_ok());
+  ASSERT_TRUE(other->addConsumer(shared).is_ok());
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  shared->holdClose = true;
+  std::thread destroying([doomed = std::move(recorder_)]() mutable { doomed.reset(); });
+  while (!shared->isClosing.load()) {
+    std::this_thread::yield();
+  }
+
+  // Its last owner is gone, but it is still closing the shared consumer.
+  EXPECT_TRUE(other->start().is_err());
+  EXPECT_EQ(shared->prepares.load(), 1);
+
+  shared->holdClose = false;
+  destroying.join();
+  ASSERT_TRUE(other->start().is_ok());
+  EXPECT_EQ(shared->prepares.load(), 2);
+  EXPECT_EQ(shared->closes.load(), 1);
+  EXPECT_TRUE(other->stop().is_ok());
+}
+
 TEST_F(AudioRecorderTest, AnInputThatFailsToOpenLeavesTheRecorderIdle) {
   input_->openError = "no microphone";
 

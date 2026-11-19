@@ -26,7 +26,7 @@ Result<uint64_t, std::string> RecordingSessionManager::claim(
     const std::shared_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
-  if (!occupant_.expired() && !isSameRecorder(occupant_, recorder)) {
+  if (occupant_ && !isSameRecorder(*occupant_, recorder)) {
     return Err("Another recording is already in progress");
   }
 
@@ -37,7 +37,7 @@ Result<uint64_t, std::string> RecordingSessionManager::claim(
 void RecordingSessionManager::release(const std::weak_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
-  if (isSameRecorder(occupant_, recorder)) {
+  if (occupant_ && isSameRecorder(*occupant_, recorder)) {
     occupant_.reset();
   }
 }
@@ -63,12 +63,14 @@ std::optional<FileInfo> RecordingSessionManager::consumeLastRecordingResult() {
 
 bool RecordingSessionManager::isRecordingOngoing() const {
   std::scoped_lock lock(mutex_);
-  return !occupant_.expired();
+  // An expired recorder still holds the claim while its destructor closes its consumers; that is
+  // not ongoing.
+  return occupant_.has_value() && !occupant_->expired();
 }
 
 std::shared_ptr<AudioRecorder> RecordingSessionManager::occupant() const {
   std::scoped_lock lock(mutex_);
-  return occupant_.lock();
+  return occupant_ ? occupant_->lock() : nullptr;
 }
 
 } // namespace audioapi
