@@ -60,8 +60,10 @@ const AudioVisualizer: React.FC = () => {
   const frequencyWorkletRef = useRef<WorkletNode | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  const timeDataSV = useSharedValue(new Uint8Array(FFT_SIZE).fill(127));
-  const frequencyDataSV = useSharedValue(
+  const timeDataSV = useSharedValue<Uint8Array>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
+  const frequencyDataSV = useSharedValue<Uint8Array>(
     new Uint8Array(FREQUENCY_BIN_COUNT).fill(0)
   );
 

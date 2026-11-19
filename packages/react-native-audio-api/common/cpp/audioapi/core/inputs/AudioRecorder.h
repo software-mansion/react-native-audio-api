@@ -83,7 +83,11 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
 
-  [[nodiscard]] double getCurrentDuration() const;
+  /// The seconds recorded in the current session, for readers on any thread; `0` when idle.
+  /// Holding it keeps only the value alive, never the recorder.
+  [[nodiscard]] std::shared_ptr<const std::atomic<double>> getDurationClock() const {
+    return session_.recordedSeconds;
+  }
 
   [[nodiscard]] bool isIdle() const;
   [[nodiscard]] bool isRecording() const;
@@ -129,7 +133,10 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
     /// Written only by the audio thread, through the armed gate.
     std::atomic<double> lastBufferSeconds{0.0};
     /// Of the frames delivered while recording, each counted at the sample rate it arrived in.
-    std::atomic<double> recordedSeconds{0.0};
+    /// Shared with getDurationClock() readers, so it is reset in place and never reassigned: a
+    /// clock taken before a new session must keep reading it.
+    std::shared_ptr<std::atomic<double>> recordedSeconds =
+        std::make_shared<std::atomic<double>>(0.0);
   };
 
   /// Audio thread, through the armed gate only. @p channels holds @p channelCount pointers, each to

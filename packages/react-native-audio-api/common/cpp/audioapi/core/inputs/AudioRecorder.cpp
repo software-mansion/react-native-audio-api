@@ -278,10 +278,6 @@ void AudioRecorder::clearOnErrorCallback() {
   errorEvent_->assignCallbackId(0);
 }
 
-double AudioRecorder::getCurrentDuration() const {
-  return session_.recordedSeconds.load(std::memory_order_relaxed);
-}
-
 bool AudioRecorder::isIdle() const {
   return getSessionState().phase == Phase::Idle;
 }
@@ -326,8 +322,8 @@ void AudioRecorder::onInputFrames(const float *const *channels, int channelCount
   const double bufferSeconds = static_cast<double>(numFrames) / session_.format->layout.sampleRate;
   session_.lastBufferSeconds.store(bufferSeconds, std::memory_order_relaxed);
   // The only writer while the gate is armed, so a load and a store need no read-modify-write.
-  session_.recordedSeconds.store(
-      session_.recordedSeconds.load(std::memory_order_relaxed) + bufferSeconds,
+  session_.recordedSeconds->store(
+      session_.recordedSeconds->load(std::memory_order_relaxed) + bufferSeconds,
       std::memory_order_relaxed);
 
   consumers_.write(channels, numFrames);
@@ -455,7 +451,7 @@ RecorderConsumers::Detached AudioRecorder::endSession() {
   ++session_.inputGeneration;
   session_.format.reset();
   session_.lastBufferSeconds.store(0.0, std::memory_order_relaxed);
-  session_.recordedSeconds.store(0.0, std::memory_order_relaxed);
+  session_.recordedSeconds->store(0.0, std::memory_order_relaxed);
 
   auto detached = consumers_.detach();
   sessionManager_->release(weak_from_this());

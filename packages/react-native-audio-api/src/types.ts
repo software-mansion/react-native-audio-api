@@ -189,6 +189,16 @@ export interface FileInfo {
   duration: number;
 }
 
+/**
+ * A recorder's duration, readable from a worklet: capture it in a UI worklet
+ * (for example Reanimated's `useFrameCallback`) and read `currentDuration` on
+ * the UI thread, without going through the JS thread.
+ */
+export interface RecordingClock {
+  /** What `AudioRecorder.getCurrentDuration()` returns (in seconds). */
+  readonly currentDuration: number;
+}
+
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
 export interface AudioNodeOptions {

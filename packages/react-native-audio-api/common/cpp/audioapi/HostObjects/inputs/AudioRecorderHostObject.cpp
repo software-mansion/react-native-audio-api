@@ -13,9 +13,11 @@
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/Result.hpp>
+#include <atomic>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace audioapi {
 
@@ -44,10 +46,11 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, addConsumer),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, removeConsumer),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError));
 
-  addGetters(JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency));
+  addGetters(
+      JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency),
+      JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, clock));
 }
 
 AudioRecorderHostObject::~AudioRecorderHostObject() {
@@ -60,6 +63,24 @@ AudioRecorderHostObject::~AudioRecorderHostObject() {
 }
 
 namespace {
+
+/// The recorder's duration for any runtime: a UI worklet can capture it and read
+/// `currentDuration` on the UI thread. It holds only the duration, never the recorder or a JS
+/// value, so reading it and destroying it are safe on any thread.
+class RecordingClock final : public HostObject {
+ public:
+  explicit RecordingClock(std::shared_ptr<const std::atomic<double>> recordedSeconds)
+      : recordedSeconds_(std::move(recordedSeconds)) {
+    addGetters(JSI_EXPORT_PROPERTY_GETTER(RecordingClock, currentDuration));
+  }
+
+  JSI_PROPERTY_GETTER_DECL(currentDuration) {
+    return {recordedSeconds_->load(std::memory_order_relaxed)};
+  }
+
+ private:
+  std::shared_ptr<const std::atomic<double>> recordedSeconds_;
+};
 
 PromiseResolver resolveWithUndefined() {
   return [](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
@@ -197,13 +218,13 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
   return jsi::Value::undefined();
 }
 
-JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
-  double duration = audioRecorder_->getCurrentDuration();
-  return {duration};
-}
-
 JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, inputLatency) {
   return {audioRecorder_->getInputLatency()};
+}
+
+JSI_PROPERTY_GETTER_IMPL(AudioRecorderHostObject, clock) {
+  return jsi::Object::createFromHostObject(
+      runtime, std::make_shared<RecordingClock>(audioRecorder_->getDurationClock()));
 }
 
 } // namespace audioapi

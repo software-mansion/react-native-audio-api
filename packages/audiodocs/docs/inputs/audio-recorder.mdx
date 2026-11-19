@@ -704,6 +704,25 @@ export default MyRecorder;
         ```
       </td>
     </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### clock
+      </div></td>
+      <td>
+        <div class="text-content">
+          `RecordingClock` - the recorder's duration, readable from a worklet. Its `currentDuration` is what [getCurrentDuration()](#getcurrentduration) returns, in seconds. Capture it in a UI worklet to read the duration on the UI thread, every frame if needed, without going through the JS thread. It never keeps the recorder alive, and reads `0` once the recording ends.
+        </div>
+        ```tsx
+          const clock = audioRecorder.clock;
+
+          useFrameCallback(() => {
+            'worklet';
+            elapsedMs.value = clock.currentDuration * 1000;
+          });
+        ```
+      </td>
+    </tr>
 
   </tbody>
 </table>
