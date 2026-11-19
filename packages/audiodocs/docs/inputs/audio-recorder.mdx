@@ -895,6 +895,46 @@ export default MyRecorder;
   </tbody>
 </table>
 
+### Custom consumers {#custom-consumers}
+
+A consumer receives every buffer the recorder captures, alongside the file, [`onAudioReady`](#onaudioready) and [`connect`](#connect). Concrete consumers come from extension packages, such as [`RecorderWorklet`](../worklets/recorder-worklet.mdx). One consumer can be added to several recorders; only the one that is recording feeds it.
+
+<table className="table-vertical-top">
+  <thead>
+    <tr><td><div class="text-content">Method</div></td><td><div class="text-content">Description</div></td></tr>
+  </thead>
+  <tbody>
+<!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### addConsumer
+      </div></td>
+      <td>
+        <div class="text-content">
+          Feeds every recorded buffer to `consumer` as well, from the next recording on, or at once when a recording is running. Returns `Result<void>`: an error when the consumer is added already or cannot be prepared for the running recording, in which case it is not added.
+        </div>
+        ```tsx
+          audioRecorder.addConsumer(consumer);
+        ```
+      </td>
+    </tr>
+    <!-- -->
+    <tr>
+      <td><div class="text-content">
+        ##### removeConsumer
+      </div></td>
+      <td>
+        <div class="text-content">
+          Stops feeding `consumer`, closing it when a recording is running. Does nothing when it was not added.
+        </div>
+        ```tsx
+          audioRecorder.removeConsumer(consumer);
+        ```
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ## Types
 
 #### `AudioRecorderOptions`

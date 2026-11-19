@@ -34,7 +34,7 @@ void CircularOverflowableAudioArray::write(const float *data, size_t size) {
   } else {
     copy(data, 0, writeIndex, size);
   }
-  vWriteIndex_.store((writeIndex + size) % size_, std::memory_order_relaxed);
+  vWriteIndex_.store((writeIndex + size) % size_, std::memory_order_release);
 }
 
 size_t CircularOverflowableAudioArray::read(AudioArray &data, size_t size) const {
@@ -59,7 +59,7 @@ size_t CircularOverflowableAudioArray::read(float *data, size_t size) const {
 }
 
 size_t CircularOverflowableAudioArray::getAvailableSpace() const {
-  return (size_ + vWriteIndex_.load(std::memory_order_relaxed) - vReadIndex_) % size_;
+  return (size_ + vWriteIndex_.load(std::memory_order_acquire) - vReadIndex_) % size_;
 }
 
 } // namespace audioapi
