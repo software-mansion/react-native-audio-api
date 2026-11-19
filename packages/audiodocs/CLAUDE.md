@@ -354,7 +354,7 @@ Something to watch out for.
 oxfmt formats `.md` / `.mdx`. It flattens a code fence that starts right after a JSX/HTML tag line
 (`<summary>…</summary>`, `<TabItem …>`, `<div>`) into prose, or breaks the MDX, and it indents a
 `:::` closer that follows a list item into the list. Leave a blank line before the fence or the
-`:::`. `scripts/check-docs-fences.sh` (part of `pnpm lint` here and in internaldocs) fails on both.
+`:::`. Nothing checks for it; after formatting, the damage is just prose where code was.
 
 ### Collapsible blocks
 

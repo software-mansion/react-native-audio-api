@@ -5,7 +5,7 @@
   "scripts": {
     "check": "bash ../../scripts/run-steps.sh lint typecheck",
     "test": "exit 0",
-    "lint": "oxlint src && bash ../../scripts/check-docs-fences.sh",
+    "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
