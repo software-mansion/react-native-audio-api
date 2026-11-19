@@ -185,9 +185,12 @@ ring buffers and the resampler (`prepare` sizes them, `consume` writes, `close` 
 quantum in flight and frees them, `render` reads on the audio thread), and `RecorderAdapterNode` is
 a plain `AudioNode` whose `processNode` calls `consumer_->render()`. They share only the consumer,
 so the recorder never extends a graph node's lifetime; once the node is gone, its consumer's frames
-reach no one. Consumers are never called concurrently nor on the
-audio thread (the worker and control calls share `consumersMutex_`), so they need no locks of their
-own. Errors go through the recorder's one `EventCaller<RECORDER_ERROR>`, handed to `RecorderConsumers`
+reach no one. `RecorderConsumers` never calls a consumer concurrently nor on the audio thread (the
+worker and control calls share `consumersMutex_`), so a consumer needs no locks of its own for those
+calls. A consumer that another thread also reads synchronizes that side itself:
+`RecorderAdapterConsumer::render()` runs on the graph's audio thread, against rings that lock
+themselves and an `isInitialized_` / `currentProcesses_` guard on their lifetime (see
+`thread-safety-itc`). Errors go through the recorder's one `EventCaller<RECORDER_ERROR>`, handed to `RecorderConsumers`
 and from there to the file writer; `setOnError` is a single `assignCallbackId`. A listed consumer
 never holds the event: a failed `consume()` returns `Err` and `RecorderConsumers::deliver` reports it
 (the consumer stays prepared for the next frames). Only the file writer reports on its own, because its
