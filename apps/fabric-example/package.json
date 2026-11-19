@@ -5,6 +5,7 @@
   "scripts": {
     "check": "bash ../../scripts/run-steps.sh lint typecheck",
     "typecheck": "tsc --noEmit",
+    "test:ios": "bash scripts/test-ios.sh",
     "test": "exit 0",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
