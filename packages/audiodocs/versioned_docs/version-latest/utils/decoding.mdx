@@ -26,6 +26,7 @@ Supported file formats:
 - aif
 - aiff
 - caf (ios)
+
 :::
 
 ## Methods
@@ -79,6 +80,7 @@ Throws an error when duration metadata is unavailable or when the input type is 
 
 <details>
 <summary>Example reading local file duration</summary>
+
 ```tsx
 import { getAudioDuration } from 'react-native-audio-api';
 
@@ -88,6 +90,7 @@ const duration = await getAudioDuration('file:///tmp/recording.wav');
 
 <details>
 <summary>Example reading remote URL duration</summary>
+
 ```tsx
 import { getAudioDuration } from 'react-native-audio-api';
 
@@ -113,6 +116,7 @@ Decodes base64-encoded PCM audio data.
 
 <details>
 <summary>Example decoding with data in base64 format </summary>
+
 ```tsx
 const data = ... // data encoded in base64 string
 // data is interleaved (Channel1, Channel2, Channel1, Channel2, ...)
