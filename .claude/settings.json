@@ -4,10 +4,9 @@
   "permissions": {
     "allow": [
       "Bash(pnpm build)",
-      "Bash(pnpm lint*)",
+      "Bash(pnpm check*)",
       "Bash(pnpm format*)",
-      "Bash(pnpm typecheck)",
-      "Bash(pnpm test)",
+      "Bash(pnpm test*)",
       "Bash(pnpm --filter react-native-audio-api check:enums)",
       "Bash(pnpm --filter *)",
       "Bash(git status)",

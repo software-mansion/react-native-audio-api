@@ -9,6 +9,7 @@ description: >
 ## Quick Reference
 
 **Feature checklist (all 9 steps required for a PR):**
+
 1. Read spec → define exactly what you're building
 2. TypeScript interface + option types (`src/interfaces/`, `src/types/`)
 3. C++ AudioNode (`core/<category>/MyNode.h/.cpp`) — see `audio-nodes` skill
@@ -18,9 +19,10 @@ description: >
 7. C++ tests (Google Test) — **write tests first, confirm they fail, then implement**
 8. JS/TS tests (Jest)
 9. Docs page (`packages/audiodocs/`)
-Then: `post-work-checks` skill
+   Then: `post-work-checks` skill
 
 **Bug fix checklist:**
+
 1. Reproduce (write failing test or MRE first)
 2. Identify the layer (use the table in §Bug Fix Flow)
 3. Fix + verify tests pass
@@ -48,6 +50,7 @@ Before touching any code. **If spec behavior is unclear → fetch https://webaud
 Files: `packages/react-native-audio-api/src/`
 
 1. Add the interface in `src/interfaces/` — `IMyNode.ts`
+
    ```ts
    export interface IMyNode extends IAudioNode {
      readonly myParam: IAudioParam;
@@ -56,6 +59,7 @@ Files: `packages/react-native-audio-api/src/`
    ```
 
 2. Add the options type in `src/types/` — `NodeOptions.ts` (or add to existing file)
+
    ```ts
    export interface MyNodeOptions extends AudioNodeOptions {
      myParam?: number; // default: 1.0
@@ -105,6 +109,7 @@ See the `host-objects` skill for the full macro system and shadow state patterns
 Files: `packages/react-native-audio-api/src/core/`
 
 1. Create `src/core/MyNode.ts` — extends `AudioNode`, wraps the JSI HostObject.
+
    ```ts
    import { IMyNode } from '../interfaces';
    import AudioNode from './AudioNode';
@@ -123,6 +128,7 @@ Files: `packages/react-native-audio-api/src/core/`
    ```
 
    `MyNodeOptions` must extend `AudioNodeOptions`. Shared `AudioNodeOptions` validation lives in `AudioNode`'s constructor (`validateAudioNodeOptions`) — do not re-validate those fields in per-node validators.
+
 2. Add a factory method `createMyNode(options?)` to `src/core/BaseAudioContext.ts`.
 
 3. Export from `src/index.ts`.
@@ -135,7 +141,7 @@ Files: `packages/react-native-audio-api/src/core/`
 
 File: `src/specs/NativeAudioAPIModule.ts`
 
-Only needed if the feature requires a *new* RN native method (e.g. a permission check, a new audio session configuration). Most audio nodes do **not** need this — they are exposed entirely through JSI HostObjects.
+Only needed if the feature requires a _new_ RN native method (e.g. a permission check, a new audio session configuration). Most audio nodes do **not** need this — they are exposed entirely through JSI HostObjects.
 
 If needed: add the method signature to the spec, then implement on iOS (`AudioAPIModule.mm`) and Android (`AudioAPIModule.kt`).
 
@@ -148,6 +154,7 @@ If needed: add the method signature to the spec, then implement on iOS (`AudioAP
 Path: `common/cpp/test/src/core/<category>/MyNodeTest.cpp`
 
 Pattern:
+
 ```cpp
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/MyNode.h>
@@ -189,6 +196,7 @@ TEST_F(MyNodeTest, EdgeCase) { ... }
 New test files are picked up automatically by `GLOB_RECURSE` — no CMakeLists edit needed.
 
 Run with:
+
 ```bash
 pnpm test   # from repo root
 ```
@@ -201,6 +209,7 @@ Path: `packages/react-native-audio-api/tests/`
 - `mock.test.ts` — mock implementation correctness
 
 Run with:
+
 ```bash
 pnpm --filter react-native-audio-api test
 ```
@@ -234,10 +243,8 @@ See the `post-work-checks` skill. At minimum before any PR:
 
 ```bash
 pnpm format          # auto-fix formatting
-pnpm lint            # JS/TS/C++/Kotlin linting
-pnpm typecheck       # TypeScript
-pnpm test            # C++ Google Tests
-pnpm --filter react-native-audio-api check:enums  # if you touched a mirrored enum
+pnpm check           # format check, lint (JS/TS/C++/Kotlin), typecheck, enum sync — affected packages
+pnpm test            # Jest + the C++ suites the changes touch — affected packages
 ```
 
 ---
@@ -254,16 +261,16 @@ pnpm --filter react-native-audio-api check:enums  # if you touched a mirrored en
 
 ### 2 — Identify the layer
 
-| Symptom | Likely layer | Where to look |
-|---|---|---|
-| Wrong default value / validation error | TypeScript | `src/core/MyNode.ts`, `src/types/` |
-| Property read-back returns wrong value | HostObject shadow state | `HostObjects/MyNodeHostObject` |
-| Wrong argument parsed from JS | HostObject | argument parsing in `get`/`call` |
-| Audio output sounds wrong | C++ `processNode()` | `core/<category>/MyNode.cpp` |
-| DSP math wrong | DSP helpers | `dsp/` utilities |
-| Crash on audio thread | Thread safety violation | `cross-thread` patterns — `audio-nodes.md` |
-| Platform-specific (only iOS or only Android) | Native layer | `ios/` or `android/` |
-| Only in new RN architecture | TurboModule / JSI wiring | `src/specs/`, HostObject init |
+| Symptom                                      | Likely layer             | Where to look                              |
+| -------------------------------------------- | ------------------------ | ------------------------------------------ |
+| Wrong default value / validation error       | TypeScript               | `src/core/MyNode.ts`, `src/types/`         |
+| Property read-back returns wrong value       | HostObject shadow state  | `HostObjects/MyNodeHostObject`             |
+| Wrong argument parsed from JS                | HostObject               | argument parsing in `get`/`call`           |
+| Audio output sounds wrong                    | C++ `processNode()`      | `core/<category>/MyNode.cpp`               |
+| DSP math wrong                               | DSP helpers              | `dsp/` utilities                           |
+| Crash on audio thread                        | Thread safety violation  | `cross-thread` patterns — `audio-nodes.md` |
+| Platform-specific (only iOS or only Android) | Native layer             | `ios/` or `android/`                       |
+| Only in new RN architecture                  | TurboModule / JSI wiring | `src/specs/`, HostObject init              |
 
 ---
 
@@ -289,4 +296,4 @@ These small post-mortems compound over time and prevent the same class of bug fr
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

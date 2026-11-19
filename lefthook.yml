@@ -1,15 +1,29 @@
+# Formatters fix the staged files first, then the affected packages are checked.
 pre-commit:
-  parallel: true
-  commands:
-    format_check:
-      run: pnpm format:check
-    lint:
-      run: pnpm lint
-    types:
-      glob: '*.{js,ts,jsx,tsx}'
-      run: pnpm typecheck
+  jobs:
+    - name: format
+      group:
+        parallel: true
+        jobs:
+          - name: oxfmt
+            glob: '*.{js,jsx,ts,tsx,cjs,mjs,json,jsonc,md,mdx}'
+            run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
+            stage_fixed: true
+          - name: clang-format
+            glob: '*.{c,cc,cpp,h,hpp,m,mm}'
+            run: clang-format -i {staged_files}
+            stage_fixed: true
+          - name: ktlint
+            glob: '*.{kt,kts}'
+            run: ktlint -F {staged_files}
+            stage_fixed: true
+
+    # The checks CI runs, for the packages the staged files affect. clang-tidy
+    # sees only the staged C++ (needs `pnpm setup:clangd` once).
+    - name: check
+      run: pnpm check --staged
+
 commit-msg:
-  parallel: true
-  commands:
-    commitlint:
-      run: pnpm commitlint --edit
+  jobs:
+    - name: commitlint
+      run: pnpm commitlint --edit {1}

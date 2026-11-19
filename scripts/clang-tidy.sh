@@ -12,6 +12,7 @@ NativeAudioWorkletsModule.cpp (needs folly, which only Pods or Gradle provide).
 Config: the root .clang-tidy and common/cpp/test/.clang-tidy.
 
 Errors fail the run. Warnings are counted per check; --warnings lists them.
+With CHECK_STAGED=1 (`pnpm check --staged`) and no files, checks the staged ones.
 
 The database comes from `pnpm setup:clangd`. On CI it is regenerated each run.
 
@@ -49,6 +50,22 @@ find_clang_tidy() {
     return 1
   fi
 }
+
+if [[ $# -eq 0 && "${CHECK_STAGED:-}" == "1" ]]; then
+  ROOT="$(git rev-parse --show-toplevel)"
+  # shellcheck source=base-ref.sh
+  source "${ROOT}/scripts/base-ref.sh"
+  staged=()
+  while IFS= read -r file; do
+    if [[ "${ROOT}/${file}" == "${PACKAGE_DIR}/common/cpp/"* && "$file" =~ \.(cpp|h|hpp)$ ]]; then
+      staged+=("${ROOT}/${file}")
+    fi
+  done < <(staged_files)
+  if [[ ${#staged[@]} -eq 0 ]]; then
+    exit 0
+  fi
+  set -- "${staged[@]}"
+fi
 
 if [[ ! -d "$CLANGD_DIR" ]]; then
   echo "error: ${CLANGD_DIR} not found; run this from a package with a clangd CMake project" >&2
