@@ -162,6 +162,7 @@ const config = {
     },
   },
     clientModules: [
+    require.resolve('./src/polyfills/audioListenerParams.ts'),
     require.resolve('./src/wasm-loader.js'),
   ],
 
@@ -211,6 +212,13 @@ const config = {
                   // platform-split files, which strict ESM rejects.
                   test: /\.m?js$/,
                   resolve: { fullySpecified: false },
+                },
+                {
+                  // The 1.0 web entry re-exports `BaseAudioContext`, which is a type-only
+                  // interface and compiles to an empty module.
+                  test: /\.js$/,
+                  include: /node_modules[\\/]react-native-audio-api[\\/]/,
+                  parser: { reexportExportsPresence: false },
                 },
                 {
                   test: /\.txt$/,
