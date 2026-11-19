@@ -841,13 +841,13 @@ const AudioPipelineStress: FC = () => {
         runSuite();
       },
       disabled: runnerState === 'running' || runnerState === 'stopping',
-      width: 120,
+      minWidth: 120,
     },
     {
       title: 'Stop',
       onPress: requestStop,
       disabled: runnerState !== 'running',
-      width: 90,
+      minWidth: 90,
     },
     {
       title: 'Reset',
@@ -855,7 +855,7 @@ const AudioPipelineStress: FC = () => {
         resetSuite();
       },
       disabled: runnerState === 'running' || runnerState === 'stopping',
-      width: 90,
+      minWidth: 90,
     },
   ];
   const scenarioItems: ScenarioItem[] = scenarioResults.map((scenario) => ({

@@ -1,27 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {
   AudioBufferSourceNode,
   AudioBuffer,
   GainNode,
   AudioRecorder,
   AudioManager,
 } from 'react-native-audio-api';
-import { Container } from '../../components';
+
+import { Container, RoundButton } from '../../components';
 import { audioContext } from '../../singletons';
-import {
-  ActivityIndicator,
-  View,
-  Button,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-  Alert,
-} from 'react-native';
+import { colors } from '../../styles';
+import AutoWahPedal from './AutoWahPedal';
 import OverdrivePedal from './OverdrivePedal';
 import ReverbPedal from './ReverbPedal';
-import AutoWahPedal from './AutoWahPedal';
-
-const screenWdith = Dimensions.get('window').width;
 
 const URL = 'https://files.catbox.moe/xbj6gn.flac';
 const PEDALS = [
@@ -156,39 +155,47 @@ export default function PedalBoard() {
   };
 
   return (
-    <Container centered>
+    <Container disablePadding>
       {isLoading ? (
-        <ActivityIndicator color="#FFFFFF" />
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accent} />
+          <Text style={styles.loadingText}>Loading guitar loop…</Text>
+        </View>
       ) : (
         <>
-          <ScrollView>
+          <ScrollView
+            contentContainerStyle={styles.board}
+            showsVerticalScrollIndicator={false}
+          >
             {PEDALS.map((pedal, index) => {
               const PedalComponent = pedal.component;
               return (
-                <View key={pedal.id} style={styles.container}>
-                  <PedalComponent
-                    context={audioContext}
-                    inputNode={pedalInputNodesRef.current[index]}
-                    outputNode={pedalOutputNodesRef.current[index]}
-                  />
-                </View>
+                <PedalComponent
+                  key={pedal.id}
+                  context={audioContext}
+                  inputNode={pedalInputNodesRef.current[index]}
+                  outputNode={pedalOutputNodesRef.current[index]}
+                />
               );
             })}
           </ScrollView>
-          <View style={styles.controls}>
-            <View style={{ display: isRecording ? 'none' : 'flex' }}>
-              <Button
-                title={isPlaying ? 'Stop' : 'Play'}
-                onPress={togglePlayback}
-              />
-            </View>
-
-            <View style={{ display: isPlaying ? 'none' : 'flex' }}>
-              <Button
-                title={isRecording ? 'Stop' : 'Record'}
-                onPress={toggleRecording}
-              />
-            </View>
+          {/* Both sources feed the first pedal, so only one runs at a time. */}
+          <View style={styles.transport}>
+            <RoundButton
+              icon={isPlaying ? 'stop' : 'play'}
+              label={isPlaying ? 'Stop' : 'Guitar loop'}
+              onPress={togglePlayback}
+              disabled={isRecording}
+              color={colors.accent}
+            />
+            <RoundButton
+              icon={isRecording ? 'mic-off' : 'mic'}
+              label={isRecording ? 'Stop' : 'Live mic'}
+              onPress={toggleRecording}
+              disabled={isPlaying}
+              color={colors.main}
+              variant={isRecording ? 'solid' : 'outline'}
+            />
           </View>
         </>
       )}
@@ -197,17 +204,28 @@ export default function PedalBoard() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: screenWdith * 0.9,
+  loading: {
+    flex: 1,
     alignItems: 'center',
-    gap: 20,
+    justifyContent: 'center',
+    gap: 12,
   },
-  controls: {
-    display: 'flex',
+  loadingText: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  board: {
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+    gap: 14,
+  },
+  transport: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-    marginTop: 20,
-    width: 200,
+    justifyContent: 'center',
+    gap: 48,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.listSeparator,
   },
 });

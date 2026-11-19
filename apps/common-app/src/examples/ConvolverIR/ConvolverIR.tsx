@@ -12,7 +12,6 @@ import {
 import { Button, Container, Slider, Spacer } from '../../components';
 import { colors, layout } from '../../styles';
 
-const LABEL_W = 88;
 const IR = require('./ir.wav');
 const TRACK = require('./track.mp3');
 
@@ -153,18 +152,23 @@ const ConvolverIR: FC = () => {
       <Button
         title="Play (convolver)"
         onPress={onPlayWithConvolver}
-        width={200}
+        minWidth={200}
         disabled={!isReady || isPlaying}
       />
       <Spacer.Vertical size={12} />
       <Button
         title="Play (dry)"
         onPress={onPlayDry}
-        width={200}
+        minWidth={200}
         disabled={!isReady || isPlaying}
       />
       <Spacer.Vertical size={12} />
-      <Button title="Stop" onPress={onStop} width={200} disabled={!isPlaying} />
+      <Button
+        title="Stop"
+        onPress={onStop}
+        minWidth={200}
+        disabled={!isPlaying}
+      />
       <Spacer.Vertical size={28} />
       <Slider
         label="Gain"
@@ -173,7 +177,6 @@ const ConvolverIR: FC = () => {
         min={0.02}
         max={0.6}
         step={0.01}
-        minLabelWidth={LABEL_W}
       />
     </Container>
   );

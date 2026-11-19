@@ -9,8 +9,7 @@ import {
 } from 'react-native';
 
 import { Button, Spacer } from '../../components';
-import CheckCircleIcon from '../../components/icons/CheckedCircleIcon';
-import MenuIcon from '../../components/icons/MenuIcon';
+import AppIcon from '../../components/AppIcon';
 import { colors } from '../../styles';
 
 interface MultiSelectProps<T extends string> {
@@ -43,7 +42,7 @@ function MultiSelect<T extends string>(props: MultiSelectProps<T>) {
           <Text style={styles.text}>
             {values.length ? values.join(', ') : 'none'}
           </Text>
-          <MenuIcon size={24} color={colors.white} />
+          <AppIcon name="chevrons-up-down" size={16} color={colors.textMuted} />
         </View>
       </Pressable>
       <Modal visible={isModalOpen} animationType="fade" transparent>
@@ -58,8 +57,9 @@ function MultiSelect<T extends string>(props: MultiSelectProps<T>) {
                 onPress={() => toggle(option)}
               >
                 <View style={styles.row}>
-                  <CheckCircleIcon
-                    selected={values.includes(option)}
+                  <AppIcon
+                    name={values.includes(option) ? 'circle-check' : 'circle'}
+                    size={20}
                     color={colors.white}
                   />
                   <Spacer.Horizontal size={12} />
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.modalBackdrop,
+    backgroundColor: '#00000040',
   },
   spacer: {
     flex: 1,

@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import {
   AudioBuffer,
   AudioBufferSourceNode,
@@ -8,8 +14,13 @@ import {
 import { WorkletNode } from 'react-native-audio-worklets';
 import { useSharedValue } from 'react-native-reanimated';
 
-import { Button, Container } from '../../components';
-import { layout } from '../../styles';
+import {
+  AppIcon,
+  BottomAccessory,
+  Container,
+  useBottomAccessorySpace,
+} from '../../components';
+import { colors } from '../../styles';
 import FreqTimeChart from './FreqTimeChart';
 
 const FFT_SIZE = 512;
@@ -18,8 +29,16 @@ const FREQUENCY_BIN_COUNT = FFT_SIZE / 2;
 const URL =
   'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
+/** How often the elapsed time and progress line refresh while playing. */
+const PROGRESS_INTERVAL_MS = 250;
+
 const ANALYSER_MIN_DB = -100;
 const ANALYSER_MAX_DB = -30;
+
+function formatTime(seconds: number) {
+  const whole = Math.floor(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}
 
 function linearMagnitudeToByte(linear: number) {
   'worklet';
@@ -27,10 +46,7 @@ function linearMagnitudeToByte(linear: number) {
   const db = linear > 0 ? 20 * Math.log10(linear) : ANALYSER_MIN_DB;
   const normalized = Math.max(
     0,
-    Math.min(
-      1,
-      (db - ANALYSER_MIN_DB) / (ANALYSER_MAX_DB - ANALYSER_MIN_DB)
-    )
+    Math.min(1, (db - ANALYSER_MIN_DB) / (ANALYSER_MAX_DB - ANALYSER_MIN_DB))
   );
 
   return Math.round(normalized * 255);
@@ -44,6 +60,9 @@ const AudioVisualizer: React.FC = () => {
 
   const [startTime, setStartTime] = useState(0);
   const [offset, setOffset] = useState(0);
+  /** Seconds into the track, refreshed while playing. */
+  const [position, setPosition] = useState(0);
+  const accessorySpace = useBottomAccessorySpace();
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const timeWorkletRef = useRef<WorkletNode | null>(null);
@@ -62,7 +81,9 @@ const AudioVisualizer: React.FC = () => {
       const stopTime = audioContextRef.current!.currentTime;
       audioContextRef.current?.suspend();
       bufferSourceRef.current?.stop(stopTime);
-      setOffset((prev) => prev + stopTime - startTime);
+      const pausedAt = offset + stopTime - startTime;
+      setOffset(pausedAt);
+      setPosition(pausedAt);
       setIsPlaying(false);
       return;
     }
@@ -86,6 +107,30 @@ const AudioVisualizer: React.FC = () => {
     bufferSourceRef.current.start(when, offset);
     setIsPlaying(true);
   };
+
+  useEffect(() => {
+    const ctx = audioContextRef.current;
+    if (!isPlaying || !ctx || !audioBuffer) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const current = offset + ctx.currentTime - startTime;
+
+      if (current < audioBuffer.duration) {
+        setPosition(current);
+        return;
+      }
+
+      // The track ran out: rewind so Play starts it again from the top.
+      ctx.suspend();
+      setIsPlaying(false);
+      setOffset(0);
+      setPosition(0);
+    }, PROGRESS_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [audioBuffer, isPlaying, offset, startTime]);
 
   const fetchAudioBuffer = async () => {
     const ctx = audioContextRef.current;
@@ -165,50 +210,92 @@ const AudioVisualizer: React.FC = () => {
     };
   }, [frequencyDataSV, frequencyDataTickSV, timeDataSV, timeDataTickSV]);
 
+  const duration = audioBuffer?.duration ?? 0;
+  const progress = duration > 0 ? Math.min(1, position / duration) : 0;
+
   return (
     <Container disablePadding>
-      <View style={styles.main}>
-        <View style={styles.chartArea}>
-          {visualizerReady ? (
-            <FreqTimeChart
-              timeDataSV={timeDataSV}
-              timeDataTickSV={timeDataTickSV}
-              frequencyDataSV={frequencyDataSV}
-              frequencyDataTickSV={frequencyDataTickSV}
-              fftSize={FFT_SIZE}
-              frequencyBinCount={FREQUENCY_BIN_COUNT}
+      <View style={[styles.chartArea, { paddingBottom: accessorySpace }]}>
+        {visualizerReady ? (
+          <FreqTimeChart
+            timeDataSV={timeDataSV}
+            timeDataTickSV={timeDataTickSV}
+            frequencyDataSV={frequencyDataSV}
+            frequencyDataTickSV={frequencyDataTickSV}
+            fftSize={FFT_SIZE}
+            frequencyBinCount={FREQUENCY_BIN_COUNT}
+          />
+        ) : null}
+      </View>
+      <BottomAccessory>
+        <Pressable
+          onPress={handlePlayPause}
+          disabled={!audioBuffer}
+          accessibilityRole="button"
+          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+          accessibilityState={{ disabled: !audioBuffer }}
+          style={({ pressed }) => [
+            styles.playButton,
+            pressed && styles.playButtonPressed,
+          ]}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={colors.textPrimary} />
+          ) : (
+            <AppIcon
+              name={isPlaying ? 'pause' : 'play'}
+              size={22}
+              color={audioBuffer ? colors.textPrimary : colors.textMuted}
             />
-          ) : null}
-        </View>
-        <View style={styles.controls}>
-          {isLoading && <ActivityIndicator color="#FFFFFF" />}
-          <Button
-            onPress={handlePlayPause}
-            title={isPlaying ? 'Pause' : 'Play'}
-            disabled={!audioBuffer}
+          )}
+        </Pressable>
+        <View style={styles.progressTrack}>
+          <View
+            style={[styles.progressFill, { width: `${progress * 100}%` }]}
           />
         </View>
-      </View>
+        <Text style={styles.time}>
+          {formatTime(position)} / {formatTime(duration)}
+        </Text>
+      </BottomAccessory>
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  main: {
-    flex: 1,
-  },
   chartArea: {
     flex: 1,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'stretch',
   },
-  controls: {
+  playButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: layout.spacing * 3,
-    paddingTop: layout.spacing,
-    minHeight: 96,
+  },
+  playButtonPressed: {
+    backgroundColor: colors.track,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    backgroundColor: colors.track,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: colors.accent,
+  },
+  time: {
+    marginRight: 10,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    color: colors.textSecondary,
   },
 });
 

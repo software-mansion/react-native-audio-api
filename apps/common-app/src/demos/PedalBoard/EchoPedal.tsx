@@ -32,14 +32,20 @@ export default function EchoPedal({
     }
   }, [isActive, inputNode, outputNode]);
 
-  const applyEffect = (context: AudioContext, inputNode: AudioNode, outputNode: AudioNode) => {
+  const applyEffect = (
+    context: AudioContext,
+    inputNode: AudioNode,
+    outputNode: AudioNode
+  ) => {
     if (isChainConnectedRef.current && convolverNodeRef.current) {
       inputNode.disconnect(convolverNodeRef.current);
       convolverNodeRef.current.disconnect();
     }
 
     // Create new convolver with echo curve
-    const convolver = new ConvolverNode(context, { disableNormalization: true})
+    const convolver = new ConvolverNode(context, {
+      disableNormalization: true,
+    });
     convolver.buffer = makeEchoCurve(0.7, context);
     convolverNodeRef.current = convolver;
 
@@ -62,9 +68,11 @@ export default function EchoPedal({
     setIsActive((prev) => !prev);
   };
 
+  // onActivate fires only for a recognised tap; onDeactivate also fires for
+  // touches the tap never claimed, such as dragging a fader on the pedal.
   const powerGesture = useTapGesture({
     runOnJS: true,
-    onDeactivate: togglePower,
+    onActivate: togglePower,
   });
 
   return (
@@ -74,8 +82,7 @@ export default function EchoPedal({
         <Text style={styles.model}>ECHO</Text>
       </View>
 
-      <View style={[styles.controlsRow, { height: 150 }]}>
-      </View>
+      <View style={[styles.controlsRow, { height: 150 }]}></View>
 
       <View style={styles.footer}>
         <View style={styles.switchContainer}>
@@ -92,9 +99,7 @@ export default function EchoPedal({
               <View style={styles.stompInner} />
             </View>
           </GestureDetector>
-          <Text style={styles.switchLabel}>
-            {isActive ? 'ON' : 'BYPASS'}
-          </Text>
+          <Text style={styles.switchLabel}>{isActive ? 'ON' : 'BYPASS'}</Text>
         </View>
       </View>
     </View>

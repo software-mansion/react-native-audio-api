@@ -154,7 +154,7 @@ const LatencyValidation: FC = () => {
         runTest();
       },
       disabled: runnerState === 'running',
-      width: 120,
+      minWidth: 120,
     },
     {
       title: 'Reset',
@@ -162,7 +162,7 @@ const LatencyValidation: FC = () => {
         resetTest();
       },
       disabled: runnerState === 'running',
-      width: 90,
+      minWidth: 90,
     },
   ];
 

@@ -504,7 +504,7 @@ const presets: Record<string, Preset> = {
   'Break Beat 1': BreakBeat1,
   'Break Beat 2': BreakBeat2,
   'Linear Groove': LinearGroove,
-  'WWRY': WWRYGroove,
+  WWRY: WWRYGroove,
 };
 
 export default presets;

@@ -210,7 +210,6 @@ const ChannelCount: FC = () => {
           min={1}
           max={8}
           step={1}
-          minLabelWidth={labelWidth}
         />
       </View>
       <Spacer.Vertical size={20} />
@@ -246,7 +245,7 @@ const ChannelCount: FC = () => {
       <Button
         onPress={handleAnalyze}
         title={analyzing ? 'Analyzing…' : 'Analyze output'}
-        width={160}
+        minWidth={160}
         disabled={analyzing}
       />
       <Spacer.Vertical size={20} />

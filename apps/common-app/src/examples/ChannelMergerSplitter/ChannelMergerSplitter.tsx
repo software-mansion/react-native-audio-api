@@ -20,8 +20,6 @@ const CHANNEL_LABELS = ['L', 'R', 'C', 'LFE', 'Ls', 'Rs'] as const;
 
 const INITIAL_GAINS = [0.3, 0.6, 0.1, 1.0, 0.7, 0.7];
 
-const labelWidth = 56;
-
 /**
  * Graph: AudioBufferSourceNode (5.1) → ChannelSplitter(6) → per-channel
  * GainNodes → ChannelMerger(2) stereo fold-down → destination
@@ -212,7 +210,6 @@ const ChannelMergerSplitter: FC = () => {
               min={0}
               max={1}
               step={0.01}
-              minLabelWidth={labelWidth}
             />
             <Spacer.Vertical size={12} />
           </View>

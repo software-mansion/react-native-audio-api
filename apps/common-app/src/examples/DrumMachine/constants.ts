@@ -14,6 +14,10 @@ export const numBeats = 16;
 export const noteDensity = 2;
 
 export const buttonRadius = 8;
+export const inactiveStepRadius = 5;
+
+/** Radius of the disc holding the tempo readout, inside the innermost ring. */
+export const centerDiscRadius = (maxSize / 2) * 0.42;
 
 export const cPoint: XYPoint = {
   x: size / 2,

@@ -1,56 +1,163 @@
 import { Canvas, useCanvasRef } from '@shopify/react-native-skia';
-import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { AudioContext } from 'react-native-audio-api';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import {
+  AudioBuffer,
+  AudioContext,
+  decodeAudioData,
+} from 'react-native-audio-api';
 import { GestureDetector } from 'react-native-gesture-handler';
-import { StyleSheet, View } from 'react-native';
+import Animated, {
+  SharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 
+import { Container } from '../../components';
+import { useControlsSheet } from '../../navigation/useControlsSheet';
 import { colors } from '../../styles';
-import { Select, Slider, Spacer, Container } from '../../components';
-import Kick from '../../utils/soundEngines/Kick';
+import type { InstrumentName, PlayingInstruments, XYWHRect } from '../../types';
 import Clap from '../../utils/soundEngines/Clap';
 import HiHat from '../../utils/soundEngines/HiHat';
-
-import { InstrumentName, Pattern, XYWHRect } from '../../types';
-import { size, initialBpm, numBeats } from './constants';
+import Kick from '../../utils/soundEngines/Kick';
+import playSample from '../../utils/soundEngines/playSample';
+import usePlayer from '../../utils/usePlayer';
+import CenterDisc from './CenterDisc';
+import { numBeats, size } from './constants';
+import {
+  drumMachineStore,
+  SoundSource,
+  useDrumMachineState,
+} from './drumMachineStore';
+import Grid from './Grid';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
+import hiHatSample from './samples/hi-hat.wav';
+import kickSample from './samples/kick.wav';
+import snareSample from './samples/snare.wav';
 import useGestures from './useGestures';
-import PlayButton from './PlayButton';
-import usePlayer from '../../utils/usePlayer';
-import presets from './presets';
-import Grid from './Grid';
 
-const defaultPreset = 'Empty';
+type DrumVoice = 'kick' | 'clap' | 'hi-hat';
+type SampleBuffers = Record<DrumVoice, AudioBuffer>;
 
-function setupPlayer(audioCtx: AudioContext) {
-  const kick = new Kick(audioCtx);
-  const clap = new Clap(audioCtx);
-  const hiHat = new HiHat(audioCtx);
+/**
+ * Acoustic samples per sequencer voice; the `clap` ring plays a snare in sample
+ * mode.
+ */
+const sampleSources: Record<DrumVoice, number> = {
+  kick: kickSample,
+  clap: snareSample,
+  'hi-hat': hiHatSample,
+};
 
-  const playNote = (name: InstrumentName, time: number) => {
-    switch (name) {
-      case 'kick':
-        kick.play(time);
-        break;
-      case 'clap':
-        clap.play(time);
-        break;
-      case 'hi-hat':
-        hiHat.play(time);
-        break;
-    }
-  };
-
-  return { playNote };
+function isDrumVoice(name: InstrumentName): name is DrumVoice {
+  return name in sampleSources;
 }
 
-const DrumMachine: React.FC = () => {
-  const [preset, setPreset] = useState<string>(defaultPreset);
-  const [bpm, setBpm] = useState<number>(initialBpm);
+async function decodeSamples(): Promise<SampleBuffers> {
+  const voices = Object.keys(sampleSources) as DrumVoice[];
+  const buffers = await Promise.all(
+    voices.map((voice) => decodeAudioData(sampleSources[voice]))
+  );
 
-  const [patterns, setPatterns] = useState<Pattern[]>([
-    ...presets[defaultPreset].pattern,
-  ]);
+  return Object.fromEntries(
+    voices.map((voice, index) => [voice, buffers[index]])
+  ) as SampleBuffers;
+}
+
+interface TempoReadoutProps {
+  bpm: number;
+  playingInstruments: SharedValue<PlayingInstruments>;
+}
+
+const kickPulseTiming = { duration: 25 };
+
+const TempoReadout: React.FC<TempoReadoutProps> = ({
+  bpm,
+  playingInstruments,
+}) => {
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: withTiming(
+          playingInstruments.value.kick ? 1.08 : 1,
+          kickPulseTiming
+        ),
+      },
+    ],
+  }));
+
+  return (
+    <View style={styles.readout} pointerEvents="none">
+      <Animated.View style={[styles.readoutContent, pulseStyle]}>
+        <Text style={styles.bpm}>{bpm}</Text>
+        <Text style={styles.bpmCaption}>BPM</Text>
+      </Animated.View>
+    </View>
+  );
+};
+
+const DrumMachine: React.FC = () => {
+  const { bpm, patterns, isPlaying, soundSource, controlsHeight } =
+    useDrumMachineState();
+
+  useControlsSheet('DrumMachineControls');
+
+  const soundSourceRef = useRef<SoundSource>(soundSource);
+  const sampleBuffersRef = useRef<SampleBuffers | null>(null);
+
+  useLayoutEffect(() => {
+    soundSourceRef.current = soundSource;
+  }, [soundSource]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    decodeSamples().then((buffers) => {
+      if (isMounted) {
+        sampleBuffersRef.current = buffers;
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      drumMachineStore.reset();
+    };
+  }, []);
+
+  /**
+   * Reads the sound source and the decoded samples through refs, so switching
+   * between synth and samples takes effect on the next hit without restarting
+   * the loop (`usePlayer` recreates its context whenever `setup` changes).
+   */
+  const setupPlayer = useCallback((audioContext: AudioContext) => {
+    const synth: Record<DrumVoice, { play: (time: number) => void }> = {
+      kick: new Kick(audioContext),
+      clap: new Clap(audioContext),
+      'hi-hat': new HiHat(audioContext),
+    };
+
+    const playNote = (name: InstrumentName, time: number) => {
+      if (!isDrumVoice(name)) {
+        return;
+      }
+
+      const samples = sampleBuffersRef.current;
+      if (soundSourceRef.current === 'samples' && samples) {
+        playSample(audioContext, samples[name], time);
+      } else {
+        synth[name].play(time);
+      }
+    };
+
+    return { playNote };
+  }, []);
 
   const player = usePlayer({
     bpm,
@@ -60,108 +167,60 @@ const DrumMachine: React.FC = () => {
     setup: setupPlayer,
   });
 
-  const ref = useCanvasRef();
+  const { play, stop } = player;
+  useEffect(() => {
+    if (isPlaying) {
+      play();
+    } else {
+      stop();
+    }
+  }, [isPlaying, play, stop]);
+
+  const canvasRef = useCanvasRef();
   const [canvasRect, setCanvasRect] = useState<XYWHRect>({
     x: 0,
     y: 0,
     width: size,
     height: size,
   });
+
   useLayoutEffect(() => {
-    ref.current?.measure(
-      (x: number, y: number, width: number, height: number) => {
-        setCanvasRect({ x, y, width, height });
-      }
-    );
-  }, [ref]);
+    canvasRef.current?.measure((x, y, width, height) => {
+      setCanvasRect({ x, y, width, height });
+    });
+  }, [canvasRef]);
 
-  const onPatternChange = useCallback(
-    (patternIdx: number, stepIdx: number) => {
-      if (preset !== 'Custom') {
-        setPreset('Custom');
-      }
-
-      setPatterns((prevPatterns) => {
-        const newPatterns = [...prevPatterns].map((pattern, idx) => {
-          if (idx !== patternIdx) {
-            return { ...pattern, steps: [...pattern.steps] };
-          }
-
-          const newPattern = { ...pattern, steps: [...pattern.steps] };
-          newPattern.steps[stepIdx] = !newPattern.steps[stepIdx];
-
-          return newPattern;
-        });
-
-        return newPatterns;
-      });
-    },
-    [preset]
-  );
-
-  const onSetPreset = useCallback(
-    (newPreset: string) => {
-      setPreset(newPreset);
-
-      if (newPreset !== 'Custom') {
-        setBpm(presets[newPreset].bpm);
-        setPatterns([...presets[newPreset].pattern]);
-      }
-    },
-    [setPreset]
-  );
-
-  const onPlayPress = useCallback(() => {
-    if (player.isPlaying) {
-      player.stop();
-    } else {
-      player.play();
-    }
-  }, [player]);
-
-  const gesture = useGestures({ canvasRect, onPatternChange });
+  const gesture = useGestures({
+    canvasRect,
+    onPatternChange: drumMachineStore.toggleStep,
+  });
 
   return (
-    <Container>
-      <View>
-        <Select
-          value={preset}
-          onChange={onSetPreset}
-          options={Object.keys(presets)}
-        />
-        <Spacer.Vertical size={24} />
-        <Slider
-          label="BPM"
-          step={1}
-          min={24}
-          max={1500}
-          value={bpm}
-          onValueChange={setBpm}
-        />
+    <Container disablePadding>
+      <View style={[styles.stage, { paddingBottom: controlsHeight }]}>
+        <GestureDetector gesture={gesture}>
+          <View style={styles.sequencer}>
+            <Canvas ref={canvasRef} style={styles.canvas}>
+              <Grid />
+              {patterns.map((pattern) => (
+                <PatternShape key={pattern.instrumentName} pattern={pattern} />
+              ))}
+              <CenterDisc />
+              {player.isPlaying && (
+                <NotesHighlight
+                  progressSV={player.progressSV}
+                  playingStep={player.playingStep}
+                  playingInstruments={player.playingInstruments}
+                />
+              )}
+            </Canvas>
+            <TempoReadout
+              bpm={bpm}
+              playingInstruments={player.playingInstruments}
+            />
+          </View>
+        </GestureDetector>
       </View>
-      <Spacer.Vertical size={54} />
-      <GestureDetector gesture={gesture}>
-        <View style={styles.container}>
-          <Canvas ref={ref} style={{ width: size, height: size }}>
-            <Grid />
-            {patterns.map((pattern) => (
-              <PatternShape key={pattern.instrumentName} pattern={pattern} />
-            ))}
-            {player.isPlaying && (
-              <NotesHighlight
-                progressSV={player.progressSV}
-                playingInstruments={player.playingInstruments}
-              />
-            )}
-          </Canvas>
-          <PlayButton
-            onPress={onPlayPress}
-            canvasRect={canvasRect}
-            isPlaying={player.isPlaying}
-            playingInstruments={player.playingInstruments}
-          />
-        </View>
-      </GestureDetector>
     </Container>
   );
 };
@@ -169,22 +228,37 @@ const DrumMachine: React.FC = () => {
 export default DrumMachine;
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.background,
+  stage: {
     flex: 1,
-    position: 'relative',
+    justifyContent: 'center',
   },
-  container: {
-    flex: 1,
-    position: 'relative',
+  sequencer: {
+    width: size,
+    height: size,
+  },
+  canvas: {
+    width: size,
+    height: size,
+  },
+  readout: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readoutContent: {
     alignItems: 'center',
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  bpm: {
+    fontSize: 44,
+    fontWeight: '300',
+    letterSpacing: -1,
+    fontVariant: ['tabular-nums'],
+    color: colors.textPrimary,
   },
-  label: {
-    fontSize: 16,
-    color: colors.white,
+  bpmCaption: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    color: colors.textMuted,
   },
 });

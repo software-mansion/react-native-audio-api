@@ -334,7 +334,6 @@ const EchoCancellation: FC = () => {
               title={runningSetup === setup.key ? 'Recording…' : 'Run'}
               onPress={() => runSetup(setup)}
               disabled={runningSetup !== null}
-              width={100}
             />
           </View>
         ))}
@@ -358,7 +357,6 @@ const EchoCancellation: FC = () => {
               title="Replay"
               onPress={() => replay(result)}
               disabled={runningSetup !== null}
-              width={100}
             />
           </View>
         ))}

@@ -17,8 +17,6 @@ const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
 const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'] as const;
 
-const labelWidth = 80;
-
 const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gain, setGain] = useState(INITIAL_GAIN);
@@ -124,7 +122,6 @@ const Oscillator: FC = () => {
         min={0.0}
         max={1.0}
         step={0.01}
-        minLabelWidth={labelWidth}
       />
       <Spacer.Vertical size={20} />
       <Slider
@@ -134,7 +131,6 @@ const Oscillator: FC = () => {
         min={-1}
         max={1}
         step={0.1}
-        minLabelWidth={labelWidth}
       />
       <Spacer.Vertical size={20} />
       <Slider
@@ -144,7 +140,6 @@ const Oscillator: FC = () => {
         min={120}
         max={1200}
         step={10}
-        minLabelWidth={labelWidth}
       />
       <Spacer.Vertical size={20} />
       <Slider
@@ -154,7 +149,6 @@ const Oscillator: FC = () => {
         min={0}
         step={1}
         max={100}
-        minLabelWidth={labelWidth}
       />
       <Spacer.Vertical size={40} />
       <View style={styles.oscillatorTypeContainer}>
@@ -169,12 +163,14 @@ const Oscillator: FC = () => {
                   ? styles.activeOscillatorButton
                   : styles.inactiveOscillatorButton,
             ]}
-            onPress={() => handleOscillatorTypeChange(type)}>
+            onPress={() => handleOscillatorTypeChange(type)}
+          >
             <Text
               style={[
                 styles.oscillatorButtonText,
                 type === oscillatorType && styles.activeOscillatorButtonText,
-              ]}>
+              ]}
+            >
               {type}
             </Text>
           </Pressable>

@@ -12,8 +12,6 @@ const PCM_DATA4 =
 
 export const PCM_DATA = PCM_DATA1 + PCM_DATA2 + PCM_DATA3 + PCM_DATA4;
 
-export const labelWidth = 80;
-
 export const PLAYBACK_SPEED_CONFIG = {
   min: 0.5,
   max: 2.0,

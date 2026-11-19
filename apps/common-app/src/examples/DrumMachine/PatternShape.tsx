@@ -63,8 +63,12 @@ const PatternShape: React.FC<PatternShapeProps> = (props) => {
   return (
     <>
       <Path path={path} color="transparent">
-        <Paint color={`${instrument.color}33`} style="fill" />
-        <Paint color={instrument.color} style="stroke" strokeWidth={2} />
+        <Paint color={`${instrument.color}12`} style="fill" />
+        <Paint
+          color={`${instrument.color}4D`}
+          style="stroke"
+          strokeWidth={1.2}
+        />
       </Path>
       {points.map((point, index) => (
         <Circle

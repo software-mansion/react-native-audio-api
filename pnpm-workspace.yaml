@@ -46,7 +46,6 @@ catalog:
   eslint-plugin-prettier: '^5.0.1'
   eslint-plugin-react: '^7.34.3'
   jest: '^29.7.0'
-  lucide-react-native: '^0.555.0'
   prettier: '^3.3.3'
   react: '19.3.0'
   react-dom: '19.3.0'
@@ -64,6 +63,10 @@ allowBuilds:
   esbuild: true
   core-js: false
   core-js-pure: false
+
+# RN 0.88's header layout no longer resolves the quoted "RCTBridge.h" import
+patchedDependencies:
+  '@react-native-menu/menu@2.0.0': patches/@react-native-menu__menu@2.0.0.patch
 
 tasks:
   check:
