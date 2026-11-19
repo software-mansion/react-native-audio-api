@@ -12,7 +12,7 @@ const BrownianNoise: FC = () => {
     const aCtx = aCtxRef.current;
 
     if (!aCtx) {
-      return undefined;
+      return null;
     }
 
     const bufferSize = 2 * aCtx.sampleRate;
@@ -33,7 +33,7 @@ const BrownianNoise: FC = () => {
   }
 
   const onPressIn = () => {
-    if (!bufferNodeRef.current) {
+    if (!bufferNodeRef.current && aCtxRef.current && gainRef.current) {
       bufferNodeRef.current = aCtxRef.current.createBufferSource();
       bufferNodeRef.current.buffer = bufferRef.current;
       bufferNodeRef.current.loop = true;

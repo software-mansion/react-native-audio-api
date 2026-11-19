@@ -10,22 +10,20 @@ type RowProps = PropsWithChildren<{
 }>;
 
 const Row: React.FC<RowProps> = ({ className, align, justify, children }) => {
-  const alignClass = ({
+  const alignClass = align && {
     start: styles.start,
     center: styles.center,
     end: styles.end,
-    undefined: '',
-  })[align];
+  }[align];
 
-  const justifyClass = ({
+  const justifyClass = justify && {
     start: styles.justifyStart,
     center: styles.justifyCenter,
     end: styles.justifyEnd,
     between: styles.justifyBetween,
     around: styles.justifyAround,
     evenly: styles.justifyEvenly,
-    undefined: '',
-  })[justify];
+  }[justify];
 
   return (
     <div className={clsx(styles.row, alignClass, justifyClass, className)}>

@@ -10,7 +10,7 @@ import styles from './styles.module.css';
 
 interface EqRenderingContext {
   analyser: AnalyserNode;
-  fftOutput: Uint8Array;
+  fftOutput: Uint8Array<ArrayBuffer>;
   eqPoints: Point[];
 }
 

@@ -647,9 +647,15 @@ importers:
       '@docusaurus/module-type-aliases':
         specifier: 3.9.2
         version: 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/theme-classic':
+        specifier: 3.9.2
+        version: 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
       '@docusaurus/tsconfig':
         specifier: 3.9.2
         version: 3.9.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
       copy-webpack-plugin:
         specifier: ^11.0.0
         version: 11.0.0(webpack@5.101.3)
@@ -755,6 +761,9 @@ importers:
       '@docusaurus/module-type-aliases':
         specifier: 3.9.2
         version: 3.9.2(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(esbuild@0.20.2)(html-minifier-terser@7.2.0)(postcss@8.5.32)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(webpack-cli@5.1.4)
+      '@docusaurus/theme-classic':
+        specifier: 3.9.2
+        version: 3.9.2(@types/react@19.2.14)(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.32))(csso@5.0.5)(debug@4.4.3(supports-color@8.1.1))(esbuild@0.20.2)(html-minifier-terser@7.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)(webpack-cli@5.1.4)
       '@docusaurus/tsconfig':
         specifier: 3.9.2
         version: 3.9.2

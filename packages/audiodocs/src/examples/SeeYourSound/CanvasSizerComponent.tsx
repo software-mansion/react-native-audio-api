@@ -1,7 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 
-const CanvasSizer = ({ canvasHeight, children }) => {
-  const containerRef = useRef(null);
+interface Dimensions {
+  width: number;
+  height: number;
+}
+
+interface CanvasSizerProps {
+  canvasHeight: number;
+  children: (dimensions: Dimensions) => ReactNode;
+}
+
+const CanvasSizer = ({ canvasHeight, children }: CanvasSizerProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {

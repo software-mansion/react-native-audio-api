@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "check": "exit 0",
+    "check": "bash ../../scripts/run-steps.sh typecheck",
+    "typecheck": "tsc --noEmit",
     "test": "exit 0",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
@@ -67,7 +68,9 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.9.2",
+    "@docusaurus/theme-classic": "3.9.2",
     "@docusaurus/tsconfig": "3.9.2",
+    "@types/react": "catalog:",
     "copy-webpack-plugin": "^11.0.0",
     "esbuild": "^0.20.2",
     "esbuild-register": "^3.5.0",
