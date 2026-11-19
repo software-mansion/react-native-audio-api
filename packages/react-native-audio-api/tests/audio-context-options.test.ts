@@ -1,3 +1,5 @@
+import type { IAudioContext } from '../src/jsi-interfaces';
+
 jest.mock('react-native', () => ({
   TurboModuleRegistry: {
     get: jest.fn(() => ({
@@ -19,8 +21,6 @@ jest.mock('../src/core/BaseAudioContext', () => {
   };
 });
 
-import type { IAudioContext } from '../src/jsi-interfaces';
-
 describe('AudioContext options', () => {
   const createAudioContext = globalThis.createAudioContext;
 
@@ -34,10 +34,12 @@ describe('AudioContext options', () => {
     const AudioContext = require('../src/core/AudioContext')
       .default as typeof import('../src/core/AudioContext').default;
 
-    new AudioContext({
-      sampleRate: 24000,
-      androidOutputProfile: 'voiceCommunication',
-    });
+    expect(
+      new AudioContext({
+        sampleRate: 24000,
+        androidOutputProfile: 'voiceCommunication',
+      })
+    ).toBeInstanceOf(AudioContext);
 
     expect(globalThis.createAudioContext).toHaveBeenCalledWith(
       24000,

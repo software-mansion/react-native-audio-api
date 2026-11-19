@@ -2,9 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import { useCopyToClipboard } from 'usehooks-ts';
 
-// @ts-ignore
 import BrowserOnly from '@docusaurus/BrowserOnly';
-// @ts-ignore
 import CodeBlock from '@theme/CodeBlock';
 
 import Copy from '@site/static/img/copy.svg';
@@ -19,7 +17,6 @@ interface Props {
   src: string;
   component: React.FC<{ width?: number }>;
   label?: string;
-  showCode?: boolean; // whether to show code by default
   larger?: boolean; // should the view be enlarged?
 }
 
@@ -32,10 +29,9 @@ export default function InteractiveExample({
   src: tsxCode,
   component: Component,
   label,
-  showCode = false,
   larger = false,
 }: Props) {
-  const [_, copy] = useCopyToClipboard();
+  const [, copy] = useCopyToClipboard();
   const [key, setKey] = React.useState(0);
   const [tab, setTab] = React.useState<Tab>(Tab.PREVIEW);
   const [width, setWidth] = React.useState<number | null>(null);

@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "check": "bash ../../scripts/run-steps.sh typecheck",
-    "typecheck": "tsc --noEmit",
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
     "test": "exit 0",
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",

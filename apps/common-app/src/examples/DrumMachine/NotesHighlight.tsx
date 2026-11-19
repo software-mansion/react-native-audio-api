@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Circle, Paint } from '@shopify/react-native-skia';
+import { Circle } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { Instrument, PlayingInstruments } from '../../types';
@@ -41,12 +41,10 @@ const NoteHighlight: React.FC<NoteHighlightProps> = (props) => {
   const color = useDerivedValue(() =>
     playingInstruments.value[instrument.name]
       ? `${instrument.color}55`
-      : "#e5e5e5"
+      : '#e5e5e5'
   );
 
-  return (
-    <Circle cx={cX} cy={cY} r={r} color={color} />
-  );
+  return <Circle cx={cX} cy={cY} r={r} color={color} />;
 };
 
 const NotesHighlight: React.FC<NotesHighlightProps> = (props) => (

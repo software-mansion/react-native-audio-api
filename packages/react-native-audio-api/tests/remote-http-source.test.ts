@@ -15,8 +15,7 @@ describe('loadRemoteHttpSource', () => {
   beforeEach(() => {
     fetchMock.mockReset();
     isFfmpegEnabledMock.mockReset();
-    // @ts-ignore
-    global.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock;
   });
 
   it('downloads when FFmpeg is disabled', async () => {
@@ -24,7 +23,7 @@ describe('loadRemoteHttpSource', () => {
     const buffer = new ArrayBuffer(8);
     fetchMock.mockResolvedValue({
       ok: true,
-      arrayBuffer: async () => buffer,
+      arrayBuffer: () => Promise.resolve(buffer),
     });
 
     await expect(
@@ -78,14 +77,14 @@ describe('loadRemoteHttpSource', () => {
   it('falls through to a Range GET probe when HEAD succeeds without confirming Accept-Ranges', async () => {
     isFfmpegEnabledMock.mockReturnValue(true);
     fetchMock.mockImplementation(
-      async (_url: string, options?: { method?: string }) => {
+      (_url: string, options?: { method?: string }) => {
         if (options?.method === 'HEAD') {
           // Some Icecast/Shoutcast servers omit Accept-Ranges from HEAD even
           // though they honor a Range GET — confirmed against a real public
           // stream (SomaFM) during the aiirmobile investigation.
-          return { ok: true, headers: { get: () => null } };
+          return Promise.resolve({ ok: true, headers: { get: () => null } });
         }
-        return { ok: true, status: 206 };
+        return Promise.resolve({ ok: true, status: 206 });
       }
     );
 
@@ -110,17 +109,20 @@ describe('loadRemoteHttpSource', () => {
     isFfmpegEnabledMock.mockReturnValue(true);
     const buffer = new ArrayBuffer(4);
     fetchMock.mockImplementation(
-      async (
+      (
         _url: string,
         options?: { method?: string; headers?: { Range?: string } }
       ) => {
         if (options?.method === 'HEAD') {
-          return { ok: true, headers: { get: () => null } };
+          return Promise.resolve({ ok: true, headers: { get: () => null } });
         }
         if (options?.headers?.Range) {
-          return { ok: true, status: 200 }; // server ignored the Range request
+          return Promise.resolve({ ok: true, status: 200 }); // server ignored the Range request
         }
-        return { ok: true, arrayBuffer: async () => buffer };
+        return Promise.resolve({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(buffer),
+        });
       }
     );
 
@@ -136,7 +138,7 @@ describe('loadRemoteHttpSource', () => {
     const buffer = new ArrayBuffer(8);
     fetchMock.mockResolvedValue({
       ok: true,
-      arrayBuffer: async () => buffer,
+      arrayBuffer: () => Promise.resolve(buffer),
     });
 
     await expect(

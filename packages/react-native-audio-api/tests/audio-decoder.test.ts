@@ -88,11 +88,10 @@ const installMockAudio = ({
       const eventName = errorMessage ? 'error' : 'loadedmetadata';
       listeners.get(eventName)?.();
     }),
-  } as unknown as HTMLAudioElement;
-  const AudioMock = jest.fn(() => audio);
+  };
+  const AudioMock = jest.fn(() => audio as unknown as HTMLAudioElement);
 
-  (globalThis as unknown as { Audio: typeof Audio }).Audio =
-    AudioMock as unknown as typeof Audio;
+  (globalThis as unknown as { Audio: typeof Audio }).Audio = AudioMock;
 
   return { audio, AudioMock };
 };
@@ -175,7 +174,7 @@ describe('getAudioDuration', () => {
     );
   });
 
-  it('does not decode audio data when probing duration', async () => {
+  it('does not decode audio data when probing duration', () => {
     const decoder = createDecoder();
     installDecoder(decoder);
     installFileUtils(createFileUtils());

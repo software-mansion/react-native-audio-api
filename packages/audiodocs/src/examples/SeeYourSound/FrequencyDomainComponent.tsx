@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Button, View } from 'react-native';
 import {
   AnalyserNode,
@@ -24,10 +20,15 @@ const FrequencyChart: React.FC<ChartProps> = ({ data, dataSize }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    const dpr =
+      typeof window !== 'undefined' && window.devicePixelRatio
+        ? window.devicePixelRatio
+        : 1;
 
-    const cssWidth = Number(canvas.dataset.cssWidth) || (canvas.clientWidth || 300);
-    const cssHeight = Number(canvas.dataset.cssHeight) || (canvas.clientHeight || 150);
+    const cssWidth =
+      Number(canvas.dataset.cssWidth) || canvas.clientWidth || 300;
+    const cssHeight =
+      Number(canvas.dataset.cssHeight) || canvas.clientHeight || 150;
 
     const scaledWidth = Math.max(1, Math.floor(cssWidth * dpr));
     const scaledHeight = Math.max(1, Math.floor(cssHeight * dpr));
@@ -55,7 +56,10 @@ const FrequencyChart: React.FC<ChartProps> = ({ data, dataSize }) => {
   return (
     <CanvasSizer canvasHeight={300}>
       {({ width, height }) => {
-        const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+        const dpr =
+          typeof window !== 'undefined' && window.devicePixelRatio
+            ? window.devicePixelRatio
+            : 1;
         const scaledWidth = Math.max(1, Math.floor(width * dpr));
         const scaledHeight = Math.max(1, Math.floor(height * dpr));
 
@@ -104,16 +108,15 @@ const AudioVisualizer: React.FC = () => {
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
-
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
     } else {
       if (!audioContextRef.current || !analyserRef.current) {
-        return
+        return;
       }
 
-      bufferSourceRef.current = await audioContextRef.current.createBufferSource();
+      bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(analyserRef.current);
 
@@ -154,11 +157,13 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-02.mp3')
+      audioBufferRef.current = await fetch(
+        '/react-native-audio-api/audio/music/example-music-02.mp3'
+      )
         .then((response) => response.arrayBuffer())
         .then((arrayBuffer) =>
           audioContextRef.current!.decodeAudioData(arrayBuffer)
-        )
+        );
 
       setIsLoading(false);
     };
@@ -174,14 +179,17 @@ const AudioVisualizer: React.FC = () => {
     <View>
       <FrequencyChart data={freqs} dataSize={FFT_SIZE / 2} />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
+        <View
+          style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
-          }}>
-        <Button
+          }}
+        >
+          <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
@@ -194,4 +202,3 @@ const AudioVisualizer: React.FC = () => {
 };
 
 export default AudioVisualizer;
-

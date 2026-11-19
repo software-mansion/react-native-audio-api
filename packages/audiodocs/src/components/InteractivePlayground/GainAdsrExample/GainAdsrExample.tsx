@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef, FC } from "react";
-import { AudioContext, OscillatorNode, GainNode } from "react-native-audio-api";
-import styles from "../styles.module.css";
-import AdsrChart from "./AdsrChart";
+import React, { useEffect, useState, useRef, FC } from 'react';
+import { AudioContext, OscillatorNode, GainNode } from 'react-native-audio-api';
+import styles from '../styles.module.css';
+import AdsrChart from './AdsrChart';
 
 interface GainAdsrExampleProps {
   attack: number;
@@ -12,7 +12,7 @@ interface GainAdsrExampleProps {
   setDecay: (v: number) => void;
   setSustain: (v: number) => void;
   setRelease: (v: number) => void;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
 }
 
 const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
@@ -39,7 +39,7 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
     };
   }, []);
 
-  const playSound = async () => {
+  const playSound = () => {
     const ctx = audioContextRef.current;
     if (!ctx) return;
 
@@ -48,16 +48,16 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
       oscRef.current = null;
     }
     if (gainRef.current) {
-        gainRef.current.disconnect();
-        gainRef.current = null;
+      gainRef.current.disconnect();
+      gainRef.current = null;
     }
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
     setPlaybackProgress(0);
 
-    const osc = await ctx.createOscillator();
-    const gain = await ctx.createGain();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
     oscRef.current = osc;
     gainRef.current = gain;
@@ -67,7 +67,7 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
 
     const now = ctx.currentTime;
     const { attack, decay, sustain, release } = props;
-    const sustainHoldTime = 0.6; 
+    const sustainHoldTime = 0.6;
     const totalDuration = attack + decay + sustainHoldTime + release + 0.02;
 
     gain.gain.setValueAtTime(0.00001, now);
