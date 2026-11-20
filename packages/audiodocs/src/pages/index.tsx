@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 
-// @ts-ignore
 import Layout from '@theme/Layout';
 
 import {

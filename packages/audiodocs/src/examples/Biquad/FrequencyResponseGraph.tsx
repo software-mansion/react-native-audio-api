@@ -120,7 +120,7 @@ const FrequencyResponseGraph: React.FC = () => {
     [filterFreq, filterGain, filterQ, filterType, gridColor, isFilterReady]
   );
 
-  const playAudio = async () => {
+  const playAudio = () => {
     const context = audioContextRef.current;
     if (!context) {
       return;
@@ -138,7 +138,7 @@ const FrequencyResponseGraph: React.FC = () => {
       return;
     }
 
-    const source = await context.createBufferSource();
+    const source = context.createBufferSource();
     source.buffer = buffer;
     bufferSourceRef.current = source;
     source.connect(filterRef.current!);
@@ -152,7 +152,7 @@ const FrequencyResponseGraph: React.FC = () => {
     setIsPlaying(true);
   };
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
       bufferSourceRef.current = null;
@@ -160,12 +160,12 @@ const FrequencyResponseGraph: React.FC = () => {
       return;
     }
 
-    await playAudio();
+    playAudio();
   };
 
   useEffect(() => {
     if (isPlaying) {
-      void playAudio();
+      playAudio();
     }
   }, [selectedAudio]);
 

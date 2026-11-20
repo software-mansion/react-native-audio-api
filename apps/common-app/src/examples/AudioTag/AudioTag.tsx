@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import {
   Audio,
   AudioTagHandle,
@@ -81,10 +81,10 @@ const AudioTag: React.FC = () => {
   const handleLoad = useCallback(() => {
     // console.log('onLoad');
   }, []);
-  const handleError = useCallback((error: Error) => {
+  const handleError = useCallback((_error: Error) => {
     // console.log('onError', error);
   }, []);
-  const handlePositionChange = useCallback((seconds: number) => {
+  const handlePositionChange = useCallback((_seconds: number) => {
     // console.log('onPositionChange', seconds);
   }, []);
   const handleEnded = useCallback(() => {
@@ -96,7 +96,7 @@ const AudioTag: React.FC = () => {
   const handlePause = useCallback(() => {
     // console.log('onPause');
   }, []);
-  const handleVolumeEvent = useCallback((volume: number) => {
+  const handleVolumeEvent = useCallback((_volume: number) => {
     // console.log('onVolumeChange', volume);
   }, []);
   const handleWaiting = useCallback(() => {

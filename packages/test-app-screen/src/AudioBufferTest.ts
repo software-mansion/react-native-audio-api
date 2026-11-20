@@ -91,7 +91,9 @@ export const audioBufferFormatsTest = async (
           if (isTestRunInterrupted()) {
             throw error;
           }
-          setTestingInfo(`Error decoding audio buffer: ${format} - ${error}`);
+          setTestingInfo(
+            `Error decoding audio buffer: ${format} - ${String(error)}`
+          );
         }
       });
   }
@@ -160,7 +162,7 @@ export const audioBufferChannelsTest = async (
             throw error;
           }
           setTestingInfo(
-            `Error decoding audio buffer with ${channels} channels - ${error}`
+            `Error decoding audio buffer with ${channels} channels - ${String(error)}`
           );
         }
       });

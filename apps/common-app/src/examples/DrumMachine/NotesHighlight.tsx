@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Circle, Paint } from '@shopify/react-native-skia';
+import { Circle } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { Instrument, PlayingInstruments } from '../../types';

@@ -25,7 +25,7 @@ export const recorderTest = (
       buffers.push(buffer);
     }
   );
-  void recorder.start();
+  recorder.start();
   return recorder;
 };
 

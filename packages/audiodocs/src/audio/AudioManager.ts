@@ -153,7 +153,7 @@ class AudioManager {
 
     this.activeSounds.delete(id);
 
-    if (this.activeSounds.size == 0) {
+    if (this.activeSounds.size === 0) {
       this.isPlaying = false;
       this.dispatchEvent({ type: 'stopped', payload: {} });
     }

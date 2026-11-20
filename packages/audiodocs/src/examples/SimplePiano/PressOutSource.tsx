@@ -46,7 +46,7 @@ const SimplePiano: FC = () => {
 
   const onKeyPressIn = (which: KeyName) => {
     const audioContext = audioContextRef.current;
-    let buffer = bufferMapRef.current[which];
+    const buffer = bufferMapRef.current[which];
 
     if (!audioContext || !buffer) {
       return;

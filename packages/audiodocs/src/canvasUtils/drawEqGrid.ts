@@ -102,7 +102,6 @@ function drawColumnLabels(
 
     ctx.fillStyle = '#C1C6E5';
     ctx.font = '400 16px Aeonik';
-    const textWidth = ctx.measureText(column.label).width;
 
     const colX = x + index * columnWidth;
     const textX = colX;
@@ -127,10 +126,6 @@ function drawRowLabels(
 
     ctx.fillStyle = '#C1C6E5';
     ctx.font = '400 16px Aeonik';
-    const textMetrics = ctx.measureText(row.label);
-    const textHeight =
-      textMetrics.actualBoundingBoxAscent +
-      textMetrics.actualBoundingBoxDescent;
 
     const rowY = y + index * rowHeight;
     ctx.fillText(row.label, width + 16, rowY);

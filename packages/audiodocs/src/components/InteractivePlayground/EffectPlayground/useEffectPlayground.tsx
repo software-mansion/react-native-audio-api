@@ -22,8 +22,8 @@ interface TransportState {
   enabled: boolean;
   isPlaying: boolean;
   isLoading: boolean;
-  togglePlayback(): void;
-  toggleEffect(): void;
+  togglePlayback: () => void;
+  toggleEffect: () => void;
 }
 
 interface EffectPlaygroundHeaderProps {
