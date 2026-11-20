@@ -102,7 +102,6 @@ const AudioVisualizer: React.FC = () => {
     }
 
     const timesArrayLength = analyserRef.current.fftSize;
-    const frequencyArrayLength = analyserRef.current.frequencyBinCount;
 
     const timesArray = new Uint8Array(timesArrayLength);
     analyserRef.current.getByteTimeDomainData(timesArray);

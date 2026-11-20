@@ -9,7 +9,7 @@ type Props = {
 };
 
 const PlayPauseIcon: React.FC<Props> = ({
-  isPlaying = true,
+  isPlaying,
   size = 48,
   color = '#FFFFFF',
 }) => {

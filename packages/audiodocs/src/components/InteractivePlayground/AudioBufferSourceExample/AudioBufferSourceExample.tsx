@@ -60,8 +60,8 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
       stopSound();
     }
 
-    const source = await ctx.createBufferSource({
-      pitchCorrection: pitchCorrection,
+    const source = ctx.createBufferSource({
+      pitchCorrection,
     });
 
     source.buffer = audioBufferRef.current;

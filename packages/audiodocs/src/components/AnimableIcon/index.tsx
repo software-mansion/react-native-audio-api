@@ -21,7 +21,7 @@ interface Props {
 const AnimableIcon = ({
   icon,
   iconDark,
-  animation = Animation.FADE_IN_OUT,
+  animation,
   onClick,
 }: Props): JSX.Element => {
   const { colorMode } = useColorMode();

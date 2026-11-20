@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "categories": {
-    "correctness": "off"
+    "correctness": "error"
   },
   "options": {
     "typeAware": true
@@ -258,7 +258,24 @@
             "allowPattern": ""
           }
         ],
-        "tsdoc/syntax": "error"
+        "tsdoc/syntax": "error",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-floating-promises": "off",
+        "typescript/no-misused-promises": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-require-imports": "off",
+        "typescript/no-empty-object-type": "off",
+        "typescript/no-non-null-assertion": "off",
+        "no-use-before-define": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/refs": "warn",
+        "react/immutability": "warn",
+        "react/set-state-in-effect": "warn",
+        "react/purity": "warn",
+        "react/preserve-manual-memoization": "warn"
       }
     },
     {
@@ -514,7 +531,22 @@
             "allowKeywords": true,
             "allowPattern": ""
           }
-        ]
+        ],
+        "react/refs": "warn",
+        "react/immutability": "warn",
+        "react/set-state-in-effect": "warn",
+        "react/purity": "warn",
+        "react/preserve-manual-memoization": "warn"
+      }
+    },
+    {
+      "files": [
+        "packages/audiodocs/src/**",
+        "packages/internaldocs/src/**",
+        "packages/docs-theme/**"
+      ],
+      "env": {
+        "browser": true
       }
     }
   ]

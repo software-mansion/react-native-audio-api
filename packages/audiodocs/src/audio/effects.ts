@@ -52,11 +52,7 @@ export function createSimpleReverb(
   return convolver;
 }
 
-export function createDelay(
-  delayTime: number = 0.3,
-  feedback: number = 0.3,
-  wet: number = 0.5
-): AudioNode {
+export function createDelay(delayTime: number = 0.3): AudioNode {
   const audioContext = AudioManager.aCtx;
 
   const delay = audioContext.createDelay(1.0);
@@ -147,8 +143,7 @@ export const presetEffects = {
       { name: 'gain', node: createGainEffect(0.2) },
     ]),
 
-  echo: () =>
-    createEffectsMap([{ name: 'delay', node: createDelay(0.25, 0.4, 0.3) }]),
+  echo: () => createEffectsMap([{ name: 'delay', node: createDelay(0.25) }]),
 
   test: () => createEffectsMap([{ name: 'gain', node: createGainEffect(0.3) }]),
 

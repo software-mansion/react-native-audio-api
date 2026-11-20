@@ -97,6 +97,8 @@ const TimeChart: React.FC<ChartProps> = (props) => {
   }, []);
 
   const timePath = useDerivedValue(() => {
+    // Reading the tick subscribes this derived value to new time-domain data.
+    // oxlint-disable-next-line no-unused-expressions
     timeDataTickSV.value;
     return buildTimePath(timeDataSV.value, fftSize, layout);
   }, [fftSize, layout, timeDataSV, timeDataTickSV]);
@@ -134,6 +136,8 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
   );
 
   const freqPath = useDerivedValue(() => {
+    // Reading the tick subscribes this derived value to new frequency data.
+    // oxlint-disable-next-line no-unused-expressions
     frequencyDataTickSV.value;
     return buildFrequencyPath(frequencyDataSV.value, frequencyBinCount, layout);
   }, [frequencyBinCount, frequencyDataSV, frequencyDataTickSV, layout]);

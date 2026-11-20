@@ -56,7 +56,7 @@ export default function AutoWahPedal({
     return () => {
       try {
         lfoOscillatorRef.current?.stop();
-      } catch (e) {}
+      } catch {}
     };
   }, [context]);
 

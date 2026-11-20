@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit",
     "typecheck:voice": "tsc --project tsconfig.voice.json --noEmit"
   },
   "peerDependencies": {

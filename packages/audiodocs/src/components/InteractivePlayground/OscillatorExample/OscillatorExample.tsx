@@ -41,7 +41,7 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
     setIsPlaying(false);
   }, []);
 
-  const playSound = useCallback(async () => {
+  const playSound = useCallback(() => {
     if (isPlaying) {
       stopSound();
       return;
@@ -50,7 +50,7 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
     const ctx = audioContextRef.current;
     if (!ctx) return;
 
-    const osc = await ctx.createOscillator();
+    const osc = ctx.createOscillator();
 
     osc.type = type;
 

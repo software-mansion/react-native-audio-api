@@ -22,6 +22,7 @@ import type {
   LoopbackAnalysis,
   WaveformSeries,
 } from './types';
+import { describeError } from '../AudioIOPlayground/log';
 
 // Keep the live full-duplex window (mic + speaker both active) as short as
 // possible: the raw loopback path produces an idle buzz, so we only settle the
@@ -304,8 +305,7 @@ async function runLoopbackLatencyTest(
       id: 'loopback-recorder-start',
       message: 'Recorder is available for loopback measurement',
       status: 'fail',
-      details:
-        startError instanceof Error ? startError.message : String(startError),
+      details: describeError(startError),
     });
 
     return createEmptyAnalysis(

@@ -31,7 +31,7 @@ const Spectrogram: React.FC = () => {
   const isPlaying = useIsPlaying();
 
   const prepareRenderingContext = useCallback(
-    ({ canvas, ctx }: CanvasContext): SpectrogramRenderingContext => {
+    ({ canvas }: CanvasContext): SpectrogramRenderingContext => {
       const analyser = AudioManager.analyser;
       const fftOutput = new Uint8Array(analyser.frequencyBinCount);
       const bucketCount = 64;
@@ -44,11 +44,15 @@ const Spectrogram: React.FC = () => {
       );
       const bucketShift = 4;
 
-      let slowPhase = 0;
-      let slowBuckets = new Array(finalBucketCount + 2 * bucketShift).fill(0);
-      let slowBucketsSeeds = new Array(finalBucketCount + 2 * bucketShift)
-        .fill(0)
-        .map(() => Math.random());
+      const slowPhase = 0;
+      const slowBuckets = Array.from(
+        { length: finalBucketCount + 2 * bucketShift },
+        () => 0
+      );
+      const slowBucketsSeeds = Array.from(
+        { length: finalBucketCount + 2 * bucketShift },
+        () => Math.random()
+      );
 
       return {
         analyser,
@@ -75,7 +79,6 @@ const Spectrogram: React.FC = () => {
         bucketCount,
         totalBarHeight,
         barWidth,
-        slowPhase,
         slowBuckets,
         slowBucketsSeeds,
       } = renderingContext;

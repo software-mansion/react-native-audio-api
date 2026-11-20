@@ -58,7 +58,11 @@ export const drawFrequencyResponse = (
     const x = (i / (mags.length - 1)) * width;
     const db = 20 * Math.log10(m);
     const y = height - ((db + 30) / 60) * height;
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
   });
 
   ctx.strokeStyle = responseColor;

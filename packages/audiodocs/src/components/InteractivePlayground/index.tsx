@@ -1,7 +1,6 @@
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
 import React, { FC, ReactNode, useState } from 'react';
-//@ts-ignore
 import CodeBlock from '@theme/CodeBlock';
 
 import AnimableIcon, { Animation } from '@site/src/components/AnimableIcon';

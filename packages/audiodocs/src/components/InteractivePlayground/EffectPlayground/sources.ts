@@ -88,6 +88,6 @@ export function prefetchSample(id: SampleSourceId): void {
     return;
   }
   if (sample.url) {
-    void fetchSampleBytes(sample.url).catch(() => undefined);
+    fetchSampleBytes(sample.url).catch(() => undefined);
   }
 }

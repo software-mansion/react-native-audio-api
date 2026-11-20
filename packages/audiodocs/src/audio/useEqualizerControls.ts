@@ -50,10 +50,10 @@ export default function useEqualizerControls(
   }, []);
 
   const getControlPointPosition = useCallback(
-    (frequency: number, gain: number, canvasRect: DOMRect, index: number) => {
+    (frequency: number, gain: number, rect: DOMRect, index: number) => {
       const labelBoxSize = 32;
-      const drawingWidth = canvasRect.width - labelBoxSize;
-      const drawingHeight = canvasRect.height - labelBoxSize;
+      const drawingWidth = rect.width - labelBoxSize;
+      const drawingHeight = rect.height - labelBoxSize;
       const offsetX = 0;
       const offsetY = 0;
 

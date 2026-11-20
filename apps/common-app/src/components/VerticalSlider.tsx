@@ -7,7 +7,6 @@ import Animated, {
   withSpring,
   useAnimatedProps,
 } from 'react-native-reanimated';
-import { runOnJS } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 const SLIDER_HEIGHT = 100;
