@@ -20,5 +20,5 @@ export const labels: Record<AudioSource, string> = {
   music: 'Music',
   speech: 'Speech',
   bgm: 'BGM',
-  efx: 'Effects'
+  efx: 'Effects',
 };

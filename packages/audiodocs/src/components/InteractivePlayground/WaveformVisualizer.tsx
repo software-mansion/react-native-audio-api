@@ -1,9 +1,9 @@
-import React, { FC, useCallback, useEffect, useRef } from "react";
+import React, { FC, useCallback, useEffect, useRef } from 'react';
 
 import ResponsiveCanvas, {
   ResponsiveCanvasDrawParams,
-} from "@site/src/ui/ResponsiveCanvas";
-import { AnalyserNode } from "react-native-audio-api";
+} from '@site/src/ui/ResponsiveCanvas';
+import { AnalyserNode } from 'react-native-audio-api';
 
 export const WaveformVisualizer: FC<{
   analyserNode: AnalyserNode | null;
@@ -15,7 +15,7 @@ export const WaveformVisualizer: FC<{
 
   const drawWaveform = useCallback(
     (canvas: HTMLCanvasElement) => {
-      const context = canvas.getContext("2d");
+      const context = canvas.getContext('2d');
       if (!context) {
         return;
       }
@@ -31,7 +31,7 @@ export const WaveformVisualizer: FC<{
       context.clearRect(0, 0, cssWidth, cssHeight);
 
       context.lineWidth = 2;
-      context.strokeStyle = theme === "dark" ? "#ff7774" : "#fa7f7c";
+      context.strokeStyle = theme === 'dark' ? '#ff7774' : '#fa7f7c';
       context.beginPath();
 
       const data = new Uint8Array(fftSize);

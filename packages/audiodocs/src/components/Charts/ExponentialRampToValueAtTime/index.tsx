@@ -1,10 +1,9 @@
-import {
-    Label,
-    ReferenceLine
-} from 'recharts';
+import { Label, ReferenceLine } from 'recharts';
 
 import { FC } from 'react';
-import AudioParamChartBase, { AudioParamDataPoint } from '../common/AudioParamChartBase';
+import AudioParamChartBase, {
+  AudioParamDataPoint,
+} from '../common/AudioParamChartBase';
 import styles from '../styles.module.css';
 
 const generateExponentialRampData = (): AudioParamDataPoint[] => {
@@ -46,7 +45,8 @@ const ExponentialRampToValueAtTimeChart: FC = () => (
       x={0.2}
       stroke="currentColor"
       className={styles.referenceLine}
-      strokeDasharray="5 5">
+      strokeDasharray="5 5"
+    >
       <Label
         value="previous event and time"
         position="bottom"
@@ -57,21 +57,24 @@ const ExponentialRampToValueAtTimeChart: FC = () => (
       x={0.8}
       stroke="currentColor"
       className={styles.referenceLine}
-      strokeDasharray="5 5">
+      strokeDasharray="5 5"
+    >
       <Label value="endTime" position="bottom" className={styles.label} />
     </ReferenceLine>
     <ReferenceLine
       y={0.2}
       stroke="currentColor"
       className={styles.referenceLine}
-      strokeDasharray="5 5">
+      strokeDasharray="5 5"
+    >
       <Label value="previousValue" position="left" className={styles.label} />
     </ReferenceLine>
     <ReferenceLine
       y={0.8}
       stroke="currentColor"
       className={styles.referenceLine}
-      strokeDasharray="5 5">
+      strokeDasharray="5 5"
+    >
       <Label value="value" position="left" className={styles.label} />
     </ReferenceLine>
   </AudioParamChartBase>

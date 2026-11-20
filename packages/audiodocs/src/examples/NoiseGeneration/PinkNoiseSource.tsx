@@ -1,6 +1,11 @@
 import React, { FC, useEffect, useRef } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { AudioContext, AudioBuffer, GainNode, AudioBufferSourceNode } from 'react-native-audio-api';
+import {
+  AudioContext,
+  AudioBuffer,
+  GainNode,
+  AudioBufferSourceNode,
+} from 'react-native-audio-api';
 
 const PinkNoise: FC = () => {
   const aCtxRef = useRef<AudioContext | null>(null);
@@ -38,7 +43,7 @@ const PinkNoise: FC = () => {
     const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
     noiseBuffer.copyToChannel(output, 0, 0);
     return noiseBuffer;
-  }
+  };
 
   const onPressIn = () => {
     if (!bufferNodeRef.current && aCtxRef.current && gainRef.current) {
@@ -49,14 +54,14 @@ const PinkNoise: FC = () => {
 
       bufferNodeRef.current.start();
     }
-  }
+  };
 
   const onPressOut = () => {
     if (bufferNodeRef.current) {
       bufferNodeRef.current.stop();
       bufferNodeRef.current = null;
     }
-  }
+  };
 
   useEffect(() => {
     if (!aCtxRef.current) {
@@ -82,7 +87,7 @@ const PinkNoise: FC = () => {
       </Pressable>
     </View>
   );
-}
+};
 
 export default PinkNoise;
 

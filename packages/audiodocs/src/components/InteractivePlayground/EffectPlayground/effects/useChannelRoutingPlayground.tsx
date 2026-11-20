@@ -15,7 +15,10 @@ interface ChannelRoutingParams {
   right: ChannelTarget;
 }
 
-/** Swapped by default so the routing is audible the moment the reader presses play. */
+/**
+ * Swapped by default so the routing is audible the moment the reader presses
+ * play.
+ */
 const initialState: ChannelRoutingParams = { left: 'right', right: 'left' };
 
 const TARGET_OPTIONS: Array<{ value: ChannelTarget; label: string }> = [
@@ -25,7 +28,12 @@ const TARGET_OPTIONS: Array<{ value: ChannelTarget; label: string }> = [
   { value: 'none', label: 'Nowhere' },
 ];
 
-const MERGER_INPUTS: Record<ChannelTarget, number[]> = { left: [0], right: [1], both: [0, 1], none: [] };
+const MERGER_INPUTS: Record<ChannelTarget, number[]> = {
+  left: [0],
+  right: [1],
+  both: [0, 1],
+  none: [],
+};
 const CHANNEL_NAMES = ['left', 'right'] as const;
 const SPEAKER_NAMES = ['left', 'right'];
 
@@ -38,11 +46,15 @@ interface BrowserBackedNode {
 }
 
 /**
- * The splitter and merger are created on the browser context behind the wrapper because the
- * react-native-audio-api release bundled with the docs predates their web implementations. The
- * pass-through gains keep the chain wired through the library's own nodes.
+ * The splitter and merger are created on the browser context behind the wrapper
+ * because the react-native-audio-api release bundled with the docs predates
+ * their web implementations. The pass-through gains keep the chain wired
+ * through the library's own nodes.
  */
-const createChannelRoutingEffect: EffectFactory<ChannelRoutingParams> = (ctx, params) => {
+const createChannelRoutingEffect: EffectFactory<ChannelRoutingParams> = (
+  ctx,
+  params
+) => {
   const input = ctx.createGain();
   const output = ctx.createGain();
   const browserContext = (ctx as unknown as BrowserBackedContext).context;
@@ -98,19 +110,30 @@ function connectionLines(params: ChannelRoutingParams): string {
 export function useChannelRoutingPlayground() {
   const [left, setLeft] = useState<ChannelTarget>(initialState.left);
   const [right, setRight] = useState<ChannelTarget>(initialState.right);
-  const params = useMemo<ChannelRoutingParams>(() => ({ left, right }), [left, right]);
+  const params = useMemo<ChannelRoutingParams>(
+    () => ({ left, right }),
+    [left, right]
+  );
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createChannelRoutingEffect,
-    params,
-    initialSource: 'stereo',
-    sources: ['stereo', 'music', 'voice'],
-    effectNodes: [
-      { label: 'ChannelSplitterNode', sublabel: 'stereo in · 2 mono outputs' },
-      { label: 'ChannelMergerNode', sublabel: `L → ${describeTarget(left)} · R → ${describeTarget(right)}` },
-    ],
-    groupLabel: 'Channel routing',
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createChannelRoutingEffect,
+      params,
+      initialSource: 'stereo',
+      sources: ['stereo', 'music', 'voice'],
+      effectNodes: [
+        {
+          label: 'ChannelSplitterNode',
+          sublabel: 'stereo in · 2 mono outputs',
+        },
+        {
+          label: 'ChannelMergerNode',
+          sublabel: `L → ${describeTarget(left)} · R → ${describeTarget(right)}`,
+        },
+      ],
+      groupLabel: 'Channel routing',
+    }
+  );
 
   const code = buildEffectCode({
     sampleVariable,

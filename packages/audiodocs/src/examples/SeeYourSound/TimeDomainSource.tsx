@@ -1,17 +1,22 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-} from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   AudioContext,
   AudioBuffer,
   AudioBufferSourceNode,
   AnalyserNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
-import { Canvas as SKCanvas, vec, Points, SkPoint } from '@shopify/react-native-skia';
+import {
+  ActivityIndicator,
+  View,
+  Button,
+  LayoutChangeEvent,
+} from 'react-native';
+import {
+  Canvas as SKCanvas,
+  vec,
+  Points,
+  SkPoint,
+} from '@shopify/react-native-skia';
 
 interface Size {
   width: number;
@@ -55,14 +60,16 @@ const TimeChart: React.FC<ChartProps> = (props) => {
       <Points points={points} mode="polygon" color="#B5E1F1" strokeWidth={2} />
     </SKCanvas>
   );
-}
+};
 
 const FFT_SIZE = 512;
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [times, setTimes] = useState<Uint8Array>(new Uint8Array(FFT_SIZE).fill(127));
+  const [times, setTimes] = useState<Uint8Array>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -74,7 +81,7 @@ const AudioVisualizer: React.FC = () => {
       bufferSourceRef.current?.stop();
     } else {
       if (!audioContextRef.current || !analyserRef.current) {
-        return
+        return;
       }
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
@@ -119,11 +126,13 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await fetch('https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3')
+      audioBufferRef.current = await fetch(
+        'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3'
+      )
         .then((response) => response.arrayBuffer())
         .then((arrayBuffer) =>
           audioContextRef.current!.decodeAudioData(arrayBuffer)
-        )
+        );
 
       setIsLoading(false);
     };
@@ -136,19 +145,21 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1}}>
+    <View style={{ flex: 1 }}>
       <View style={{ flex: 0.2 }} />
       <TimeChart data={times} dataSize={FFT_SIZE} />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
         <View
           style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
-          }}>
-        <Button
+          }}
+        >
+          <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}

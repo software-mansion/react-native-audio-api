@@ -73,11 +73,7 @@ const MyExample: FC = () => {
     };
   }, []);
 
-  return (
-    <Container centered>
-      {/* UI here */}
-    </Container>
-  );
+  return <Container centered>{/* UI here */}</Container>;
 };
 
 export default MyExample;
@@ -88,7 +84,7 @@ export default MyExample;
 ```ts
 // apps/common-app/src/examples/index.ts
 import MyExample from './MyExample';
-import { icons } from 'lucide-react-native';  // pick any icon
+import { icons } from 'lucide-react-native'; // pick any icon
 
 export const Examples = [
   // ... existing
@@ -182,7 +178,9 @@ const MyExample: FC = () => {
       />
       <Slider
         label="Volume"
-        min={0} max={1} step={0.01}
+        min={0}
+        max={1}
+        step={0.01}
         value={volume}
         onValueChange={handleVolumeChange}
       />
@@ -305,15 +303,15 @@ useEffect(() => {
 
 All in `apps/common-app/src/components/`:
 
-| Component | Props |
-|---|---|
-| `Container` | `centered?: boolean` — wraps screen in `SafeAreaView` |
-| `Button` | `title`, `onPress`, `disabled?`, `width?`, `testID?` |
-| `Slider` | `label`, `min`, `max`, `step`, `value`, `onValueChange` |
-| `VerticalSlider` | same as Slider, vertical orientation |
-| `Spacer.Vertical` | `size` |
-| `Switch` | `value`, `onValueChange`, `testID?` (no label; render one beside it) |
-| `Select` | `options`, `value`, `onChange`, `testID?` (single choice, no label; each option gets `<testID>-option-<value>`) |
+| Component         | Props                                                                                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| `Container`       | `centered?: boolean` — wraps screen in `SafeAreaView`                                                           |
+| `Button`          | `title`, `onPress`, `disabled?`, `width?`, `testID?`                                                            |
+| `Slider`          | `label`, `min`, `max`, `step`, `value`, `onValueChange`                                                         |
+| `VerticalSlider`  | same as Slider, vertical orientation                                                                            |
+| `Spacer.Vertical` | `size`                                                                                                          |
+| `Switch`          | `value`, `onValueChange`, `testID?` (no label; render one beside it)                                            |
+| `Select`          | `options`, `value`, `onChange`, `testID?` (single choice, no label; each option gets `<testID>-option-<value>`) |
 
 `testID` is what E2E tools query: the accessibility identifier on iOS, the view tag on Android. The Audio I/O Playground (`other/AudioIOPlayground/`) sets one on every control.
 

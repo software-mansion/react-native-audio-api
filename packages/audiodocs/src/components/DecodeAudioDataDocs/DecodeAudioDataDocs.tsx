@@ -44,8 +44,8 @@ const buffer = await audioContext.decodeAudioData(url);`;
           <>
             {' '}
             The optional <code>sampleRate</code> parameter lets you resample the
-            decoded audio; if not provided, the original sample rate from the file
-            is used.
+            decoded audio; if not provided, the original sample rate from the
+            file is used.
           </>
         ) : (
           <>
@@ -140,18 +140,15 @@ const buffer = await audioContext.decodeAudioData(url);`;
       </table>
 
       <Admonition type="caution">
-        If you pass a <code>number</code> as <code>input</code>, decoding resolves
-        the bundled asset through React Native&apos;s{' '}
+        If you pass a <code>number</code> as <code>input</code>, decoding
+        resolves the bundled asset through React Native&apos;s{' '}
         <Link to="https://reactnative.dev/docs/image">
           <code>Image</code>
         </Link>{' '}
         component. By default, only <code>.mp3</code>, <code>.wav</code>,{' '}
         <code>.mp4</code>, <code>.m4a</code>, and <code>.aac</code> assets are
         supported. To use other formats, see{' '}
-        <Link to={staticResourcesLink}>
-          static non-image resources
-        </Link>
-        .
+        <Link to={staticResourcesLink}>static non-image resources</Link>.
       </Admonition>
 
       <p>

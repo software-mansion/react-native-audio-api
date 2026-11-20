@@ -6,7 +6,10 @@ export interface VisualizerLayout {
   circleRadius: number;
 }
 
-export function getVisualizerLayout(width: number, height: number): VisualizerLayout {
+export function getVisualizerLayout(
+  width: number,
+  height: number
+): VisualizerLayout {
   const base = Math.min(width, height);
   const innerRadius = base * 0.22;
   const outerRadius = base * 0.36;
@@ -27,7 +30,11 @@ export function sampleExp(value: number) {
   return Math.exp(2.5 * value) / 4 - 0.2;
 }
 
-export function weightWithIndex(value: number, index: number, indexMax: number) {
+export function weightWithIndex(
+  value: number,
+  index: number,
+  indexMax: number
+) {
   'worklet';
 
   if (index < indexMax / 2) {

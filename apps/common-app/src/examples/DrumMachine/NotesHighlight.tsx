@@ -41,12 +41,10 @@ const NoteHighlight: React.FC<NoteHighlightProps> = (props) => {
   const color = useDerivedValue(() =>
     playingInstruments.value[instrument.name]
       ? `${instrument.color}55`
-      : "#e5e5e5"
+      : '#e5e5e5'
   );
 
-  return (
-    <Circle cx={cX} cy={cY} r={r} color={color} />
-  );
+  return <Circle cx={cX} cy={cY} r={r} color={color} />;
 };
 
 const NotesHighlight: React.FC<NotesHighlightProps> = (props) => (

@@ -4,7 +4,9 @@ const loadNative = require('./load-native');
 
 const nativeBinding = loadNative();
 if (nativeBinding == null || nativeBinding.nativeModule == null) {
-  throw new Error('Failed to load Node native bindings for react-native-audio-api.');
+  throw new Error(
+    'Failed to load Node native bindings for react-native-audio-api.'
+  );
 }
 
 const install = nativeBinding.nativeModule.install;

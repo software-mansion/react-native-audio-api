@@ -26,8 +26,18 @@ import {
 
 const harnessDir = path.dirname(fileURLToPath(import.meta.url));
 const workerPath = path.join(harnessDir, 'wpt-worker.mjs');
-const defaultJsonReportPath = path.join(harnessDir, '..', 'results', 'latest.json');
-const defaultMarkdownReportPath = path.join(harnessDir, '..', 'results', 'latest.md');
+const defaultJsonReportPath = path.join(
+  harnessDir,
+  '..',
+  'results',
+  'latest.json'
+);
+const defaultMarkdownReportPath = path.join(
+  harnessDir,
+  '..',
+  'results',
+  'latest.md'
+);
 const defaultDocsPath = path.join(
   harnessDir,
   '..',
@@ -94,7 +104,7 @@ program
 program.parse(process.argv);
 const options = program.opts();
 
-const exitForFailures = failures => {
+const exitForFailures = (failures) => {
   if (failures > 0 && !options.allowFailures) {
     return 1;
   }
@@ -126,7 +136,9 @@ const writeReports = () => {
   const reportJsonPath =
     options.reportJson === true ? defaultJsonReportPath : options.reportJson;
   const markdownPath =
-    options.writeMarkdown === true ? defaultMarkdownReportPath : options.writeMarkdown;
+    options.writeMarkdown === true
+      ? defaultMarkdownReportPath
+      : options.writeMarkdown;
 
   if (!reportJsonPath && !markdownPath && !options.updateDocs) {
     return;
@@ -165,8 +177,10 @@ const signalExitCode = {
   SIGTERM: 143,
 };
 
-const handleSignal = signal => {
-  console.error(chalk.yellow(`\nReceived ${signal}; printing partial summary.`));
+const handleSignal = (signal) => {
+  console.error(
+    chalk.yellow(`\nReceived ${signal}; printing partial summary.`)
+  );
   activeWorker?.kill('SIGKILL');
   printHarnessSummary();
   writeReports();
@@ -178,13 +192,15 @@ process.on('SIGHUP', () => handleSignal('SIGHUP'));
 process.on('SIGINT', () => handleSignal('SIGINT'));
 process.on('SIGTERM', () => handleSignal('SIGTERM'));
 
-process.on('unhandledRejection', error => {
-  const message = error instanceof Error ? error.stack || error.message : String(error);
+process.on('unhandledRejection', (error) => {
+  const message =
+    error instanceof Error ? error.stack || error.message : String(error);
   console.error(chalk.red(`Unhandled rejection during WPT run:\n${message}`));
 });
 
-process.on('uncaughtException', error => {
-  const message = error instanceof Error ? error.stack || error.message : String(error);
+process.on('uncaughtException', (error) => {
+  const message =
+    error instanceof Error ? error.stack || error.message : String(error);
   console.error(chalk.red(`Uncaught exception during WPT run:\n${message}`));
 });
 
@@ -203,11 +219,12 @@ if (options.list) {
  * Run one batch of files in a forked worker, forwarding its reporter events.
  *
  * @returns {Promise<{
- *   startedFiles: string[],
- *   outcome: 'done' | 'crashed' | 'timeout',
- *   fileFailures: number,
- * }>} `startedFiles` lists files the worker began, in order; on 'crashed' or
- * 'timeout' the last entry (if any) is the file that never finished.
+ *   startedFiles: string[];
+ *   outcome: 'done' | 'crashed' | 'timeout';
+ *   fileFailures: number;
+ * }>}
+ *   `startedFiles` lists files the worker began, in order; on 'crashed' or
+ *   'timeout' the last entry (if any) is the file that never finished.
  */
 function runWorkerBatch(files, reporter) {
   return new Promise((resolve) => {
@@ -304,8 +321,8 @@ function runWorkerBatch(files, reporter) {
  *
  * A worker that crashes or hangs costs exactly one file: it is recorded as
  * crashed and the remaining files of its batch are re-queued for a fresh
- * worker. The parent never loads the native module, so its own exit is
- * instant no matter what the audio engine's teardown does.
+ * worker. The parent never loads the native module, so its own exit is instant
+ * no matter what the audio engine's teardown does.
  */
 async function runBatched(reporter) {
   const queue = collectSelectedTestPaths({
@@ -333,8 +350,11 @@ async function runBatched(reporter) {
     // died before starting anything (e.g. the addon failed to load) — the first
     // of the batch, so the queue always shrinks and the run always terminates.
     const crashed =
-      startedFiles.length > 0 ? startedFiles[startedFiles.length - 1] : batch[0];
-    const label = outcome === 'timeout' ? 'hung (no events)' : 'crashed the worker';
+      startedFiles.length > 0
+        ? startedFiles[startedFiles.length - 1]
+        : batch[0];
+    const label =
+      outcome === 'timeout' ? 'hung (no events)' : 'crashed the worker';
     console.error(chalk.red(`\n  × ${crashed} ${label}; resuming after it.\n`));
     resultsCollector.markFileCrashed(crashed, outcome);
     crashedFiles += 1;

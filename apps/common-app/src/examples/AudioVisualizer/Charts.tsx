@@ -5,11 +5,7 @@ import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { useCanvas } from './Canvas';
 import { colors } from '../../styles';
 import { getAngle, getPointCX, getPointCY } from '../../utils/skiUtils';
-import {
-  getVisualizerLayout,
-  sampleExp,
-  weightWithIndex,
-} from './layout';
+import { getVisualizerLayout, sampleExp, weightWithIndex } from './layout';
 
 interface ChartProps {
   timeDataSV: SharedValue<Uint8Array>;
@@ -139,11 +135,7 @@ const FrequencyChart: React.FC<ChartProps> = (props) => {
 
   const freqPath = useDerivedValue(() => {
     frequencyDataTickSV.value;
-    return buildFrequencyPath(
-      frequencyDataSV.value,
-      frequencyBinCount,
-      layout
-    );
+    return buildFrequencyPath(frequencyDataSV.value, frequencyBinCount, layout);
   }, [frequencyBinCount, frequencyDataSV, frequencyDataTickSV, layout]);
 
   return (

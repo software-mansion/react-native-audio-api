@@ -16,12 +16,12 @@ description: >
 
 **Rule**: if it needs `AVAudioSession`, `AudioManager`, `MediaSession`, or OS permissions → TurboModule. If it's audio processing → HostObject installed by `AudioAPIModuleInstaller`.
 
-| Use TurboModule method | Use HostObject property/method |
-|---|---|
+| Use TurboModule method                                                           | Use HostObject property/method                                                       |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Platform system APIs (audio session, permissions, notifications, device routing) | All audio graph operations (create/connect/disconnect nodes, AudioParam, scheduling) |
-| One-time initialization (`install`) | Real-time playback control |
-| Features that need native UI thread or system callbacks | Features that only need the JSI runtime |
-| Android-only or iOS-only behavior | Cross-platform C++ engine behavior |
+| One-time initialization (`install`)                                              | Real-time playback control                                                           |
+| Features that need native UI thread or system callbacks                          | Features that only need the JSI runtime                                              |
+| Android-only or iOS-only behavior                                                | Cross-platform C++ engine behavior                                                   |
 
 Most audio nodes do **not** need a TurboModule method — they are exposed entirely through JSI HostObjects injected by `injectJSIBindings`.
 
@@ -117,9 +117,10 @@ Each `get*Function()` private method creates a `jsi::Function` via `jsi::Functio
 **Adding a new top-level global**: add a `static jsi::Function getCreateXxxFunction(...)` private method and a `setProperty("createXxx", ...)` call in `injectJSIBindings`. This is only needed for objects that JS creates directly (not objects created as properties of another HostObject).
 
 **Construction-time options** (e.g. `new AudioRecorder({ androidInputPreset, iosVoiceProcessing })`) travel as positional args of these factory functions — there is no options object and no TurboModule method involved. Three rules:
+
 - Parse defensively — `if (count > N && args[N].isBool())` — and keep the no-arg behavior as the default, so an older JS bundle against a newer binary still works.
 - Update `src/AudioAPIModule/globals.d.ts` in the same change; it is the only type contract for these globals.
-- Platform-specific options are passed to *both* platforms and consumed by the `#ifdef ANDROID` branch in the HostObject constructor; the other platform ignores its counterpart. Name them with the platform prefix (`androidInputPreset`, `iosVoiceProcessing`) so the asymmetry is visible from JS.
+- Platform-specific options are passed to _both_ platforms and consumed by the `#ifdef ANDROID` branch in the HostObject constructor; the other platform ignores its counterpart. Name them with the platform prefix (`androidInputPreset`, `iosVoiceProcessing`) so the asymmetry is visible from JS.
 
 ---
 
@@ -128,6 +129,7 @@ Each `get*Function()` private method creates a `jsi::Function` via `jsi::Functio
 Uses ObjC++ with `RCT_EXPORT_MODULE` and `RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD`.
 
 **Key steps in `install`**:
+
 1. Allocate platform managers (`AudioSessionManager`, `AudioEngine`, `SystemNotificationManager`, `NotificationRegistry`)
 2. Get `jsi::Runtime *` from the bridge: `reinterpret_cast<facebook::jsi::Runtime *>(self.bridge.runtime)`
 3. Get `CallInvoker` — different paths for old Bridge vs New Architecture:
@@ -143,9 +145,10 @@ Uses ObjC++ with `RCT_EXPORT_MODULE` and `RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD
 
 **Lazy `AVAudioEngine` invariant**: allocating the `AudioEngine` ObjC object at install does NOT create the underlying `AVAudioEngine`. It is created on demand by `createAudioEngineIfNeeded` (first node attach, engine start, rebuild), so apps that only use session management and notifications never allocate it. Every reader of `self.audioEngine` inside `AudioEngine.mm` must either nil-guard or call `createAudioEngineIfNeeded` first, and system-driven restart paths (`restartAudioEngine`) must not resurrect an engine when there is no tracked graph.
 
-**Teardown order on reload**: `invalidate` cleans up `AudioEngine` (nils `sharedInstance`) and `AudioSessionManager` (nils `audioSession`) *before* the JS runtime destroys its HostObjects. So `-[AudioEngine cleanup]` stops the active recorder through `ActiveRecorderHandle` (before taking `_engineLock`) and the later `~AudioRecorderHostObject` stop finds the slot empty. Native recorder/player paths keep `assert`ing on the engine singleton: anything that must run at teardown belongs in `cleanup`, not in a destructor. Not in `destroyAudioEnginePreservingSessionDeactivationState`: it runs with `_engineLock` held and is also the route-change rebuild path.
+**Teardown order on reload**: `invalidate` cleans up `AudioEngine` (nils `sharedInstance`) and `AudioSessionManager` (nils `audioSession`) _before_ the JS runtime destroys its HostObjects. So `-[AudioEngine cleanup]` stops the active recorder through `ActiveRecorderHandle` (before taking `_engineLock`) and the later `~AudioRecorderHostObject` stop finds the slot empty. Native recorder/player paths keep `assert`ing on the engine singleton: anything that must run at teardown belongs in `cleanup`, not in a destructor. Not in `destroyAudioEnginePreservingSessionDeactivationState`: it runs with `_engineLock` held and is also the route-change rebuild path.
 
 **New Architecture support** (`getTurboModule`):
+
 ```objc
 #ifdef RCT_NEW_ARCH_ENABLED
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
@@ -155,6 +158,7 @@ Uses ObjC++ with `RCT_EXPORT_MODULE` and `RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD
 }
 #endif
 ```
+
 This connects the ObjC implementation to the codegen-generated C++ TurboModule spec.
 
 **`methodQueue`**: the module runs on a dedicated serial queue (`com.swmansion.audioapi.MainModuleQueue`), not the main thread.
@@ -197,6 +201,7 @@ AudioAPIModule.kt::install()
 ```
 
 **`external fun`**: Kotlin keyword for JNI-implemented methods. These are registered in `AudioAPIModule.cpp::registerNatives()`:
+
 ```cpp
 void AudioAPIModule::registerNatives() {
   registerHybrid({
@@ -215,13 +220,13 @@ void AudioAPIModule::registerNatives() {
 
 ## Two-Architecture Paths Summary
 
-| | Old Bridge | New Architecture (TurboModules/Fabric) |
-|---|---|---|
-| iOS CallInvoker source | `self.bridge.jsCallInvoker` | `_callInvoker.callInvoker` |
-| iOS runtime source | `self.bridge.runtime` (cast) | same |
-| iOS codegen | `RCT_EXPORT_MODULE` only | `+ getTurboModule:` implemented |
-| Android CallInvoker | `reactContext.jsCallInvokerHolder` | same |
-| Android codegen | `NativeAudioAPIModuleSpec` base class | same (generated) |
+|                        | Old Bridge                            | New Architecture (TurboModules/Fabric) |
+| ---------------------- | ------------------------------------- | -------------------------------------- |
+| iOS CallInvoker source | `self.bridge.jsCallInvoker`           | `_callInvoker.callInvoker`             |
+| iOS runtime source     | `self.bridge.runtime` (cast)          | same                                   |
+| iOS codegen            | `RCT_EXPORT_MODULE` only              | `+ getTurboModule:` implemented        |
+| Android CallInvoker    | `reactContext.jsCallInvokerHolder`    | same                                   |
+| Android codegen        | `NativeAudioAPIModuleSpec` base class | same (generated)                       |
 
 The JSI injection itself (`AudioAPIModuleInstaller`) is identical for both architectures — it only needs the `jsi::Runtime *` and `CallInvoker`, which are obtained differently but behave the same.
 
@@ -231,13 +236,13 @@ The JSI injection itself (`AudioAPIModuleInstaller`) is identical for both archi
 
 Extension packages that expose a **C++-only** TurboModule (no JNI implementation) use a hybrid Android setup:
 
-| Piece | Role |
-|---|---|
-| `react-native.config.js` `cxxModule*` fields | Registers `NativeAudioWorkletsModule` in app autolinking (`autolinking_cxxModuleProvider`) |
-| `android/build.gradle` + `com.facebook.react` | Runs Codegen → `react_codegen_rnaudioworklets` (JSI spec headers) |
-| `AudioWorkletsPackage.kt` | Stub `BaseReactPackage` so Gradle autolinking includes the library project |
-| Root `CMakeLists.txt` | Static `react-native-audio-worklets` target; linked into `libappmodules.so` via autolinking |
-| `common/cpp/NativeAudioWorkletsModule.h` | Forwarding header — autolinking includes `<NativeAudioWorkletsModule.h>` |
+| Piece                                         | Role                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `react-native.config.js` `cxxModule*` fields  | Registers `NativeAudioWorkletsModule` in app autolinking (`autolinking_cxxModuleProvider`)  |
+| `android/build.gradle` + `com.facebook.react` | Runs Codegen → `react_codegen_rnaudioworklets` (JSI spec headers)                           |
+| `AudioWorkletsPackage.kt`                     | Stub `BaseReactPackage` so Gradle autolinking includes the library project                  |
+| Root `CMakeLists.txt`                         | Static `react-native-audio-worklets` target; linked into `libappmodules.so` via autolinking |
+| `common/cpp/NativeAudioWorkletsModule.h`      | Forwarding header — autolinking includes `<NativeAudioWorkletsModule.h>`                    |
 
 iOS uses `NativeAudioWorkletsModuleProvider.mm` + `codegenConfig.ios.modulesProvider` instead.
 
@@ -245,4 +250,4 @@ RN guide: https://reactnative.dev/docs/the-new-architecture/pure-cxx-modules
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

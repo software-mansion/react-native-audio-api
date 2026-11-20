@@ -53,7 +53,8 @@ function RadonBannerInner(): React.JSX.Element {
   return (
     <a
       href="https://ide.swmansion.com/?utm_source=gesture-handler"
-      className={styles.container}>
+      className={styles.container}
+    >
       <div className={styles.content}>
         <p className={styles.text}>{item.current.text}</p>
         <span className={styles.button}>

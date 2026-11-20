@@ -1,6 +1,4 @@
-/**
- * WPT-only helpers. Not used in React Native production code.
- */
+/** WPT-only helpers. Not used in React Native production code. */
 
 const DOM_EXCEPTION_NAMES = new Set([
   'IndexSizeError',
@@ -51,10 +49,11 @@ const WEB_AUDIO_CLASSES = [
 /**
  * The jsdom window of the test file currently running.
  *
- * The Web Audio classes are loaded once and shared by every test window, so their
- * prototypes must be patched once, not per window. A patch that closed over its
- * `window` would keep that window — and every AudioContext created in it — alive for
- * the rest of the run, so the shared patches read the current window from here instead.
+ * The Web Audio classes are loaded once and shared by every test window, so
+ * their prototypes must be patched once, not per window. A patch that closed
+ * over its `window` would keep that window — and every AudioContext created in
+ * it — alive for the rest of the run, so the shared patches read the current
+ * window from here instead.
  */
 let currentTestWindow = null;
 
@@ -66,16 +65,20 @@ export function getCurrentTestWindow() {
   return currentTestWindow;
 }
 
-/** Prototype -> "layer:member" pairs already patched, so setup() cannot chain wrappers. */
+/**
+ * Prototype -> "layer:member" pairs already patched, so setup() cannot chain
+ * wrappers.
+ */
 const patchedPrototypeMembers = new WeakMap();
 
 /**
- * Claim `prototype[key]` for one patch layer. Returns false if that layer already
- * claimed it, which is how repeated setup() calls avoid stacking a new wrapper on the
- * previous one.
+ * Claim `prototype[key]` for one patch layer. Returns false if that layer
+ * already claimed it, which is how repeated setup() calls avoid stacking a new
+ * wrapper on the previous one.
  *
- * Layers are independent and compose: several of them legitimately wrap the same member
- * (realm errors around the Float32Array assertion, say), and each must land exactly once.
+ * Layers are independent and compose: several of them legitimately wrap the
+ * same member (realm errors around the Float32Array assertion, say), and each
+ * must land exactly once.
  */
 function claimPrototypeMember(prototype, key, layer) {
   let patched = patchedPrototypeMembers.get(prototype);
@@ -92,14 +95,15 @@ function claimPrototypeMember(prototype, key, layer) {
 }
 
 /**
- * Install `wrap(original)` as `prototype[methodName]`, at most once per prototype.
- * Later calls are no-ops, which keeps the wrapper depth at one however many test
- * files run.
+ * Install `wrap(original)` as `prototype[methodName]`, at most once per
+ * prototype. Later calls are no-ops, which keeps the wrapper depth at one
+ * however many test files run.
  *
  * @param {object} prototype
  * @param {string} methodName
  * @param {(original: Function) => Function} wrap
- * @param {string} layer identifies the patch, so independent layers can each apply once
+ * @param {string} layer Identifies the patch, so independent layers can each
+ *   apply once
  */
 export function patchPrototypeOnce(prototype, methodName, wrap, layer) {
   if (prototype == null || typeof prototype[methodName] !== 'function') {
@@ -132,8 +136,8 @@ export const WRAPPED_NODE_CONSTRUCTORS = new Set([
 ]);
 
 /**
- * Re-throw library errors in the jsdom window realm when the name matches a
- * Web IDL exception (DOMException) or built-in (TypeError / RangeError).
+ * Re-throw library errors in the jsdom window realm when the name matches a Web
+ * IDL exception (DOMException) or built-in (TypeError / RangeError).
  */
 export function toWindowRealmError(window, error) {
   if (error == null) {
@@ -199,9 +203,9 @@ function wrapWithRealmErrors(fn) {
 }
 
 /**
- * Wrap every method and accessor on `ctor.prototype` so errors surface in the test's
- * realm. The Web Audio classes are shared by all test windows, so each member is
- * wrapped once and the wrapper looks the window up per call.
+ * Wrap every method and accessor on `ctor.prototype` so errors surface in the
+ * test's realm. The Web Audio classes are shared by all test windows, so each
+ * member is wrapped once and the wrapper looks the window up per call.
  */
 function wrapPrototypeMembers(ctor) {
   if (typeof ctor !== 'function') {

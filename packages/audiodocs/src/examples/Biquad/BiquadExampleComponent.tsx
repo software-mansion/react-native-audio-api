@@ -33,7 +33,9 @@ const BiquadExample: React.FC = () => {
       filterRef.current = filterNode;
       gainRef.current = gainNode;
 
-      audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-01.mp3')
+      audioBufferRef.current = await fetch(
+        '/react-native-audio-api/audio/music/example-music-01.mp3'
+      )
         .then((response) => response.arrayBuffer())
         .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
         .catch((error) => {

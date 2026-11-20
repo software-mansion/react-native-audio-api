@@ -257,7 +257,6 @@ describe('Mock Integration Tests', () => {
       expect(() => {
         throw new MockAPI.InvalidStateError('Invalid state');
       }).toThrow('Invalid state');
-
     });
   });
 

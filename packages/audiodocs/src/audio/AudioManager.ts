@@ -1,11 +1,19 @@
-import MockAudioContext from "./MockAudioContext";
+import MockAudioContext from './MockAudioContext';
 
-import { BufferMetadata, PlaySoundOptions, PlaySoundReturnValue, ActiveSound, LoadedBuffer, AudioManagerEventType, AudioManagerEvent, AudioManagerUpdatePayload } from "./types";
-import Equalizer from "./Equalizer";
+import {
+  BufferMetadata,
+  PlaySoundOptions,
+  PlaySoundReturnValue,
+  ActiveSound,
+  LoadedBuffer,
+  AudioManagerEventType,
+  AudioManagerEvent,
+  AudioManagerUpdatePayload,
+} from './types';
+import Equalizer from './Equalizer';
 
 const fftSize = 2048;
 const smoothingTimeConstant = 0.8;
-
 
 class AudioManager {
   output: GainNode;
@@ -16,11 +24,16 @@ class AudioManager {
   isPlaying: boolean = false;
   loadedBuffers: Map<string, LoadedBuffer> = new Map();
   activeSounds: Map<string, ActiveSound> = new Map();
-  eventListeners: Map<AudioManagerEventType, ((event: AudioManagerEvent) => void)[]> = new Map();
-  updateListeners: Map<string, ((event: AudioManagerUpdatePayload) => void)[]> = new Map();
+  eventListeners: Map<
+    AudioManagerEventType,
+    ((event: AudioManagerEvent) => void)[]
+  > = new Map();
+  updateListeners: Map<string, ((event: AudioManagerUpdatePayload) => void)[]> =
+    new Map();
 
   constructor() {
-    this.aCtx = typeof window !== 'undefined' ? new AudioContext() : MockAudioContext;
+    this.aCtx =
+      typeof window !== 'undefined' ? new AudioContext() : MockAudioContext;
 
     this.equalizer = new Equalizer(this.aCtx);
 
@@ -39,7 +52,7 @@ class AudioManager {
   }
 
   clear() {
-    this.activeSounds.forEach(sound => {
+    this.activeSounds.forEach((sound) => {
       sound.sourceNode.stop();
     });
 
@@ -52,21 +65,28 @@ class AudioManager {
     this.output.gain.setValueAtTime(volume, this.aCtx.currentTime);
   }
 
-
   // ------------
   // Event handling methods
   // ------------
 
-  addEventListener<T extends AudioManagerEventType>(type: T, listener: (event: AudioManagerEvent<T>) => void) {
+  addEventListener<T extends AudioManagerEventType>(
+    type: T,
+    listener: (event: AudioManagerEvent<T>) => void
+  ) {
     if (!this.eventListeners.has(type)) {
       this.eventListeners.set(type, []);
     }
     // The map holds listeners of every event type; dispatchEvent only calls a listener
     // with events of the type it was registered for.
-    this.eventListeners.get(type)?.push(listener as (event: AudioManagerEvent) => void);
+    this.eventListeners
+      .get(type)
+      ?.push(listener as (event: AudioManagerEvent) => void);
   }
 
-  addUpdateEventListener(id: string, listener: (event: AudioManagerUpdatePayload) => void) {
+  addUpdateEventListener(
+    id: string,
+    listener: (event: AudioManagerUpdatePayload) => void
+  ) {
     if (!this.updateListeners.has(id)) {
       this.updateListeners.set(id, []);
     }
@@ -74,25 +94,37 @@ class AudioManager {
     this.updateListeners.get(id)!.push(listener);
   }
 
-  removeEventListener<T extends AudioManagerEventType>(type: T, listener: (event: AudioManagerEvent<T>) => void) {
+  removeEventListener<T extends AudioManagerEventType>(
+    type: T,
+    listener: (event: AudioManagerEvent<T>) => void
+  ) {
     const listeners = this.eventListeners.get(type);
     if (listeners) {
-      this.eventListeners.set(type, listeners.filter(l => l !== listener));
+      this.eventListeners.set(
+        type,
+        listeners.filter((l) => l !== listener)
+      );
     }
   }
 
-  removeUpdateEventListener(id: string, listener: (event: AudioManagerUpdatePayload) => void) {
+  removeUpdateEventListener(
+    id: string,
+    listener: (event: AudioManagerUpdatePayload) => void
+  ) {
     const listeners = this.updateListeners.get(id);
 
     if (listeners) {
-      this.updateListeners.set(id, listeners.filter(l => l !== listener));
+      this.updateListeners.set(
+        id,
+        listeners.filter((l) => l !== listener)
+      );
     }
   }
 
   dispatchEvent<T extends AudioManagerEventType>(event: AudioManagerEvent<T>) {
     const listeners = this.eventListeners.get(event.type);
     if (listeners) {
-      listeners.forEach(listener => listener(event));
+      listeners.forEach((listener) => listener(event));
     }
   }
 
@@ -115,7 +147,7 @@ class AudioManager {
       return;
     }
 
-    this.updateListeners.get(activeSound.bufferId)?.forEach(listener => {
+    this.updateListeners.get(activeSound.bufferId)?.forEach((listener) => {
       listener({ progress: 0 });
     });
 
@@ -140,16 +172,16 @@ class AudioManager {
 
     const currentTime = this.aCtx.currentTime;
 
-    this.activeSounds.forEach((sound => {
+    this.activeSounds.forEach((sound) => {
       const duration = sound.sourceNode.buffer?.duration || 1;
       const elapsed = (currentTime - sound.startedAt) % duration;
       const progress = elapsed / duration;
 
       // Dispatch update event for each active sound
-      this.updateListeners.get(sound.bufferId)?.forEach(listener => {
+      this.updateListeners.get(sound.bufferId)?.forEach((listener) => {
         listener({ progress });
       });
-    }));
+    });
 
     setTimeout(() => {
       requestAnimationFrame(() => this.updateLoop());
@@ -164,15 +196,24 @@ class AudioManager {
     const id = crypto.randomUUID();
 
     const buffer = await fetch(url)
-      .then(response => response.arrayBuffer())
-      .then(data => this.aCtx.decodeAudioData(data));
+      .then((response) => response.arrayBuffer())
+      .then((data) => this.aCtx.decodeAudioData(data));
 
     this.loadedBuffers.set(id, { id, buffer });
     return { id, duration: buffer.duration };
   }
 
-  playSound(bufferId: string, options: PlaySoundOptions = {}): PlaySoundReturnValue {
-    const { loop = false, startFrom = 0, unique, volume = 1, onEnded } = options;
+  playSound(
+    bufferId: string,
+    options: PlaySoundOptions = {}
+  ): PlaySoundReturnValue {
+    const {
+      loop = false,
+      startFrom = 0,
+      unique,
+      volume = 1,
+      onEnded,
+    } = options;
 
     if (!this.loadedBuffers.has(bufferId)) {
       console.warn(`No sound found with ID: ${bufferId}`);
@@ -180,7 +221,9 @@ class AudioManager {
     }
 
     if (unique) {
-      const existingSound = Array.from(this.activeSounds.values()).find(sound => sound.bufferId === bufferId);
+      const existingSound = Array.from(this.activeSounds.values()).find(
+        (sound) => sound.bufferId === bufferId
+      );
 
       if (existingSound) {
         return false;
@@ -217,7 +260,7 @@ class AudioManager {
 
     return {
       id,
-      startedAt: tNow
+      startedAt: tNow,
     };
   }
 
@@ -232,10 +275,12 @@ class AudioManager {
 
       source.sourceNode.onended = this.onSoundEnded.bind(this, {
         id,
-        onEnded: () => { resolve(); },
+        onEnded: () => {
+          resolve();
+        },
       });
 
-      this.updateListeners.get(source.bufferId)?.forEach(listener => {
+      this.updateListeners.get(source.bufferId)?.forEach((listener) => {
         listener({ progress: 0 });
       });
 
@@ -249,7 +294,6 @@ class AudioManager {
 }
 
 export default new AudioManager();
-
 
 // class AudioManager {
 //   microphoneSource: MediaStreamAudioSourceNode | null = null;

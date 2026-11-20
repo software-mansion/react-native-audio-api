@@ -36,7 +36,7 @@ A plan, WIP write-up, or research note lives in its topic folder. Tag it with on
 ---
 sidebar_position: 1
 sidebar_custom_props:
-  tags: [plan, wip]    # plan, wip, research — any combination
+  tags: [plan, wip] # plan, wip, research — any combination
 ---
 ```
 

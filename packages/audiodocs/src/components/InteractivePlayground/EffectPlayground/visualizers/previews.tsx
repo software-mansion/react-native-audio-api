@@ -5,7 +5,10 @@ import styles from '../styles.module.css';
 import { SpectrumVisualizer } from './SpectrumVisualizer';
 import { StereoMeterVisualizer } from './StereoMeterVisualizer';
 
-/** Centers a visualizer in the playground's preview column instead of pinning it to the bottom. */
+/**
+ * Centers a visualizer in the playground's preview column instead of pinning it
+ * to the bottom.
+ */
 function withPreviewFrame<P extends object>(Visualizer: FC<P>): FC<P> {
   const Framed: FC<P> = (props) => (
     <div className={styles.visualizerFrame}>

@@ -68,4 +68,3 @@ std::shared_ptr<AudioBuffer> GainNode::processNode(
   return processingBuffer;
 }
 ```
-

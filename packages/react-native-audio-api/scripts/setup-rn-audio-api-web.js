@@ -20,7 +20,8 @@ function getInputFilePath() {
 /**
  * Generates the output file path for the WebAssembly module.
  *
- * @param {boolean} isExpoAndMetro - A flag indicating whether the environment is Expo and Metro.
+ * @param {boolean} isExpoAndMetro - A flag indicating whether the environment
+ *   is Expo and Metro.
  * @returns {string} The resolved output file path.
  */
 function getOutputFilePath() {
@@ -38,7 +39,8 @@ function getOutputFilePath() {
  * Copies a file from the input path to the output path.
  *
  * @param {string} inputPath - The path of the file to be copied.
- * @param {string} outputPath - The destination path where the file should be copied.
+ * @param {string} outputPath - The destination path where the file should be
+ *   copied.
  */
 function copyFile(inputPath, outputPath) {
   const data = fs.readFileSync(inputPath);

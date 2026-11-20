@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState, useCallback, FC } from "react";
+import React, { useEffect, useRef, useState, useCallback, FC } from 'react';
 import {
   AudioContext,
   AudioBufferSourceNode,
   AudioBuffer,
   AnalyserNode,
-} from "react-native-audio-api";
-import styles from "../styles.module.css";
-import { WaveformVisualizer } from "../WaveformVisualizer";
+} from 'react-native-audio-api';
+import styles from '../styles.module.css';
+import { WaveformVisualizer } from '../WaveformVisualizer';
 
 const FFT_SIZE = 2048;
 
@@ -18,7 +18,7 @@ interface AudioBufferSourceExampleProps {
   loopEnd: number;
   pitchCorrection: boolean;
   onBufferLoad: (duration: number) => void;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
 }
 
 const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
@@ -83,7 +83,15 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
         setIsPlaying(false);
       }
     };
-  }, [stopSound, playbackRate, detune, loop, loopStart, loopEnd, pitchCorrection]); 
+  }, [
+    stopSound,
+    playbackRate,
+    detune,
+    loop,
+    loopStart,
+    loopEnd,
+    pitchCorrection,
+  ]);
 
   const handlePlayButtonClick = () => {
     if (isPlaying) {
@@ -106,7 +114,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
 
       try {
         const response = await fetch(
-          "/react-native-audio-api/audio/music/example-music-01.mp3"
+          '/react-native-audio-api/audio/music/example-music-01.mp3'
         );
         const arrayBuffer = await response.arrayBuffer();
         const decoded = await ctx.decodeAudioData(arrayBuffer);
@@ -117,7 +125,7 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
         setAudioLoaded(true);
         onBufferLoad(decoded.duration);
       } catch (err) {
-        console.warn("Error loading audio buffer:", err);
+        console.warn('Error loading audio buffer:', err);
       }
     };
 
@@ -142,17 +150,14 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
       return;
     }
 
-    const RAMP_TIME = 0.05; 
+    const RAMP_TIME = 0.05;
 
     source.playbackRate.setValueAtTime(
       playbackRate,
       ctx.currentTime + RAMP_TIME
     );
-    source.detune.setValueAtTime(
-      detune,
-      ctx.currentTime + RAMP_TIME
-    );
- 
+    source.detune.setValueAtTime(detune, ctx.currentTime + RAMP_TIME);
+
     source.loop = loop;
     source.loopStart = loopStart;
     source.loopEnd = loopEnd;
@@ -168,10 +173,10 @@ const AudioBufferSourceExample: FC<AudioBufferSourceExampleProps> = (props) => {
 
       <button
         onClick={handlePlayButtonClick}
-        className={`${styles.playButton} ${isPlaying ? styles.playing : ""}`}
+        className={`${styles.playButton} ${isPlaying ? styles.playing : ''}`}
         disabled={!audioLoaded}
       >
-        {audioLoaded ? (isPlaying ? "Stop" : "Play") : "..."}
+        {audioLoaded ? (isPlaying ? 'Stop' : 'Play') : '...'}
       </button>
     </div>
   );

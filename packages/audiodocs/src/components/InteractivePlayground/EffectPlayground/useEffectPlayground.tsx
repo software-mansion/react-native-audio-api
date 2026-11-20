@@ -4,9 +4,18 @@ import FilterList from '@site/src/ui/FilterList';
 import Switch from '@site/src/ui/Switch';
 
 import AudioGraph, { AudioGraphSpec, GraphNodeSpec } from './AudioGraph';
-import { DEFAULT_SAMPLE_SOURCES, SAMPLE_SOURCES, sampleSourceOptions, SampleSourceId } from './sources';
+import {
+  DEFAULT_SAMPLE_SOURCES,
+  SAMPLE_SOURCES,
+  sampleSourceOptions,
+  SampleSourceId,
+} from './sources';
 import styles from './styles.module.css';
-import { EffectChain, useEffectChain, UseEffectChainOptions } from './useEffectChain';
+import {
+  EffectChain,
+  useEffectChain,
+  UseEffectChainOptions,
+} from './useEffectChain';
 
 interface TransportState {
   ctx: unknown;
@@ -22,7 +31,10 @@ interface EffectPlaygroundHeaderProps {
   spec: AudioGraphSpec;
 }
 
-const EffectPlaygroundHeader: FC<EffectPlaygroundHeaderProps> = ({ chain, spec }) => {
+const EffectPlaygroundHeader: FC<EffectPlaygroundHeaderProps> = ({
+  chain,
+  spec,
+}) => {
   const clickTargets = spec.effects.map((effect, index) => (
     <React.Fragment key={effect.label}>
       {index > 0 && ' or '}
@@ -38,11 +50,13 @@ const EffectPlaygroundHeader: FC<EffectPlaygroundHeaderProps> = ({ chain, spec }
           className={styles.transportButton}
           onClick={chain.togglePlayback}
           disabled={!chain.ctx}
-          aria-label={chain.isPlaying ? 'Stop playback' : 'Start playback'}>
+          aria-label={chain.isPlaying ? 'Stop playback' : 'Start playback'}
+        >
           {chain.isLoading ? 'Loading…' : chain.isPlaying ? 'Stop' : 'Play'}
         </button>
         <p className={styles.hint}>
-          Click the {clickTargets} box to bypass {spec.effects.length > 1 ? 'them' : 'it'} and compare.
+          Click the {clickTargets} box to bypass{' '}
+          {spec.effects.length > 1 ? 'them' : 'it'} and compare.
         </p>
       </div>
       <AudioGraph
@@ -57,7 +71,10 @@ const EffectPlaygroundHeader: FC<EffectPlaygroundHeaderProps> = ({ chain, spec }
   );
 };
 
-export interface UseEffectPlaygroundOptions<TParams> extends Omit<UseEffectChainOptions<TParams>, 'source'> {
+export interface UseEffectPlaygroundOptions<TParams> extends Omit<
+  UseEffectChainOptions<TParams>,
+  'source'
+> {
   initialSource: SampleSourceId;
   /** Samples offered in the picker, in order; defaults to music and voice. */
   sources?: SampleSourceId[];
@@ -71,15 +88,22 @@ export interface UseEffectPlaygroundOptions<TParams> extends Omit<UseEffectChain
 export interface EffectPlayground<TParams> {
   chain: EffectChain<TParams>;
   header: ReactNode;
-  /** Sample picker and bypass switch, meant to open every effect's control panel. */
+  /**
+   * Sample picker and bypass switch, meant to open every effect's control
+   * panel.
+   */
   commonControls: ReactNode;
-  /** Name of the decoded buffer for the code snippet, matching the selected sample. */
+  /**
+   * Name of the decoded buffer for the code snippet, matching the selected
+   * sample.
+   */
   sampleVariable: string;
 }
 
 /**
- * Shared scaffolding of every effect playground: the sample choice, the audio chain, the clickable
- * graph in the header and the controls that all effects have in common.
+ * Shared scaffolding of every effect playground: the sample choice, the audio
+ * chain, the clickable graph in the header and the controls that all effects
+ * have in common.
  */
 export function useEffectPlayground<TParams>({
   initialSource,

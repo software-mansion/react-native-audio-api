@@ -54,7 +54,9 @@ const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
     <View style={styles.wrapper} onLayout={handleWrapperLayout}>
       {ready ? (
         <SKCanvas style={{ width: squareSide, height: squareSide }}>
-          <CanvasContext.Provider value={context}>{children}</CanvasContext.Provider>
+          <CanvasContext.Provider value={context}>
+            {children}
+          </CanvasContext.Provider>
         </SKCanvas>
       ) : null}
     </View>

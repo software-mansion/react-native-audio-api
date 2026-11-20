@@ -64,14 +64,14 @@ const Slider: React.FC<SliderProps> = (props) => {
   const sValue = useSharedValue(0);
   const sliderWidth = useSharedValue(0);
   const [displayValue, setDisplayValue] = useState(() =>
-    formatSliderValue(value, step),
+    formatSliderValue(value, step)
   );
 
   const syncDisplayValue = useCallback(
     (nextValue: number) => {
       setDisplayValue(formatSliderValue(nextValue, step));
     },
-    [step],
+    [step]
   );
 
   useEffect(() => {
@@ -84,7 +84,7 @@ const Slider: React.FC<SliderProps> = (props) => {
     onUpdate: (event) => {
       offset.value = Math.max(
         0,
-        Math.min(sliderWidth.value - handleSize, offset.value + event.changeX),
+        Math.min(sliderWidth.value - handleSize, offset.value + event.changeX)
       );
 
       sValue.value = offsetToValue(offset.value, sliderWidth.value, min, max);
@@ -104,7 +104,7 @@ const Slider: React.FC<SliderProps> = (props) => {
       value,
       event.nativeEvent.layout.width,
       min,
-      max,
+      max
     );
 
     sValue.value = value;
@@ -127,7 +127,7 @@ const Slider: React.FC<SliderProps> = (props) => {
         translateX: withSpring(
           sliderWidth.value > 0 && offset.value < 1.5 * handleSize
             ? 1.5 * handleSize
-            : 0,
+            : 0
         ),
       },
     ],
@@ -141,7 +141,8 @@ const Slider: React.FC<SliderProps> = (props) => {
             style={[
               styles.label,
               !!minLabelWidth && { minWidth: minLabelWidth },
-            ]}>
+            ]}
+          >
             {label}
           </Text>
           <Spacer.Horizontal size={12} />

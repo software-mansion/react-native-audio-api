@@ -1,14 +1,16 @@
 /**
- * Gives `AudioListener` the nine `AudioParam` attributes on browsers that only ship the deprecated
- * `setPosition` / `setOrientation` methods (Firefox).
+ * Gives `AudioListener` the nine `AudioParam` attributes on browsers that only
+ * ship the deprecated `setPosition` / `setOrientation` methods (Firefox).
  *
- * The `react-native-audio-api` web `AudioContext` wraps `listener.positionX` … `listener.upZ` in its
- * own `AudioParam` while it is constructed, so without these attributes every context in the docs
- * throws before a `PannerNode` — or anything else — can be created.
+ * The `react-native-audio-api` web `AudioContext` wraps `listener.positionX` …
+ * `listener.upZ` in its own `AudioParam` while it is constructed, so without
+ * these attributes every context in the docs throws before a `PannerNode` — or
+ * anything else — can be created.
  *
- * The browser keeps no readable listener pose behind `setPosition` / `setOrientation`, so the facade
- * remembers the last values it wrote. The listener cannot be automated there either: every
- * scheduling method applies its final value immediately and the cancel methods do nothing.
+ * The browser keeps no readable listener pose behind `setPosition` /
+ * `setOrientation`, so the facade remembers the last values it wrote. The
+ * listener cannot be automated there either: every scheduling method applies
+ * its final value immediately and the cancel methods do nothing.
  */
 
 type Vector3 = [number, number, number];
@@ -38,7 +40,10 @@ type ListenerParamName = keyof typeof LISTENER_PARAMS;
 const FLOAT32_MAX = 3.4028234663852886e38;
 
 const posesByListener = new WeakMap<AudioListener, ListenerPose>();
-const paramsByListener = new WeakMap<AudioListener, Map<ListenerParamName, AudioParam>>();
+const paramsByListener = new WeakMap<
+  AudioListener,
+  Map<ListenerParamName, AudioParam>
+>();
 
 function defaultPose(): ListenerPose {
   return { position: [0, 0, 0], forward: [0, 0, -1], up: [0, 1, 0] };
@@ -53,7 +58,10 @@ function poseOf(listener: AudioListener): ListenerPose {
   return pose;
 }
 
-function writePose(listener: AudioListener, { position, forward, up }: ListenerPose): void {
+function writePose(
+  listener: AudioListener,
+  { position, forward, up }: ListenerPose
+): void {
   listener.setPosition(...position);
   listener.setOrientation(...forward, ...up);
 }
@@ -116,7 +124,10 @@ class ImmediateListenerParam implements AudioParam {
   }
 }
 
-function listenerParam(listener: AudioListener, name: ListenerParamName): AudioParam {
+function listenerParam(
+  listener: AudioListener,
+  name: ListenerParamName
+): AudioParam {
   let params = paramsByListener.get(listener);
   if (!params) {
     params = new Map();
@@ -133,7 +144,10 @@ function listenerParam(listener: AudioListener, name: ListenerParamName): AudioP
 }
 
 function installAudioListenerParams(): void {
-  if (typeof window === 'undefined' || typeof window.AudioListener === 'undefined') {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.AudioListener === 'undefined'
+  ) {
     return;
   }
 

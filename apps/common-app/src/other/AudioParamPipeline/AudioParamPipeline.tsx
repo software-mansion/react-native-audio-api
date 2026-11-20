@@ -232,7 +232,9 @@ const AudioParamPipeline: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const isUnmountedRef = useRef(false);
   const stopRequestedRef = useRef(false);
-  const currentOscRef = useRef<ReturnType<AudioContext['createOscillator']> | null>(null);
+  const currentOscRef = useRef<ReturnType<
+    AudioContext['createOscillator']
+  > | null>(null);
 
   const [audioStatuses, setAudioStatuses] = useState<
     Record<string, PlayStatus>
@@ -400,8 +402,10 @@ const AudioParamPipeline: FC = () => {
   const playedCount = Object.values(audioStatuses).filter(
     (s) => s === 'done'
   ).length;
-  const passedCount = errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
-  const failedCount = errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
+  const passedCount =
+    errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
+  const failedCount =
+    errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
 
   const totalCount = ERROR_SUB_CASES.length;
   const hasAnyResults = playedCount > 0 || errorSteps !== null;

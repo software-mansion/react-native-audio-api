@@ -3,9 +3,7 @@ sidebar_position: 3
 sidebar_label: RecordingNotificationManager
 ---
 
-import {
-  Android,
-} from '@site/src/components/Badges';
+import { Android } from '@site/src/components/Badges';
 
 # RecordingNotificationManager <Android />
 
@@ -17,6 +15,7 @@ It shows a standard notification with pause/resume and (optionally) stop actions
 :::
 
 ## Example
+
 ```typescript
 RecordingNotificationManager.show({
   title: 'Recording app',
@@ -29,15 +28,24 @@ RecordingNotificationManager.show({
   usesChronometer: true,
 });
 
-const pauseEventListener = RecordingNotificationManager.addEventListener('recordingNotificationPause', () => {
-  console.log('Notification pause action received');
-});
-const resumeEventListener = RecordingNotificationManager.addEventListener('recordingNotificationResume', () => {
-  console.log('Notification resume action received');
-});
-const stopEventListener = RecordingNotificationManager.addEventListener('recordingNotificationStop', () => {
-  console.log('Notification stop action received');
-});
+const pauseEventListener = RecordingNotificationManager.addEventListener(
+  'recordingNotificationPause',
+  () => {
+    console.log('Notification pause action received');
+  }
+);
+const resumeEventListener = RecordingNotificationManager.addEventListener(
+  'recordingNotificationResume',
+  () => {
+    console.log('Notification resume action received');
+  }
+);
+const stopEventListener = RecordingNotificationManager.addEventListener(
+  'recordingNotificationStop',
+  () => {
+    console.log('Notification stop action received');
+  }
+);
 
 pauseEventListener.remove();
 resumeEventListener.remove();
@@ -81,9 +89,9 @@ Shows the recording notification with the parameters.
 
 Metadata is saved between calls, so after the initial pass to the show method, you need only call it with elements that are supposed to change.
 
-| Parameter |Type| Description|
-| :---: | :---: | :---- |
-| `info` | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
+| Parameter |                                          Type                                           | Description                   |
+| :-------: | :-------------------------------------------------------------------------------------: | :---------------------------- |
+|  `info`   | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
 
@@ -112,10 +120,10 @@ Checks if the notification is displayed.
 
 Adds an event listener for notification actions.
 
-|  Parameter  | Type | Description |
-| :---: | :---: | :---- |
+|  Parameter  |                                               Type                                                | Description             |
+| :---------: | :-----------------------------------------------------------------------------------------------: | :---------------------- |
 | `eventName` | [`RecordingNotificationEventName`](recording-notification-manager#recordingnotificationeventname) | The event to listen for |
-| `callback`  | [`NotificationCallback`](recording-notification-manager#notificationcallback) | Callback function |
+| `callback`  |           [`NotificationCallback`](recording-notification-manager#notificationcallback)           | Callback function       |
 
 #### Returns [`AudioEventSubscription`](./audio-manager.mdx#audioeventsubscription).
 
@@ -143,6 +151,7 @@ interface RecordingNotificationInfo {
   usesChronometer?: boolean; // shows the elapsed recording time, default: false
 }
 ```
+
 </details>
 
 ### `RecordingNotificationEventName`
@@ -161,6 +170,7 @@ interface RecordingNotificationEvent {
 
 type RecordingNotificationEventName = keyof RecordingNotificationEvent;
 ```
+
 </details>
 
 ### `NotificationCallback`
@@ -173,4 +183,5 @@ type NotificationCallback<Name extends RecordingNotificationEventName> = (
   event: RecordingNotificationEvent[Name]
 ) => void;
 ```
+
 </details>

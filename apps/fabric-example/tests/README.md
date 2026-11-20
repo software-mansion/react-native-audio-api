@@ -13,20 +13,20 @@ Build and start FabricExample on the device first (`yarn ios`, Metro running), t
 bash apps/fabric-example/tests/recording-and-playback.sh
 ```
 
-| Variable | Meaning |
-|---|---|
+| Variable          | Meaning                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------- |
 | `AUDIO_LOG_LEVEL` | Verbosity of the library's native logs on a simulator: `error`, `warning`, `debug` or `trace` (default). |
-| `E2E_LOG` | Path of the run log. Defaults to `/tmp/e2e-<test>-<time>.log`. |
-| `E2E_DEVICE` | udid of the device to drive. Optional when exactly one iOS simulator is booted. |
-| `APP_BUNDLE_ID` | Bundle id of the installed FabricExample. Set it for a build signed for a physical iPhone. |
+| `E2E_LOG`         | Path of the run log. Defaults to `/tmp/e2e-<test>-<time>.log`.                                           |
+| `E2E_DEVICE`      | udid of the device to drive. Optional when exactly one iOS simulator is booted.                          |
+| `APP_BUNDLE_ID`   | Bundle id of the installed FabricExample. Set it for a build signed for a physical iPhone.               |
 
 A test exits non-zero at the first failed flow, unanswered prompt or "n" answer, and prints
 `PASS: <test>` otherwise.
 
-| Test | Device | The person |
-|---|---|---|
-| `recording-and-playback.sh` | simulator or iPhone | speaks, then judges the played take |
-| `recording-interruption.sh` | physical iPhone | speaks, interrupts the recording, then judges the played take |
+| Test                        | Device              | The person                                                    |
+| --------------------------- | ------------------- | ------------------------------------------------------------- |
+| `recording-and-playback.sh` | simulator or iPhone | speaks, then judges the played take                           |
+| `recording-interruption.sh` | physical iPhone     | speaks, interrupts the recording, then judges the played take |
 
 The iOS simulator never interrupts an audio session, so `recording-interruption.sh` fails there at
 `expect-interruption-logged`.
