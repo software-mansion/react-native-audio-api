@@ -44,6 +44,7 @@ class GainNodeHostObject : public AudioNodeHostObject {
   std::shared_ptr<AudioParamHostObject> gainParam_;
 };
 ```
+
 ```ts
 export interface IGainNode extends IAudioNode {
   readonly gain: IAudioParam;
@@ -69,6 +70,7 @@ class GainNode extends AudioNode {
 ## Core (C++) implementation
 
 Each AudioNode should implement one virtual method:
+
 ```cpp
 std::shared_ptr<AudioBuffer> processNode(
       const std::shared_ptr<AudioBuffer> &processingBuffer,
@@ -147,7 +149,6 @@ JSI_PROPERTY_SETTER_IMPL(AnalyserNodeHostObject, minDecibels) {
 }
 ```
 
-
 3. **function**
 
 C++ counterpart is `JSI_HOST_FUNCTION`. It is a common function that can receive arguments and return some value.
@@ -184,7 +185,7 @@ AnalyserNodeHostObject::AnalyserNodeHostObject(const std::shared_ptr<BaseAudioCo
 
 #### Shadow state (C++)
 
-Shadow state is a mechanism introduced in order to make communication between JS and the Audio Thread lock-free. AudioNodeHostObject stores the set of properties, which are  modified only by JS thread (the same set C++ AudioNode has). Everytime we want to access some property from JS, we can just return property from shadow state, when we modify some property we have to update shadow state and schedule update event on Audio Event Loop (SPSC). By following that manner we can skip accessing AudioNode state, that is also accessed by the Audio Thread - no need to lock or use atomic variables.
+Shadow state is a mechanism introduced in order to make communication between JS and the Audio Thread lock-free. AudioNodeHostObject stores the set of properties, which are modified only by JS thread (the same set C++ AudioNode has). Everytime we want to access some property from JS, we can just return property from shadow state, when we modify some property we have to update shadow state and schedule update event on Audio Event Loop (SPSC). By following that manner we can skip accessing AudioNode state, that is also accessed by the Audio Thread - no need to lock or use atomic variables.
 
 ```cpp
 class OscillatorNodeHostObject : public AudioScheduledSourceNodeHostObject {
@@ -228,11 +229,11 @@ JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
 
 2. Property is not primitive and is not modified by the Audio Thread.
 
-  It should be stored in TS layer and copied to AudioNode
+It should be stored in TS layer and copied to AudioNode
 
 3. Property is primitive and can be modified by the Audio Thread.
 
-  In C++ core it should be an atomic variable that allows to access it in thread-safe manner from both threads.
+In C++ core it should be an atomic variable that allows to access it in thread-safe manner from both threads.
 
 ```cpp
 class AudioParam {
@@ -271,9 +272,9 @@ JSI_PROPERTY_SETTER_IMPL(AudioParamHostObject, value) {
 ```
 
 4. Property is not primitive and can be modified by the Audio Thread.
-  In C++ core triple buffer pattern should be followed. It allows to have one copy of property for reader, one for writer and one for pending update. On each update we just swap pending update with writer, and on each read we just read from reader. In that manner we can skip locks and just operate on atomic indices.
+   In C++ core triple buffer pattern should be followed. It allows to have one copy of property for reader, one for writer and one for pending update. On each update we just swap pending update with writer, and on each read we just read from reader. In that manner we can skip locks and just operate on atomic indices.
 
-  Check AnalyserNode implementation for example or this [article](https://medium.com/@sgn00/triple-buffer-lock-free-concurrency-primitive-611848627a1e) for more details.
+Check AnalyserNode implementation for example or this [article](https://medium.com/@sgn00/triple-buffer-lock-free-concurrency-primitive-611848627a1e) for more details.
 
 **functions**
 

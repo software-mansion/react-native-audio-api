@@ -1,10 +1,11 @@
-export const frequencies: Array<{ frequency: number; type: BiquadFilterType }> = [
-  { frequency: 60, type: 'lowshelf'},
-  { frequency: 250, type: 'peaking' },
-  { frequency: 1000, type: 'peaking' },
-  { frequency: 4000, type: 'peaking' },
-  { frequency: 12000, type: 'highshelf' },
-];
+export const frequencies: Array<{ frequency: number; type: BiquadFilterType }> =
+  [
+    { frequency: 60, type: 'lowshelf' },
+    { frequency: 250, type: 'peaking' },
+    { frequency: 1000, type: 'peaking' },
+    { frequency: 4000, type: 'peaking' },
+    { frequency: 12000, type: 'highshelf' },
+  ];
 
 export default class Equalizer {
   bands: BiquadFilterNode[];
@@ -33,7 +34,7 @@ export default class Equalizer {
   }
 
   getFrequencies(): number[] {
-    return this.bands.map(band => band.frequency.value);
+    return this.bands.map((band) => band.frequency.value);
   }
 
   setGains(gains: number[]) {

@@ -22,31 +22,33 @@ using namespace audioapi;
 
 @implementation IOSEncoderAdtsTests
 
-- (void)testAacExtensionWritesSelfDelimitingAdtsFrames {
-  NSString *path = [NSTemporaryDirectory()
-      stringByAppendingPathComponent:@"ios-encoder-adts-test.aac"];
+- (void)testAacExtensionWritesSelfDelimitingAdtsFrames
+{
+  NSString *path =
+      [NSTemporaryDirectory() stringByAppendingPathComponent:@"ios-encoder-adts-test.aac"];
   [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 
   const AudioLayout layout{.sampleRate = 44100, .channelCount = 1};
-  ios::encoder::IOSEncoder encoder(EncoderSettings{
-      .fileLayout = layout,
-      .encoding =
-          AudioFileProperties::EncodingConfig{
-              .format = AudioFileProperties::FileFormat::ADTS,
-              .bitRate = 64000,
-              .bitDepth = AudioFileProperties::BitDepth::Bit16,
-              .flacCompressionLevel = 0,
-              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
-          },
-  });
+  ios::encoder::IOSEncoder encoder(
+      EncoderSettings{
+          .fileLayout = layout,
+          .encoding =
+              AudioFileProperties::EncodingConfig{
+                  .format = AudioFileProperties::FileFormat::ADTS,
+                  .bitRate = 64000,
+                  .bitDepth = AudioFileProperties::BitDepth::Bit16,
+                  .flacCompressionLevel = 0,
+                  .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+              },
+      });
   const EncoderOutputSpec spec =
       encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::ADTS);
   XCTAssertEqual(spec.container, AudioContainer::ADTS);
 
   auto openResult = encoder.open(
       StreamFormat{.layout = layout, .maxFramesPerBuffer = 1024}, spec, path.UTF8String);
-  XCTAssertTrue(openResult.is_ok(), @"%s",
-                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+  XCTAssertTrue(
+      openResult.is_ok(), @"%s", openResult.is_err() ? openResult.unwrap_err().c_str() : "");
 
   audioapi::AudioBuffer input(1024, 1, layout.sampleRate);
   std::fill_n(input.getChannel(0)->begin(), 1024, 0.25f);
@@ -94,34 +96,36 @@ static const float kTolerance = 1e-5f;
 @implementation IOSEncoderChannelMixTests
 
 - (std::vector<float>)levelsAfterEncoding:(const std::vector<float> &)inputLevels
-                       intoFileChannels:(int)fileChannelCount {
-  NSString *path = [NSTemporaryDirectory()
-      stringByAppendingPathComponent:@"ios-encoder-channel-mix-test.wav"];
+                         intoFileChannels:(int)fileChannelCount
+{
+  NSString *path =
+      [NSTemporaryDirectory() stringByAppendingPathComponent:@"ios-encoder-channel-mix-test.wav"];
   [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 
   constexpr float sampleRate = 48000;
   constexpr int framesPerBlock = 512;
   const int inputChannelCount = static_cast<int>(inputLevels.size());
 
-  ios::encoder::IOSEncoder encoder(EncoderSettings{
-      .fileLayout = {.sampleRate = sampleRate, .channelCount = fileChannelCount},
-      .encoding =
-          AudioFileProperties::EncodingConfig{
-              .format = AudioFileProperties::FileFormat::WAV,
-              .bitRate = 0,
-              .bitDepth = AudioFileProperties::BitDepth::Bit32,
-              .flacCompressionLevel = 0,
-              .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
-          },
-  });
+  ios::encoder::IOSEncoder encoder(
+      EncoderSettings{
+          .fileLayout = {.sampleRate = sampleRate, .channelCount = fileChannelCount},
+          .encoding =
+              AudioFileProperties::EncodingConfig{
+                  .format = AudioFileProperties::FileFormat::WAV,
+                  .bitRate = 0,
+                  .bitDepth = AudioFileProperties::BitDepth::Bit32,
+                  .flacCompressionLevel = 0,
+                  .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+              },
+      });
   auto openResult = encoder.open(
       StreamFormat{
           .layout = {.sampleRate = sampleRate, .channelCount = inputChannelCount},
           .maxFramesPerBuffer = framesPerBlock},
       encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::WAV),
       path.UTF8String);
-  XCTAssertTrue(openResult.is_ok(), @"%s",
-                openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+  XCTAssertTrue(
+      openResult.is_ok(), @"%s", openResult.is_err() ? openResult.unwrap_err().c_str() : "");
 
   audioapi::AudioBuffer input(framesPerBlock, inputChannelCount, sampleRate);
   for (int channel = 0; channel < inputChannelCount; ++channel) {
@@ -138,7 +142,8 @@ static const float kTolerance = 1e-5f;
                                               interleaved:NO
                                                     error:&error];
   XCTAssertNil(error);
-  XCTAssertEqual(file.processingFormat.channelCount, static_cast<AVAudioChannelCount>(fileChannelCount));
+  XCTAssertEqual(
+      file.processingFormat.channelCount, static_cast<AVAudioChannelCount>(fileChannelCount));
   AVAudioPCMBuffer *buffer =
       [[AVAudioPCMBuffer alloc] initWithPCMFormat:file.processingFormat
                                     frameCapacity:static_cast<AVAudioFrameCount>(file.length)];
@@ -154,22 +159,25 @@ static const float kTolerance = 1e-5f;
   return levels;
 }
 
-
-- (void)testFiveOneToStereoMixesCenterAndSurroundsIntoBothSides {
+- (void)testFiveOneToStereoMixesCenterAndSurroundsIntoBothSides
+{
   const float left = 0.1f, right = 0.2f, center = 0.3f, lfe = 0.4f;
   const float surroundLeft = 0.05f, surroundRight = 0.06f;
-  auto levels =
-      [self levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight} intoFileChannels:2];
+  auto levels = [self
+      levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight}
+         intoFileChannels:2];
 
   XCTAssertEqualWithAccuracy(levels[0], left + kSqrtHalf * (center + surroundLeft), kTolerance);
   XCTAssertEqualWithAccuracy(levels[1], right + kSqrtHalf * (center + surroundRight), kTolerance);
 }
 
-- (void)testFiveOneToMonoIncludesEveryChannelButLfe {
+- (void)testFiveOneToMonoIncludesEveryChannelButLfe
+{
   const float left = 0.1f, right = 0.2f, center = 0.3f, lfe = 0.4f;
   const float surroundLeft = 0.05f, surroundRight = 0.06f;
-  auto levels =
-      [self levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight} intoFileChannels:1];
+  auto levels = [self
+      levelsAfterEncoding:std::vector<float>{left, right, center, lfe, surroundLeft, surroundRight}
+         intoFileChannels:1];
 
   XCTAssertEqualWithAccuracy(
       levels[0],
@@ -177,21 +185,26 @@ static const float kTolerance = 1e-5f;
       kTolerance);
 }
 
-- (void)testQuadToStereoAveragesFrontAndSurroundPerSide {
+- (void)testQuadToStereoAveragesFrontAndSurroundPerSide
+{
   const float left = 0.1f, right = 0.2f, surroundLeft = 0.3f, surroundRight = 0.4f;
-  auto levels = [self levelsAfterEncoding:std::vector<float>{left, right, surroundLeft, surroundRight} intoFileChannels:2];
+  auto levels =
+      [self levelsAfterEncoding:std::vector<float>{left, right, surroundLeft, surroundRight}
+               intoFileChannels:2];
 
   XCTAssertEqualWithAccuracy(levels[0], 0.5f * (left + surroundLeft), kTolerance);
   XCTAssertEqualWithAccuracy(levels[1], 0.5f * (right + surroundRight), kTolerance);
 }
 
-- (void)testStereoToMonoAveragesBothSides {
+- (void)testStereoToMonoAveragesBothSides
+{
   auto levels = [self levelsAfterEncoding:std::vector<float>{0.2f, 0.6f} intoFileChannels:1];
 
   XCTAssertEqualWithAccuracy(levels[0], 0.4f, kTolerance);
 }
 
-- (void)testCountWithoutSpeakerRuleKeepsLeadingChannelsInOrder {
+- (void)testCountWithoutSpeakerRuleKeepsLeadingChannelsInOrder
+{
   std::vector<float> inputLevels;
   for (int channel = 0; channel < 16; ++channel) {
     inputLevels.push_back(0.01f * static_cast<float>(channel + 1));
@@ -202,7 +215,8 @@ static const float kTolerance = 1e-5f;
   XCTAssertEqualWithAccuracy(levels[1], 0.02f, kTolerance);
 }
 
-- (void)testMonoToStereoCopiesIntoBothSides {
+- (void)testMonoToStereoCopiesIntoBothSides
+{
   auto levels = [self levelsAfterEncoding:std::vector<float>{0.3f} intoFileChannels:2];
 
   XCTAssertEqualWithAccuracy(levels[0], 0.3f, kTolerance);

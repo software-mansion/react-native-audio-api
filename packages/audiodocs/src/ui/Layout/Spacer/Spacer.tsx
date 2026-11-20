@@ -3,7 +3,10 @@ import styles from './styles.module.css';
 
 type SpacerSize = number | string;
 
-type BaseSpacerProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> & {
+type BaseSpacerProps = Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'children'
+> & {
   size?: SpacerSize;
 };
 
@@ -33,7 +36,14 @@ const Horizontal: React.FC<HorizontalSpacerProps> = ({
     [size, style]
   );
 
-  return <div aria-hidden="true" className={rootClassName} style={spacerStyle} {...rest} />;
+  return (
+    <div
+      aria-hidden="true"
+      className={rootClassName}
+      style={spacerStyle}
+      {...rest}
+    />
+  );
 };
 
 const Vertical: React.FC<VerticalSpacerProps> = ({
@@ -54,7 +64,14 @@ const Vertical: React.FC<VerticalSpacerProps> = ({
     [size, style]
   );
 
-  return <div aria-hidden="true" className={rootClassName} style={spacerStyle} {...rest} />;
+  return (
+    <div
+      aria-hidden="true"
+      className={rootClassName}
+      style={spacerStyle}
+      {...rest}
+    />
+  );
 };
 
 const Spacer = {

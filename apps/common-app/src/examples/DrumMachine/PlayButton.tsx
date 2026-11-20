@@ -70,7 +70,8 @@ const PlayButton: React.FC<PlayButtonProps> = (props) => {
           left: canvasRect.x + canvasRect.width / 2 - 30,
         },
       ]}
-      onPress={onPress}>
+      onPress={onPress}
+    >
       {({ pressed }) => (
         <PlayButtonInner
           pressed={pressed}

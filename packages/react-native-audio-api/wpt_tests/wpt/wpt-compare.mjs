@@ -53,7 +53,9 @@ function loadReport(reportPath) {
 
   const report = JSON.parse(fs.readFileSync(absolute, 'utf8'));
   if (!report?.summary || !Array.isArray(report.categories)) {
-    console.error(`Invalid WPT report (missing summary/categories): ${absolute}`);
+    console.error(
+      `Invalid WPT report (missing summary/categories): ${absolute}`
+    );
     process.exit(1);
   }
   return report;
@@ -109,12 +111,14 @@ const candidateCategories = categoryPassMap(candidate);
 const isAssertionFailure = (message) => message.startsWith('X ');
 
 /**
- * An assertion message also carries what the run measured — a trailing `Got <value>.` and,
- * for array comparisons, an `Index Actual Expected` table after the first line. A subtest
- * that fails in both runs with a different value is still the same failing subtest, so only
- * the first line without the measured value identifies it.
+ * An assertion message also carries what the run measured — a trailing `Got
+ * <value>.` and, for array comparisons, an `Index Actual Expected` table after
+ * the first line. A subtest that fails in both runs with a different value is
+ * still the same failing subtest, so only the first line without the measured
+ * value identifies it.
  */
-const subtestIdentity = (message) => message.split('\n', 1)[0].replace(/ Got .*$/, '');
+const subtestIdentity = (message) =>
+  message.split('\n', 1)[0].replace(/ Got .*$/, '');
 
 /**
  * Exact per-file comparison. Category pass counts cannot see an equal-count
@@ -123,7 +127,10 @@ const subtestIdentity = (message) => message.split('\n', 1)[0].replace(/ Got .*$
  * category-level gate — the failing-subtest sets are compared directly.
  */
 function compareFiles(baselineReport, candidateReport) {
-  if (!Array.isArray(baselineReport.files) || !Array.isArray(candidateReport.files)) {
+  if (
+    !Array.isArray(baselineReport.files) ||
+    !Array.isArray(candidateReport.files)
+  ) {
     return null;
   }
 
@@ -182,11 +189,29 @@ for (const [key, base] of baselineCategories) {
   const delta = head.pass - base.pass;
 
   if (delta < 0) {
-    regressions.push({ key, label: base.label, base: base.pass, head: head.pass, delta });
+    regressions.push({
+      key,
+      label: base.label,
+      base: base.pass,
+      head: head.pass,
+      delta,
+    });
   } else if (delta > 0) {
-    improvements.push({ key, label: base.label, base: base.pass, head: head.pass, delta });
+    improvements.push({
+      key,
+      label: base.label,
+      base: base.pass,
+      head: head.pass,
+      delta,
+    });
   } else {
-    unchanged.push({ key, label: base.label, base: base.pass, head: head.pass, delta });
+    unchanged.push({
+      key,
+      label: base.label,
+      base: base.pass,
+      head: head.pass,
+      delta,
+    });
   }
 }
 
@@ -215,8 +240,10 @@ const summaryDelta = candidateSummaryPass - baselineSummaryPass;
 const summaryRegressed = summaryDelta < 0;
 const fileRegressed =
   fileComparison != null &&
-  (fileComparison.newFailures.length > 0 || fileComparison.brokenFiles.length > 0);
-const hasRegression = regressions.length > 0 || summaryRegressed || fileRegressed;
+  (fileComparison.newFailures.length > 0 ||
+    fileComparison.brokenFiles.length > 0);
+const hasRegression =
+  regressions.length > 0 || summaryRegressed || fileRegressed;
 
 const signed = (delta) => `${delta > 0 ? '+' : ''}${delta}`;
 
@@ -327,16 +354,22 @@ lines.push(
 );
 
 if (hasRegression) {
-  console.error(`WPT regression: ${regressions.length} worse result(s) vs baseline.`);
+  console.error(
+    `WPT regression: ${regressions.length} worse result(s) vs baseline.`
+  );
   for (const row of regressions) {
-    console.error(`  - ${row.label}: ${row.head} pass (was ${row.base}, delta ${row.delta})`);
+    console.error(
+      `  - ${row.label}: ${row.head} pass (was ${row.base}, delta ${row.delta})`
+    );
   }
   if (fileComparison != null) {
     for (const { path: filePath, status } of fileComparison.brokenFiles) {
       console.error(`  - ${filePath}: ${status}`);
     }
     for (const { path: filePath, subtests } of fileComparison.newFailures) {
-      console.error(`  - ${filePath}: ${subtests.length} new failing subtest(s)`);
+      console.error(
+        `  - ${filePath}: ${subtests.length} new failing subtest(s)`
+      );
       for (const subtest of subtests.slice(0, 5)) {
         console.error(`      ${subtest}`);
       }
@@ -354,7 +387,9 @@ if (hasRegression) {
 if (improvements.length > 0) {
   console.log(`Improvements (${improvements.length}):`);
   for (const row of improvements) {
-    console.log(`  - ${row.label}: ${row.head} pass (was ${row.base}, +${row.delta})`);
+    console.log(
+      `  - ${row.label}: ${row.head} pass (was ${row.base}, +${row.delta})`
+    );
   }
 }
 

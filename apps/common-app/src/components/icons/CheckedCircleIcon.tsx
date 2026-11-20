@@ -7,11 +7,22 @@ type Props = {
   color?: string;
 };
 
-const CheckCircleIcon: React.FC<Props> = ({ selected, size = 24, color = '#FFFFFF' }) => {
+const CheckCircleIcon: React.FC<Props> = ({
+  selected,
+  size = 24,
+  color = '#FFFFFF',
+}) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" />
-      {selected ?
+      <Circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke={color}
+        strokeWidth="2"
+        fill="none"
+      />
+      {selected ? (
         <Path
           d="M16 8L10.5 14L8 11.5"
           stroke={color}
@@ -19,7 +30,7 @@ const CheckCircleIcon: React.FC<Props> = ({ selected, size = 24, color = '#FFFFF
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        : null}
+      ) : null}
     </Svg>
   );
 };

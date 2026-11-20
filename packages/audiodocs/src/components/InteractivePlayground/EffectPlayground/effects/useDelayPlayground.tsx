@@ -20,8 +20,9 @@ const initialState: DelayParams = { delayTime: 0.35, feedback: 0.4 };
 const MAX_DELAY_SECONDS = 1;
 
 /**
- * A delay line on its own only shifts the signal in time, which is inaudible next to nothing.
- * Feeding part of its output back in turns it into the echo people expect from "delay".
+ * A delay line on its own only shifts the signal in time, which is inaudible
+ * next to nothing. Feeding part of its output back in turns it into the echo
+ * people expect from "delay".
  */
 const createDelayEffect: EffectFactory<DelayParams> = (ctx, params) => {
   const input = ctx.createGain();
@@ -53,16 +54,29 @@ const createDelayEffect: EffectFactory<DelayParams> = (ctx, params) => {
 export function useDelayPlayground() {
   const [delayTime, setDelayTime] = useState(initialState.delayTime);
   const [feedback, setFeedback] = useState(initialState.feedback);
-  const params = useMemo<DelayParams>(() => ({ delayTime, feedback }), [delayTime, feedback]);
+  const params = useMemo<DelayParams>(
+    () => ({ delayTime, feedback }),
+    [delayTime, feedback]
+  );
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createDelayEffect,
-    params,
-    mixesDrySignal: true,
-    initialSource: 'voice',
-    effectNodes: [{ label: 'DelayNode', sublabel: `delayTime · ${delayTime.toFixed(2)} s` }],
-    feedbackNode: { label: 'GainNode', sublabel: `feedback · ${feedback.toFixed(2)}` },
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createDelayEffect,
+      params,
+      mixesDrySignal: true,
+      initialSource: 'voice',
+      effectNodes: [
+        {
+          label: 'DelayNode',
+          sublabel: `delayTime · ${delayTime.toFixed(2)} s`,
+        },
+      ],
+      feedbackNode: {
+        label: 'GainNode',
+        sublabel: `feedback · ${feedback.toFixed(2)}`,
+      },
+    }
+  );
 
   const code = buildEffectCode({
     sampleVariable,
@@ -93,7 +107,14 @@ source.connect(ctx.destination);`,
         unit="s"
         onChange={setDelayTime}
       />
-      <SliderInput label="Feedback" value={feedback} min={0} max={0.9} step={0.01} onChange={setFeedback} />
+      <SliderInput
+        label="Feedback"
+        value={feedback}
+        min={0}
+        max={0.9}
+        step={0.01}
+        onChange={setFeedback}
+      />
     </div>
   );
 

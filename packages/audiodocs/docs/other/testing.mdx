@@ -81,7 +81,12 @@ describe('Audio Graph Tests', () => {
 ### Audio recording testing
 
 ```typescript
-import { AudioContext, AudioRecorder, FileFormat, FileDirectory } from 'react-native-audio-api/mock';
+import {
+  AudioContext,
+  AudioRecorder,
+  FileFormat,
+  FileDirectory,
+} from 'react-native-audio-api/mock';
 
 describe('Audio Recording Tests', () => {
   it('should configure and control recording', async () => {
@@ -177,7 +182,7 @@ describe('Worklet Tests', () => {
 import {
   AudioContext,
   IndexSizeError,
-  InvalidStateError
+  InvalidStateError,
 } from 'react-native-audio-api/mock';
 
 describe('Error Handling Tests', () => {
@@ -203,7 +208,11 @@ describe('Error Handling Tests', () => {
 ### System volume testing
 
 ```typescript
-import { useSystemVolume, setMockSystemVolume, AudioManager } from 'react-native-audio-api/mock';
+import {
+  useSystemVolume,
+  setMockSystemVolume,
+  AudioManager,
+} from 'react-native-audio-api/mock';
 
 describe('System Integration Tests', () => {
   it('should mock system audio management', () => {
@@ -262,7 +271,11 @@ describe('Callback Tests', () => {
 The mock implementation provides full TypeScript support with the same types as the real library:
 
 ```typescript
-import type { AudioContext, AudioParam, GainNode } from 'react-native-audio-api/mock';
+import type {
+  AudioContext,
+  AudioParam,
+  GainNode,
+} from 'react-native-audio-api/mock';
 
 // All types are available and identical to the real implementation
 function processAudioNode(node: GainNode): void {
@@ -285,7 +298,7 @@ import {
   AudioContext,
   AudioRecorder,
   FileFormat,
-  decodeAudioData
+  decodeAudioData,
 } from 'react-native-audio-api/mock';
 
 describe('Audio Application Tests', () => {

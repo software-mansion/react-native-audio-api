@@ -239,8 +239,8 @@ export class WptResultsCollector {
   }
 
   /**
-   * Record that the file currently running (or the named file, if none is
-   * in flight) died without finishing — the worker process crashed or the
+   * Record that the file currently running (or the named file, if none is in
+   * flight) died without finishing — the worker process crashed or the
    * inactivity watchdog killed it. Counted as a failed file in its category.
    *
    * @param {string} path
@@ -524,8 +524,9 @@ function coverageRow({ label, pass, total, note = '', bold = false }) {
 
 /**
  * Compact summary for the audiodocs coverage page: only interfaces that are
- * available in react-native-audio-api, with passing count, total, and pass rate.
- * Rendered as a JSX table so each row can be shaded by pass rate (wpt.fyi style).
+ * available in react-native-audio-api, with passing count, total, and pass
+ * rate. Rendered as a JSX table so each row can be shaded by pass rate (wpt.fyi
+ * style).
  */
 export function formatCoverageMarkdown(report) {
   const generated = new Date(report.generatedAt).toISOString().slice(0, 10);
@@ -623,9 +624,9 @@ function sumStats(statsByKey) {
 /**
  * Side-by-side docs summary: the latest stable release (baseline report,
  * produced with RN_AUDIO_API_APP_ROOT pointing at an app that installs the
- * published npm package) next to the current checkout, whose column is
- * headed by `currentLabel` (the most recent nightly build). An interface
- * missing from one run renders as "—" in that column.
+ * published npm package) next to the current checkout, whose column is headed
+ * by `currentLabel` (the most recent nightly build). An interface missing from
+ * one run renders as "—" in that column.
  */
 export function formatCoverageComparisonMarkdown(
   currentReport,

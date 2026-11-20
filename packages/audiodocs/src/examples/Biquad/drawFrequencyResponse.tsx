@@ -4,7 +4,7 @@ export const drawFrequencyResponse = (
   canvas: HTMLCanvasElement | null,
   filter: BiquadFilterNode | null,
   gridColor = 'rgba(255, 255, 255, 0.15)',
-  responseColor = '#fa7f7c',
+  responseColor = '#fa7f7c'
 ) => {
   if (!canvas || !filter) return;
 
@@ -15,10 +15,17 @@ export const drawFrequencyResponse = (
   const height = canvas.height;
 
   const clientW = canvas.clientWidth || 1;
-  const dpr = clientW > 0 ? Math.max(1, canvas.width / clientW) : (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+  const dpr =
+    clientW > 0
+      ? Math.max(1, canvas.width / clientW)
+      : typeof window !== 'undefined' && window.devicePixelRatio
+        ? window.devicePixelRatio
+        : 1;
 
   const N = 200;
-  const frequencies = new Float32Array(N).map((_, i) => 20 * 1000 ** (i / (N - 1)));
+  const frequencies = new Float32Array(N).map(
+    (_, i) => 20 * 1000 ** (i / (N - 1))
+  );
   const mags = new Float32Array(N);
   const phases = new Float32Array(N);
   filter.getFrequencyResponse(frequencies, mags, phases);

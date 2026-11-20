@@ -4,7 +4,10 @@ import styles from './styles.module.css';
 import type { SliderInputProps } from './types';
 import { formatValue, normalizeValue } from './utils';
 
-/** Number of thumb positions on a logarithmic track; fine enough that no step is skipped. */
+/**
+ * Number of thumb positions on a logarithmic track; fine enough that no step is
+ * skipped.
+ */
 const LOG_TRACK_RESOLUTION = 1000;
 
 const SliderInput: React.FC<SliderInputProps> = ({
@@ -33,27 +36,39 @@ const SliderInput: React.FC<SliderInputProps> = ({
 
   const toTrackPosition = useCallback(
     (v: number) =>
-      isLogarithmic ? (Math.log(v / min) / Math.log(max / min)) * LOG_TRACK_RESOLUTION : v,
+      isLogarithmic
+        ? (Math.log(v / min) / Math.log(max / min)) * LOG_TRACK_RESOLUTION
+        : v,
     [isLogarithmic, min, max]
   );
 
   const fromTrackPosition = useCallback(
     (position: number) =>
-      isLogarithmic ? min * Math.pow(max / min, position / LOG_TRACK_RESOLUTION) : position,
+      isLogarithmic
+        ? min * Math.pow(max / min, position / LOG_TRACK_RESOLUTION)
+        : position,
     [isLogarithmic, min, max]
   );
 
-  const handleSliderChange = useCallback((e: Event, nextValue: number | number[]) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const handleSliderChange = useCallback(
+    (e: Event, nextValue: number | number[]) => {
+      e.stopPropagation();
+      e.preventDefault();
 
-    const rawValue = Array.isArray(nextValue) ? nextValue[0] : nextValue;
-    const normalizedNextValue = normalizeValue(fromTrackPosition(rawValue), min, max, step);
+      const rawValue = Array.isArray(nextValue) ? nextValue[0] : nextValue;
+      const normalizedNextValue = normalizeValue(
+        fromTrackPosition(rawValue),
+        min,
+        max,
+        step
+      );
 
-    if (normalizedNextValue !== normalizedValue) {
-      onChange(normalizedNextValue);
-    }
-  }, [fromTrackPosition, normalizedValue, min, max, step, onChange]);
+      if (normalizedNextValue !== normalizedValue) {
+        onChange(normalizedNextValue);
+      }
+    },
+    [fromTrackPosition, normalizedValue, min, max, step, onChange]
+  );
 
   return (
     <div className={styles.container}>

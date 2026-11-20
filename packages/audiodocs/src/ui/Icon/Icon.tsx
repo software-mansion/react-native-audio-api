@@ -52,9 +52,7 @@ const Icon: React.FC<IconProps> = ({
   ...rest
 }) => {
   const IconComponent = icons[name];
-  const iconClassName = className
-    ? `${styles.icon} ${className}`
-    : styles.icon;
+  const iconClassName = className ? `${styles.icon} ${className}` : styles.icon;
 
   return (
     <IconComponent

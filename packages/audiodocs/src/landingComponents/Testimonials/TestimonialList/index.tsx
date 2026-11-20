@@ -124,7 +124,9 @@ const TestimonialList = () => {
       return;
     }
 
-    const observer = new ResizeObserver(() => setTrackHeight(track.offsetHeight));
+    const observer = new ResizeObserver(() =>
+      setTrackHeight(track.offsetHeight)
+    );
     observer.observe(track);
 
     return () => observer.disconnect();

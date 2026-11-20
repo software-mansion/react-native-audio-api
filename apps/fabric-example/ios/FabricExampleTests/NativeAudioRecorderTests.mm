@@ -11,9 +11,9 @@
 
 @interface FakeRecorderFormat : NSObject
 
-@property(nonatomic, assign) double sampleRate;
-@property(nonatomic, assign) AVAudioChannelCount channelCount;
-@property(nonatomic, assign, getter=isInterleaved) BOOL interleaved;
+@property (nonatomic, assign) double sampleRate;
+@property (nonatomic, assign) AVAudioChannelCount channelCount;
+@property (nonatomic, assign, getter=isInterleaved) BOOL interleaved;
 
 @end
 
@@ -22,8 +22,8 @@
 
 @interface FakeRecorderInputNode : NSObject
 
-@property(nonatomic, strong) id inputFormat;
-@property(nonatomic, strong) id outputFormat;
+@property (nonatomic, strong) id inputFormat;
+@property (nonatomic, strong) id outputFormat;
 
 - (AVAudioFormat *)inputFormatForBus:(AVAudioNodeBus)bus;
 - (AVAudioFormat *)outputFormatForBus:(AVAudioNodeBus)bus;
@@ -46,7 +46,7 @@
 
 @interface FakeRecorderAVAudioEngine : AVAudioEngine
 
-@property(nonatomic, strong) FakeRecorderInputNode *fakeInputNode;
+@property (nonatomic, strong) FakeRecorderInputNode *fakeInputNode;
 
 @end
 
@@ -61,8 +61,8 @@
 
 @interface FakeRecorderSharedAVAudioSession : NSObject
 
-@property(nonatomic, assign) NSTimeInterval IOBufferDuration;
-@property(nonatomic, assign) double sampleRate;
+@property (nonatomic, assign) NSTimeInterval IOBufferDuration;
+@property (nonatomic, assign) double sampleRate;
 
 @end
 
@@ -79,20 +79,20 @@
 
 @interface FakeRecorderAudioEngine : AudioEngine
 
-@property(nonatomic, strong) FakeRecorderAVAudioEngine *fakeAVAudioEngine;
-@property(nonatomic, assign) BOOL startIfNecessaryResult;
-@property(nonatomic, strong) NSError *startIfNecessaryError;
-@property(nonatomic, assign) NSInteger stopIfNecessaryCallCount;
-@property(nonatomic, assign) NSInteger attachInputNodeCallCount;
-@property(nonatomic, assign) NSInteger startIfNecessaryCallCount;
-@property(nonatomic, assign) NSInteger detachInputNodeCallCount;
-@property(nonatomic, assign) NSInteger stopIfPossibleCallCount;
-@property(nonatomic, assign) NSInteger restartAudioEngineCallCount;
-@property(nonatomic, assign) NSInteger suspendInputCallCount;
-@property(nonatomic, assign) NSInteger resumeInputCallCount;
-@property(nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
-@property(nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
-@property(nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
+@property (nonatomic, strong) FakeRecorderAVAudioEngine *fakeAVAudioEngine;
+@property (nonatomic, assign) BOOL startIfNecessaryResult;
+@property (nonatomic, strong) NSError *startIfNecessaryError;
+@property (nonatomic, assign) NSInteger stopIfNecessaryCallCount;
+@property (nonatomic, assign) NSInteger attachInputNodeCallCount;
+@property (nonatomic, assign) NSInteger startIfNecessaryCallCount;
+@property (nonatomic, assign) NSInteger detachInputNodeCallCount;
+@property (nonatomic, assign) NSInteger stopIfPossibleCallCount;
+@property (nonatomic, assign) NSInteger restartAudioEngineCallCount;
+@property (nonatomic, assign) NSInteger suspendInputCallCount;
+@property (nonatomic, assign) NSInteger resumeInputCallCount;
+@property (nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
+@property (nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
+@property (nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
 @property (nonatomic, assign) BOOL lastAttachedVoiceProcessingEnabled;
 
 @end
@@ -252,9 +252,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
 @interface NativeAudioRecorderTests : XCTestCase
 
-@property(nonatomic, strong) FakeRecorderAudioEngine *audioEngine;
-@property(nonatomic, strong) FakeRecorderAudioSessionManager *sessionManager;
-@property(nonatomic, strong) FakeRecorderSharedAVAudioSession *sharedSession;
+@property (nonatomic, strong) FakeRecorderAudioEngine *audioEngine;
+@property (nonatomic, strong) FakeRecorderAudioSessionManager *sessionManager;
+@property (nonatomic, strong) FakeRecorderSharedAVAudioSession *sharedSession;
 
 @end
 
@@ -428,7 +428,8 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
     XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, previousDetachCount + 1);
     XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, previousStopIfPossibleCount + 1);
-    XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, previousRestartAudioEngineCallCount + 1);
+    XCTAssertEqual(
+        self.audioEngine.restartAudioEngineCallCount, previousRestartAudioEngineCallCount + 1);
     XCTAssertNil([recorder getResolvedInputFormat]);
     XCTAssertEqual([recorder getResolvedBufferSize], 0);
   };
@@ -470,10 +471,10 @@ static void ClearFakeRecorderSharedAudioSession(void)
 - (void)testResumeRelaysTheEngineErrorWhenEngineStartFails
 {
   // The code iOS returns when a non-mixable session may not go active in the background.
-  NSError *activationRefused = [AudioAPIError
-      sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
-                                                  code:560557684
-                                              userInfo:nil]];
+  NSError *activationRefused =
+      [AudioAPIError sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
+                                                                 code:560557684
+                                                             userInfo:nil]];
   self.audioEngine.startIfNecessaryResult = NO;
   self.audioEngine.startIfNecessaryError = activationRefused;
   NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
@@ -491,7 +492,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
 {
   AVAudioFormat *initialFormat = [self validFormat];
   AVAudioFormat *recoveredFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:32000
-                                                                                   channels:1];
+                                                                                  channels:1];
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = initialFormat;
 
   NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]

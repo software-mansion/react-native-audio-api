@@ -12,7 +12,7 @@ Generates entries for `common/cpp` (sources + headers), the iOS Objective-C++/Ob
 
 - **Android**: needs a real Gradle build's `android/.cxx` output — this CMakeLists.txt can't safely reproduce NDK cross-compile flags itself.
 - **iOS**: needs `apps/fabric-example/ios/Pods` — reuses its generated xcconfig for React/Pod header
-  *and framework* search paths. Since RN 0.87 React-Core ships prebuilt as `React.xcframework`, so
+  _and framework_ search paths. Since RN 0.87 React-Core ships prebuilt as `React.xcframework`, so
   `#import <React/...>` resolves via `-F`, not `-I`; missing framework paths show up as
   `'React/RCTBridgeModule.h' file not found` in every `.mm` that imports React.
 

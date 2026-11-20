@@ -8,11 +8,9 @@ As an entry point to the underlying c++ engine, we utilize [the react-native nat
 We inject [the audio context](https://docs.swmansion.com/react-native-audio-api/docs/core/audio-context) constructor to the JavaScript global scope.
 [Detailed implementation](https://github.com/software-mansion/react-native-audio-api/blob/1966b4ac91efb990f1bc626fdb8899b034b770f4/packages/react-native-audio-api/common/cpp/audioapi/AudioAPIModuleInstaller.h).
 Utilizing it, we can access it directly in JavaScript
+
 ```javascript
-globalThis.createAudioContext(
-  options?.sampleRate,
-  options?.latencyHint
-)
+globalThis.createAudioContext(options?.sampleRate, options?.latencyHint);
 ```
 
 Later on, every JS object has its equivalent living in C++ side and the glue that connects those two worlds and serializes data passed is special class called HostObject.

@@ -2,12 +2,12 @@
 
 `common/cpp/test/` — Google Test, modes by **runtime cost**.
 
-| Mode | What | Default binary |
-| --- | --- | --- |
-| **smoke** | Fast suites (PR + coverage). Disjoint from extended. | `tests` |
-| **extended** | Slow suites by **category** | `tests_asan` (ASan+UBSan) |
-| **full** | smoke, then all extended categories | each mode’s default |
-| **affected** | the suites whose paths (in `filters.sh`) your changes touch; nothing if none | each mode’s default |
+| Mode         | What                                                                         | Default binary            |
+| ------------ | ---------------------------------------------------------------------------- | ------------------------- |
+| **smoke**    | Fast suites (PR + coverage). Disjoint from extended.                         | `tests`                   |
+| **extended** | Slow suites by **category**                                                  | `tests_asan` (ASan+UBSan) |
+| **full**     | smoke, then all extended categories                                          | each mode’s default       |
+| **affected** | the suites whose paths (in `filters.sh`) your changes touch; nothing if none | each mode’s default       |
 
 ```bash
 pnpm test:cpp                          # smoke
@@ -30,9 +30,9 @@ Filters: [`filters.sh`](filters.sh). Override: `GTEST_FILTER=...`.
 
 ### Categories
 
-| Category | Contents | CI |
-| --- | --- | --- |
-| `graph` | Slow graph (`AudioGraph*`, `Graph*`, `HostGraph*`, `Seeds/*`, …) | `affected`, when graph code or tests change |
+| Category | Contents                                                         | CI                                          |
+| -------- | ---------------------------------------------------------------- | ------------------------------------------- |
+| `graph`  | Slow graph (`AudioGraph*`, `Graph*`, `HostGraph*`, `Seeds/*`, …) | `affected`, when graph code or tests change |
 
 **`GraphNodeGrowthTest` is smoke**, not `graph`: it is short (~100–200 ms) and needs unsanitized `AudioThreadGuard` (asserts `GTEST_SKIP` under ASan/TSan).
 

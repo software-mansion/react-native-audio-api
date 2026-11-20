@@ -1,4 +1,3 @@
-
 export default function lagrangeInterpolation(
   xTarget: number,
   xs: number[],

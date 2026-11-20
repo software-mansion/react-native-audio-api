@@ -169,12 +169,14 @@ const Oscillator: FC = () => {
                   ? styles.activeOscillatorButton
                   : styles.inactiveOscillatorButton,
             ]}
-            onPress={() => handleOscillatorTypeChange(type)}>
+            onPress={() => handleOscillatorTypeChange(type)}
+          >
             <Text
               style={[
                 styles.oscillatorButtonText,
                 type === oscillatorType && styles.activeOscillatorButtonText,
-              ]}>
+              ]}
+            >
               {type}
             </Text>
           </Pressable>

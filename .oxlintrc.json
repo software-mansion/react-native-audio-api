@@ -17,31 +17,18 @@
     "navigator": "readonly",
     "window": "readonly"
   },
-  "jsPlugins": [
-    "eslint-plugin-tsdoc"
-  ],
+  "jsPlugins": ["eslint-plugin-tsdoc"],
   "ignorePatterns": [
     "**/lib/**",
-    "packages/react-native-audio-api/src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/**"
+    "packages/react-native-audio-api/src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/**",
+    "packages/react-native-audio-api/wpt_tests/webaudio/**"
   ],
   "overrides": [
     {
-      "files": [
-        "**/*.ts",
-        "**/*.tsx"
-      ],
-      "plugins": [
-        "typescript",
-        "import",
-        "jest",
-        "react",
-        "node",
-        "promise"
-      ],
+      "files": ["**/*.ts", "**/*.tsx"],
+      "plugins": ["typescript", "import", "jest", "react", "node", "promise"],
       "rules": {
-        "no-var": [
-          "error"
-        ],
+        "no-var": ["error"],
         "prefer-const": [
           "error",
           {
@@ -49,23 +36,11 @@
             "ignoreReadBeforeAssign": false
           }
         ],
-        "prefer-rest-params": [
-          "error"
-        ],
-        "prefer-spread": [
-          "error"
-        ],
-        "object-shorthand": [
-          "error",
-          "properties"
-        ],
-        "no-case-declarations": [
-          "error"
-        ],
-        "import/consistent-type-specifier-style": [
-          "error",
-          "prefer-top-level"
-        ],
+        "prefer-rest-params": ["error"],
+        "prefer-spread": ["error"],
+        "object-shorthand": ["error", "properties"],
+        "no-case-declarations": ["error"],
+        "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
         "eqeqeq": [
           "error",
           "always",
@@ -73,24 +48,12 @@
             "null": "ignore"
           }
         ],
-        "jest/no-disabled-tests": [
-          "warn"
-        ],
-        "jest/no-focused-tests": [
-          "error"
-        ],
-        "jest/no-identical-title": [
-          "error"
-        ],
-        "jest/prefer-to-have-length": [
-          "warn"
-        ],
-        "jest/valid-expect": [
-          "error"
-        ],
-        "import/no-duplicates": [
-          "warn"
-        ],
+        "jest/no-disabled-tests": ["warn"],
+        "jest/no-focused-tests": ["error"],
+        "jest/no-identical-title": ["error"],
+        "jest/prefer-to-have-length": ["warn"],
+        "jest/valid-expect": ["error"],
+        "import/no-duplicates": ["warn"],
         "accessor-pairs": [
           "error",
           {
@@ -107,9 +70,7 @@
             "allowVoid": false
           }
         ],
-        "default-case-last": [
-          "error"
-        ],
+        "default-case-last": ["error"],
         "new-cap": [
           "error",
           {
@@ -118,81 +79,39 @@
             "properties": true
           }
         ],
-        "no-async-promise-executor": [
-          "error"
-        ],
-        "no-caller": [
-          "error"
-        ],
-        "no-compare-neg-zero": [
-          "error"
-        ],
-        "no-cond-assign": [
-          "error"
-        ],
+        "no-async-promise-executor": ["error"],
+        "no-caller": ["error"],
+        "no-compare-neg-zero": ["error"],
+        "no-cond-assign": ["error"],
         "no-constant-condition": [
           "error",
           {
             "checkLoops": false
           }
         ],
-        "no-control-regex": [
-          "error"
-        ],
-        "no-debugger": [
-          "error"
-        ],
-        "no-delete-var": [
-          "error"
-        ],
-        "no-duplicate-case": [
-          "error"
-        ],
-        "no-useless-backreference": [
-          "error"
-        ],
+        "no-control-regex": ["error"],
+        "no-debugger": ["error"],
+        "no-delete-var": ["error"],
+        "no-duplicate-case": ["error"],
+        "no-useless-backreference": ["error"],
         "no-empty": [
           "error",
           {
             "allowEmptyCatch": true
           }
         ],
-        "no-empty-character-class": [
-          "error"
-        ],
-        "no-empty-pattern": [
-          "error"
-        ],
-        "no-eval": [
-          "error"
-        ],
-        "no-ex-assign": [
-          "error"
-        ],
-        "no-extend-native": [
-          "error"
-        ],
-        "no-extra-bind": [
-          "error"
-        ],
-        "no-extra-boolean-cast": [
-          "error"
-        ],
-        "no-fallthrough": [
-          "error"
-        ],
-        "no-global-assign": [
-          "error"
-        ],
-        "no-invalid-regexp": [
-          "error"
-        ],
-        "no-irregular-whitespace": [
-          "error"
-        ],
-        "no-iterator": [
-          "error"
-        ],
+        "no-empty-character-class": ["error"],
+        "no-empty-pattern": ["error"],
+        "no-eval": ["error"],
+        "no-ex-assign": ["error"],
+        "no-extend-native": ["error"],
+        "no-extra-bind": ["error"],
+        "no-extra-boolean-cast": ["error"],
+        "no-fallthrough": ["error"],
+        "no-global-assign": ["error"],
+        "no-invalid-regexp": ["error"],
+        "no-irregular-whitespace": ["error"],
+        "no-iterator": ["error"],
         "no-labels": [
           "error",
           {
@@ -200,100 +119,45 @@
             "allowSwitch": false
           }
         ],
-        "no-lone-blocks": [
-          "error"
-        ],
-        "no-loss-of-precision": [
-          "error"
-        ],
-        "no-misleading-character-class": [
-          "error"
-        ],
-        "no-prototype-builtins": [
-          "error"
-        ],
-        "no-useless-catch": [
-          "error"
-        ],
-        "no-multi-str": [
-          "error"
-        ],
-        "no-new": [
-          "error"
-        ],
-        "no-new-func": [
-          "error"
-        ],
-        "no-new-wrappers": [
-          "error"
-        ],
-        "no-proto": [
-          "error"
-        ],
-        "no-regex-spaces": [
-          "error"
-        ],
-        "no-return-assign": [
-          "error",
-          "except-parens"
-        ],
+        "no-lone-blocks": ["error"],
+        "no-loss-of-precision": ["error"],
+        "no-misleading-character-class": ["error"],
+        "no-prototype-builtins": ["error"],
+        "no-useless-catch": ["error"],
+        "no-multi-str": ["error"],
+        "no-new": ["error"],
+        "no-new-func": ["error"],
+        "no-new-wrappers": ["error"],
+        "no-proto": ["error"],
+        "no-regex-spaces": ["error"],
+        "no-return-assign": ["error", "except-parens"],
         "no-self-assign": [
           "error",
           {
             "props": true
           }
         ],
-        "no-self-compare": [
-          "error"
-        ],
-        "no-sequences": [
-          "error"
-        ],
-        "no-shadow-restricted-names": [
-          "error"
-        ],
-        "no-sparse-arrays": [
-          "error"
-        ],
-        "no-template-curly-in-string": [
-          "error"
-        ],
-        "no-unmodified-loop-condition": [
-          "error"
-        ],
+        "no-self-compare": ["error"],
+        "no-sequences": ["error"],
+        "no-shadow-restricted-names": ["error"],
+        "no-sparse-arrays": ["error"],
+        "no-template-curly-in-string": ["error"],
+        "no-unmodified-loop-condition": ["error"],
         "no-unneeded-ternary": [
           "error",
           {
             "defaultAssignment": false
           }
         ],
-        "no-unreachable-loop": [
-          "error"
-        ],
-        "no-unsafe-finally": [
-          "error"
-        ],
-        "no-useless-call": [
-          "error"
-        ],
-        "no-useless-computed-key": [
-          "error"
-        ],
-        "no-useless-constructor": [
-          "error"
-        ],
-        "no-useless-escape": [
-          "error"
-        ],
-        "no-useless-rename": [
-          "error"
-        ],
-        "no-useless-return": [
-          "error"
-        ],
-        "no-void": [
-          "error"
-        ],
+        "no-unreachable-loop": ["error"],
+        "no-unsafe-finally": ["error"],
+        "no-useless-call": ["error"],
+        "no-useless-computed-key": ["error"],
+        "no-useless-constructor": ["error"],
+        "no-useless-escape": ["error"],
+        "no-useless-rename": ["error"],
+        "no-useless-return": ["error"],
+        "no-void": ["error"],
         "one-var": [
           "error",
           {
@@ -306,13 +170,8 @@
             "disallowRedundantWrapping": true
           }
         ],
-        "symbol-description": [
-          "error"
-        ],
-        "unicode-bom": [
-          "error",
-          "never"
-        ],
+        "symbol-description": ["error"],
+        "unicode-bom": ["error", "never"],
         "use-isnan": [
           "error",
           {
@@ -326,16 +185,9 @@
             "requireStringLiterals": true
           }
         ],
-        "yoda": [
-          "error",
-          "never"
-        ],
-        "import/export": [
-          "error"
-        ],
-        "import/first": [
-          "error"
-        ],
+        "yoda": ["error", "never"],
+        "import/export": ["error"],
+        "import/first": ["error"],
         "import/no-absolute-path": [
           "error",
           {
@@ -344,52 +196,25 @@
             "amd": false
           }
         ],
-        "import/no-named-default": [
-          "error"
-        ],
-        "import/no-webpack-loader-syntax": [
-          "error"
-        ],
-        "promise/param-names": [
-          "error"
-        ],
+        "import/no-named-default": ["error"],
+        "import/no-webpack-loader-syntax": ["error"],
+        "promise/param-names": ["error"],
         "no-unused-vars": [
           "error",
           {
             "argsIgnorePattern": "^_"
           }
         ],
-        "no-shadow": [
-          "error"
-        ],
-        "no-array-constructor": [
-          "error"
-        ],
-        "no-unused-expressions": [
-          "error"
-        ],
-        "node/handle-callback-err": [
-          "error",
-          "^(err|error)$"
-        ],
-        "node/no-exports-assign": [
-          "error"
-        ],
-        "node/no-new-require": [
-          "error"
-        ],
-        "node/no-path-concat": [
-          "error"
-        ],
-        "react/rules-of-hooks": [
-          "error"
-        ],
-        "react/exhaustive-deps": [
-          "warn"
-        ],
-        "typescript/no-explicit-any": [
-          "warn"
-        ],
+        "no-shadow": ["error"],
+        "no-array-constructor": ["error"],
+        "no-unused-expressions": ["error"],
+        "node/handle-callback-err": ["error", "^(err|error)$"],
+        "node/no-exports-assign": ["error"],
+        "node/no-new-require": ["error"],
+        "node/no-path-concat": ["error"],
+        "react/rules-of-hooks": ["error"],
+        "react/exhaustive-deps": ["warn"],
+        "typescript/no-explicit-any": ["warn"],
         "typescript/ban-ts-comment": [
           "error",
           {
@@ -397,93 +222,35 @@
             "ts-expect-error": "allow-with-description"
           }
         ],
-        "typescript/no-duplicate-type-constituents": [
-          "error"
-        ],
-        "typescript/await-thenable": [
-          "error"
-        ],
-        "typescript/no-array-delete": [
-          "error"
-        ],
-        "typescript/no-base-to-string": [
-          "error"
-        ],
-        "typescript/no-duplicate-enum-values": [
-          "error"
-        ],
-        "typescript/no-extra-non-null-assertion": [
-          "error"
-        ],
-        "typescript/no-for-in-array": [
-          "error"
-        ],
-        "typescript/no-implied-eval": [
-          "error"
-        ],
-        "typescript/no-misused-new": [
-          "error"
-        ],
-        "typescript/no-namespace": [
-          "error"
-        ],
-        "typescript/no-non-null-asserted-optional-chain": [
-          "error"
-        ],
-        "typescript/no-redundant-type-constituents": [
-          "error"
-        ],
-        "typescript/no-this-alias": [
-          "error"
-        ],
-        "typescript/no-unnecessary-type-assertion": [
-          "error"
-        ],
-        "typescript/no-unnecessary-type-constraint": [
-          "error"
-        ],
-        "typescript/no-unsafe-declaration-merging": [
-          "error"
-        ],
-        "typescript/no-unsafe-enum-comparison": [
-          "error"
-        ],
-        "typescript/no-unsafe-function-type": [
-          "error"
-        ],
-        "typescript/no-unsafe-unary-minus": [
-          "error"
-        ],
-        "typescript/no-wrapper-object-types": [
-          "error"
-        ],
-        "typescript/only-throw-error": [
-          "error"
-        ],
-        "typescript/prefer-as-const": [
-          "error"
-        ],
-        "typescript/prefer-namespace-keyword": [
-          "error"
-        ],
-        "typescript/prefer-promise-reject-errors": [
-          "error"
-        ],
-        "typescript/require-await": [
-          "error"
-        ],
-        "typescript/restrict-plus-operands": [
-          "error"
-        ],
-        "typescript/restrict-template-expressions": [
-          "error"
-        ],
-        "typescript/triple-slash-reference": [
-          "error"
-        ],
-        "typescript/unbound-method": [
-          "error"
-        ],
+        "typescript/no-duplicate-type-constituents": ["error"],
+        "typescript/await-thenable": ["error"],
+        "typescript/no-array-delete": ["error"],
+        "typescript/no-base-to-string": ["error"],
+        "typescript/no-duplicate-enum-values": ["error"],
+        "typescript/no-extra-non-null-assertion": ["error"],
+        "typescript/no-for-in-array": ["error"],
+        "typescript/no-implied-eval": ["error"],
+        "typescript/no-misused-new": ["error"],
+        "typescript/no-namespace": ["error"],
+        "typescript/no-non-null-asserted-optional-chain": ["error"],
+        "typescript/no-redundant-type-constituents": ["error"],
+        "typescript/no-this-alias": ["error"],
+        "typescript/no-unnecessary-type-assertion": ["error"],
+        "typescript/no-unnecessary-type-constraint": ["error"],
+        "typescript/no-unsafe-declaration-merging": ["error"],
+        "typescript/no-unsafe-enum-comparison": ["error"],
+        "typescript/no-unsafe-function-type": ["error"],
+        "typescript/no-unsafe-unary-minus": ["error"],
+        "typescript/no-wrapper-object-types": ["error"],
+        "typescript/only-throw-error": ["error"],
+        "typescript/prefer-as-const": ["error"],
+        "typescript/prefer-namespace-keyword": ["error"],
+        "typescript/prefer-promise-reject-errors": ["error"],
+        "typescript/require-await": ["error"],
+        "typescript/restrict-plus-operands": ["error"],
+        "typescript/restrict-template-expressions": ["error"],
+        "typescript/triple-slash-reference": ["error"],
+        "typescript/unbound-method": ["error"],
         "typescript/dot-notation": [
           "error",
           {
@@ -495,12 +262,7 @@
       }
     },
     {
-      "files": [
-        "**/*.js",
-        "**/*.jsx",
-        "**/*.cjs",
-        "**/*.mjs"
-      ],
+      "files": ["**/*.js", "**/*.jsx", "**/*.cjs", "**/*.mjs"],
       "plugins": [
         "jsdoc",
         "import",
@@ -511,75 +273,28 @@
         "promise"
       ],
       "rules": {
-        "jsdoc/check-access": [
-          "warn"
-        ],
-        "jsdoc/check-property-names": [
-          "warn"
-        ],
-        "jsdoc/check-tag-names": [
-          "warn"
-        ],
-        "jsdoc/empty-tags": [
-          "warn"
-        ],
-        "jsdoc/implements-on-classes": [
-          "warn"
-        ],
-        "jsdoc/no-defaults": [
-          "warn"
-        ],
-        "jsdoc/require-param": [
-          "warn"
-        ],
-        "jsdoc/require-param-description": [
-          "warn"
-        ],
-        "jsdoc/require-param-name": [
-          "warn"
-        ],
-        "jsdoc/require-param-type": [
-          "warn"
-        ],
-        "jsdoc/require-property": [
-          "warn"
-        ],
-        "jsdoc/require-property-description": [
-          "warn"
-        ],
-        "jsdoc/require-property-name": [
-          "warn"
-        ],
-        "jsdoc/require-property-type": [
-          "warn"
-        ],
-        "jsdoc/require-returns": [
-          "warn"
-        ],
-        "jsdoc/require-returns-description": [
-          "warn"
-        ],
-        "jsdoc/require-returns-type": [
-          "warn"
-        ],
-        "jsdoc/require-yields": [
-          "warn"
-        ],
-        "object-shorthand": [
-          "error",
-          "properties"
-        ],
-        "curly": [
-          "error",
-          "all"
-        ],
-        "no-case-declarations": [
-          "error"
-        ],
-        "import/consistent-type-specifier-style": [
-          "error",
-          "prefer-top-level"
-        ],
+        "jsdoc/check-access": ["warn"],
+        "jsdoc/check-property-names": ["warn"],
+        "jsdoc/check-tag-names": ["warn"],
+        "jsdoc/empty-tags": ["warn"],
+        "jsdoc/implements-on-classes": ["warn"],
+        "jsdoc/no-defaults": ["warn"],
+        "jsdoc/require-param": ["warn"],
+        "jsdoc/require-param-description": ["warn"],
+        "jsdoc/require-param-name": ["warn"],
+        "jsdoc/require-param-type": ["warn"],
+        "jsdoc/require-property": ["warn"],
+        "jsdoc/require-property-description": ["warn"],
+        "jsdoc/require-property-name": ["warn"],
+        "jsdoc/require-property-type": ["warn"],
+        "jsdoc/require-returns": ["warn"],
+        "jsdoc/require-returns-description": ["warn"],
+        "jsdoc/require-returns-type": ["warn"],
+        "jsdoc/require-yields": ["warn"],
+        "object-shorthand": ["error", "properties"],
+        "curly": ["error", "all"],
+        "no-case-declarations": ["error"],
+        "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
         "eqeqeq": [
           "error",
           "always",
@@ -587,30 +302,14 @@
             "null": "ignore"
           }
         ],
-        "no-unreachable": [
-          "error"
-        ],
-        "jest/no-disabled-tests": [
-          "warn"
-        ],
-        "jest/no-focused-tests": [
-          "error"
-        ],
-        "jest/no-identical-title": [
-          "error"
-        ],
-        "jest/prefer-to-have-length": [
-          "warn"
-        ],
-        "jest/valid-expect": [
-          "error"
-        ],
-        "import/no-duplicates": [
-          "warn"
-        ],
-        "no-var": [
-          "warn"
-        ],
+        "no-unreachable": ["error"],
+        "jest/no-disabled-tests": ["warn"],
+        "jest/no-focused-tests": ["error"],
+        "jest/no-identical-title": ["error"],
+        "jest/prefer-to-have-length": ["warn"],
+        "jest/valid-expect": ["error"],
+        "import/no-duplicates": ["warn"],
+        "no-var": ["warn"],
         "accessor-pairs": [
           "error",
           {
@@ -627,12 +326,8 @@
             "allowVoid": false
           }
         ],
-        "constructor-super": [
-          "error"
-        ],
-        "default-case-last": [
-          "error"
-        ],
+        "constructor-super": ["error"],
+        "default-case-last": ["error"],
         "new-cap": [
           "error",
           {
@@ -641,105 +336,47 @@
             "properties": true
           }
         ],
-        "no-array-constructor": [
-          "error"
-        ],
-        "no-async-promise-executor": [
-          "error"
-        ],
-        "no-caller": [
-          "error"
-        ],
-        "no-class-assign": [
-          "error"
-        ],
-        "no-compare-neg-zero": [
-          "error"
-        ],
-        "no-cond-assign": [
-          "error"
-        ],
-        "no-const-assign": [
-          "error"
-        ],
+        "no-array-constructor": ["error"],
+        "no-async-promise-executor": ["error"],
+        "no-caller": ["error"],
+        "no-class-assign": ["error"],
+        "no-compare-neg-zero": ["error"],
+        "no-cond-assign": ["error"],
+        "no-const-assign": ["error"],
         "no-constant-condition": [
           "error",
           {
             "checkLoops": false
           }
         ],
-        "no-control-regex": [
-          "error"
-        ],
-        "no-debugger": [
-          "error"
-        ],
-        "no-delete-var": [
-          "error"
-        ],
-        "no-dupe-class-members": [
-          "error"
-        ],
-        "no-dupe-keys": [
-          "error"
-        ],
-        "no-duplicate-case": [
-          "error"
-        ],
-        "no-useless-backreference": [
-          "error"
-        ],
+        "no-control-regex": ["error"],
+        "no-debugger": ["error"],
+        "no-delete-var": ["error"],
+        "no-dupe-class-members": ["error"],
+        "no-dupe-keys": ["error"],
+        "no-duplicate-case": ["error"],
+        "no-useless-backreference": ["error"],
         "no-empty": [
           "error",
           {
             "allowEmptyCatch": true
           }
         ],
-        "no-empty-character-class": [
-          "error"
-        ],
-        "no-empty-pattern": [
-          "error"
-        ],
-        "no-eval": [
-          "error"
-        ],
-        "no-ex-assign": [
-          "error"
-        ],
-        "no-extend-native": [
-          "error"
-        ],
-        "no-extra-bind": [
-          "error"
-        ],
-        "no-extra-boolean-cast": [
-          "error"
-        ],
-        "no-fallthrough": [
-          "error"
-        ],
-        "no-func-assign": [
-          "error"
-        ],
-        "no-global-assign": [
-          "error"
-        ],
-        "no-implied-eval": [
-          "error"
-        ],
-        "no-import-assign": [
-          "error"
-        ],
-        "no-invalid-regexp": [
-          "error"
-        ],
-        "no-irregular-whitespace": [
-          "error"
-        ],
-        "no-iterator": [
-          "error"
-        ],
+        "no-empty-character-class": ["error"],
+        "no-empty-pattern": ["error"],
+        "no-eval": ["error"],
+        "no-ex-assign": ["error"],
+        "no-extend-native": ["error"],
+        "no-extra-bind": ["error"],
+        "no-extra-boolean-cast": ["error"],
+        "no-fallthrough": ["error"],
+        "no-func-assign": ["error"],
+        "no-global-assign": ["error"],
+        "no-implied-eval": ["error"],
+        "no-import-assign": ["error"],
+        "no-invalid-regexp": ["error"],
+        "no-irregular-whitespace": ["error"],
+        "no-iterator": ["error"],
         "no-labels": [
           "error",
           {
@@ -747,100 +384,49 @@
             "allowSwitch": false
           }
         ],
-        "no-lone-blocks": [
-          "error"
-        ],
-        "no-loss-of-precision": [
-          "error"
-        ],
-        "no-misleading-character-class": [
-          "error"
-        ],
-        "no-prototype-builtins": [
-          "error"
-        ],
-        "no-useless-catch": [
-          "error"
-        ],
-        "no-multi-str": [
-          "error"
-        ],
-        "no-new": [
-          "error"
-        ],
-        "no-new-func": [
-          "error"
-        ],
-        "no-new-wrappers": [
-          "error"
-        ],
-        "no-obj-calls": [
-          "error"
-        ],
-        "no-proto": [
-          "error"
-        ],
+        "no-lone-blocks": ["error"],
+        "no-loss-of-precision": ["error"],
+        "no-misleading-character-class": ["error"],
+        "no-prototype-builtins": ["error"],
+        "no-useless-catch": ["error"],
+        "no-multi-str": ["error"],
+        "no-new": ["error"],
+        "no-new-func": ["error"],
+        "no-new-wrappers": ["error"],
+        "no-obj-calls": ["error"],
+        "no-proto": ["error"],
         "no-redeclare": [
           "error",
           {
             "builtinGlobals": false
           }
         ],
-        "no-regex-spaces": [
-          "error"
-        ],
-        "no-return-assign": [
-          "error",
-          "except-parens"
-        ],
+        "no-regex-spaces": ["error"],
+        "no-return-assign": ["error", "except-parens"],
         "no-self-assign": [
           "error",
           {
             "props": true
           }
         ],
-        "no-self-compare": [
-          "error"
-        ],
-        "no-sequences": [
-          "error"
-        ],
-        "no-shadow-restricted-names": [
-          "error"
-        ],
-        "no-sparse-arrays": [
-          "error"
-        ],
-        "no-template-curly-in-string": [
-          "error"
-        ],
-        "no-this-before-super": [
-          "error"
-        ],
-        "no-throw-literal": [
-          "error"
-        ],
-        "no-undef": [
-          "error"
-        ],
-        "no-unmodified-loop-condition": [
-          "error"
-        ],
+        "no-self-compare": ["error"],
+        "no-sequences": ["error"],
+        "no-shadow-restricted-names": ["error"],
+        "no-sparse-arrays": ["error"],
+        "no-template-curly-in-string": ["error"],
+        "no-this-before-super": ["error"],
+        "no-throw-literal": ["error"],
+        "no-undef": ["error"],
+        "no-unmodified-loop-condition": ["error"],
         "no-unneeded-ternary": [
           "error",
           {
             "defaultAssignment": false
           }
         ],
-        "no-unreachable-loop": [
-          "error"
-        ],
-        "no-unsafe-finally": [
-          "error"
-        ],
-        "no-unsafe-negation": [
-          "error"
-        ],
+        "no-unreachable-loop": ["error"],
+        "no-unsafe-finally": ["error"],
+        "no-unsafe-negation": ["error"],
         "no-unused-expressions": [
           "error",
           {
@@ -859,30 +445,14 @@
             "vars": "all"
           }
         ],
-        "no-useless-call": [
-          "error"
-        ],
-        "no-useless-computed-key": [
-          "error"
-        ],
-        "no-useless-constructor": [
-          "error"
-        ],
-        "no-useless-escape": [
-          "error"
-        ],
-        "no-useless-rename": [
-          "error"
-        ],
-        "no-useless-return": [
-          "error"
-        ],
-        "no-void": [
-          "error"
-        ],
-        "no-with": [
-          "error"
-        ],
+        "no-useless-call": ["error"],
+        "no-useless-computed-key": ["error"],
+        "no-useless-constructor": ["error"],
+        "no-useless-escape": ["error"],
+        "no-useless-rename": ["error"],
+        "no-useless-return": ["error"],
+        "no-void": ["error"],
+        "no-with": ["error"],
         "one-var": [
           "error",
           {
@@ -896,22 +466,15 @@
             "ignoreReadBeforeAssign": false
           }
         ],
-        "prefer-promise-reject-errors": [
-          "error"
-        ],
+        "prefer-promise-reject-errors": ["error"],
         "prefer-regex-literals": [
           "error",
           {
             "disallowRedundantWrapping": true
           }
         ],
-        "symbol-description": [
-          "error"
-        ],
-        "unicode-bom": [
-          "error",
-          "never"
-        ],
+        "symbol-description": ["error"],
+        "unicode-bom": ["error", "never"],
         "use-isnan": [
           "error",
           {
@@ -925,16 +488,9 @@
             "requireStringLiterals": true
           }
         ],
-        "yoda": [
-          "error",
-          "never"
-        ],
-        "import/export": [
-          "error"
-        ],
-        "import/first": [
-          "error"
-        ],
+        "yoda": ["error", "never"],
+        "import/export": ["error"],
+        "import/first": ["error"],
         "import/no-absolute-path": [
           "error",
           {
@@ -943,34 +499,15 @@
             "amd": false
           }
         ],
-        "import/no-named-default": [
-          "error"
-        ],
-        "import/no-webpack-loader-syntax": [
-          "error"
-        ],
-        "promise/param-names": [
-          "error"
-        ],
-        "node/handle-callback-err": [
-          "error",
-          "^(err|error)$"
-        ],
-        "node/no-exports-assign": [
-          "error"
-        ],
-        "node/no-new-require": [
-          "error"
-        ],
-        "node/no-path-concat": [
-          "error"
-        ],
-        "react/rules-of-hooks": [
-          "error"
-        ],
-        "react/exhaustive-deps": [
-          "warn"
-        ],
+        "import/no-named-default": ["error"],
+        "import/no-webpack-loader-syntax": ["error"],
+        "promise/param-names": ["error"],
+        "node/handle-callback-err": ["error", "^(err|error)$"],
+        "node/no-exports-assign": ["error"],
+        "node/no-new-require": ["error"],
+        "node/no-path-concat": ["error"],
+        "react/rules-of-hooks": ["error"],
+        "react/exhaustive-deps": ["warn"],
         "typescript/dot-notation": [
           "error",
           {

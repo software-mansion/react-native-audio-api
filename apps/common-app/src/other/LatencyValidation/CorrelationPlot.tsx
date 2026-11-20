@@ -32,7 +32,10 @@ const CorrelationPlot: FC<CorrelationPlotProps> = ({
     const minLag = points[0].lagMs;
     const maxLag = points[points.length - 1].lagMs;
     const lagSpan = Math.max(maxLag - minLag, 1);
-    const maxScoreValue = Math.max(...points.map((point) => point.score), 0.001);
+    const maxScoreValue = Math.max(
+      ...points.map((point) => point.score),
+      0.001
+    );
 
     const builtPath = points
       .map((point, index) => {
@@ -45,9 +48,7 @@ const CorrelationPlot: FC<CorrelationPlotProps> = ({
     return {
       path: builtPath,
       bestX:
-        bestLagMs !== null
-          ? ((bestLagMs - minLag) / lagSpan) * width
-          : null,
+        bestLagMs !== null ? ((bestLagMs - minLag) / lagSpan) * width : null,
       expectedX: ((expectedLagMs - minLag) / lagSpan) * width,
       maxScore: maxScoreValue,
     };
@@ -101,7 +102,9 @@ const CorrelationPlot: FC<CorrelationPlotProps> = ({
       </View>
 
       <View style={styles.legendRow}>
-        <Text style={styles.legendText}>Peak score max={maxScore.toFixed(3)}</Text>
+        <Text style={styles.legendText}>
+          Peak score max={maxScore.toFixed(3)}
+        </Text>
         <Text style={[styles.legendText, { color: colors.main }]}>
           Best lag {bestLagMs !== null ? `${bestLagMs.toFixed(1)} ms` : '—'}
         </Text>

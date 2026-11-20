@@ -1,15 +1,13 @@
-
-
 /// <reference types="@docusaurus/module-type-aliases" />
 /// <reference types="@docusaurus/theme-classic" />
 
-module "*.module.css" {
+module '*.module.css' {
   const classes: { [key: string]: string };
   export default classes;
 }
 
-module "*.svg" {
-  import React from "react";
+module '*.svg' {
+  import React from 'react';
   const ReactComponent: React.FC<React.SVGProps<SVGSVGElement>>;
   export default ReactComponent;
 }
@@ -24,6 +22,9 @@ declare module '@swmansion/t-rex-ui' {
     fallbackBgColor: string;
   }
 
-  export const HireUsSection: ComponentType<{ content: ReactNode; href: string }>;
+  export const HireUsSection: ComponentType<{
+    content: ReactNode;
+    href: string;
+  }>;
 }
 declare module '@swmansion/t-rex-ui/topbar-banner';

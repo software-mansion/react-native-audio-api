@@ -1,17 +1,25 @@
 import { useColorMode } from '@docusaurus/theme-common';
 import React, { FC, useCallback } from 'react';
 
-import ResponsiveCanvas, { ResponsiveCanvasDrawParams } from '@site/src/ui/ResponsiveCanvas';
+import ResponsiveCanvas, {
+  ResponsiveCanvasDrawParams,
+} from '@site/src/ui/ResponsiveCanvas';
 
 const DEFAULT_HEIGHT = 120;
 const PADDING = 6;
 
 interface CurveChartProps {
-  /** Samples spread evenly across the width; `values[0]` is drawn at the left edge. */
+  /**
+   * Samples spread evenly across the width; `values[0]` is drawn at the left
+   * edge.
+   */
   values: ArrayLike<number>;
   yMin?: number;
   yMax?: number;
-  /** Draws the y = x diagonal for transfer curves so the distortion is visible as a deviation. */
+  /**
+   * Draws the y = x diagonal for transfer curves so the distortion is visible
+   * as a deviation.
+   */
   showIdentity?: boolean;
   height?: number;
 }
@@ -30,14 +38,22 @@ const CurveChart: FC<CurveChartProps> = ({
       const isDark = colorMode === 'dark';
       const plotWidth = cssWidth - PADDING * 2;
       const plotHeight = cssHeight - PADDING * 2;
-      const yToCanvas = (value: number) => PADDING + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
+      const yToCanvas = (value: number) =>
+        PADDING + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
 
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.clearRect(0, 0, cssWidth, cssHeight);
 
-      context.strokeStyle = isDark ? 'rgba(252, 252, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+      context.strokeStyle = isDark
+        ? 'rgba(252, 252, 255, 0.15)'
+        : 'rgba(0, 0, 0, 0.15)';
       context.lineWidth = 1;
-      context.strokeRect(PADDING + 0.5, PADDING + 0.5, plotWidth - 1, plotHeight - 1);
+      context.strokeRect(
+        PADDING + 0.5,
+        PADDING + 0.5,
+        plotWidth - 1,
+        plotHeight - 1
+      );
 
       if (yMin < 0 && yMax > 0) {
         const zeroY = Math.round(yToCanvas(0)) + 0.5;
@@ -54,7 +70,9 @@ const CurveChart: FC<CurveChartProps> = ({
 
       if (showIdentity) {
         context.setLineDash([4, 4]);
-        context.strokeStyle = isDark ? 'rgba(252, 252, 255, 0.35)' : 'rgba(0, 0, 0, 0.3)';
+        context.strokeStyle = isDark
+          ? 'rgba(252, 252, 255, 0.35)'
+          : 'rgba(0, 0, 0, 0.3)';
         context.beginPath();
         context.moveTo(PADDING, yToCanvas(yMin));
         context.lineTo(PADDING + plotWidth, yToCanvas(yMax));

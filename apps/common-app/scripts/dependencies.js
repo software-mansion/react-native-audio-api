@@ -21,9 +21,9 @@ function findLinkedRoot(name) {
 
 /**
  * Follows the node_modules symlink of workspace packages, so Gradle and
- * CocoaPods register them under packages/, the same path editors use.
- * Other packages keep the node_modules path: under an isolated layout their
- * real path embeds a store hash that would churn Podfile.lock.
+ * CocoaPods register them under packages/, the same path editors use. Other
+ * packages keep the node_modules path: under an isolated layout their real path
+ * embeds a store hash that would churn Podfile.lock.
  *
  * @param {string} name
  */

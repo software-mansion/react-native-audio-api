@@ -93,7 +93,11 @@ function buildEmptyPlots(): Pick<
   | 'systemShiftMarkerRatio'
 > {
   return {
-    referencePlot: { label: 'Reference envelope', color: '#38ACDD', points: [] },
+    referencePlot: {
+      label: 'Reference envelope',
+      color: '#38ACDD',
+      points: [],
+    },
     recordedWindowPlot: {
       label: 'Mic envelope (denoised)',
       color: '#FFD61E',
@@ -134,8 +138,8 @@ function buildAnalysisPlots(params: {
 
   const patternWindowSeconds =
     referencePattern.durationSeconds + PATTERN_WINDOW_PADDING_SECONDS * 2;
-  const centerLagSamples = alignment?.lagSamples ??
-    Math.round(expectedLagSeconds * sampleRate);
+  const centerLagSamples =
+    alignment?.lagSamples ?? Math.round(expectedLagSeconds * sampleRate);
   const expectedLagSamples = Math.round(expectedLagSeconds * sampleRate);
   const recordedWindow = buildRecordedWindow(
     processedRecorded,
@@ -219,7 +223,10 @@ function buildAnalysisPlots(params: {
       recordedWindow.length > 0
         ? Math.min(
             1,
-            Math.max(0, (centerLagSamples - windowStartSample) / recordedWindow.length)
+            Math.max(
+              0,
+              (centerLagSamples - windowStartSample) / recordedWindow.length
+            )
           )
         : null,
     systemShiftMarkerRatio:
@@ -228,7 +235,8 @@ function buildAnalysisPlots(params: {
             1,
             Math.max(
               0,
-              (expectedLagSamples - expectedWindowStartSample) / expectedWindow.length
+              (expectedLagSamples - expectedWindowStartSample) /
+                expectedWindow.length
             )
           )
         : null,

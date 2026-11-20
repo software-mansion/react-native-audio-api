@@ -9,7 +9,10 @@ import React, {
 import { View, StyleSheet } from 'react-native';
 import { Container, Button, Spacer, Slider, Select } from '../../components';
 import { AudioContext } from 'react-native-audio-api';
-import type { AudioBuffer, AudioBufferSourceNode } from 'react-native-audio-api';
+import type {
+  AudioBuffer,
+  AudioBufferSourceNode,
+} from 'react-native-audio-api';
 import {
   PCM_DATA,
   labelWidth,
@@ -55,7 +58,12 @@ const PlaybackSpeed: FC = () => {
     }
 
     const audioContext = initializeAudioContext();
-    const buffer = await audioContext.decodePCMInBase64(PCM_DATA, 48000, 1, true);
+    const buffer = await audioContext.decodePCMInBase64(
+      PCM_DATA,
+      48000,
+      1,
+      true
+    );
     bufferRef.current = buffer;
     return buffer;
   }, [initializeAudioContext]);

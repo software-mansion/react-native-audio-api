@@ -73,7 +73,9 @@ function Worklets() {
   const workletProcessingRef = useRef<WorkletProcessingNode | null>(null);
   const workletNodeRef = useRef<WorkletNode | null>(null);
   const heavyWorkAccRef = useRef(0);
-  const jsWorkloadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jsWorkloadTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [heavyJsLoad, setHeavyJsLoad] = useState(false);
@@ -125,7 +127,13 @@ function Worklets() {
 
     workletSourceRef.current = new WorkletSourceNode(
       ctx,
-      (audioData, outputChannelCount, framesToProcess, currentTime, startOffset) => {
+      (
+        audioData,
+        outputChannelCount,
+        framesToProcess,
+        currentTime,
+        startOffset
+      ) => {
         'worklet';
 
         const frequency = 440;
@@ -152,8 +160,7 @@ function Worklets() {
       ) => {
         'worklet';
 
-        const tremolo =
-          0.75 + 0.25 * Math.sin(2 * Math.PI * 2 * currentTime);
+        const tremolo = 0.75 + 0.25 * Math.sin(2 * Math.PI * 2 * currentTime);
 
         for (let ch = 0; ch < outputChannelCount; ch++) {
           const input = inputData[Math.min(ch, inputChannelCount - 1)]!;

@@ -10,17 +10,14 @@
  * library's core constructors.
  */
 
-import {
-  getCurrentTestWindow,
-  patchPrototypeOnce,
-} from '../wpt-utils.mjs';
+import { getCurrentTestWindow, patchPrototypeOnce } from '../wpt-utils.mjs';
 
 /**
  * @param {object} node
  * @param {{
- *   channelCount: number,
- *   channelCountMode: string,
- *   channelInterpretation?: string,
+ *   channelCount: number;
+ *   channelCountMode: string;
+ *   channelInterpretation?: string;
  * }} locks
  * @param {typeof DOMException} DOMException
  */

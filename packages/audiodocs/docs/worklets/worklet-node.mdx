@@ -2,8 +2,8 @@
 sidebar_position: 3
 ---
 
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
+import AudioNodeMethodsTable from '@site/src/components/AudioNodeMethodsTable';
 import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletNode
@@ -44,11 +44,11 @@ frequencyDomainNode.smoothingTimeConstant = 0.5;
 
 ### Parameters
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node. |
-| `callback` | `WorkletNodeCallback` | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive. |
-| `options` | `number \| WorkletNodeOptions` | Optional. Pass `bufferLength` directly, `{ domain?, bufferLength? }`, or omit for defaults (`time-domain`, `bufferLength: 1024`). |
+| Parameter  |                         Type                         | Description                                                                                                                       |
+| :--------: | :--------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------- |
+| `context`  | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node.                                                                                            |
+| `callback` |                `WorkletNodeCallback`                 | Worklet invoked on the UI runtime when a snapshot is ready. Must include the `'worklet'` directive.                               |
+| `options`  |            `number \| WorkletNodeOptions`            | Optional. Pass `bufferLength` directly, `{ domain?, bufferLength? }`, or omit for defaults (`time-domain`, `bufferLength: 1024`). |
 
 ### `WorkletNodeOptions`
 
@@ -62,11 +62,11 @@ interface WorkletNodeOptions {
 }
 ```
 
-| Option | Default | Description |
-| :--- | :---- | :---- |
-| `domain` | `'time-domain'` | Snapshot type passed to the callback. |
-| `bufferLength` | `1024` | Snapshot size: PCM samples (time-domain) or magnitude bins (frequency-domain). In frequency-domain mode the internal FFT size is `bufferLength * 2`. |
-| `smoothingTimeConstant` | `0.8` | Exponential smoothing of linear magnitude bins (`0`..`1`). |
+| Option                  | Default         | Description                                                                                                                                          |
+| :---------------------- | :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`                | `'time-domain'` | Snapshot type passed to the callback.                                                                                                                |
+| `bufferLength`          | `1024`          | Snapshot size: PCM samples (time-domain) or magnitude bins (frequency-domain). In frequency-domain mode the internal FFT size is `bufferLength * 2`. |
+| `smoothingTimeConstant` | `0.8`           | Exponential smoothing of linear magnitude bins (`0`..`1`).                                                                                           |
 
 ### `WorkletNodeCallback`
 
@@ -74,8 +74,8 @@ interface WorkletNodeOptions {
 type WorkletNodeCallback = (audioData: Float32Array) => void;
 ```
 
-| Argument | Description |
-| :--- | :---- |
+| Argument    | Description                                                                                                                                                                                                     |
+| :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `audioData` | Stable `Float32Array` reused every callback. **Time-domain:** down-mixed mono PCM (`bufferLength` samples). **Frequency-domain:** linear magnitude spectrum (`bufferLength` bins; FFT size `bufferLength * 2`). |
 
 :::caution
@@ -84,15 +84,16 @@ Do **not** assign `audioData` to a Reanimated shared value (or any state read la
 - **Safe:** compute a scalar inside the callback and assign that (e.g. `amplitude.value = rms`).
 - **Safe:** copy samples if you need waveform data later — `Float32Array.from(audioData)`.
 - **Unsafe:** `waveform.value = audioData` — you keep a live alias, not a frozen snapshot.
+
 :::
 
 ### Errors
 
-| Error type | Condition |
-| :---: | :---- |
+|     Error type      | Condition                                                                                                                      |
+| :-----------------: | :----------------------------------------------------------------------------------------------------------------------------- |
 | `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
-| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
-| `IndexSizeError` | `bufferLength` or `smoothingTimeConstant` is out of range. |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`).                                               |
+|  `IndexSizeError`   | `bufferLength` or `smoothingTimeConstant` is out of range.                                                                     |
 
 ## How buffering works
 
@@ -150,12 +151,18 @@ function Visualizer() {
 
 Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
-<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+<AudioNodePropsTable
+  numberOfInputs={1}
+  numberOfOutputs={1}
+  channelCount={2}
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
 
-| Property | Type | Description |
-| :--- | :--- | :---- |
+| Property                    | Type     | Description                                                                                                                    |
+| :-------------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | `bufferLength` <ReadOnly /> | `number` | Snapshot size passed to the callback (set at construction). In frequency-domain mode, internal FFT size is `bufferLength * 2`. |
-| `smoothingTimeConstant` | `number` | Exponential smoothing of linear magnitude bins (`0`..`1`, default `0.8`). Meaningful in frequency-domain mode. |
+| `smoothingTimeConstant`     | `number` | Exponential smoothing of linear magnitude bins (`0`..`1`, default `0.8`). Meaningful in frequency-domain mode.                 |
 
 ## Methods
 

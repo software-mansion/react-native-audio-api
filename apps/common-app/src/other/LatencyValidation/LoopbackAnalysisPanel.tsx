@@ -19,7 +19,9 @@ const InfoRow: FC<{ label: string; value: string }> = ({ label, value }) => (
   </View>
 );
 
-const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => {
+const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({
+  analysis,
+}) => {
   if (!analysis) {
     return (
       <TestUI.EmptyState message="Run the test to generate the reference tone, record the microphone signal, and compare both waveforms." />
@@ -42,10 +44,7 @@ const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => 
 
       <TestUI.SectionTitle title="Reported latencies" />
       <View style={styles.metricsCard}>
-        <InfoRow
-          label="baseLatency"
-          value={formatMs(analysis.snapshot.base)}
-        />
+        <InfoRow label="baseLatency" value={formatMs(analysis.snapshot.base)} />
         <InfoRow
           label="outputLatency"
           value={formatMs(analysis.snapshot.output)}
@@ -85,9 +84,7 @@ const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => 
         <InfoRow
           label="Noise floor (pre-beep)"
           value={
-            analysis.noiseFloor !== null
-              ? analysis.noiseFloor.toFixed(4)
-              : '—'
+            analysis.noiseFloor !== null ? analysis.noiseFloor.toFixed(4) : '—'
           }
         />
         <InfoRow

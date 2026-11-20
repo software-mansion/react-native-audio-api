@@ -1,4 +1,8 @@
-import type { AudioBuffer, AudioContext, AudioRecorder } from 'react-native-audio-api';
+import type {
+  AudioBuffer,
+  AudioContext,
+  AudioRecorder,
+} from 'react-native-audio-api';
 
 import type StressPlaybackController from './StressPlaybackController';
 

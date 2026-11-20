@@ -18,14 +18,14 @@ const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const metaOf = (html, name) =>
   new RegExp(
     `<meta[^>]+name="${escapeRegExp(name)}"[^>]+content="([^"]*)"`,
-    'i',
+    'i'
   ).exec(html)?.[1] ?? '';
 
 function describe(html, siteTitle) {
   const raw = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '';
   const title = decode(raw).replace(
     new RegExp(`\\s*\\|\\s*${escapeRegExp(siteTitle)}$`),
-    '',
+    ''
   );
   return { title, description: decode(metaOf(html, 'description')) };
 }
@@ -44,9 +44,9 @@ function buildStructuredData(siteConfig) {
       {
         '@type': 'Organization',
         '@id': ORGANIZATION_ID,
-        name: 'Software Mansion',
-        url: 'https://swmansion.com',
-        sameAs: [
+        'name': 'Software Mansion',
+        'url': 'https://swmansion.com',
+        'sameAs': [
           'https://github.com/software-mansion',
           'https://www.linkedin.com/company/software-mansion/',
           'https://twitter.com/swmansion',
@@ -55,11 +55,11 @@ function buildStructuredData(siteConfig) {
       },
       {
         '@type': 'SoftwareSourceCode',
-        name: title,
+        'name': title,
         ...(tagline ? { description: tagline } : {}),
         ...(repository ? { codeRepository: repository } : {}),
-        author: { '@id': ORGANIZATION_ID },
-        maintainer: { '@id': ORGANIZATION_ID },
+        'author': { '@id': ORGANIZATION_ID },
+        'maintainer': { '@id': ORGANIZATION_ID },
       },
     ],
   };
@@ -100,7 +100,7 @@ function buildLlmsTxt({ siteConfig, routesPaths, readPage }) {
     '## About',
     '',
     `- [Software Mansion](https://swmansion.com): maintainer of ${title}`,
-    '',
+    ''
   );
 
   return lines.join('\n');
@@ -117,7 +117,7 @@ module.exports = function swmGeoPlugin(context) {
             tagName: 'script',
             attributes: { type: 'application/ld+json' },
             innerHTML: JSON.stringify(
-              buildStructuredData(context.siteConfig),
+              buildStructuredData(context.siteConfig)
             ).replace(/</g, '\\u003c'),
           },
         ],
@@ -133,7 +133,7 @@ module.exports = function swmGeoPlugin(context) {
       await fs.promises.writeFile(
         path.join(outDir, 'llms.txt'),
         buildLlmsTxt({ siteConfig, routesPaths, readPage }),
-        'utf8',
+        'utf8'
       );
     },
   };

@@ -36,8 +36,7 @@ function buildEnvelopePath(
 
   return points
     .map((point, index) => {
-      const x =
-        points.length <= 1 ? 0 : (index / (points.length - 1)) * width;
+      const x = points.length <= 1 ? 0 : (index / (points.length - 1)) * width;
       const y = height - (Math.abs(point) / maxVal) * (height * 0.82) - 6;
       return `${index === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`;
     })
@@ -57,13 +56,17 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
   const scaleMax = useMemo(() => {
     if (!sharedScale) {
       return Math.max(
-        ...series.flatMap((entry) => entry.points.map((point) => Math.abs(point))),
+        ...series.flatMap((entry) =>
+          entry.points.map((point) => Math.abs(point))
+        ),
         0.001
       );
     }
 
     return Math.max(
-      ...series.flatMap((entry) => entry.points.map((point) => Math.abs(point))),
+      ...series.flatMap((entry) =>
+        entry.points.map((point) => Math.abs(point))
+      ),
       0.001
     );
   }, [series, sharedScale]);
@@ -135,7 +138,9 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
       <View style={styles.legendRow}>
         {series.map((entry) => (
           <View key={entry.label} style={styles.legendItem}>
-            <View style={[styles.legendSwatch, { backgroundColor: entry.color }]} />
+            <View
+              style={[styles.legendSwatch, { backgroundColor: entry.color }]}
+            />
             <Text style={styles.legendText}>{entry.label}</Text>
           </View>
         ))}
@@ -144,7 +149,10 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
       {markers.length > 0 ? (
         <View style={styles.markerRow}>
           {markers.map((marker) => (
-            <Text key={marker.label} style={[styles.markerText, { color: marker.color }]}>
+            <Text
+              key={marker.label}
+              style={[styles.markerText, { color: marker.color }]}
+            >
               {marker.label}
             </Text>
           ))}

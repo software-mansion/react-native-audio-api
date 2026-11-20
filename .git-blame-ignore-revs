@@ -1,0 +1,5 @@
+# Formatting-only commits, skipped by `git blame` (git config blame.ignoreRevsFile .git-blame-ignore-revs)
+# and by GitHub's blame view.
+
+# style: format everything with oxfmt, clang-format, ktlint
+e6f4332eb3d4bb0f1e61e4a3a5cb28ed872e7faf

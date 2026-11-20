@@ -1,7 +1,9 @@
 import React, { FC, useCallback, useEffect, useRef } from 'react';
 import { AnalyserNode } from 'react-native-audio-api';
 
-import ResponsiveCanvas, { ResponsiveCanvasDrawParams } from '@site/src/ui/ResponsiveCanvas';
+import ResponsiveCanvas, {
+  ResponsiveCanvasDrawParams,
+} from '@site/src/ui/ResponsiveCanvas';
 
 import type { FrequencyResponseReader } from '../types';
 
@@ -13,11 +15,18 @@ const MAX_DB = 30;
 const AXIS_HEIGHT = 16;
 const SPECTRUM_STEP_PX = 2;
 const GRID_FREQUENCIES = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
-const AXIS_LABELS: Record<number, string> = { 100: '100 Hz', 1000: '1 kHz', 10000: '10 kHz' };
+const AXIS_LABELS: Record<number, string> = {
+  100: '100 Hz',
+  1000: '1 kHz',
+  10000: '10 kHz',
+};
 
 interface SpectrumVisualizerProps {
   analyser: AnalyserNode | null;
-  /** Drawn on a ±30 dB scale over the spectrum, e.g. a filter's magnitude response. */
+  /**
+   * Drawn on a ±30 dB scale over the spectrum, e.g. a filter's magnitude
+   * response.
+   */
   frequencyResponse?: FrequencyResponseReader;
   sampleRate: number;
   theme: 'light' | 'dark';
@@ -32,7 +41,9 @@ interface ResponseBuffers {
 function createResponseBuffers(): ResponseBuffers {
   const frequencies = new Float32Array(RESPONSE_POINTS);
   for (let i = 0; i < RESPONSE_POINTS; i++) {
-    frequencies[i] = MIN_FREQUENCY * Math.pow(MAX_FREQUENCY / MIN_FREQUENCY, i / (RESPONSE_POINTS - 1));
+    frequencies[i] =
+      MIN_FREQUENCY *
+      Math.pow(MAX_FREQUENCY / MIN_FREQUENCY, i / (RESPONSE_POINTS - 1));
   }
   return {
     frequencies,
@@ -42,7 +53,11 @@ function createResponseBuffers(): ResponseBuffers {
 }
 
 function frequencyToX(frequency: number, width: number): number {
-  return (Math.log(frequency / MIN_FREQUENCY) / Math.log(MAX_FREQUENCY / MIN_FREQUENCY)) * width;
+  return (
+    (Math.log(frequency / MIN_FREQUENCY) /
+      Math.log(MAX_FREQUENCY / MIN_FREQUENCY)) *
+    width
+  );
 }
 
 function xToFrequency(x: number, width: number): number {
@@ -69,7 +84,10 @@ export const SpectrumVisualizer: FC<SpectrumVisualizerProps> = ({
 
       const cssWidth = canvas.clientWidth || 300;
       const cssHeight = canvas.clientHeight || 150;
-      const dpr = cssWidth > 0 && canvas.width > 0 ? canvas.width / cssWidth : window.devicePixelRatio || 1;
+      const dpr =
+        cssWidth > 0 && canvas.width > 0
+          ? canvas.width / cssWidth
+          : window.devicePixelRatio || 1;
       const plotHeight = cssHeight - AXIS_HEIGHT;
       const isDark = theme === 'dark';
 
@@ -77,8 +95,12 @@ export const SpectrumVisualizer: FC<SpectrumVisualizerProps> = ({
       context.clearRect(0, 0, cssWidth, cssHeight);
 
       context.lineWidth = 1;
-      context.strokeStyle = isDark ? 'rgba(252, 252, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
-      context.fillStyle = isDark ? 'rgba(252, 252, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)';
+      context.strokeStyle = isDark
+        ? 'rgba(252, 252, 255, 0.15)'
+        : 'rgba(0, 0, 0, 0.15)';
+      context.fillStyle = isDark
+        ? 'rgba(252, 252, 255, 0.6)'
+        : 'rgba(0, 0, 0, 0.55)';
       context.font = '11px sans-serif';
       context.textAlign = 'center';
       context.textBaseline = 'top';
@@ -109,7 +131,10 @@ export const SpectrumVisualizer: FC<SpectrumVisualizerProps> = ({
         context.beginPath();
         context.moveTo(0, plotHeight);
         for (let x = 0; x <= cssWidth; x += SPECTRUM_STEP_PX) {
-          const bin = Math.min(binCount - 1, Math.floor(xToFrequency(x, cssWidth) / binWidthHz));
+          const bin = Math.min(
+            binCount - 1,
+            Math.floor(xToFrequency(x, cssWidth) / binWidthHz)
+          );
           const level = spectrum[bin] / 255;
           context.lineTo(x, plotHeight - level * plotHeight);
         }
@@ -129,7 +154,9 @@ export const SpectrumVisualizer: FC<SpectrumVisualizerProps> = ({
         const zeroDbY = plotHeight * (1 - (0 - MIN_DB) / (MAX_DB - MIN_DB));
         context.setLineDash([4, 4]);
         context.lineWidth = 1;
-        context.strokeStyle = isDark ? 'rgba(252, 252, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+        context.strokeStyle = isDark
+          ? 'rgba(252, 252, 255, 0.3)'
+          : 'rgba(0, 0, 0, 0.3)';
         context.beginPath();
         context.moveTo(0, zeroDbY);
         context.lineTo(cssWidth, zeroDbY);
@@ -137,7 +164,9 @@ export const SpectrumVisualizer: FC<SpectrumVisualizerProps> = ({
         context.setLineDash([]);
         context.textAlign = 'right';
         context.textBaseline = 'bottom';
-        context.fillStyle = isDark ? 'rgba(252, 252, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)';
+        context.fillStyle = isDark
+          ? 'rgba(252, 252, 255, 0.6)'
+          : 'rgba(0, 0, 0, 0.55)';
         context.fillText('0 dB', cssWidth - 4, zeroDbY - 2);
 
         context.beginPath();
@@ -186,5 +215,11 @@ export const SpectrumVisualizer: FC<SpectrumVisualizerProps> = ({
     };
   }, [draw]);
 
-  return <ResponsiveCanvas onDraw={handleCanvasDraw} canvasRef={canvasRef} throttleMs={16} />;
+  return (
+    <ResponsiveCanvas
+      onDraw={handleCanvasDraw}
+      canvasRef={canvasRef}
+      throttleMs={16}
+    />
+  );
 };

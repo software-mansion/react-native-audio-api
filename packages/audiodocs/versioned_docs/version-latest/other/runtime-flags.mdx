@@ -16,6 +16,7 @@ Returns whether the native build includes [`FFmpeg`](https://github.com/FFmpeg/F
 
 <details>
 <summary>Example</summary>
+
 ```tsx
 import { isFfmpegEnabled } from 'react-native-audio-api';
 
@@ -23,14 +24,15 @@ if (!isFfmpegEnabled()) {
   console.warn('Remote URL metadata and streaming require an FFmpeg build.');
 }
 ```
+
 </details>
 
 ### Where FFmpeg is used
 
-| Area | API | Requires FFmpeg for |
-| :---: | :---: | :---- |
-| Streaming | [`Audio tag`](/docs/sources/audio-tag), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
-| Metadata | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](../sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing |
+|   Area    |                                                         API                                                         | Requires FFmpeg for                                       |
+| :-------: | :-----------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------- |
+| Streaming |                             [`Audio tag`](/docs/sources/audio-tag), `createFileSource`                              | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
+| Metadata  | [`getAudioDuration`](/docs/utils/decoding#getaudioduration), [`<Audio>`](../sources/audio-tag) `preload="metadata"` | Remote `http(s):` URL duration probing                    |
 
 Without FFmpeg, remote progressive sources are fully downloaded in JS and decoded that way; `preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.
 

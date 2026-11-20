@@ -1,8 +1,8 @@
-import clsx from "clsx";
-import React, { memo, useCallback, useState } from "react";
+import clsx from 'clsx';
+import React, { memo, useCallback, useState } from 'react';
 
-import Icon from "../Icon";
-import styles from "./styles.module.css";
+import Icon from '../Icon';
+import styles from './styles.module.css';
 
 interface DetailBoxProps {
   tag?: string;
@@ -12,7 +12,13 @@ interface DetailBoxProps {
   className?: string;
 }
 
-const DetailBox: React.FC<DetailBoxProps> = ({ tag, info, startOpen = true, children, className }) => {
+const DetailBox: React.FC<DetailBoxProps> = ({
+  tag,
+  info,
+  startOpen = true,
+  children,
+  className,
+}) => {
   const [isOpen, setIsOpen] = useState(startOpen);
 
   const onClick = useCallback(() => {
@@ -21,7 +27,7 @@ const DetailBox: React.FC<DetailBoxProps> = ({ tag, info, startOpen = true, chil
 
   return (
     <div className={clsx(styles.detailBox, className)}>
-      <div className={styles.detailBoxHeader}  onClick={onClick}>
+      <div className={styles.detailBoxHeader} onClick={onClick}>
         <div
           className={
             isOpen
@@ -36,9 +42,7 @@ const DetailBox: React.FC<DetailBoxProps> = ({ tag, info, startOpen = true, chil
       </div>
       {isOpen && (
         <>
-          <div className={styles.detailBoxContent}>
-            {children}
-          </div>
+          <div className={styles.detailBoxContent}>{children}</div>
           <div className={styles.detailBoxClear} />
         </>
       )}

@@ -27,10 +27,7 @@ function linearMagnitudeToByte(linear: number) {
   const db = linear > 0 ? 20 * Math.log10(linear) : ANALYSER_MIN_DB;
   const normalized = Math.max(
     0,
-    Math.min(
-      1,
-      (db - ANALYSER_MIN_DB) / (ANALYSER_MAX_DB - ANALYSER_MIN_DB)
-    )
+    Math.min(1, (db - ANALYSER_MIN_DB) / (ANALYSER_MAX_DB - ANALYSER_MIN_DB))
   );
 
   return Math.round(normalized * 255);

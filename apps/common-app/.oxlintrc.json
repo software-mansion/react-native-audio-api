@@ -9,63 +9,25 @@
   "env": {
     "builtin": true
   },
-  "jsPlugins": [
-    "eslint-plugin-react-native"
-  ],
-  "plugins": [
-    "typescript",
-    "react",
-    "jest"
-  ],
+  "jsPlugins": ["eslint-plugin-react-native"],
+  "plugins": ["typescript", "react", "jest"],
   "rules": {
-    "no-cond-assign": [
-      "warn"
-    ],
-    "no-const-assign": [
-      "error"
-    ],
-    "no-control-regex": [
-      "warn"
-    ],
-    "no-debugger": [
-      "warn"
-    ],
-    "no-dupe-class-members": [
-      "error"
-    ],
-    "no-dupe-keys": [
-      "error"
-    ],
-    "no-ex-assign": [
-      "warn"
-    ],
-    "no-extra-boolean-cast": [
-      "warn"
-    ],
-    "no-func-assign": [
-      "warn"
-    ],
-    "no-invalid-regexp": [
-      "warn"
-    ],
-    "no-obj-calls": [
-      "warn"
-    ],
-    "no-regex-spaces": [
-      "warn"
-    ],
-    "no-sparse-arrays": [
-      "warn"
-    ],
-    "no-unreachable": [
-      "error"
-    ],
-    "use-isnan": [
-      "warn"
-    ],
-    "valid-typeof": [
-      "warn"
-    ],
+    "no-cond-assign": ["warn"],
+    "no-const-assign": ["error"],
+    "no-control-regex": ["warn"],
+    "no-debugger": ["warn"],
+    "no-dupe-class-members": ["error"],
+    "no-dupe-keys": ["error"],
+    "no-ex-assign": ["warn"],
+    "no-extra-boolean-cast": ["warn"],
+    "no-func-assign": ["warn"],
+    "no-invalid-regexp": ["warn"],
+    "no-obj-calls": ["warn"],
+    "no-regex-spaces": ["warn"],
+    "no-sparse-arrays": ["warn"],
+    "no-unreachable": ["error"],
+    "use-isnan": ["warn"],
+    "valid-typeof": ["warn"],
     "eqeqeq": [
       "warn",
       "always",
@@ -73,135 +35,49 @@
         "null": "ignore"
       }
     ],
-    "no-alert": [
-      "warn"
-    ],
-    "no-caller": [
-      "warn"
-    ],
-    "no-div-regex": [
-      "warn"
-    ],
-    "no-eval": [
-      "error"
-    ],
-    "no-extend-native": [
-      "warn"
-    ],
-    "no-extra-bind": [
-      "warn"
-    ],
-    "no-fallthrough": [
-      "warn"
-    ],
-    "no-implied-eval": [
-      "warn"
-    ],
-    "no-labels": [
-      "warn"
-    ],
-    "no-iterator": [
-      "warn"
-    ],
-    "no-lone-blocks": [
-      "warn"
-    ],
-    "no-new": [
-      "warn"
-    ],
-    "no-new-func": [
-      "error"
-    ],
-    "no-new-wrappers": [
-      "warn"
-    ],
-    "no-proto": [
-      "warn"
-    ],
-    "no-return-assign": [
-      "warn"
-    ],
-    "no-script-url": [
-      "warn"
-    ],
-    "no-self-compare": [
-      "warn"
-    ],
-    "no-sequences": [
-      "warn"
-    ],
-    "no-useless-escape": [
-      "warn"
-    ],
-    "no-void": [
-      "warn"
-    ],
-    "no-with": [
-      "warn"
-    ],
-    "radix": [
-      "warn"
-    ],
-    "yoda": [
-      "warn"
-    ],
-    "no-delete-var": [
-      "warn"
-    ],
-    "no-global-assign": [
-      "error"
-    ],
-    "no-label-var": [
-      "warn"
-    ],
-    "no-shadow-restricted-names": [
-      "warn"
-    ],
-    "no-array-constructor": [
-      "warn"
-    ],
-    "no-empty-character-class": [
-      "warn"
-    ],
-    "no-bitwise": [
-      "warn"
-    ],
-    "react/jsx-no-comment-textnodes": [
-      "error"
-    ],
-    "react/jsx-no-duplicate-props": [
-      "error"
-    ],
-    "react/jsx-no-undef": [
-      "error"
-    ],
-    "react/no-did-mount-set-state": [
-      "warn"
-    ],
-    "react/no-did-update-set-state": [
-      "warn"
-    ],
-    "react/no-string-refs": [
-      "error"
-    ],
-    "react/no-unstable-nested-components": [
-      "warn"
-    ],
-    "react/self-closing-comp": [
-      "warn"
-    ],
-    "jest/no-disabled-tests": [
-      "warn"
-    ],
-    "jest/no-focused-tests": [
-      "warn"
-    ],
-    "jest/no-identical-title": [
-      "warn"
-    ],
-    "jest/valid-expect": [
-      "warn"
-    ],
+    "no-alert": ["warn"],
+    "no-caller": ["warn"],
+    "no-div-regex": ["warn"],
+    "no-eval": ["error"],
+    "no-extend-native": ["warn"],
+    "no-extra-bind": ["warn"],
+    "no-fallthrough": ["warn"],
+    "no-implied-eval": ["warn"],
+    "no-labels": ["warn"],
+    "no-iterator": ["warn"],
+    "no-lone-blocks": ["warn"],
+    "no-new": ["warn"],
+    "no-new-func": ["error"],
+    "no-new-wrappers": ["warn"],
+    "no-proto": ["warn"],
+    "no-return-assign": ["warn"],
+    "no-script-url": ["warn"],
+    "no-self-compare": ["warn"],
+    "no-sequences": ["warn"],
+    "no-useless-escape": ["warn"],
+    "no-void": ["warn"],
+    "no-with": ["warn"],
+    "radix": ["warn"],
+    "yoda": ["warn"],
+    "no-delete-var": ["warn"],
+    "no-global-assign": ["error"],
+    "no-label-var": ["warn"],
+    "no-shadow-restricted-names": ["warn"],
+    "no-array-constructor": ["warn"],
+    "no-empty-character-class": ["warn"],
+    "no-bitwise": ["warn"],
+    "react/jsx-no-comment-textnodes": ["error"],
+    "react/jsx-no-duplicate-props": ["error"],
+    "react/jsx-no-undef": ["error"],
+    "react/no-did-mount-set-state": ["warn"],
+    "react/no-did-update-set-state": ["warn"],
+    "react/no-string-refs": ["error"],
+    "react/no-unstable-nested-components": ["warn"],
+    "react/self-closing-comp": ["warn"],
+    "jest/no-disabled-tests": ["warn"],
+    "jest/no-focused-tests": ["warn"],
+    "jest/no-identical-title": ["warn"],
+    "jest/valid-expect": ["warn"],
     "no-unused-vars": [
       "error",
       {
@@ -209,18 +85,10 @@
         "destructuredArrayIgnorePattern": "^_"
       }
     ],
-    "no-shadow": [
-      "warn"
-    ],
-    "react/rules-of-hooks": [
-      "error"
-    ],
-    "react/exhaustive-deps": [
-      "error"
-    ],
-    "typescript/dot-notation": [
-      "warn"
-    ],
+    "no-shadow": ["warn"],
+    "react/rules-of-hooks": ["error"],
+    "react/exhaustive-deps": ["error"],
+    "typescript/dot-notation": ["warn"],
     "react-native/no-inline-styles": "warn"
   }
 }

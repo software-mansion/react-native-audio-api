@@ -1,6 +1,11 @@
 import React, { FC, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AudioBuffer, AudioBufferSourceNode, AudioContext, GainNode } from 'react-native-audio-api';
+import {
+  AudioBuffer,
+  AudioBufferSourceNode,
+  AudioContext,
+  GainNode,
+} from 'react-native-audio-api';
 
 const WhiteNoise: FC = () => {
   const aCtxRef = useRef<AudioContext | null>(null);
@@ -25,7 +30,7 @@ const WhiteNoise: FC = () => {
     const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
     noiseBuffer.copyToChannel(output, 0, 0);
     return noiseBuffer;
-  }
+  };
 
   const onPressIn = async () => {
     if (!bufferNodeRef.current && aCtxRef.current && gainRef.current) {
@@ -36,14 +41,14 @@ const WhiteNoise: FC = () => {
 
       bufferNodeRef.current.start();
     }
-  }
+  };
 
   const onPressOut = () => {
     if (bufferNodeRef.current) {
       bufferNodeRef.current.stop();
       bufferNodeRef.current = null;
     }
-  }
+  };
 
   useEffect(() => {
     if (!aCtxRef.current) {
@@ -69,7 +74,7 @@ const WhiteNoise: FC = () => {
       </Pressable>
     </View>
   );
-}
+};
 
 export default WhiteNoise;
 

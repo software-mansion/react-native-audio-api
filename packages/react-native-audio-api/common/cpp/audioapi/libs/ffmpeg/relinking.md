@@ -19,7 +19,9 @@ replace the binaries in place
 - android: `android/src/main/jniLibs/<abi>/*.so`
 
 ---
+
 `USED_LIBRARIES`:
+
 - libavcodec
 - libavformat
 - libavutil
