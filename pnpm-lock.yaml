@@ -388,6 +388,9 @@ importers:
       react-test-renderer:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
+      rn-audio-api-test-screen:
+        specifier: workspace:*
+        version: link:../../packages/test-app-screen
       typescript:
         specifier: 7.0.2
         version: 7.0.2
