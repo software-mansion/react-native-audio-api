@@ -1,0 +1,11 @@
+# Objective-C and C-compatible headers: these checks suggest C++-only syntax
+# (nullptr, using, C++ casts, `()` for `(void)`) or flag the `if (self = [super init])`
+# initializer idiom.
+InheritParentConfig: true
+
+Checks: '-bugprone-assignment-in-if-condition,
+        -bugprone-assignment-in-selection-statement,
+        -modernize-avoid-c-style-cast,
+        -modernize-redundant-void-arg,
+        -modernize-use-nullptr,
+        -modernize-use-using'
