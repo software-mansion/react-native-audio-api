@@ -18,7 +18,8 @@ The Gradle databases exist after an Android build of the example app. Files unde
 common/cpp, ios and android/src/main/cpp that no database has are skipped, and the
 run names them.
 
-Skipped: vendored code, C files, ios/spm.
+Only files tracked by git (never build output or generated code). Skipped: vendored
+code, C files, ios/spm.
 Config: the root .clang-tidy, plus common/cpp/test/.clang-tidy and ios/.clang-tidy.
 
 Errors fail the run. Warnings are counted per check; --warnings lists them.
@@ -98,12 +99,23 @@ import json, os, subprocess, sys
 package_dir = os.path.realpath(sys.argv[1])
 clangd_db = sys.argv[2]
 databases = [db for db in sys.argv[2:] if db]
-excluded = ("/audioapi/libs/", "/audioapi/external/", "/dsp/r8brain/", "/clangd/build/", "/ios/spm/")
+# Vendored code; build output and generated code are never tracked, so they drop out below.
+excluded = ("/audioapi/libs/", "/audioapi/external/", "/dsp/r8brain/", "/ios/spm/")
 # Needs folly, which the clangd project finds only through the example app's Pods:
 # take it from the app's Gradle database instead, so a run without Pods (CI) skips it.
 not_from_clangd = ("/audioworklets/NativeAudioWorkletsModule.cpp",)
 extensions = (".cpp", ".h", ".hpp", ".mm", ".m")
 linted_dirs = ("common/cpp/", "ios/", "android/src/main/cpp/")
+
+top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=package_dir,
+                     capture_output=True, text=True, check=True).stdout.strip()
+tracked = {
+    os.path.realpath(os.path.join(top, name))
+    for name in subprocess.run(
+        ["git", "ls-files", "--full-name", "--", *(f"*{ext}" for ext in extensions)],
+        cwd=package_dir, capture_output=True, text=True, check=True,
+    ).stdout.split()
+}
 
 seen = set()
 for db_path in databases:
@@ -114,25 +126,21 @@ for db_path in databases:
             continue
         if db_path == clangd_db and path.endswith(not_from_clangd):
             continue
-        if os.path.splitext(path)[1] not in extensions or path in seen:
+        if path not in tracked or path in seen:
             continue
         seen.add(path)
         print(f"{database_dir}\t{path}")
 
-top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=package_dir,
-                     capture_output=True, text=True, check=True).stdout.strip()
-tracked = subprocess.run(
-    ["git", "ls-files", "--full-name", "--", "*.cpp", "*.mm", "*.m"],
-    cwd=package_dir, capture_output=True, text=True, check=True,
-).stdout.split()
 hints = {
     "ios/": "iOS files are in the clangd database only with the example app's Pods installed",
     "android/src/main/cpp/": "an Android build of the example app writes their compile commands",
     "common/cpp/": "they need the compile commands of an Android build of the example app",
 }
 missing = {prefix: [] for prefix in linted_dirs}
-for name in tracked:
-    path = os.path.realpath(os.path.join(top, name))
+translation_units = (".cpp", ".mm", ".m")
+for path in sorted(tracked):
+    if not path.endswith(translation_units):
+        continue
     relative = os.path.relpath(path, package_dir)
     prefix = next((p for p in linted_dirs if relative.startswith(p)), None)
     if prefix and path not in seen and not any(part in path for part in excluded):
