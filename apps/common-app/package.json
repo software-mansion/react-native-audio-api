@@ -50,6 +50,7 @@
     "react": "catalog:",
     "react-native": "catalog:",
     "react-test-renderer": "catalog:",
+    "rn-audio-api-test-screen": "workspace:*",
     "typescript": "catalog:"
   }
 }
