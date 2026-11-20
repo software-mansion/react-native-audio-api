@@ -46,7 +46,7 @@ PeriodicWave::PeriodicWave(float sampleRate, bool disableNormalization)
     : sampleRate_(sampleRate),
       numberOfRanges_(
           static_cast<int>(
-              round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))))),
+              std::round(NumberOfOctaveBands * log2f(static_cast<float>(getPeriodicWaveSize()))))),
       lowestFundamentalFrequency_(
           static_cast<float>(sampleRate_ / 2) / static_cast<float>(getMaxNumberOfPartials())),
       scale_(static_cast<float>(getPeriodicWaveSize()) / sampleRate_),

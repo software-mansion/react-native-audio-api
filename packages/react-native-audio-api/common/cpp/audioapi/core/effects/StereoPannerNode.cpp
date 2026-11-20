@@ -4,6 +4,7 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <cmath>
 #include <memory>
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
@@ -76,8 +77,8 @@ void StereoPannerNode::processNode(int framesToProcess) {
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       const auto x = (pan <= 0 ? pan + 1 : pan);
-      const auto gainL = cos(x * PI / 2);
-      const auto gainR = sin(x * PI / 2);
+      const auto gainL = std::cos(x * PI / 2);
+      const auto gainR = std::sin(x * PI / 2);
       const float inputL = inputLeft[i];
       const float inputR = inputRight[i];
 
