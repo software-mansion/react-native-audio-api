@@ -1,10 +1,10 @@
 /**
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+ * This source code is licensed under the MIT license found in the LICENSE file
+ * in the root directory of this source tree.
  */
-import {translate} from '@docusaurus/Translate';
+import { translate } from '@docusaurus/Translate';
 // TODO Docusaurus v4: require DocSearch v4
 //  This needs to be cleaned after the upgrade
 //  Docusaurus v3 was made compatible with both DocSearch v3 and v4

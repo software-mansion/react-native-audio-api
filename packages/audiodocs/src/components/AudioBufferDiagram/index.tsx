@@ -7,7 +7,10 @@ import styles from './styles.module.css';
 interface AudioBufferDiagramProps {
   /** Channel names, top to bottom. */
   channels?: string[];
-  /** Upper bound on the frames drawn; fewer are drawn when the container is narrower. */
+  /**
+   * Upper bound on the frames drawn; fewer are drawn when the container is
+   * narrower.
+   */
   maxFrames?: number;
 }
 
@@ -33,14 +36,21 @@ function framesThatFit(containerWidth: number, maxFrames: number): number {
   if (containerWidth <= 0) {
     return maxFrames;
   }
-  const available = containerWidth - PADDING * 2 - LABEL_COLUMN_WIDTH - COLUMN_GAP - ELLIPSIS_WIDTH;
-  const fitting = Math.floor((available + COLUMN_GAP) / (CELL_WIDTH + COLUMN_GAP));
+  const available =
+    containerWidth -
+    PADDING * 2 -
+    LABEL_COLUMN_WIDTH -
+    COLUMN_GAP -
+    ELLIPSIS_WIDTH;
+  const fitting = Math.floor(
+    (available + COLUMN_GAP) / (CELL_WIDTH + COLUMN_GAP)
+  );
   return Math.min(maxFrames, Math.max(MIN_FRAMES, fitting));
 }
 
 /**
- * Frames-by-channels grid of an AudioBuffer: every column is one frame, every row one channel,
- * and each cell holds a single sample.
+ * Frames-by-channels grid of an AudioBuffer: every column is one frame, every
+ * row one channel, and each cell holds a single sample.
  */
 const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
   channels = DEFAULT_CHANNELS,
@@ -68,7 +78,8 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
         width="100%"
         style={{ maxWidth: width }}
         role="img"
-        aria-label={`An AudioBuffer as a grid: ${channels.length} channels, one row each, and one column per frame holding one sample per channel`}>
+        aria-label={`An AudioBuffer as a grid: ${channels.length} channels, one row each, and one column per frame holding one sample per channel`}
+      >
         {Array.from({ length: frames }, (_, index) => {
           const x = gridLeft + index * columnStride;
           return (
@@ -86,7 +97,8 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
                 x={x + CELL_WIDTH / 2}
                 y={gridTop + HEADER_HEIGHT / 2}
                 textAnchor="middle"
-                dominantBaseline="middle">
+                dominantBaseline="middle"
+              >
                 frame
               </text>
             </g>
@@ -121,7 +133,8 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
                 x={gridLeft - BAND_INSET - 24}
                 y={rowCenter}
                 textAnchor="end"
-                dominantBaseline="middle">
+                dominantBaseline="middle"
+              >
                 {channel} channel
               </text>
               <text
@@ -129,7 +142,8 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
                 x={gridLeft - BAND_INSET - 8}
                 y={rowCenter}
                 textAnchor="end"
-                dominantBaseline="middle">
+                dominantBaseline="middle"
+              >
                 →
               </text>
               {Array.from({ length: frames }, (_, index) => (
@@ -139,7 +153,8 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
                   x={gridLeft + index * columnStride + CELL_WIDTH / 2}
                   y={rowCenter}
                   textAnchor="middle"
-                  dominantBaseline="middle">
+                  dominantBaseline="middle"
+                >
                   sample
                 </text>
               ))}
@@ -148,7 +163,8 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
                 x={gridRight + COLUMN_GAP + ELLIPSIS_WIDTH / 2}
                 y={rowCenter}
                 textAnchor="middle"
-                dominantBaseline="middle">
+                dominantBaseline="middle"
+              >
                 ⋯
               </text>
             </g>
@@ -164,9 +180,13 @@ const AudioBufferDiagram: FC<AudioBufferDiagramProps> = ({
           x={(gridLeft + gridRight + COLUMN_GAP + ELLIPSIS_WIDTH) / 2}
           y={bracketLabelY}
           textAnchor="middle"
-          dominantBaseline="middle">
+          dominantBaseline="middle"
+        >
           <tspan>length = number of frames</tspan>
-          <tspan x={(gridLeft + gridRight + COLUMN_GAP + ELLIPSIS_WIDTH) / 2} dy={BRACKET_LABEL_LINE_HEIGHT}>
+          <tspan
+            x={(gridLeft + gridRight + COLUMN_GAP + ELLIPSIS_WIDTH) / 2}
+            dy={BRACKET_LABEL_LINE_HEIGHT}
+          >
             sampleRate = frames played per second
           </tspan>
         </text>

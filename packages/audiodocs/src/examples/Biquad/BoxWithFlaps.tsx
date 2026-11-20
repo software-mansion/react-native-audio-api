@@ -34,10 +34,26 @@ export const BoxWithFlaps = ({ progress }: { progress: number }) => {
   const phaseShift = 0.7;
   const delayedProgress = Math.max(0, progress - phaseShift) / (1 - phaseShift);
 
-  const topStyle = useFlapStyle(delayedProgress, { axis: 'X', translate: -25, multiplier: 130 });
-  const bottomStyle = useFlapStyle(delayedProgress, { axis: 'X', translate: 25, multiplier: -130 });
-  const leftStyle = useFlapStyle(progress, { axis: 'Y', translate: -50, multiplier: -110 });
-  const rightStyle = useFlapStyle(progress, { axis: 'Y', translate: 50, multiplier: 110 });
+  const topStyle = useFlapStyle(delayedProgress, {
+    axis: 'X',
+    translate: -25,
+    multiplier: 130,
+  });
+  const bottomStyle = useFlapStyle(delayedProgress, {
+    axis: 'X',
+    translate: 25,
+    multiplier: -130,
+  });
+  const leftStyle = useFlapStyle(progress, {
+    axis: 'Y',
+    translate: -50,
+    multiplier: -110,
+  });
+  const rightStyle = useFlapStyle(progress, {
+    axis: 'Y',
+    translate: 50,
+    multiplier: 110,
+  });
 
   const baseFlapStyle: ViewStyle = {
     position: 'absolute',
@@ -58,12 +74,26 @@ export const BoxWithFlaps = ({ progress }: { progress: number }) => {
     },
     {
       key: 'left',
-      style: { top: 0, left: 0, width: 100, height: 200, borderRightWidth: 2, zIndex: 1 },
+      style: {
+        top: 0,
+        left: 0,
+        width: 100,
+        height: 200,
+        borderRightWidth: 2,
+        zIndex: 1,
+      },
       animatedStyle: leftStyle,
     },
     {
       key: 'right',
-      style: { top: 0, right: 0, width: 100, height: 200, borderLeftWidth: 2, zIndex: 1 },
+      style: {
+        top: 0,
+        right: 0,
+        width: 100,
+        height: 200,
+        borderLeftWidth: 2,
+        zIndex: 1,
+      },
       animatedStyle: rightStyle,
     },
   ];
@@ -76,7 +106,8 @@ export const BoxWithFlaps = ({ progress }: { progress: number }) => {
         position: 'relative',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
+      }}
+    >
       {/* Box base */}
       <View
         style={{

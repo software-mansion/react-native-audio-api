@@ -9,6 +9,7 @@ sidebar_position: 2
 A React hook that returns the current system output volume and re-renders the component whenever the user changes it, for example with the hardware volume buttons.
 
 While a component using the hook is mounted, the hook:
+
 - enables volume observation with [`observeVolumeChanges`](../system/audio-manager.mdx#observevolumechanges),
 - subscribes to the `volumeChange` [system event](../system/audio-manager.mdx#addsystemeventlistener),
 - disables the observation and removes the subscription when the component unmounts.

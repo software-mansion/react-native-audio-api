@@ -45,7 +45,8 @@ export default function VinylPlayer(): React.ReactElement {
   const sceneRefsRef = useRef<SceneRefs | null>(null);
 
   const { context, filter, gain } = useMemo(() => {
-    const ctx = typeof window !== 'undefined' ? new AudioContext() :  MockAudioContext;
+    const ctx =
+      typeof window !== 'undefined' ? new AudioContext() : MockAudioContext;
 
     const filterNode = ctx.createBiquadFilter();
     filterNode.type = 'lowpass';
@@ -63,7 +64,9 @@ export default function VinylPlayer(): React.ReactElement {
   useEffect(() => {
     const fetchAudio = async () => {
       try {
-        const buffer = await fetch('/react-native-audio-api/audio/music/pass-the-mayo.mp3')
+        const buffer = await fetch(
+          '/react-native-audio-api/audio/music/pass-the-mayo.mp3'
+        )
           .then((r) => r.arrayBuffer())
           .then((ab) => context.decodeAudioData(ab));
         setAudioBuffer(buffer);
@@ -192,7 +195,10 @@ export default function VinylPlayer(): React.ReactElement {
     };
   };
 
-  const createVinylPlayer = (scene: THREE.Scene, materials: ReturnType<typeof createMaterials>) => {
+  const createVinylPlayer = (
+    scene: THREE.Scene,
+    materials: ReturnType<typeof createMaterials>
+  ) => {
     // Main body
     const plinth = new THREE.Mesh(
       new RoundedBoxGeometry(12, 2, 9, 4, 0.2),
@@ -237,8 +243,14 @@ export default function VinylPlayer(): React.ReactElement {
     const END_RADIUS = 3.9;
     const GROOVE_THICKNESS = 0.008;
     for (let i = 0; i < NUM_GROOVES; i++) {
-      const radius = START_RADIUS + (END_RADIUS - START_RADIUS) * (i / (NUM_GROOVES - 1));
-      const grooveGeometry = new THREE.TorusGeometry(radius, GROOVE_THICKNESS, 8, 100);
+      const radius =
+        START_RADIUS + (END_RADIUS - START_RADIUS) * (i / (NUM_GROOVES - 1));
+      const grooveGeometry = new THREE.TorusGeometry(
+        radius,
+        GROOVE_THICKNESS,
+        8,
+        100
+      );
       const groove = new THREE.Mesh(grooveGeometry, materials.record);
       groove.rotation.x = Math.PI / 2;
       groove.position.y = 0.05;
@@ -304,7 +316,11 @@ export default function VinylPlayer(): React.ReactElement {
     return recordGroup;
   };
 
-  const createCoverBox = (scene: THREE.Scene, renderer: THREE.WebGLRenderer, materials: ReturnType<typeof createMaterials>) => {
+  const createCoverBox = (
+    scene: THREE.Scene,
+    renderer: THREE.WebGLRenderer,
+    materials: ReturnType<typeof createMaterials>
+  ) => {
     const coverGroup = new THREE.Group();
     scene.add(coverGroup);
 
@@ -312,10 +328,20 @@ export default function VinylPlayer(): React.ReactElement {
     const coverBoxHeight = 6;
     const coverDepth = 10;
 
-    const coverGeometry = new RoundedBoxGeometry(coverWidth, coverBoxHeight, coverDepth, 4, 0.2);
+    const coverGeometry = new RoundedBoxGeometry(
+      coverWidth,
+      coverBoxHeight,
+      coverDepth,
+      4,
+      0.2
+    );
     const coverMaterials = [
-      materials.box, materials.box, materials.box,
-      materials.invisible, materials.box, materials.box,
+      materials.box,
+      materials.box,
+      materials.box,
+      materials.invisible,
+      materials.box,
+      materials.box,
     ];
     const cover = new THREE.Mesh(coverGeometry, coverMaterials);
     cover.scale.set(0.999, 0.999, 0.999);
@@ -383,7 +409,12 @@ export default function VinylPlayer(): React.ReactElement {
 
     // String that pulls the box
     const MAX_STRING_LENGTH = C.ANCHOR_Y - C.COVER_TOP_Y;
-    const stringGeometry = new THREE.CylinderGeometry(0.1, 0.1, MAX_STRING_LENGTH, 8);
+    const stringGeometry = new THREE.CylinderGeometry(
+      0.1,
+      0.1,
+      MAX_STRING_LENGTH,
+      8
+    );
     const string = new THREE.Mesh(stringGeometry, materials.body);
     coverGroup.add(string);
 
@@ -411,7 +442,8 @@ export default function VinylPlayer(): React.ReactElement {
 
         if (state.isSliderPressed) {
           const currentY = sceneRefs.coverGroup.position.y;
-          newCoverY = currentY + (state.targetCoverY - currentY) * C.LERP_FACTOR_ACTIVE;
+          newCoverY =
+            currentY + (state.targetCoverY - currentY) * C.LERP_FACTOR_ACTIVE;
           sceneRefs.coverGroup.position.y = newCoverY;
           state.fallVelocity = 0;
         } else {
@@ -428,7 +460,8 @@ export default function VinylPlayer(): React.ReactElement {
             state.fallVelocity = 0;
           }
 
-          const newSliderValue = (newCoverY / C.COVER_HEIGHT_3D_MAX) * C.SLIDER_MAX;
+          const newSliderValue =
+            (newCoverY / C.COVER_HEIGHT_3D_MAX) * C.SLIDER_MAX;
           state.coverHeight = Math.max(0, newSliderValue);
           if (inputRef.current) {
             inputRef.current.value = String(state.coverHeight);
@@ -436,7 +469,10 @@ export default function VinylPlayer(): React.ReactElement {
         }
 
         if (filter && gain && context) {
-          const clampedY = Math.max(0, Math.min(newCoverY, C.COVER_HEIGHT_3D_MAX));
+          const clampedY = Math.max(
+            0,
+            Math.min(newCoverY, C.COVER_HEIGHT_3D_MAX)
+          );
           const ratio = clampedY / C.COVER_HEIGHT_3D_MAX;
           const currentTime = context.currentTime;
           filter.frequency.setTargetAtTime(
@@ -482,7 +518,11 @@ export default function VinylPlayer(): React.ReactElement {
 
     const materials = createMaterials();
     const recordGroup = createVinylPlayer(scene, materials);
-    const { coverGroup, string, lineMaterial } = createCoverBox(scene, renderer, materials);
+    const { coverGroup, string, lineMaterial } = createCoverBox(
+      scene,
+      renderer,
+      materials
+    );
 
     sceneRefsRef.current = { recordGroup, coverGroup, string };
 

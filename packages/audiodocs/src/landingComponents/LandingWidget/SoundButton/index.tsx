@@ -15,7 +15,7 @@ const SoundButton: React.FC<SoundButtonProps> = (props) => {
     [styles.soundButtonInactive]: !isActive,
     [styles.soundButtonActive]: isActive,
     [styles.soundButtonDisabled]: !onPlaySound,
-  })
+  });
 
   return (
     <button type="button" className={className} onClick={onClick}>

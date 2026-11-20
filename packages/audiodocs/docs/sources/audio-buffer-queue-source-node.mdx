@@ -3,8 +3,13 @@ sidebar_position: 4
 sidebar_label: AudioBufferQueueSourceNode
 ---
 
-import { Optional, Experimental, Overridden, MobileOnly } from '@site/src/components/Badges';
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import {
+  Optional,
+  Experimental,
+  Overridden,
+  MobileOnly,
+} from '@site/src/components/Badges';
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
 
 # AudioBufferQueueSourceNode <MobileOnly />
 
@@ -17,10 +22,11 @@ constructor(context: BaseAudioContext, options?: AudioBufferQueueSourceOptions)
 ```
 
 ### `AudioBufferQueueSourceOptions`
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
-| `detune` <Optional /> | `number` | `0` | Initial value for [`detune`](./audio-buffer-queue-source-node.mdx#properties). |
-| `playbackRate` <Optional /> | `number` | `1.0` | Initial value for [`playbackRate`](./audio-buffer-queue-source-node.mdx#properties). |
+
+|           Parameter            |   Type    | Default |                                                                                                                         |
+| :----------------------------: | :-------: | :-----: | :---------------------------------------------------------------------------------------------------------------------- |
+|     `detune` <Optional />      | `number`  |   `0`   | Initial value for [`detune`](./audio-buffer-queue-source-node.mdx#properties).                                          |
+|  `playbackRate` <Optional />   | `number`  |  `1.0`  | Initial value for [`playbackRate`](./audio-buffer-queue-source-node.mdx#properties).                                    |
 | `pitchCorrection` <Optional /> | `boolean` | `false` | Enables the pitch correction algorithm when changing [`playbackRate`](./audio-buffer-queue-source-node.mdx#properties). |
 
 :::info
@@ -61,11 +67,17 @@ function App() {
 
 Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#properties).
 
-<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated buffer" channelCountMode="max" channelInterpretation="speakers" />
+<AudioNodePropsTable
+  numberOfInputs={0}
+  numberOfOutputs={1}
+  channelCount="defined by associated buffer"
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
 
-| Name | Type | Description |
-| :----: | :----: | :-------- |
-| `detune` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents. |
+|      Name      |                  Type                   | Description                                                                                                                |
+| :------------: | :-------------------------------------: | :------------------------------------------------------------------------------------------------------------------------- |
+|    `detune`    | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing detuning of oscillation in cents.           |
 | `playbackRate` | [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` defining speed factor at which the audio will be played. |
 
 ## Methods
@@ -76,10 +88,10 @@ Inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-
 
 Returns an estimated scheduling compensation for the WSOLA pitch-correction path, in seconds. Use this value when calling [`start()`](./audio-scheduled-source-node.mdx#start) — do not hardcode a fixed delay.
 
-| Condition | Returned value |
-| :---: | :---- |
-| `pitchCorrection: false` | `0.0` |
-| `pitchCorrection: true` | `0.01 + 0.02 × playbackRate` (seconds) |
+|        Condition         | Returned value                         |
+| :----------------------: | :------------------------------------- |
+| `pitchCorrection: false` | `0.0`                                  |
+| `pitchCorrection: true`  | `0.01 + 0.02 × playbackRate` (seconds) |
 
 At `playbackRate = 1.0`, that is `0.03s`. At `playbackRate = 1.5`, that is `0.04s`. Read [`playbackRate`](#properties) and call `getLatency()` immediately before scheduling — the estimate scales with the current rate.
 
@@ -100,15 +112,16 @@ const latency = source.getLatency();
 const startTime = audioContext.currentTime + 1.0; // play in 1 second
 source.start(startTime - latency);
 ```
+
 </details>
 
 ### `enqueueBuffer`
 
 Adds another buffer to queue. Returns `bufferId` that can be used to identify the buffer in [`onbufferended`](audio-buffer-queue-source-node#onbufferended) event.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `buffer` | [`AudioBuffer`](./audio-buffer.mdx) | Buffer with next data. |
+| Parameter |                Type                 | Description            |
+| :-------: | :---------------------------------: | :--------------------- |
+| `buffer`  | [`AudioBuffer`](./audio-buffer.mdx) | Buffer with next data. |
 
 #### Returns `string`.
 
@@ -120,8 +133,8 @@ The first enqueued buffer sets the number of channels the queue plays at. A buff
 
 Removes a buffer from the queue. Note that [`onbufferended`](audio-buffer-queue-source-node#onbufferended) event will not be fired for the removed buffers.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+| Parameter  |   Type   | Description                                                                                          |
+| :--------: | :------: | :--------------------------------------------------------------------------------------------------- |
 | `bufferId` | `string` | ID of the buffer to remove from the queue. It should be valid id provided by `enqueueBuffer` method. |
 
 #### Returns `undefined`.
@@ -136,16 +149,16 @@ Removes all buffers from the queue. Note that [`onbufferended`](audio-buffer-que
 
 Schedules the `AudioBufferQueueSourceNode` to start playback of enqueued [`AudioBuffers`](./audio-buffer.mdx), or starts to play immediately.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
+|       Parameter       |   Type   | Description                                                                                                                                                                                                                                                                                                                      |
+| :-------------------: | :------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  `when` <Optional />  | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`.                                                                                       |
 | `offset` <Optional /> | `number` | The position, in seconds, within the first enqueued audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the first enqueued buffer. If the offset exceeds the buffer’s [`duration`](./audio-buffer.mdx#properties), it’s automatically clamped to the valid range. |
 
 #### Errors:
 
-| Error type | Description |
-| :---: | :---- |
-| `RangeError` | `when` or `offset` is negative number. |
+|     Error type      | Description                                |
+| :-----------------: | :----------------------------------------- |
+|    `RangeError`     | `when` or `offset` is negative number.     |
 | `InvalidStateError` | If the node has already been started once. |
 
 #### Returns `undefined`.
@@ -160,9 +173,9 @@ If the node is resumed before that time, it plays until then. If it is still pau
 
 #### Errors:
 
-| Error type | Description |
-| :---: | :---- |
-| `InvalidStateError` |  If the node has not been started yet, has already been stopped, or is already paused. |
+|     Error type      | Description                                                                           |
+| :-----------------: | :------------------------------------------------------------------------------------ |
+| `InvalidStateError` | If the node has not been started yet, has already been stopped, or is already paused. |
 
 #### Returns `undefined`.
 
@@ -170,15 +183,15 @@ If the node is resumed before that time, it plays until then. If it is still pau
 
 Resumes audio playback with a specified delay. If no time is given, it resumes immediately.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+|      Parameter      |   Type   | Description                                                                                                                                                                                                                                  |
+| :-----------------: | :------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to resume. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node resumes playing immediately. <br /> Default: `0.0`. |
 
 #### Errors:
 
-| Error type | Description |
-| :---: | :---- |
-| `RangeError` | `when` is negative number. |
+|     Error type      | Description                                                                                 |
+| :-----------------: | :------------------------------------------------------------------------------------------ |
+|    `RangeError`     | `when` is negative number.                                                                  |
 | `InvalidStateError` | If the node has not been started yet, has already been stopped, or is not currently paused. |
 
 #### Returns `undefined`.
@@ -198,20 +211,24 @@ You can remove the callback by passing `null`.
 Allows to set frequency for `onpositionchanged` event. Value that can be set is around `1000/x` Hz.
 
 ```ts
-import { AudioContext, AudioBufferQueueSourceNode } from 'react-native-audio-api';
+import {
+  AudioContext,
+  AudioBufferQueueSourceNode,
+} from 'react-native-audio-api';
 
 function App() {
-    const ctx = new AudioContext();
-    const sourceNode = ctx.createBufferQueueSource();
-    let offset = 0;
+  const ctx = new AudioContext();
+  const sourceNode = ctx.createBufferQueueSource();
+  let offset = 0;
 
-    sourceNode.onpositionchanged = (event) => { //setting callback
-        this.offset = event.value;
-    };
+  sourceNode.onpositionchanged = (event) => {
+    //setting callback
+    this.offset = event.value;
+  };
 
-    sourceNode.onpositionchangedInterval = 100; //setting frequency to ~10Hz
+  sourceNode.onpositionchangedInterval = 100; //setting frequency to ~10Hz
 
-    sourceNode.start();
+  sourceNode.start();
 }
 ```
 
@@ -222,7 +239,8 @@ Sets (or removes) a callback that will be fired when a specific buffer has ended
 You can remove the callback by passing `null`.
 
 ```ts
-audioBufferQueueSourceNode.onbufferended = (event) => { //setting callback
+audioBufferQueueSourceNode.onbufferended = (event) => {
+  //setting callback
   console.log(`buffer with id {event.bufferId} ended`);
 
   if (event.isLastBufferInQueue) {
@@ -234,11 +252,13 @@ audioBufferQueueSourceNode.onbufferended = (event) => { //setting callback
 ## Remarks
 
 #### `detune`
+
 - Default value is `0.0`.
 - Nominal range is -∞ to ∞.
 - For example value of `100` detune the source up by one semitone, whereas `-1200` down by one octave.
 
 #### `playbackRate`
+
 - Default value is `1.0`.
 - Nominal range is -∞ to ∞.
 - For example value of `1.0` plays audio at normal speed, whereas value of `2.0` plays audio twice as fast as normal speed.
@@ -255,4 +275,5 @@ interface OnBufferEndEventType {
   isLastBufferInQueue: boolean; // a boolean indicating whether it was the last buffer in the queue
 }
 ```
+
 </details>

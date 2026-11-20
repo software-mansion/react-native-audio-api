@@ -18,6 +18,7 @@ However, `BaseAudioContext` itself cannot be directly utilized, instead its func
 An audio graph is a structured representation of audio processing elements and their connections within an audio context.
 The graph consists of various types of nodes, each performing specific audio operations, connected in a network that defines the audio signal flow.
 In general we can distinguish four types of nodes:
+
 - Source nodes (e.g [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx), [`OscillatorNode`](../sources/oscillator-node.mdx))
 - Effect nodes (e.g [`GainNode`](../effects/gain-node.mdx), [`BiquadFilterNode`](../effects/biquad-filter-node.mdx))
 - Analysis nodes (e.g [`AnalyserNode`](../analysis/analyser-node.mdx))
@@ -40,13 +41,13 @@ Concept of system-level audio callback does not apply to [`OfflineAudioContext`]
 
 ## Properties
 
-| Name | Type | Description | |
-| :----: | :----: | :-------- | :-: |
-| `currentTime` | `number` | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`. | <ReadOnly /> |
-| `destination` | [`AudioDestinationNode`](../destinations/audio-destination-node.mdx) | Final output destination associated with the context. | <ReadOnly /> |
-| `listener` | [`AudioListener`](./audio-listener.mdx) | Listener used for 3D spatialization, shared by all `PannerNode`s in the context. | <ReadOnly /> |
-| `sampleRate` | `number` | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
-| `state` | [`ContextState`](./base-audio-context.mdx#contextstate) | Enumerated value represents the current state of the context. | <ReadOnly /> |
+|     Name      |                                 Type                                 | Description                                                                                          |              |
+| :-----------: | :------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------- | :----------: |
+| `currentTime` |                               `number`                               | Double value representing an ever-increasing hardware time in seconds, starting from `0.0`.          | <ReadOnly /> |
+| `destination` | [`AudioDestinationNode`](../destinations/audio-destination-node.mdx) | Final output destination associated with the context.                                                | <ReadOnly /> |
+|  `listener`   |               [`AudioListener`](./audio-listener.mdx)                | Listener used for 3D spatialization, shared by all `PannerNode`s in the context.                     | <ReadOnly /> |
+| `sampleRate`  |                               `number`                               | Float value representing the sample rate (in samples per seconds) used by all nodes in this context. | <ReadOnly /> |
+|    `state`    |       [`ContextState`](./base-audio-context.mdx#contextstate)        | Enumerated value represents the current state of the context.                                        | <ReadOnly /> |
 
 ## Methods
 
@@ -66,19 +67,19 @@ Creates [`BiquadFilterNode`](../effects/biquad-filter-node.mdx).
 
 Creates [`AudioBuffer`](../sources/audio-buffer.mdx).
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `numOfChannels` | `number` | An integer representing the number of channels of the buffer. |
-| `length` | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
-| `sampleRate` | `number` | A float representing the sample rate of the buffer. |
+|    Parameter    |   Type   | Description                                                                                                                 |
+| :-------------: | :------: | :-------------------------------------------------------------------------------------------------------------------------- |
+| `numOfChannels` | `number` | An integer representing the number of channels of the buffer.                                                               |
+|    `length`     | `number` | An integer representing the length of the buffer in sampleFrames. Two seconds buffer has length equals to `2 * sampleRate`. |
+|  `sampleRate`   | `number` | A float representing the sample rate of the buffer.                                                                         |
 
 **Errors**
 
-| Error type | Description |
-| :---: | :---- |
-| `NotSupportedError` | `numOfChannels` is outside the nominal range [`1`, `32`]. |
+|     Error type      | Description                                                     |
+| :-----------------: | :-------------------------------------------------------------- |
+| `NotSupportedError` | `numOfChannels` is outside the nominal range [`1`, `32`].       |
 | `NotSupportedError` | `sampleRate` is outside the supported range [`3000`, `768000`]. |
-| `NotSupportedError` | `length` is less then `1`. |
+| `NotSupportedError` | `length` is less then `1`.                                      |
 
 **Returns:** `AudioBuffer`
 
@@ -86,18 +87,20 @@ Creates [`AudioBuffer`](../sources/audio-buffer.mdx).
 
 Creates [`AudioBufferSourceNode`](../sources/audio-buffer-source-node.mdx).
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+|       Parameter        |                                    Type                                    | Description                                                     |
+| :--------------------: | :------------------------------------------------------------------------: | :-------------------------------------------------------------- |
 | `options` <Optional /> | <span style={{whiteSpace: 'nowrap'}}>`{ pitchCorrection: boolean }`</span> | Boolean that specifies if pitch correction has to be available. |
 
 **Returns:** `AudioBufferSourceNode`
 
-<Heading as="h3" id="create-buffer-queue-source"><code>createBufferQueueSource</code> <MobileOnly /></Heading>
+<Heading as="h3" id="create-buffer-queue-source">
+  <code>createBufferQueueSource</code> <MobileOnly />
+</Heading>
 
 Creates [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx).
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+|       Parameter        |                                                      Type                                                      | Description                                                                                            |
+| :--------------------: | :------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------- |
 | `options` <Optional /> | [`AudioBufferQueueSourceOptions`](../sources/audio-buffer-queue-source-node.mdx#audiobufferqueuesourceoptions) | Constructor options for [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node.mdx). |
 
 **Returns:** `AudioBufferQueueSourceNode`
@@ -106,8 +109,8 @@ Creates [`AudioBufferQueueSourceNode`](../sources/audio-buffer-queue-source-node
 
 Creates [`ChannelMergerNode`](../effects/channel-merger-node.mdx).
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+|           Parameter           |   Type   | Description                                                |
+| :---------------------------: | :------: | :--------------------------------------------------------- |
 | `numberOfInputs` <Optional /> | `number` | Number of inputs to merge (range `1` – `32`, default `6`). |
 
 **Returns:** `ChannelMergerNode`
@@ -116,8 +119,8 @@ Creates [`ChannelMergerNode`](../effects/channel-merger-node.mdx).
 
 Creates [`ChannelSplitterNode`](../effects/channel-splitter-node.mdx).
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+|           Parameter            |   Type   | Description                                                      |
+| :----------------------------: | :------: | :--------------------------------------------------------------- |
 | `numberOfOutputs` <Optional /> | `number` | Number of outputs to split into (range `1` – `32`, default `6`). |
 
 **Returns:** `ChannelSplitterNode`
@@ -138,9 +141,9 @@ Creates [`ConvolverNode`](../effects/convolver-node.mdx).
 
 Creates [`DelayNode`](../effects/delay-node.mdx)
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `maxDelayTime` <Optional /> | `number` | Maximum amount of time to buffer delayed values|
+|          Parameter          |   Type   | Description                                     |
+| :-------------------------: | :------: | :---------------------------------------------- |
+| `maxDelayTime` <Optional /> | `number` | Maximum amount of time to buffer delayed values |
 
 **Returns:** `DelayNode`
 
@@ -172,16 +175,16 @@ Creates [`PannerNode`](../effects/panner-node.mdx).
 
 Creates [`PeriodicWave`](../effects/periodic-wave.mdx). This waveform specifies a repeating pattern that an OscillatorNode can use to generate its output sound.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `real` | `Float32Array` | An array of cosine terms. |
-| `imag` | `Float32Array` | An array of sine terms. |
-| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of `1.0` and minimum peak value of `-1.0`.|
+|         Parameter          |                Type                 | Description                                                                                                                                         |
+| :------------------------: | :---------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+|           `real`           |           `Float32Array`            | An array of cosine terms.                                                                                                                           |
+|           `imag`           |           `Float32Array`            | An array of sine terms.                                                                                                                             |
+| `constraints` <Optional /> | `{ disableNormalization: boolean }` | An object that specifies if normalization is disabled. If so, periodic wave will have maximum peak value of `1.0` and minimum peak value of `-1.0`. |
 
 **Errors**
 
-| Error type | Description |
-| :---: | :---- |
+|      Error type      | Description                                       |
+| :------------------: | :------------------------------------------------ |
 | `InvalidAccessError` | `real` and `imag` arrays do not have same length. |
 
 **Returns:** `PeriodicWave`
@@ -216,12 +219,12 @@ Creates [`WaveShaperNode`](../effects/wave-shaper-node.mdx).
 
 Decodes base64-encoded PCM audio data.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `base64String` | `string` | Base64-encoded PCM audio data. |
-| `inputSampleRate` | `number` | Sample rate of the input PCM data. |
-| `inputChannelCount` | `number` | Number of channels in the input PCM data. |
-| `isInterleaved` <Optional />| `boolean` | Whether the PCM data is interleaved. Defaults to `true`. |
+|          Parameter           |   Type    | Description                                              |
+| :--------------------------: | :-------: | :------------------------------------------------------- |
+|        `base64String`        | `string`  | Base64-encoded PCM audio data.                           |
+|      `inputSampleRate`       | `number`  | Sample rate of the input PCM data.                       |
+|     `inputChannelCount`      | `number`  | Number of channels in the input PCM data.                |
+| `isInterleaved` <Optional /> | `boolean` | Whether the PCM data is interleaved. Defaults to `true`. |
 
 **Returns:** `Promise<AudioBuffer>`
 
@@ -233,6 +236,7 @@ const data = ... // data encoded in base64 string
 // data is not interleaved (Channel1, Channel1, ..., Channel2, Channel2, ...)
 const buffer = await this.audioContext.decodeAudioData(data, 4800, 2, false);
 ```
+
 </details>
 
 ## Events
@@ -265,8 +269,8 @@ await audioContext.resume(); // logs "state is now running" shortly after
 
 ### `ContextState`
 
-
 **Acceptable values:**
+
 - `suspended`
 
 The audio context has been suspended (with one of [`suspend`](./audio-context.mdx#suspend) or [`OfflineAudioContext.suspend`](./offline-audio-context.mdx#suspend)).

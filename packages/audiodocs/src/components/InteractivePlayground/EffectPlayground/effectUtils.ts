@@ -3,10 +3,14 @@ import type { AudioContext, AudioParam } from 'react-native-audio-api';
 const PARAM_SMOOTHING_SECONDS = 0.02;
 
 /**
- * Moves an AudioParam towards `value` over a few milliseconds instead of jumping, so dragging a
- * slider does not produce zipper noise.
+ * Moves an AudioParam towards `value` over a few milliseconds instead of
+ * jumping, so dragging a slider does not produce zipper noise.
  */
-export function setParamSmoothly(param: AudioParam, value: number, ctx: AudioContext): void {
+export function setParamSmoothly(
+  param: AudioParam,
+  value: number,
+  ctx: AudioContext
+): void {
   param.setTargetAtTime(value, ctx.currentTime, PARAM_SMOOTHING_SECONDS);
 }
 

@@ -6,14 +6,14 @@ sidebar_position: 4
 
 Everything lives in [`core/utils/graph/`](https://github.com/software-mansion/react-native-audio-api/tree/1966b4ac91efb990f1bc626fdb8899b034b770f4/packages/react-native-audio-api/common/cpp/audioapi/core/utils/graph).
 
-| Class | Thread | Role |
-|---|---|---|
-| `Graph` | both | The facade. Owns the other two, the event channels and the pre-growth bookkeeping. |
-| `HostGraph` | JS | Adjacency lists, validation, ghost nodes. Every mutation returns an event for the audio side. |
-| `AudioGraph` | audio | Flat, topologically sorted node array. Toposort, compaction, processable-state settling, iteration. |
-| `InputPool` | audio | Slot pool backing every per-node list in `AudioGraph`. |
-| `NodeHandle` | shared | The one object both graphs point at: the `GraphObject` and its current index in `AudioGraph`. |
-| `GraphObject` | audio | What a node is from the graph's point of view: `process()`, an output buffer, processable state. `AudioNode` derives from it. |
+| Class         | Thread | Role                                                                                                                          |
+| ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Graph`       | both   | The facade. Owns the other two, the event channels and the pre-growth bookkeeping.                                            |
+| `HostGraph`   | JS     | Adjacency lists, validation, ghost nodes. Every mutation returns an event for the audio side.                                 |
+| `AudioGraph`  | audio  | Flat, topologically sorted node array. Toposort, compaction, processable-state settling, iteration.                           |
+| `InputPool`   | audio  | Slot pool backing every per-node list in `AudioGraph`.                                                                        |
+| `NodeHandle`  | shared | The one object both graphs point at: the `GraphObject` and its current index in `AudioGraph`.                                 |
+| `GraphObject` | audio  | What a node is from the graph's point of view: `process()`, an output buffer, processable state. `AudioNode` derives from it. |
 
 ## Node handle
 
@@ -66,7 +66,7 @@ stateDiagram-v2
     Dropped --> [*]: collectDisposedNodes deletes it
 ```
 
-The audio thread decides *when* (a node may be a ghost for a long time if it is still playing), and the JS thread does the deleting.
+The audio thread decides _when_ (a node may be a ghost for a long time if it is still playing), and the JS thread does the deleting.
 
 ## Host graph
 
@@ -193,7 +193,7 @@ orphaned, so the quantum takes the two `no` branches and the whole thing is a `b
 The sort runs only when an edge was added or removed since the last one; the edge events mark the order dirty. It is Kahn's algorithm run in
 reverse, sinks first, and it uses no extra memory:
 
-1. Count each node's out-degree by walking every input list and incrementing the *input's* counter (`topo_out_degree`).
+1. Count each node's out-degree by walking every input list and incrementing the _input's_ counter (`topo_out_degree`).
 2. Push every node with out-degree 0 (the sinks) onto a ready stack. The stack is a linked list threaded through `target_place`, so it costs
    nothing to allocate. Any order of taking ready nodes gives a valid topological order, so a stack is enough.
 3. Pop until the stack is empty. Each popped node gets the next position counting down from the end (`--write`), written into the same
@@ -226,14 +226,14 @@ flowchart LR
 Phase 1 counts out-degrees: `Osc 1, Gain 1, Dest 0`. Phase 2 then runs the stack. Each row is the state after the operation in the first column;
 `target_place` shows the field's meaning at that moment, a stack link (`→`) or a final position:
 
-| step | stack (top first) | `write` | Dest | Gain | Osc |
-|---|---|---|---|---|---|
-| push Dest (out-degree 0) | Dest | 3 | → −1 | −1 | −1 |
-| pop Dest, assign `--write` | *empty* | 2 | **2** | −1 | −1 |
-| Dest's input Gain reaches 0, push | Gain | 2 | 2 | → −1 | −1 |
-| pop Gain, assign | *empty* | 1 | 2 | **1** | −1 |
-| Gain's input Osc reaches 0, push | Osc | 1 | 2 | 1 | → −1 |
-| pop Osc, assign | *empty* | 0 | 2 | 1 | **0** |
+| step                              | stack (top first) | `write` | Dest  | Gain  | Osc   |
+| --------------------------------- | ----------------- | ------- | ----- | ----- | ----- |
+| push Dest (out-degree 0)          | Dest              | 3       | → −1  | −1    | −1    |
+| pop Dest, assign `--write`        | _empty_           | 2       | **2** | −1    | −1    |
+| Dest's input Gain reaches 0, push | Gain              | 2       | 2     | → −1  | −1    |
+| pop Gain, assign                  | _empty_           | 1       | 2     | **1** | −1    |
+| Gain's input Osc reaches 0, push  | Osc               | 1       | 2     | 1     | → −1  |
+| pop Osc, assign                   | _empty_           | 0       | 2     | 1     | **0** |
 
 Phase 3 rewrites the stored indices through `target_place` while the nodes are still in place: `Dest.inputs [1]` stays `[1]` because Gain's
 target is 1, and `Gain.inputs [2]` becomes `[0]` because Osc's target is 0. Phase 4 cycle-sorts: at `i = 0`, `Dest` wants position 2, so it
@@ -293,15 +293,14 @@ flowchart LR
 
 The mark pass walks left to right:
 
-| node | scrub inputs pointing at marked nodes | orphaned | inputs empty | can be destroyed | marked |
-|---|---|---|---|---|---|
-| Osc | `[]` → `[]` | yes | yes | yes | **yes** |
-| Gain | `[0 = Osc]` → `[]` (Osc is marked) | yes | yes, now | yes | **yes** |
-| Dest | `[1 = Gain]` → `[]` (Gain is marked) | no | | | no |
+| node | scrub inputs pointing at marked nodes | orphaned | inputs empty | can be destroyed | marked  |
+| ---- | ------------------------------------- | -------- | ------------ | ---------------- | ------- |
+| Osc  | `[]` → `[]`                           | yes      | yes          | yes              | **yes** |
+| Gain | `[0 = Osc]` → `[]` (Osc is marked)    | yes      | yes, now     | yes              | **yes** |
+| Dest | `[1 = Gain]` → `[]` (Gain is marked)  | no       |              |                  | no      |
 
 `Gain` was only removable because `Osc` was handled first, which is why this pass needs the array sorted. Then the survivors get their targets
-(`Dest → 0`), the deleted nodes free their (already empty) lists, the remap finds nothing left to rewrite, and the shift moves `Dest` to position
-0. Positions 1 and 2 get their handles nulled and the vector is resized to 1.
+(`Dest → 0`), the deleted nodes free their (already empty) lists, the remap finds nothing left to rewrite, and the shift moves `Dest` to position 0. Positions 1 and 2 get their handles nulled and the vector is resized to 1.
 
 ```mermaid
 flowchart LR
@@ -319,12 +318,12 @@ The two released handles are what `HostGraph::collectDisposedNodes` will find on
 ### Processable state and links
 
 Not every node in the array should render. Which ones do is decided once per quantum, after compaction. A node is in one of three states:
-*always processable* for the pull roots (the destination, an analyser), *not processable*, or *conditionally processable* for nodes that are
-pulled this quantum only. The settle is a reachability walk: starting from every node that is not *not processable* on entry (the roots), it
-promotes each dependency from *not* to *conditional* and continues from the nodes it just promoted. A node's dependencies are its audio
+_always processable_ for the pull roots (the destination, an analyser), _not processable_, or _conditionally processable_ for nodes that are
+pulled this quantum only. The settle is a reachability walk: starting from every node that is not _not processable_ on entry (the roots), it
+promotes each dependency from _not_ to _conditional_ and continues from the nodes it just promoted. A node's dependencies are its audio
 inputs plus its **links** (below). The walk is a depth-first traversal that borrows `target_place` as an embedded stack, the same trick the
-toposort uses for its ready set, and it uses the state itself as the visited marker: a node is pushed only on its *not* to *conditional*
-transition, so every node and every list is visited once and the pass is O(V+E). A conditional node flips itself back to *not* after it
+toposort uses for its ready set, and it uses the state itself as the visited marker: a node is pushed only on its _not_ to _conditional_
+transition, so every node and every list is visited once and the pass is O(V+E). A conditional node flips itself back to _not_ after it
 renders, so the cone is re-derived from the roots every quantum with no global reset.
 
 Because the walk is reachability and not an array scan, it does not care where a dependency sits in the array. That is what lets links share
@@ -390,7 +389,7 @@ ahead of the mutation. On the audio thread the pool copies the old slots with `m
 threads the new slots onto the free list, swaps the buffer in and returns the old one, which the event hands to the disposer.
 
 The node vector grows the same way: the host node count is compared with the ensured capacity, a vector with the new capacity is reserved on the
-JS thread, and the audio thread adopts it by moving every live node across. Both checks run *before* the mutation event is sent, so the FIFO
+JS thread, and the audio thread adopts it by moving every live node across. Both checks run _before_ the mutation event is sent, so the FIFO
 channel delivers the grow first.
 
 ```mermaid

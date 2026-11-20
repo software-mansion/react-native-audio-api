@@ -14,22 +14,23 @@ If the output starts with `NO_NEW_COMMITS`, stop here and tell the user there is
 
 Look at the **ALL CHANGED FILES** section first. Use it to decide which changes are worth deep analysis. Classify each changed path:
 
-| Path pattern | Potentially affects |
-|---|---|
-| `common/cpp/audioapi/core/` | `audio-nodes/SKILL.md` (+ `audio-nodes/gainnode-example.md`) |
-| `common/cpp/audioapi/HostObjects/` | `host-objects/SKILL.md` (+ `host-objects/examples.md`) |
-| `common/cpp/audioapi/utils/` or `dsp/` | `utilities/SKILL.md` (+ `utilities/api.md`) |
-| `common/cpp/audioapi/events/` or `core/utils/Audio*` | `thread-safety-itc/SKILL.md` |
-| `android/src/main/` | `native-android/SKILL.md` |
-| `ios/` | `native-ios/SKILL.md` |
-| `src/specs/` or `AudioAPIModule.*` | `turbo-modules/SKILL.md` |
-| `src/` (TypeScript) | `turbo-modules/SKILL.md` or `web-audio-api/SKILL.md` |
-| `CMakeLists.txt`, `*.podspec`, `*.gradle` | `build-compilation-dependencies/SKILL.md` (+ `build-compilation-dependencies/build-details.md`) |
-| `.claude/` | CLAUDE.md itself |
+| Path pattern                                         | Potentially affects                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `common/cpp/audioapi/core/`                          | `audio-nodes/SKILL.md` (+ `audio-nodes/gainnode-example.md`)                                    |
+| `common/cpp/audioapi/HostObjects/`                   | `host-objects/SKILL.md` (+ `host-objects/examples.md`)                                          |
+| `common/cpp/audioapi/utils/` or `dsp/`               | `utilities/SKILL.md` (+ `utilities/api.md`)                                                     |
+| `common/cpp/audioapi/events/` or `core/utils/Audio*` | `thread-safety-itc/SKILL.md`                                                                    |
+| `android/src/main/`                                  | `native-android/SKILL.md`                                                                       |
+| `ios/`                                               | `native-ios/SKILL.md`                                                                           |
+| `src/specs/` or `AudioAPIModule.*`                   | `turbo-modules/SKILL.md`                                                                        |
+| `src/` (TypeScript)                                  | `turbo-modules/SKILL.md` or `web-audio-api/SKILL.md`                                            |
+| `CMakeLists.txt`, `*.podspec`, `*.gradle`            | `build-compilation-dependencies/SKILL.md` (+ `build-compilation-dependencies/build-details.md`) |
+| `.claude/`                                           | CLAUDE.md itself                                                                                |
 
 For each identified skill, check the **MAINTENANCE TABLES** section at the end of the script output — it contains every skill's `maintenance.md` so you can see exactly which sections to review without additional file reads.
 
 **Skip a file entirely if:**
+
 - It is a test file with no new patterns (e.g. adding a test for existing behaviour)
 - The change is purely formatting/whitespace
 - It is a dependency version bump
@@ -52,6 +53,7 @@ Read the **SOURCE DIFF** section for the files you decided are interesting. For 
 ## Step 4 — Update skill files
 
 Apply only targeted, minimal additions or corrections. Do **not**:
+
 - Rewrite skill files from scratch
 - Add documentation for every changed line
 - Document internal implementation details that are only useful when reading that specific file
@@ -68,14 +70,17 @@ printf '%s' '<sha>' > .claude/last-knowledge-update
 ```
 
 To reset the marker to "empty" (so the next run falls back to HEAD~10), use:
+
 ```bash
 > .claude/last-knowledge-update
 ```
+
 (`touch` only updates the timestamp — it does **not** clear the file contents.)
 
 ## Step 6 — Report
 
 Tell the user:
+
 - Which skill files were updated and why (one line each)
 - Which files were skipped and why (brief)
 - The new marker SHA

@@ -2,8 +2,8 @@
 
 /**
  * An `<Audio>` tag reaches the graph through ordinary connections: its file
- * source is connected either to the context destination or, from the moment
- * one is created, to the MediaElementAudioSourceNode that took the tag over.
+ * source is connected either to the context destination or, from the moment one
+ * is created, to the MediaElementAudioSourceNode that took the tag over.
  */
 
 import AudioNode from '../src/core/AudioNode';

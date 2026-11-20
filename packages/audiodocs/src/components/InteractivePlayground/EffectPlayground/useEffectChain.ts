@@ -1,4 +1,11 @@
-import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AnalyserNode,
   AudioBuffer,
@@ -8,15 +15,26 @@ import {
   GainNode,
 } from 'react-native-audio-api';
 
-import { fetchSampleBytes, prefetchSample, SAMPLE_SOURCES, SampleSourceId } from './sources';
+import {
+  fetchSampleBytes,
+  prefetchSample,
+  SAMPLE_SOURCES,
+  SampleSourceId,
+} from './sources';
 import type { EffectFactory, EffectHandle } from './types';
 
-/** The browser default; the web AnalyserNode wrapper does not forward `fftSize` writes. */
+/**
+ * The browser default; the web AnalyserNode wrapper does not forward `fftSize`
+ * writes.
+ */
 export const ANALYSER_FFT_SIZE = 2048;
 
 const CROSSFADE_SECONDS = 0.03;
 const FALLBACK_SAMPLE_RATE = 48000;
-/** Composed channels are normalized to this peak so neither side drowns out the other. */
+/**
+ * Composed channels are normalized to this peak so neither side drowns out the
+ * other.
+ */
 const COMPOSED_CHANNEL_PEAK = 0.7;
 
 interface ChainNodes<TParams> {
@@ -33,9 +51,9 @@ export interface UseEffectChainOptions<TParams> {
   params: TParams;
   source: SampleSourceId;
   /**
-   * Delay and reverb are heard next to the untouched signal, so bypassing them only silences the
-   * wet path. Insert effects (filters, gain, panning) replace the signal, so bypassing them swaps
-   * the wet path for the dry one.
+   * Delay and reverb are heard next to the untouched signal, so bypassing them
+   * only silences the wet path. Insert effects (filters, gain, panning) replace
+   * the signal, so bypassing them swaps the wet path for the dry one.
    */
   mixesDrySignal?: boolean;
 }
@@ -51,18 +69,22 @@ export interface EffectChain<TParams> {
   isLoading: boolean;
   setEnabled(enabled: boolean): void;
   togglePlayback(): void;
-  /** Click handler for the effect node: starts playback while silent, otherwise toggles bypass. */
+  /**
+   * Click handler for the effect node: starts playback while silent, otherwise
+   * toggles bypass.
+   */
   toggleEffect(): void;
 }
 
 /**
  * Owns the audio graph behind an effect playground:
  *
- *   source ─┬─ dryGain ─────────────────┬─ monitor ─┬─ destination
- *           └─ effect.input … output ─ wetGain ─┘           └─ analyser
+ * Source ─┬─ dryGain ─────────────────┬─ monitor ─┬─ destination └─
+ * effect.input … output ─ wetGain ─┘ └─ analyser
  *
- * The AudioContext is created on mount (it stays suspended until the first user gesture) so that
- * visualizers can draw the effect's response before anything plays.
+ * The AudioContext is created on mount (it stays suspended until the first user
+ * gesture) so that visualizers can draw the effect's response before anything
+ * plays.
  */
 export function useEffectChain<TParams>({
   createEffect,
@@ -97,7 +119,14 @@ export function useEffectChain<TParams>({
     monitor.connect(ctx.destination);
     monitor.connect(analyser);
 
-    const chain: ChainNodes<TParams> = { ctx, dryGain, wetGain, monitor, analyser, effect };
+    const chain: ChainNodes<TParams> = {
+      ctx,
+      dryGain,
+      wetGain,
+      monitor,
+      analyser,
+      effect,
+    };
     applyBypassMix(chain, enabledRef.current, mixesDrySignal, true);
     nodesRef.current = chain;
     setNodes(chain);
@@ -135,7 +164,11 @@ export function useEffectChain<TParams>({
       if (chain.ctx.state !== 'running') {
         await chain.ctx.resume();
       }
-      const buffer = await loadDecodedSample(chain.ctx, source, decodedSamplesRef.current);
+      const buffer = await loadDecodedSample(
+        chain.ctx,
+        source,
+        decodedSamplesRef.current
+      );
       if (requestId !== playRequestRef.current || nodesRef.current !== chain) {
         return;
       }
@@ -219,7 +252,15 @@ export function useEffectChain<TParams>({
       togglePlayback,
       toggleEffect,
     }),
-    [nodes, enabled, isPlaying, isLoading, setEnabled, togglePlayback, toggleEffect]
+    [
+      nodes,
+      enabled,
+      isPlaying,
+      isLoading,
+      setEnabled,
+      togglePlayback,
+      toggleEffect,
+    ]
   );
 }
 
@@ -244,15 +285,24 @@ async function loadDecodedSample(
   } else if (sample.url) {
     decoded = await ctx.decodeAudioData(await fetchSampleBytes(sample.url));
   } else {
-    throw new Error(`Sample "${source}" has neither a url nor parts to compose`);
+    throw new Error(
+      `Sample "${source}" has neither a url nor parts to compose`
+    );
   }
 
   cache.set(source, decoded);
   return decoded;
 }
 
-/** Puts a mono mix of `left` in channel 0 and of `right` in channel 1, cut to the shorter one. */
-function composeStereoBuffer(ctx: AudioContext, left: AudioBuffer, right: AudioBuffer): AudioBuffer {
+/**
+ * Puts a mono mix of `left` in channel 0 and of `right` in channel 1, cut to
+ * the shorter one.
+ */
+function composeStereoBuffer(
+  ctx: AudioContext,
+  left: AudioBuffer,
+  right: AudioBuffer
+): AudioBuffer {
   const length = Math.min(left.length, right.length);
   const stereo = ctx.createBuffer(2, length, ctx.sampleRate);
   stereo.getChannelData(0).set(normalizedMonoMix(left, length));
@@ -282,7 +332,9 @@ function normalizedMonoMix(buffer: AudioBuffer, length: number): Float32Array {
   return mix;
 }
 
-function stopSourceNode(ref: MutableRefObject<AudioBufferSourceNode | null>): void {
+function stopSourceNode(
+  ref: MutableRefObject<AudioBufferSourceNode | null>
+): void {
   const sourceNode = ref.current;
   if (!sourceNode) {
     return;
@@ -308,7 +360,12 @@ function applyBypassMix<TParams>(
   rampGain(chain.wetGain.gain, wetLevel, chain.ctx, immediate);
 }
 
-function rampGain(param: AudioParam, target: number, ctx: AudioContext, immediate: boolean): void {
+function rampGain(
+  param: AudioParam,
+  target: number,
+  ctx: AudioContext,
+  immediate: boolean
+): void {
   const now = ctx.currentTime;
   param.cancelScheduledValues(now);
 

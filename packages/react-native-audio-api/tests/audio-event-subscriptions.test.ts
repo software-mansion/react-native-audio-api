@@ -1,20 +1,23 @@
 /* eslint-disable */
 
 /**
- * Event-handler attributes (`onended`, `onloopended`, `onpositionchanged`, ...) must not
- * accumulate listener registrations in the native AudioEventHandlerRegistry.
+ * Event-handler attributes (`onended`, `onloopended`, `onpositionchanged`, ...)
+ * must not accumulate listener registrations in the native
+ * AudioEventHandlerRegistry.
  *
- * The registry is process-global and stores each handler as a `std::shared_ptr<jsi::Function>`,
- * so a registration that is never removed pins the callback — and, through its closure, the node,
- * its context and every buffer they own — for the lifetime of the runtime. Nothing else can
- * release it: it is reachable from C++, so no amount of JS garbage collection helps.
+ * The registry is process-global and stores each handler as a
+ * `std::shared_ptr<jsi::Function>`, so a registration that is never removed
+ * pins the callback — and, through its closure, the node, its context and every
+ * buffer they own — for the lifetime of the runtime. Nothing else can release
+ * it: it is reachable from C++, so no amount of JS garbage collection helps.
  *
- * The contract these tests pin down, matching how `AudioRecorder` already handles its own
- * subscriptions:
- *   - assigning a handler registers exactly one listener,
- *   - reassigning replaces it (the previous registration is removed),
- *   - assigning null removes it,
- *   - once a node's handlers are cleared, no registration is left outstanding.
+ * The contract these tests pin down, matching how `AudioRecorder` already
+ * handles its own subscriptions:
+ *
+ * - Assigning a handler registers exactly one listener,
+ * - Reassigning replaces it (the previous registration is removed),
+ * - Assigning null removes it,
+ * - Once a node's handlers are cleared, no registration is left outstanding.
  */
 
 import AudioScheduledSourceNode from '../src/core/AudioScheduledSourceNode';
@@ -27,17 +30,22 @@ class RecordingEventEmitter {
   readonly added: { name: string; id: string }[] = [];
   readonly removed: { name: string; id: string }[] = [];
 
-  addAudioEventListener = jest.fn((name: string, _callback: unknown): string => {
-    const id = `sub-${this.nextId++}`;
-    this.added.push({ name, id });
-    return id;
-  });
+  addAudioEventListener = jest.fn(
+    (name: string, _callback: unknown): string => {
+      const id = `sub-${this.nextId++}`;
+      this.added.push({ name, id });
+      return id;
+    }
+  );
 
   removeAudioEventListener = jest.fn((name: string, id: string): void => {
     this.removed.push({ name, id });
   });
 
-  /** Subscription ids handed out but never removed — i.e. leaked into the native registry. */
+  /**
+   * Subscription ids handed out but never removed — i.e. leaked into the native
+   * registry.
+   */
   outstanding(): string[] {
     const removedIds = new Set(this.removed.map((entry) => entry.id));
     return this.added
@@ -49,8 +57,9 @@ class RecordingEventEmitter {
 let emitter: RecordingEventEmitter;
 
 /**
- * Minimal stand-in for the native HostObject. Only the members the TS wrappers touch are
- * present; handler-id writes are kept so tests can check what the node was told.
+ * Minimal stand-in for the native HostObject. Only the members the TS wrappers
+ * touch are present; handler-id writes are kept so tests can check what the
+ * node was told.
  */
 function createNativeNode(extra: Record<string, unknown> = {}) {
   return {
@@ -68,7 +77,10 @@ function createContext() {
   return { currentTime: 0, markRunningOnSourceStart: jest.fn() } as any;
 }
 
-/** Stand-in for a native AudioParam HostObject, enough for the TS AudioParam wrapper. */
+/**
+ * Stand-in for a native AudioParam HostObject, enough for the TS AudioParam
+ * wrapper.
+ */
 function createNativeParam(value: number) {
   return {
     value,

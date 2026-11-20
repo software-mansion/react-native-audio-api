@@ -17,5 +17,4 @@ export interface SoundButtonProps {
   onPlaySound?: (id: string, source: AudioSource) => void;
 }
 
-
 export type DisplayType = 'spectrogram' | 'equalizer';

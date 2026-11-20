@@ -9,10 +9,10 @@ import TabItem from '@theme/TabItem';
 
 `react-native-audio-api` can link a number of prebuilt third-party libraries that are downloaded at build time. They enable additional decoding and streaming features, but also add several megabytes to the resulting application binary, so each one can be toggled with a build option.
 
-| Library set | Default | Option | What it adds |
-| :---- | :---: | :---: | :---- |
-| FFmpeg (`libavcodec`, `libavformat`, `libavutil`, `libswresample`) | **off** | `enableFFmpeg` | Remote URL streaming (HTTP byte ranges), HLS (`.m3u8`), remote URL metadata — see [Runtime flags](./runtime-flags#where-ffmpeg-is-used). |
-| Static libs (`libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile`) | **on** | `disableStaticExternalLibs` | Decoding `ogg`, `opus`, `oga` files |
+| Library set                                                                                    | Default |           Option            | What it adds                                                                                                                             |
+| :--------------------------------------------------------------------------------------------- | :-----: | :-------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| FFmpeg (`libavcodec`, `libavformat`, `libavutil`, `libswresample`)                             | **off** |       `enableFFmpeg`        | Remote URL streaming (HTTP byte ranges), HLS (`.m3u8`), remote URL metadata — see [Runtime flags](./runtime-flags#where-ffmpeg-is-used). |
+| Static libs (`libopus`, `libopusfile`, `libogg`, `libvorbis`, `libvorbisenc`, `libvorbisfile`) | **on**  | `disableStaticExternalLibs` | Decoding `ogg`, `opus`, `oga` files                                                                                                      |
 
 The options are independent and can be combined.
 

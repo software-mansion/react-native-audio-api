@@ -15,9 +15,9 @@ Microsoft::NodeApiJsi::JSRuntimeApi *NodeJSRuntimeApi::api() {
 }
 
 FuncPtr NodeJSRuntimeApi::ProcessSymbolResolver::getFuncPtr(const char *funcName) {
-#define NODE_API_FUNC(func)                   \
-  if (std::strcmp(funcName, #func) == 0) {    \
-    return reinterpret_cast<FuncPtr>(&func);  \
+#define NODE_API_FUNC(func) \
+  if (std::strcmp(funcName, #func) == 0) { \
+    return reinterpret_cast<FuncPtr>(&func); \
   }
 #include <ApiLoaders/NodeApi.inc>
 

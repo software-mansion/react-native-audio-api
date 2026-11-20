@@ -34,19 +34,25 @@ const FrequencyResponseGraph: React.FC = () => {
   const [filterFreq, setFilterFreq] = useState(350);
   const [filterQ, setFilterQ] = useState(1);
   const [filterGain, setFilterGain] = useState(0);
-  const [selectedAudio, setSelectedAudio] = useState<'speech' | 'music'>('speech');
+  const [selectedAudio, setSelectedAudio] = useState<'speech' | 'music'>(
+    'speech'
+  );
   const [isFilterReady, setIsFilterReady] = useState(false);
   const { colorMode } = useColorMode();
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const audioBuffersRef = useRef<{ speech: AudioBuffer | null; music: AudioBuffer | null }>({
+  const audioBuffersRef = useRef<{
+    speech: AudioBuffer | null;
+    music: AudioBuffer | null;
+  }>({
     speech: null,
     music: null,
   });
   const filterRef = useRef<BiquadFilterNode | null>(null);
 
-  const gridColor = colorMode === 'dark' ? 'rgba(252, 252, 255, 0.15)' : 'rgba(0, 0, 0, 0.2)';
+  const gridColor =
+    colorMode === 'dark' ? 'rgba(252, 252, 255, 0.15)' : 'rgba(0, 0, 0, 0.2)';
   const isSpeech = selectedAudio === 'speech';
 
   useEffect(() => {
@@ -63,11 +69,15 @@ const FrequencyResponseGraph: React.FC = () => {
 
       setIsLoading(true);
       try {
-        const speech = await fetch('/react-native-audio-api/audio/voice/example-voice-02.mp3')
+        const speech = await fetch(
+          '/react-native-audio-api/audio/voice/example-voice-02.mp3'
+        )
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
 
-        const music = await fetch('/react-native-audio-api/audio/music/example-music-03.mp3')
+        const music = await fetch(
+          '/react-native-audio-api/audio/music/example-music-03.mp3'
+        )
           .then((response) => response.arrayBuffer())
           .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
 
@@ -93,19 +103,22 @@ const FrequencyResponseGraph: React.FC = () => {
     };
   }, []);
 
-  const handleCanvasDraw = useCallback(({ canvas }: ResponsiveCanvasDrawParams) => {
-    if (!isFilterReady || !filterRef.current) {
-      return;
-    }
+  const handleCanvasDraw = useCallback(
+    ({ canvas }: ResponsiveCanvasDrawParams) => {
+      if (!isFilterReady || !filterRef.current) {
+        return;
+      }
 
-    const filter = filterRef.current;
-    filter.type = filterType;
-    filter.frequency.value = filterFreq;
-    filter.Q.value = filterQ;
-    filter.gain.value = filterGain;
+      const filter = filterRef.current;
+      filter.type = filterType;
+      filter.frequency.value = filterFreq;
+      filter.Q.value = filterQ;
+      filter.gain.value = filterGain;
 
-    drawFrequencyResponse(canvas, filter, gridColor);
-  }, [filterFreq, filterGain, filterQ, filterType, gridColor, isFilterReady]);
+      drawFrequencyResponse(canvas, filter, gridColor);
+    },
+    [filterFreq, filterGain, filterQ, filterType, gridColor, isFilterReady]
+  );
 
   const playAudio = async () => {
     const context = audioContextRef.current;
@@ -116,9 +129,10 @@ const FrequencyResponseGraph: React.FC = () => {
     bufferSourceRef.current?.stop();
     bufferSourceRef.current = null;
 
-    const buffer = selectedAudio === 'speech'
-      ? audioBuffersRef.current.speech
-      : audioBuffersRef.current.music;
+    const buffer =
+      selectedAudio === 'speech'
+        ? audioBuffersRef.current.speech
+        : audioBuffersRef.current.music;
 
     if (!buffer) {
       return;
@@ -172,7 +186,11 @@ const FrequencyResponseGraph: React.FC = () => {
         />
 
         <div className={styles.playPauseButtonContainer}>
-          <button type="button" onClick={handlePlayPause} className={styles.playPauseButton}>
+          <button
+            type="button"
+            onClick={handlePlayPause}
+            className={styles.playPauseButton}
+          >
             {isPlaying ? 'Pause' : 'Play'}
           </button>
         </div>
@@ -213,7 +231,9 @@ const FrequencyResponseGraph: React.FC = () => {
             />
           )}
 
-          {(filterType === 'peaking' || filterType === 'lowshelf' || filterType === 'highshelf') && (
+          {(filterType === 'peaking' ||
+            filterType === 'lowshelf' ||
+            filterType === 'highshelf') && (
             <SliderInput
               label="Gain"
               value={filterGain}

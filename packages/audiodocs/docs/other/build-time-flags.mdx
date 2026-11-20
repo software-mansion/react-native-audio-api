@@ -9,11 +9,11 @@ is linked, whether the bundled Opus / Ogg / Vorbis libraries are included, and w
 recorder is compiled in at all. The third-party libraries are prebuilt and downloaded at build
 time; each adds memory overhead to the app binary. Changing a flag needs a native rebuild.
 
-| Flag | Default | Effect |
-| :---- | :---: | :---- |
-| [`enableFFmpeg`](#enableffmpeg) | `false` | Links FFmpeg: remote URL streaming, HLS (`.m3u8`) and remote URL metadata. |
+| Flag                                                      | Default | Effect                                                                                                                                                 |
+| :-------------------------------------------------------- | :-----: | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`enableFFmpeg`](#enableffmpeg)                           | `false` | Links FFmpeg: remote URL streaming, HLS (`.m3u8`) and remote URL metadata.                                                                             |
 | [`disableStaticExternalLibs`](#disablestaticexternallibs) | `false` | Removes the bundled Opus / Ogg / Vorbis libraries: `ogg`, `opus` and `oga` decoding falls back to the system decoder, which on Android is much slower. |
-| [`disableAudioRecorder`](#disableaudiorecorder) | `false` | Leaves the recorder and every microphone API out of the build. |
+| [`disableAudioRecorder`](#disableaudiorecorder)           | `false` | Leaves the recorder and every microphone API out of the build.                                                                                         |
 
 The flags apply to both iOS and Android, are independent, and can be combined.
 
@@ -58,10 +58,10 @@ into the app.
 
 ### Where FFmpeg is used {#where-ffmpeg-is-used}
 
-| Area | API | Requires FFmpeg for |
-| :---: | :---: | :---- |
-| Streaming | [`<Audio>`](../sources/audio-tag.mdx), `createFileSource` | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
-| Metadata | [`getAudioDuration`](../utils/decoding.mdx#getaudioduration), [`<Audio>`](../sources/audio-tag.mdx) `preload="metadata"` | Remote `http(s):` URL duration probing |
+|   Area    |                                                           API                                                            | Requires FFmpeg for                                       |
+| :-------: | :----------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------- |
+| Streaming |                                [`<Audio>`](../sources/audio-tag.mdx), `createFileSource`                                 | Remote URL streaming (HTTP byte ranges) and HLS (`.m3u8`) |
+| Metadata  | [`getAudioDuration`](../utils/decoding.mdx#getaudioduration), [`<Audio>`](../sources/audio-tag.mdx) `preload="metadata"` | Remote `http(s):` URL duration probing                    |
 
 Without FFmpeg, remote progressive sources are fully downloaded in JS and decoded that way;
 `preload="metadata"` behaves like `none`; HLS sources fail with a `NotSupportedError`.

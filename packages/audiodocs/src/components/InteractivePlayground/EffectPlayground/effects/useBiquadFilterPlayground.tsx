@@ -37,10 +37,24 @@ const FILTER_TYPE_OPTIONS: Array<{ value: BiquadFilterType; label: string }> = [
   { value: 'allpass', label: 'All-pass' },
 ];
 
-const GAIN_FILTER_TYPES: BiquadFilterType[] = ['lowshelf', 'highshelf', 'peaking'];
-const Q_FILTER_TYPES: BiquadFilterType[] = ['lowpass', 'highpass', 'bandpass', 'peaking', 'notch', 'allpass'];
+const GAIN_FILTER_TYPES: BiquadFilterType[] = [
+  'lowshelf',
+  'highshelf',
+  'peaking',
+];
+const Q_FILTER_TYPES: BiquadFilterType[] = [
+  'lowpass',
+  'highpass',
+  'bandpass',
+  'peaking',
+  'notch',
+  'allpass',
+];
 
-const createBiquadFilterEffect: EffectFactory<BiquadFilterParams> = (ctx, params) => {
+const createBiquadFilterEffect: EffectFactory<BiquadFilterParams> = (
+  ctx,
+  params
+) => {
   const filter = ctx.createBiquadFilter();
   filter.type = params.type;
   filter.frequency.value = params.frequency;
@@ -79,12 +93,19 @@ export function useBiquadFilterPlayground() {
     [type, frequency, Q, gain, detune]
   );
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createBiquadFilterEffect,
-    params,
-    initialSource: 'music',
-    effectNodes: [{ label: 'BiquadFilterNode', sublabel: `${type} · ${formatFrequency(frequency)}` }],
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createBiquadFilterEffect,
+      params,
+      initialSource: 'music',
+      effectNodes: [
+        {
+          label: 'BiquadFilterNode',
+          sublabel: `${type} · ${formatFrequency(frequency)}`,
+        },
+      ],
+    }
+  );
 
   const setupLines = [
     'const filter = ctx.createBiquadFilter();',
@@ -124,10 +145,26 @@ filter.connect(ctx.destination);`,
         onChange={setFrequency}
       />
       {usesQ && (
-        <SliderInput label="Q" value={Q} min={0.1} max={30} step={0.01} scale="log" onChange={setQ} />
+        <SliderInput
+          label="Q"
+          value={Q}
+          min={0.1}
+          max={30}
+          step={0.01}
+          scale="log"
+          onChange={setQ}
+        />
       )}
       {usesGain && (
-        <SliderInput label="Gain" value={gain} min={-40} max={40} step={0.5} unit="dB" onChange={setGain} />
+        <SliderInput
+          label="Gain"
+          value={gain}
+          min={-40}
+          max={40}
+          step={0.5}
+          unit="dB"
+          onChange={setGain}
+        />
       )}
       <SliderInput
         label="Detune"

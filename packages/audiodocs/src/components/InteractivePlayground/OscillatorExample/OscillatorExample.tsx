@@ -1,13 +1,13 @@
-import React, { FC, useCallback, useEffect, useRef, useState } from "react";
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import {
   AnalyserNode,
   AudioContext,
   GainNode,
   OscillatorNode,
   OscillatorType,
-} from "react-native-audio-api";
-import styles from "../styles.module.css";
-import { WaveformVisualizer } from "../WaveformVisualizer";
+} from 'react-native-audio-api';
+import styles from '../styles.module.css';
+import { WaveformVisualizer } from '../WaveformVisualizer';
 
 const FFT_SIZE = 2048;
 
@@ -16,7 +16,7 @@ interface OscillatorExampleProps {
   frequency: number;
   detune: number;
   volume: number;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
 }
 
 const OscillatorExample: FC<OscillatorExampleProps> = ({
@@ -58,7 +58,7 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
     osc.detune.value = detune;
 
     const safeVolume =
-      type === "square" || type === "sawtooth" ? volume * 0.3 : volume;
+      type === 'square' || type === 'sawtooth' ? volume * 0.3 : volume;
     if (gainRef.current) gainRef.current.gain.value = safeVolume;
 
     osc.connect(gainRef.current!);
@@ -102,7 +102,7 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
       osc.detune.value = detune;
       osc.type = type;
       const safeVolume =
-        type === "square" || type === "sawtooth" ? volume * 0.3 : volume;
+        type === 'square' || type === 'sawtooth' ? volume * 0.3 : volume;
       g.gain.value = safeVolume;
 
       if (osc.type !== type) {
@@ -116,13 +116,17 @@ const OscillatorExample: FC<OscillatorExampleProps> = ({
 
   return (
     <div className={styles.oscillatorContainer}>
-      <WaveformVisualizer analyserNode={analyserRef.current} fftSize={FFT_SIZE} theme={theme} />
+      <WaveformVisualizer
+        analyserNode={analyserRef.current}
+        fftSize={FFT_SIZE}
+        theme={theme}
+      />
 
       <button
         onClick={() => (isPlaying ? stopSound() : playSound())}
-        className={`${styles.playButton} ${isPlaying ? styles.playing : ""}`}
+        className={`${styles.playButton} ${isPlaying ? styles.playing : ''}`}
       >
-        {isPlaying ? "Stop" : "Play"}
+        {isPlaying ? 'Stop' : 'Play'}
       </button>
     </div>
   );

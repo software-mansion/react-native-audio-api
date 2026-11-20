@@ -58,20 +58,20 @@ Required: `name` and `description`. Everything else is optional.
 
 ```yaml
 ---
-name: kebab-case-name           # matches the directory name; no claude/anthropic prefix
+name: kebab-case-name # matches the directory name; no claude/anthropic prefix
 description: >
   What the skill covers. When to use it.
   Trigger phrases: "phrase one", "phrase two".
 
 # — optional fields —
-context: fork                   # run as isolated subagent (see below)
-agent: Explore                  # subagent type: Explore / Plan / general-purpose / custom
-allowed-tools: "Read Grep Glob" # tools available without per-use approval
-model: claude-sonnet-4-6        # model override for this skill
-disable-model-invocation: true  # user can /invoke; Claude won't auto-load
-user-invocable: false           # Claude auto-loads; hidden from the /menu
-argument-hint: "[node-name]"    # shown in slash-command autocomplete
-hooks:                          # hooks scoped to this skill's lifecycle
+context: fork # run as isolated subagent (see below)
+agent: Explore # subagent type: Explore / Plan / general-purpose / custom
+allowed-tools: 'Read Grep Glob' # tools available without per-use approval
+model: claude-sonnet-4-6 # model override for this skill
+disable-model-invocation: true # user can /invoke; Claude won't auto-load
+user-invocable: false # Claude auto-loads; hidden from the /menu
+argument-hint: '[node-name]' # shown in slash-command autocomplete
+hooks: # hooks scoped to this skill's lifecycle
 metadata:
   author: team
   version: 1.0.0
@@ -116,11 +116,11 @@ description: >
 
 By default a skill is both user-invokable (`/skill-name`) and auto-loaded by Claude. Override with:
 
-| Frontmatter | User `/invoke` | Claude auto-load | Use when |
-|---|---|---|---|
-| (default) | Yes | Yes | General knowledge skills |
-| `disable-model-invocation: true` | Yes | No | Task-only / deployment skills |
-| `user-invocable: false` | No | Yes | Internal / meta knowledge |
+| Frontmatter                      | User `/invoke` | Claude auto-load | Use when                      |
+| -------------------------------- | -------------- | ---------------- | ----------------------------- |
+| (default)                        | Yes            | Yes              | General knowledge skills      |
+| `disable-model-invocation: true` | Yes            | No               | Task-only / deployment skills |
+| `user-invocable: false`          | No             | Yes              | Internal / meta knowledge     |
 
 ---
 
@@ -163,6 +163,7 @@ ${CLAUDE_SKILL_DIR}    absolute path to the skill directory — use to reference
 
 ```markdown
 ## Context
+
 Branch: !`git branch --show-current`
 Last commits: !`git log --oneline -5`
 ```
@@ -202,8 +203,8 @@ Readers may stop reading early — put the highest-value content first.
 
 Review this skill when `pre-push-update` reports changes in:
 
-| Path | What to check |
-|---|---|
+| Path             | What to check                |
+| ---------------- | ---------------------------- |
 | `path/to/file.*` | What to review in this skill |
 ```
 
@@ -219,13 +220,13 @@ Review this skill when `pre-push-update` reports changes in:
 
 ### What belongs in the skill body vs supporting files
 
-| Belongs in skill body | Move to supporting file |
-|---|---|
-| API overview (1-line per method) | Complete header + .cpp of a class |
-| Key usage patterns (5–15 line snippets) | Full working example (50+ lines) |
-| Decision tables, checklists | Exhaustive per-flag build analysis |
-| Common pitfalls (concise) | Line-by-line CMakeLists commentary |
-| Links to spec or docs | Full `.hpp` API with every overload |
+| Belongs in skill body                   | Move to supporting file             |
+| --------------------------------------- | ----------------------------------- |
+| API overview (1-line per method)        | Complete header + .cpp of a class   |
+| Key usage patterns (5–15 line snippets) | Full working example (50+ lines)    |
+| Decision tables, checklists             | Exhaustive per-flag build analysis  |
+| Common pitfalls (concise)               | Line-by-line CMakeLists commentary  |
+| Links to spec or docs                   | Full `.hpp` API with every overload |
 
 ---
 
@@ -238,15 +239,15 @@ Each skill directory has a `maintenance.md` file mapping source paths to what ne
 
 > Used by /pre-push-update only — not loaded during skill usage.
 
-| Path | What to check |
-|---|---|
+| Path             | What to check                         |
+| ---------------- | ------------------------------------- |
 | `path/to/file.*` | Specific section or element to review |
 ```
 
 `SKILL.md` ends with a single footer line linking to it:
 
 ```markdown
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._
 ```
 
 Supporting files do **not** have their own maintenance sections — their rows go into the same `maintenance.md`.
@@ -309,4 +310,4 @@ Supporting files do **not** need YAML frontmatter or a `name` field — they are
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

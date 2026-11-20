@@ -7,7 +7,9 @@ require('./native-module');
 
 const mediaDevices = {
   async getUserMedia() {
-    throw new Error('mediaDevices.getUserMedia is not supported in Node phase-1 bindings.');
+    throw new Error(
+      'mediaDevices.getUserMedia is not supported in Node phase-1 bindings.'
+    );
   },
 };
 

@@ -9,6 +9,7 @@ export type { ContainerProps } from './Container';
 export { default as Spacer } from './Spacer';
 
 export type {
-  HorizontalSpacerProps, SpacerProps, VerticalSpacerProps
+  HorizontalSpacerProps,
+  SpacerProps,
+  VerticalSpacerProps,
 } from './Spacer';
-

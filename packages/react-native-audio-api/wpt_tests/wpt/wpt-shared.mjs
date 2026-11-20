@@ -149,11 +149,12 @@ export function alignGlobalRealmConstructors(window) {
 }
 
 /**
- * Record every realtime AudioContext a test constructs, so the harness can close
- * the ones the test abandoned. Each context owns native worker threads that only
- * a close() (or GC, eventually) releases; without this, leaked contexts pile up
- * across files and the process ends the run holding hundreds of threads.
- * OfflineAudioContext has no close() and winds down when its render finishes.
+ * Record every realtime AudioContext a test constructs, so the harness can
+ * close the ones the test abandoned. Each context owns native worker threads
+ * that only a close() (or GC, eventually) releases; without this, leaked
+ * contexts pile up across files and the process ends the run holding hundreds
+ * of threads. OfflineAudioContext has no close() and winds down when its render
+ * finishes.
  */
 function trackRealtimeAudioContexts(window, liveContexts) {
   const Previous = window.AudioContext;

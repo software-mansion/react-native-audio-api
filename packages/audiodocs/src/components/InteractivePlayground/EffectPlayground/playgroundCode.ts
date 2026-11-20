@@ -6,7 +6,10 @@ interface EffectCodeParts {
   setup: string;
   /** Lines that connect the graph while the effect is active. */
   wiring: string;
-  /** Lines that connect the graph while the effect is bypassed; defaults to a direct connection. */
+  /**
+   * Lines that connect the graph while the effect is bypassed; defaults to a
+   * direct connection.
+   */
   bypassedWiring?: string;
   /** Helper functions printed after the graph code. */
   helpers?: string;

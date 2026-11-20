@@ -87,7 +87,10 @@ Logging a node enumerates its properties and may warm internal caches. In develo
 Prefer logging plain values instead:
 
 ```tsx
-console.log({ channelCount: node.channelCount, numberOfInputs: node.numberOfInputs });
+console.log({
+  channelCount: node.channelCount,
+  numberOfInputs: node.numberOfInputs,
+});
 ```
 
 :::

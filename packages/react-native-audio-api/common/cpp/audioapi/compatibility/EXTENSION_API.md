@@ -14,14 +14,14 @@ extensions are pulled in by `StableAPI.h`. Everything else is internal.
 
 ## Android (Prefab)
 
-| Item | Value |
-|---|---|
-| Gradle module | `:react-native-audio-api` |
-| Prefab package | `react-native-audio-api` |
-| CMake `find_package` | `find_package(react-native-audio-api REQUIRED CONFIG)` |
-| Link target | `react-native-audio-api::react-native-audio-api` |
-| Shared library | `libreact-native-audio-api.so` |
-| **Only public include** | `<audioapi/compatibility/StableAPI.h>` |
+| Item                    | Value                                                  |
+| ----------------------- | ------------------------------------------------------ |
+| Gradle module           | `:react-native-audio-api`                              |
+| Prefab package          | `react-native-audio-api`                               |
+| CMake `find_package`    | `find_package(react-native-audio-api REQUIRED CONFIG)` |
+| Link target             | `react-native-audio-api::react-native-audio-api`       |
+| Shared library          | `libreact-native-audio-api.so`                         |
+| **Only public include** | `<audioapi/compatibility/StableAPI.h>`                 |
 
 ### Example `CMakeLists.txt`
 
@@ -44,12 +44,12 @@ a type an extension needs belongs in `StableAPI.h`.
 
 ## iOS (CocoaPods)
 
-| Item | Value |
-|---|---|
-| Pod | `RNAudioAPI` |
-| Podspec dependency | `s.dependency 'RNAudioAPI'` |
-| npm peer dependency | `react-native-audio-api` (in extension `package.json`) |
-| **Only public include** | `<audioapi/compatibility/StableAPI.h>` |
+| Item                    | Value                                                  |
+| ----------------------- | ------------------------------------------------------ |
+| Pod                     | `RNAudioAPI`                                           |
+| Podspec dependency      | `s.dependency 'RNAudioAPI'`                            |
+| npm peer dependency     | `react-native-audio-api` (in extension `package.json`) |
+| **Only public include** | `<audioapi/compatibility/StableAPI.h>`                 |
 
 ### Example `*.podspec`
 
@@ -99,23 +99,23 @@ obvious in the podspec:
 
 ## API available through `StableAPI.h`
 
-| Type / header (transitive) | Purpose |
-|---|---|
-| `audioapi::BaseAudioContextHostObject` | Resolve `AudioContext` from a JSI object via `getContext()` |
-| `audioapi::AudioNodeHostObject` | Base HostObject for custom nodes exposed to JS |
-| `audioapi::BaseAudioContext` | Context handle; `getGraph()`, scheduling, sample rate |
-| `audioapi::AudioNode` | Base class for custom `AudioNode` implementations |
-| `audioapi::AudioScheduledSourceNodeHostObject` | HostObject base for scheduled source nodes (`start`/`stop`/`onended`) |
-| `audioapi::AudioScheduledSourceNode` | Base class for scheduled sources (e.g. worklet generators) |
-| `audioapi::AudioDestinationNode` | Destination passed to `BaseAudioContext::initialize` overrides |
-| `audioapi::AudioEventHandlerRegistryHostObject` | Host object behind the global `AudioEventEmitter`; gives access to the event registry |
-| `audioapi::typedAudioNode<NodeT>()` (via `HostObjects/TypedAudioNodePtr.hpp`) | Downcast a HostObject's graph node to its concrete `AudioNode` type |
-| `AudioScheduledSourceNodeOptions` (via `types/NodeOptions.h`) | Options for scheduled source HostObjects |
-| `audioapi::utils::graph::Graph` | Audio graph owned by the context |
-| `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`) | Frame-size and engine constants |
-| `audioapi::AudioBuffer` | Multi-channel float buffer |
-| `audioapi::AudioArrayBuffer` | Single-channel float buffer; implements `jsi::MutableBuffer` for zero-copy JSI `ArrayBuffer` handoff |
-| `DELETE_COPY_AND_MOVE` (via `utils/Macros.h`) | Macro to delete copy and move constructors/assignment for extension-owned classes |
+| Type / header (transitive)                                                    | Purpose                                                                                              |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `audioapi::BaseAudioContextHostObject`                                        | Resolve `AudioContext` from a JSI object via `getContext()`                                          |
+| `audioapi::AudioNodeHostObject`                                               | Base HostObject for custom nodes exposed to JS                                                       |
+| `audioapi::BaseAudioContext`                                                  | Context handle; `getGraph()`, scheduling, sample rate                                                |
+| `audioapi::AudioNode`                                                         | Base class for custom `AudioNode` implementations                                                    |
+| `audioapi::AudioScheduledSourceNodeHostObject`                                | HostObject base for scheduled source nodes (`start`/`stop`/`onended`)                                |
+| `audioapi::AudioScheduledSourceNode`                                          | Base class for scheduled sources (e.g. worklet generators)                                           |
+| `audioapi::AudioDestinationNode`                                              | Destination passed to `BaseAudioContext::initialize` overrides                                       |
+| `audioapi::AudioEventHandlerRegistryHostObject`                               | Host object behind the global `AudioEventEmitter`; gives access to the event registry                |
+| `audioapi::typedAudioNode<NodeT>()` (via `HostObjects/TypedAudioNodePtr.hpp`) | Downcast a HostObject's graph node to its concrete `AudioNode` type                                  |
+| `AudioScheduledSourceNodeOptions` (via `types/NodeOptions.h`)                 | Options for scheduled source HostObjects                                                             |
+| `audioapi::utils::graph::Graph`                                               | Audio graph owned by the context                                                                     |
+| `RENDER_QUANTUM_SIZE` etc. (via `core/utils/Constants.h`)                     | Frame-size and engine constants                                                                      |
+| `audioapi::AudioBuffer`                                                       | Multi-channel float buffer                                                                           |
+| `audioapi::AudioArrayBuffer`                                                  | Single-channel float buffer; implements `jsi::MutableBuffer` for zero-copy JSI `ArrayBuffer` handoff |
+| `DELETE_COPY_AND_MOVE` (via `utils/Macros.h`)                                 | Macro to delete copy and move constructors/assignment for extension-owned classes                    |
 
 ---
 
