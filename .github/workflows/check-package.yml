@@ -37,6 +37,7 @@ jobs:
         uses: ./.github/actions/setup-env
         with:
           tools: ${{ steps.manifest.outputs.tools }}
+          directory: ${{ inputs.directory }}
           install-args: --filter "${{ steps.manifest.outputs.name }}..."
 
       - name: Build
