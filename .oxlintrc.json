@@ -22,7 +22,8 @@
   ],
   "ignorePatterns": [
     "**/lib/**",
-    "packages/react-native-audio-api/src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/**"
+    "packages/react-native-audio-api/src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/**",
+    "packages/react-native-audio-api/wpt_tests/webaudio/**"
   ],
   "overrides": [
     {

@@ -8,4 +8,4 @@ apps/** linguist-vendored
 docs/** linguist-vendored
 .github/** linguist-vendored
 packages/audiodocs/** linguist-documentation
-packages/react-native-audio-api/src/web-core/custom/signalsmithStretch/* linguist-vendored
+packages/react-native-audio-api/src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/* linguist-vendored
