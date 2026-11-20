@@ -466,8 +466,13 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 `compile_commands.json` that clangd reads (`pnpm setup:clangd` runs both, or
 `pnpm setup:clangd:clean` after a native dependency bump). It never participates
 in a real build, but it is more than editor tooling: `pnpm lint:cpp`
-(`scripts/clang-tidy.sh`) lints each package from its `common/cpp/clangd/build`
-database. See the `SETUP.md` files.
+(`scripts/clang-tidy.sh`) lints each package's `common/cpp` and iOS platform code (`ios/audioapi/ios`) from its
+`common/cpp/clangd/build` database (iOS entries exist only with the example app's
+Pods installed) and the Android platform code (`android/src/main/cpp`) from Gradle's `android/.cxx` database
+(written by an Android build). A platform without compile commands is skipped with a
+message naming its files; CI's package job has neither, so it lints `common/cpp`
+only. `ios/.clang-tidy` turns off checks that suggest C++-only syntax in
+Objective-C and C-compatible headers. See the `SETUP.md` files.
 
 Things a fresh clone needs, all handled by the generate scripts:
 
