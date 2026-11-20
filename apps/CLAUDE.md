@@ -116,6 +116,8 @@ apps/common-app/src/demos/MyDemo/
 
 ### 2. Register in the index
 
+Add the key to `DemoParamList` in the same file, then the entry (the demos get their own param list because one list with every screen is too large a union for `navigate` to typecheck).
+
 ```ts
 // apps/common-app/src/demos/index.ts
 import MyDemo from './MyDemo/MyDemo';

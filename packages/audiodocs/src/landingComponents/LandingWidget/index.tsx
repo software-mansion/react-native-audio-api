@@ -55,7 +55,7 @@ const LandingWidget: React.FC = () => {
       const promises = Object
         .entries(soundSources)
         .map(async ([key, path]) => ({
-          key,
+          key: key as AudioSource,
           ...(await AudioManager.loadSound(path)),
         }));
 
@@ -64,7 +64,7 @@ const LandingWidget: React.FC = () => {
           const newSounds = { ...initialSounds };
 
           results.forEach(({ key, ...metadata }) => {
-            newSounds[key] = metadata;
+            newSounds[key] = { ...metadata, sourceName: key };
           });
 
           setSounds(newSounds);

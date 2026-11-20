@@ -31,7 +31,7 @@ const sourceList: Partial<Record<KeyName, string>> = {
   E: '/react-native-audio-api/audio/sounds/E4.mp3',
 };
 
-const noteToFrequency = {
+const noteToFrequency: Record<KeyName, number> = {
   A: 220.0, // A3
   B: 246.942, // B3
   C: 261.626, // C4
@@ -40,10 +40,10 @@ const noteToFrequency = {
 };
 
 function getClosest(key: KeyName) {
-  let closestKey = 'A';
+  let closestKey: KeyName = 'A';
   let minDiff = noteToFrequency.A - noteToFrequency[key];
 
-  for (const sourcedKey of Object.keys(sourceList)) {
+  for (const sourcedKey of Object.keys(sourceList) as KeyName[]) {
     const diff = noteToFrequency[sourcedKey] - noteToFrequency[key];
 
     if (Math.abs(diff) < Math.abs(minDiff)) {
@@ -92,7 +92,7 @@ const SimplePiano: FC = () => {
 
     const source = aCtx.createBufferSource();
     const envelope = aCtx.createGain();
-    source.buffer = buffer;
+    source.buffer = buffer ?? null;
     source.playbackRate.value = playbackRate;
 
     const tNow = aCtx.currentTime;
@@ -108,13 +108,14 @@ const SimplePiano: FC = () => {
   };
 
   const onKeyPressOut = (which: KeyName) => {
-    const { source, envelope, startedAt } = playingNotesRef.current[which];
-
+    const playingNote = playingNotesRef.current[which];
     const aCtx = audioContextRef.current;
 
-    if (!source || !envelope || !aCtx) {
+    if (!playingNote || !aCtx) {
       return;
     }
+
+    const { source, envelope, startedAt } = playingNote;
 
     const tNow = Math.max(aCtx.currentTime, startedAt + 5);
 

@@ -26,7 +26,7 @@ const initialValues: EqualizerControl[] = frequencies.map(freq => ({
   gain: 0,
 }));
 
-export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCanvasElement>) {
+export default function useEqualizerControls(canvasRef?: React.RefObject<HTMLCanvasElement | null>) {
   const [equalizerBands, setEqualizerBands] = useState<EqualizerControl[]>(initialValues);
   const dragState = useRef<DragState>({
     isDragging: false,

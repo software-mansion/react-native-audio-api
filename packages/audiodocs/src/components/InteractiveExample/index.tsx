@@ -12,60 +12,8 @@ import CopyDark from '@site/static/img/copy-dark.svg';
 import Reset from '@site/static/img/reset.svg';
 import ResetDark from '@site/static/img/reset-dark.svg';
 
-import ts from 'typescript';
-import prettier from 'prettier/standalone';
-import babelParser from 'prettier/parser-babel';
-
 import AnimableIcon, { Animation } from '../AnimableIcon';
 import styles from './styles.module.css';
-
-function compileTSXtoJSX(tsxCode: string): string {
-  const PLACEHOLDER_FOR_EMPTY_LINES = '// PLACEHOLDER-FOR-EMPTY-LINES';
-  const PLACEHOLDER_FOR_BREAKING_LINES = '// PLACEHOLDER-FOR-BREAKING-LINES';
-
-  // Adding comments to the end of each line to avoid vanishing empty lines
-  tsxCode = tsxCode
-    .split('\n')
-    .map((line) =>
-      line.trim() === ''
-        ? PLACEHOLDER_FOR_EMPTY_LINES
-        : line + PLACEHOLDER_FOR_BREAKING_LINES
-    )
-    .join('\n');
-  const result = ts.transpileModule(tsxCode, {
-    compilerOptions: {
-      module: ts.ModuleKind.ESNext,
-      jsx: ts.JsxEmit.Preserve,
-      pretty: true,
-      target: ts.ScriptTarget.ES2020,
-      removeComments: false,
-      noEmit: false,
-      indentSize: 2,
-    },
-  });
-
-  const output = result.outputText
-    .split('\n')
-    .map((l) =>
-      l.trim() === PLACEHOLDER_FOR_EMPTY_LINES
-        ? ''
-        : l.trim().endsWith(PLACEHOLDER_FOR_BREAKING_LINES)
-        ? l.slice(0, l.indexOf(PLACEHOLDER_FOR_BREAKING_LINES)).trimEnd()
-        : l
-    )
-    .join('\n');
-
-  return prettier.format(output, {
-    parser: 'babel',
-    bracketSameLine: true,
-    printWidth: 80,
-    singleQuote: true,
-    trailingComma: 'es5',
-    tabWidth: 2,
-    arrowParens: 'always',
-    plugins: [babelParser],
-  }) as unknown as string;
-}
 
 interface Props {
   src: string;
@@ -78,7 +26,6 @@ interface Props {
 enum Tab {
   PREVIEW,
   TYPESCRIPT,
-  JAVASCRIPT,
 }
 
 export default function InteractiveExample({
@@ -91,7 +38,6 @@ export default function InteractiveExample({
   const [_, copy] = useCopyToClipboard();
   const [key, setKey] = React.useState(0);
   const [tab, setTab] = React.useState<Tab>(Tab.PREVIEW);
-  const [jsxCode, setJsxCode] = React.useState(() => compileTSXtoJSX(tsxCode));
   const [width, setWidth] = React.useState<number | null>(null);
 
   const interactiveExampleRef = React.useRef<HTMLDivElement>(null);
@@ -149,15 +95,6 @@ export default function InteractiveExample({
               >
                 TS
               </button>
-              <button
-                className={clsx(
-                  styles.actionButton,
-                  tab === Tab.JAVASCRIPT ? styles.actionButtonActive : ''
-                )}
-                onClick={() => setTab(Tab.JAVASCRIPT)}
-              >
-                JS
-              </button>
             </div>
             <AnimableIcon
               icon={<Copy />}
@@ -165,7 +102,7 @@ export default function InteractiveExample({
               animation={Animation.FADE_IN_OUT}
               onClick={(actionPerformed, setActionPerformed) => {
                 if (!actionPerformed) {
-                  copy(tab === Tab.JAVASCRIPT ? jsxCode : tsxCode);
+                  copy(tsxCode);
                   setActionPerformed(true);
                 }
               }}
@@ -199,13 +136,9 @@ export default function InteractiveExample({
                   />
                 </div>
               </>
-            ) : tab === Tab.TYPESCRIPT ? (
-              <div className={styles.interactiveCodeBlock}>
-                <CodeBlock language="tsx">{tsxCode}</CodeBlock>
-              </div>
             ) : (
               <div className={styles.interactiveCodeBlock}>
-                <CodeBlock language="jsx">{jsxCode}</CodeBlock>
+                <CodeBlock language="tsx">{tsxCode}</CodeBlock>
               </div>
             )}
           </div>

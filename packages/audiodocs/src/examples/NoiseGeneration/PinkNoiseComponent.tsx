@@ -12,7 +12,7 @@ const PinkNoise: FC = () => {
     const aCtx = aCtxRef.current;
 
     if (!aCtx) {
-      return undefined;
+      return null;
     }
 
     const bufferSize = 2 * aCtx.sampleRate;
@@ -41,7 +41,7 @@ const PinkNoise: FC = () => {
   }
 
   const onPressIn = async () => {
-    if (!bufferNodeRef.current) {
+    if (!bufferNodeRef.current && aCtxRef.current && gainRef.current) {
       bufferNodeRef.current = await aCtxRef.current.createBufferSource();
       bufferNodeRef.current.buffer = bufferRef.current;
       bufferNodeRef.current.loop = true;

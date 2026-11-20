@@ -1,6 +1,6 @@
 import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
+import { AudioContext, NotSupportedError } from 'react-native-audio-api';
 import type { AudioParam } from 'react-native-audio-api';
 
 import { Button, Container, Spacer } from '../../components';
@@ -14,7 +14,6 @@ import {
   type StepItem,
   type SummaryItem,
 } from '../../testComponents';
-import { NotSupportedError } from '../../../../../packages/react-native-audio-api/src/errors';
 
 // ---------------------------------------------------------------------------
 // Data types

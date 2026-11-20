@@ -6,7 +6,7 @@ import ScenarioCard from './ScenarioCard';
 import SectionTitle from './SectionTitle';
 import type { ScenarioItem } from './types';
 
-interface ScenarioResultsProps {
+export interface ScenarioResultsProps {
   scenarios: ScenarioItem[];
   emptyMessage: string;
   title?: string;

@@ -145,9 +145,7 @@ export default class AudioBufferSourceNodeStandard implements AudioBufferSourceN
   }
 
   public set onended(callback: ((event: Event) => void) | null) {
-    this.node.onended = callback as
-      | ((this: AudioScheduledSourceNode, ev: Event) => unknown)
-      | null;
+    this.node.onended = callback;
   }
 
   public get onloopended(): ((event: object) => void) | undefined {

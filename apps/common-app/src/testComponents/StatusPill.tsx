@@ -5,7 +5,7 @@ import { colors } from '../styles';
 import { statusPillBackgroundColors } from './statusStyles';
 import type { ScenarioStatus } from './types';
 
-interface StatusPillProps {
+export interface StatusPillProps {
   status: ScenarioStatus;
 }
 

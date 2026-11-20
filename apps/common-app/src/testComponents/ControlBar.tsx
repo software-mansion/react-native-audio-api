@@ -5,7 +5,7 @@ import { Button } from '../components';
 import { layout } from '../styles';
 import type { ControlAction } from './types';
 
-interface ControlBarProps {
+export interface ControlBarProps {
   actions: ControlAction[];
 }
 
