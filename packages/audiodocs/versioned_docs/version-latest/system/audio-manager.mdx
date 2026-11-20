@@ -244,6 +244,7 @@ Even if background interruption recovery is unsuccessful, the library retries wi
 ### `AudioFocusType`
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type AudioFocusType =
   | 'gain'
@@ -331,6 +332,7 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
 ```
@@ -380,6 +382,7 @@ type SystemEventName = keyof SystemEvents;
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
@@ -391,6 +394,7 @@ type SystemEventCallback<Name extends SystemEventName> = (
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface AudioEventSubscription {
   /** @internal */

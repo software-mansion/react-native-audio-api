@@ -24,6 +24,7 @@ The `PlaybackNotificationManager` provides media session integration and playbac
 **Android:**
 - Notification visibility is controlled directly by `show()` and `hide()`.
 - Notification controls work independently of `AudioContext` state.
+
 :::
 
 ## Example
@@ -153,6 +154,7 @@ Adds an event listener for notification actions.
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface PlaybackNotificationInfo {
   title?: string;
@@ -196,6 +198,7 @@ interface PlaybackNotificationInfo {
 
 <details>
   <summary>Type definitions</summary>
+
 ```typescript
 type PlaybackControlName =
   | 'play'
@@ -213,6 +216,7 @@ type PlaybackControlName =
 
 <details>
   <summary>Type definitions</summary>
+
 ```typescript
 interface EventEmptyType {}
 
@@ -240,6 +244,7 @@ type PlaybackNotificationEventName = keyof PlaybackNotificationEvent;
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type NotificationCallback<Name extends PlaybackNotificationEventName> = (
   event: PlaybackNotificationEvent[Name]

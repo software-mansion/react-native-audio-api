@@ -97,7 +97,7 @@ Docusaurus collects link targets from heading ids. A hand-rolled `<span id="foo"
 but is not collected, so `](#foo)` fails the build. To link to something smaller than a section,
 link to the heading that contains it.
 
-A badge in a heading also leaks into its slug — `### \`consumeLastRecordingResult\` <Android />`
+A badge in a heading also leaks into its slug — `` ### `consumeLastRecordingResult` <Android /> ``
 becomes `#consumelastrecordingresult-`, with a trailing hyphen. Pin the anchor explicitly instead:
 
 ```mdx
@@ -131,7 +131,7 @@ sidebar_position: 3
 
 ### Full page structure for an audio node
 
-```mdx
+````mdx
 ---
 sidebar_position: 3
 ---
@@ -201,7 +201,7 @@ Inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 - Nominal range is -∞ to ∞.
 - Values greater than `1.0` amplify the signal; values between `0.0` and `1.0` attenuate it.
 - A value of `0.0` silences the signal. Negative values invert the signal phase.
-```
+````
 
 ## Custom MDX Components
 
@@ -348,6 +348,13 @@ Helpful tip.
 Something to watch out for.
 :::
 ```
+
+### Blank lines oxfmt needs
+
+oxfmt formats `.md` / `.mdx`. It flattens a code fence that starts right after a JSX/HTML tag line
+(`<summary>…</summary>`, `<TabItem …>`, `<div>`) into prose, or breaks the MDX, and it indents a
+`:::` closer that follows a list item into the list. Leave a blank line before the fence or the
+`:::`. Nothing checks for it; after formatting, the damage is just prose where code was.
 
 ### Collapsible blocks
 
