@@ -468,54 +468,15 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 in a real build, but it is more than editor tooling: `pnpm lint:cpp`
 (`scripts/clang-tidy.sh`) lints each package's `common/cpp` and iOS platform code (`ios/audioapi/ios`) from its
 `common/cpp/clangd/build` database (iOS entries exist only with the example app's
-Pods installed) and the Android platform code (`android/src/main/cpp`) from Gradle's `android/.cxx` database
+Pods installed) and the Android platform code (`android/src/main/cpp`) from Gradle's `android/.cxx` database,
+falling back to the example app's Gradle database for code only the app compiles
 (written by an Android build). A platform without compile commands is skipped with a
 message naming its files; CI's package job has neither, so it lints `common/cpp`
 only. `ios/.clang-tidy` turns off checks that suggest C++-only syntax in
 Objective-C and C-compatible headers. See the `SETUP.md` files.
 
-Things a fresh clone needs, all handled by the generate scripts:
-
-- **macOS SDK.** CMake 4 no longer picks one, so both CMakeLists add
-  `-isysroot $(xcrun --show-sdk-path)` as an explicit compile option (CMake's own
-  `CMAKE_OSX_SYSROOT` only takes effect on a build directory's first configure).
-  Without it, Homebrew clang-tidy/clangd fail every file with `'cstdint' file not found`.
-  In audio-api it goes on the host targets only, never directory-wide: CMake
-  de-duplicates a repeated `-isysroot`, so the iOS targets would lose their
-  simulator SDK (stray path left behind) and every `.mm` fails on UIKit.
-- **FFmpeg headers.** `FfmpegDecoder.h` includes `libav*`; audio-api's script runs
-  `download-prebuilt-binaries.sh headers` (only `include_ffmpeg.zip`).
-- **Worklets codegen and glog.** Worklets' script runs React Native codegen
-  (`generate-codegen-artifacts.js --source library`) into its build directory for
-  `rnaudioworkletsJSI.h`, and the target defines `REACT_NATIVE_PRODUCTION` so
-  `react_native_assert.h` does not include glog (Pods only).
-  `NativeAudioWorkletsModule.cpp` still needs folly (Pods/Gradle only), so
-  `lint:cpp` skips it.
-
-The iOS half reuses whatever `pod install` resolved for `apps/fabric-example`,
-reading **both** `HEADER_SEARCH_PATHS` and `FRAMEWORK_SEARCH_PATHS` out of
-`Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig`.
-
-Framework search paths matter because React-Core ships prebuilt as
-`React.xcframework` since RN 0.87: `#import <React/RCTBridgeModule.h>` resolves
-via `-F`, not `-I`, so an `-I`-only database fails every `.mm` that imports
-React. Xcode's own `-F` points at `PODS_XCFRAMEWORKS_BUILD_DIR`, which only
-exists after Xcode has unpacked the slices — the CMakeLists globs the
-`ios-*simulator*` slices inside the `.xcframework` bundles instead, so a bare
-`pod install` suffices.
-
-To check the database rather than guessing at clangd, replay an entry directly:
-
-```bash
-python3 -c "
-import json,shlex,subprocess
-e=[x for x in json.load(open('compile_commands.json')) if x['file'].endswith('ios/AudioAPIModule.mm')][0]
-toks=[t for t in shlex.split(e['command']) if t!='-c']
-subprocess.run(toks[:toks.index('-o')]+toks[toks.index('-o')+2:]+['-fsyntax-only'], cwd=e['directory'])
-"
-```
-
-If that reproduces the error, the database is wrong — not the editor's LSP setup.
+Fresh-clone requirements (macOS SDK, FFmpeg headers, worklets codegen), the iOS
+Pods search paths and how to replay a database entry: [build-details.md](build-details.md#clangd-compile-database-setup-details).
 
 ---
 

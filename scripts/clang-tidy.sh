@@ -8,14 +8,17 @@ Runs clang-tidy on the package's C++, Objective-C++ and Objective-C, from the
 package directory (`pnpm lint:cpp`). With files, checks only those in a compile
 database.
 
-Compile databases:
-  common/cpp and iOS  the clangd CMake project (`pnpm setup:clangd`); iOS files are
-                      in it only when the example app's Pods are installed
-  Android             Gradle's android/.cxx database, written by an Android build
-A platform whose files have no compile commands is skipped, and the run says so.
+Compile databases, in order; each file is linted from the first that has it:
+  the clangd CMake project (`pnpm setup:clangd`): common/cpp, and iOS when the
+    example app's Pods are installed
+  the package's Gradle database (android/.cxx): its Android code
+  the example app's Gradle database: code only the app compiles for Android, such
+    as worklets' NativeAudioWorkletsModule.cpp (needs folly)
+The Gradle databases exist after an Android build of the example app. Files under
+common/cpp, ios and android/src/main/cpp that no database has are skipped, and the
+run names them.
 
-Skipped: vendored code, C files, ios/spm, and NativeAudioWorkletsModule.cpp
-(needs folly, which only Pods or Gradle provide).
+Skipped: vendored code, C files, ios/spm.
 Config: the root .clang-tidy, plus common/cpp/test/.clang-tidy and ios/.clang-tidy.
 
 Errors fail the run. Warnings are counted per check; --warnings lists them.
@@ -70,68 +73,67 @@ elif [[ ! -f "$DB" ]]; then
 fi
 
 # Gradle writes one database per variant and ABI; the newest arm64 one is current.
-ANDROID_DB=""
-for candidate in "${PACKAGE_DIR}"/android/.cxx/*/*/arm64-v8a/compile_commands.json; do
-  if [[ -f "$candidate" && (-z "$ANDROID_DB" || "$candidate" -nt "$ANDROID_DB") ]]; then
-    ANDROID_DB="$candidate"
-  fi
-done
+newest_gradle_db() {
+  local newest="" candidate
+  for candidate in "$1"/.cxx/*/*/arm64-v8a/compile_commands.json; do
+    if [[ -f "$candidate" && (-z "$newest" || "$candidate" -nt "$newest") ]]; then
+      newest="$candidate"
+    fi
+  done
+  echo "$newest"
+}
+# The package's own native build, and the example app, which also compiles code
+# the package has no Android build for (worklets' C++).
+PACKAGE_GRADLE_DB="$(newest_gradle_db "${PACKAGE_DIR}/android")"
+APP_GRADLE_DB="$(newest_gradle_db "$(git rev-parse --show-toplevel)/apps/fabric-example/android/app")"
 
 CLANG_TIDY_BIN="$(find_clang_tidy)"
 
-# Prints "<database dir><TAB><file>" per lintable file, then notes on stderr the tracked
-# platform files that no database covers.
+# Prints "<database dir><TAB><file>" per lintable file, each from the first database
+# that compiles it, then names on stderr the tracked sources no database covers.
 lintable_files() {
-  python3 - "$PACKAGE_DIR" "$DB" "$ANDROID_DB" <<'PY'
+  python3 - "$PACKAGE_DIR" "$DB" "$PACKAGE_GRADLE_DB" "$APP_GRADLE_DB" <<'PY'
 import json, os, subprocess, sys
 
-package_dir, clangd_db, android_db = sys.argv[1], sys.argv[2], sys.argv[3]
-package_dir = os.path.realpath(package_dir)
+package_dir = os.path.realpath(sys.argv[1])
+databases = [db for db in sys.argv[2:] if db]
 excluded = ("/audioapi/libs/", "/audioapi/external/", "/dsp/r8brain/", "/clangd/build/", "/ios/spm/")
-# Needs folly (see --help).
-excluded_files = ("/audioworklets/NativeAudioWorkletsModule.cpp",)
 extensions = (".cpp", ".h", ".hpp", ".mm", ".m")
-platform_dirs = {"iOS": "ios/", "Android": "android/src/main/cpp/"}
-
-
-def entries(db_path):
-    if not db_path:
-        return []
-    database_dir = os.path.dirname(db_path)
-    files = []
-    for entry in json.load(open(db_path)):
-        path = os.path.realpath(os.path.join(entry["directory"], entry["file"]))
-        files.append((database_dir, path))
-    return files
-
+linted_dirs = ("common/cpp/", "ios/", "android/src/main/cpp/")
 
 seen = set()
-for database_dir, path in entries(clangd_db) + entries(android_db):
-    if not path.startswith(package_dir + "/") or any(part in path for part in excluded):
-        continue
-    if path.endswith(excluded_files) or os.path.splitext(path)[1] not in extensions:
-        continue
-    if path not in seen:
+for db_path in databases:
+    database_dir = os.path.dirname(db_path)
+    for entry in json.load(open(db_path)):
+        path = os.path.realpath(os.path.join(entry["directory"], entry["file"]))
+        if not path.startswith(package_dir + "/") or any(part in path for part in excluded):
+            continue
+        if os.path.splitext(path)[1] not in extensions or path in seen:
+            continue
         seen.add(path)
         print(f"{database_dir}\t{path}")
 
+top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=package_dir,
+                     capture_output=True, text=True, check=True).stdout.strip()
 tracked = subprocess.run(
     ["git", "ls-files", "--full-name", "--", "*.cpp", "*.mm", "*.m"],
     cwd=package_dir, capture_output=True, text=True, check=True,
 ).stdout.split()
-top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=package_dir,
-                     capture_output=True, text=True, check=True).stdout.strip()
-for platform, prefix in platform_dirs.items():
-    missing = []
-    for name in tracked:
-        path = os.path.realpath(os.path.join(top, name))
-        relative = os.path.relpath(path, package_dir)
-        if relative.startswith(prefix) and not any(part in path for part in excluded) and path not in seen:
-            missing.append(relative)
-    if missing:
-        source = ("the clangd database, which has iOS files only with the example app's Pods installed"
-                  if platform == "iOS" else "Gradle's database, written by an Android build of the example app")
-        print(f"{platform}: not linted, no compile commands in {source}: {', '.join(sorted(missing))}",
+hints = {
+    "ios/": "iOS files are in the clangd database only with the example app's Pods installed",
+    "android/src/main/cpp/": "an Android build of the example app writes their compile commands",
+    "common/cpp/": "the clangd project doesn't compile them; an Android build of the example app may",
+}
+missing = {prefix: [] for prefix in linted_dirs}
+for name in tracked:
+    path = os.path.realpath(os.path.join(top, name))
+    relative = os.path.relpath(path, package_dir)
+    prefix = next((p for p in linted_dirs if relative.startswith(p)), None)
+    if prefix and path not in seen and not any(part in path for part in excluded):
+        missing[prefix].append(relative)
+for prefix, files in missing.items():
+    if files:
+        print(f"not linted, no compile commands ({hints[prefix]}): {', '.join(sorted(files))}",
               file=sys.stderr)
 PY
 }
@@ -142,8 +144,10 @@ add_file() {
   databases+=("$1")
   files+=("$2")
 }
+# An assignment, not a process substitution, so a failed listing (e.g. a truncated
+# database) stops the run instead of linting nothing and passing.
+lintable="$(lintable_files)"
 if [[ $# -gt 0 ]]; then
-  lintable="$(lintable_files 2>/dev/null)"
   for file in "$@"; do
     path="$(cd "$(dirname "$file")" && pwd)/$(basename "$file")"
     database="$(awk -F '\t' -v path="$path" '$2 == path { print $1; exit }' <<<"$lintable")"
@@ -151,10 +155,10 @@ if [[ $# -gt 0 ]]; then
       add_file "$database" "$path"
     fi
   done
-else
+elif [[ -n "$lintable" ]]; then
   while IFS=$'\t' read -r database path; do
     add_file "$database" "$path"
-  done < <(lintable_files)
+  done <<<"$lintable"
 fi
 
 if [[ ${#files[@]} -eq 0 ]]; then
@@ -168,7 +172,7 @@ trap 'rm -f "$OUTPUT"' EXIT
 
 # One parallel run per database, since `-p` names a single one.
 status=0
-for database in $(printf '%s\n' "${databases[@]}" | sort -u); do
+while IFS= read -r database; do
   for i in "${!files[@]}"; do
     if [[ "${databases[$i]}" == "$database" ]]; then
       printf '%s\0' "${files[$i]}"
@@ -176,7 +180,7 @@ for database in $(printf '%s\n' "${databases[@]}" | sort -u); do
   done |
     xargs -0 -n 4 -P "$(sysctl -n hw.ncpu 2>/dev/null || nproc)" \
       "$CLANG_TIDY_BIN" -p "$database" --quiet >>"$OUTPUT" 2>&1 || status=$?
-done
+done < <(printf '%s\n' "${databases[@]}" | sort -u)
 
 python3 - "$OUTPUT" "$LIST_WARNINGS" <<'PY'
 import collections, re, sys
