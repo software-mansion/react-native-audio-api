@@ -3,11 +3,18 @@ import { NativeAudioAPIModule } from '../specs';
 
 import { AudioApiError } from '../errors';
 import { IAudioDecoder } from '../jsi-interfaces';
-import { DecodeDataInput } from '../types';
+import { AudioDecodeStreamOptions, DecodeDataInput } from '../types';
 import { isRemoteSource, resolveLocalFilePath } from '../utils/paths';
 import { base64ToArrayBuffer } from '../utils';
-import { assertSupportedDecodeStringSource } from '../utils/validation';
+import {
+  assertSupportedDecodeStringSource,
+  assertValidDecodeStreamSampleRate,
+} from '../utils/validation';
 import AudioBuffer from './AudioBuffer';
+import AudioDecodeStream from './AudioDecodeStream';
+
+/** The encoded bytes of a source, or the path of the local file holding them. */
+type EncodedSource = ArrayBuffer | string;
 
 class AudioDecoder {
   private static instance: AudioDecoder | null = null;
@@ -24,18 +31,19 @@ class AudioDecoder {
   ): Promise<AudioBuffer | null | undefined> {
     const rate = sampleRate ?? 0;
 
+    // Before any await: the native side copies the bytes when it is called, and
+    // the caller may reuse its buffer as soon as this function returns.
     if (input instanceof ArrayBuffer) {
       return this.decodeFromArrayBuffer(input, rate);
     }
 
-    const stringSource = this.resolveToStringSource(input);
-    assertSupportedDecodeStringSource(stringSource);
-
-    if (isRemoteSource(stringSource)) {
-      return this.decodeFromRemoteUrl(stringSource, rate, fetchOptions);
+    const source = await this.loadEncodedSource(input, fetchOptions);
+    if (source instanceof ArrayBuffer) {
+      return this.decodeFromArrayBuffer(source, rate);
     }
 
-    return this.decodeFromLocalFile(stringSource, rate);
+    const buffer = await this.decoder.decodeWithFilePath(source, rate);
+    return new AudioBuffer(buffer);
   }
 
   private async decodeFromArrayBuffer(
@@ -59,25 +67,34 @@ class AudioDecoder {
     return uri ?? '';
   }
 
-  private async decodeFromRemoteUrl(
-    url: string,
-    sampleRate: number,
+  /**
+   * Resolves a string or asset input to what the native decoder opens: the
+   * encoded bytes held in memory, or the path of a local file.
+   */
+  private async loadEncodedSource(
+    input: number | string,
     fetchOptions?: RequestInit
-  ): Promise<AudioBuffer> {
-    const arrayBuffer = await fetch(url, fetchOptions).then((res) =>
-      res.arrayBuffer()
-    );
-    return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
-  }
+  ): Promise<EncodedSource> {
+    const stringSource = this.resolveToStringSource(input);
+    assertSupportedDecodeStringSource(stringSource);
 
-  private async decodeFromLocalFile(
-    stringSource: string,
-    sampleRate: number
-  ): Promise<AudioBuffer> {
+    if (isRemoteSource(stringSource)) {
+      const response = await fetch(stringSource, fetchOptions);
+      if (!response.ok) {
+        throw new AudioApiError(
+          `Failed to download audio data: HTTP ${response.status}`
+        );
+      }
+      return response.arrayBuffer();
+    }
+
+    // A bundled asset is named after its resource (asset_example_file): a
+    // file:// URI or an absolute path is a file, which the reader of bundled
+    // assets cannot open.
+    const isFile =
+      stringSource.startsWith('file://') || stringSource.startsWith('/');
     const useAndroidBundledAssetReader =
-      Platform.OS === 'android' &&
-      !stringSource.startsWith('file://') &&
-      !__DEV__;
+      Platform.OS === 'android' && !isFile && !__DEV__;
 
     // special workaround, because android bundled assets are passed as f.e. asset_example_file
     // which has to be handled on native side and extension is not passed with it so decode using memory
@@ -86,13 +103,10 @@ class AudioDecoder {
         await NativeAudioAPIModule.readAndroidReleaseAssetBytesAsBase64(
           stringSource
         );
-      const arrayBuffer = base64ToArrayBuffer(base64Payload);
-      return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
+      return base64ToArrayBuffer(base64Payload);
     }
 
-    const filePath = resolveLocalFilePath(stringSource);
-    const buffer = await this.decoder.decodeWithFilePath(filePath, sampleRate);
-    return new AudioBuffer(buffer);
+    return resolveLocalFilePath(stringSource);
   }
 
   public static getInstance(): AudioDecoder {
@@ -121,6 +135,44 @@ class AudioDecoder {
     return audioBuffer;
   }
 
+  public async openDecodeStreamInstance(
+    input: DecodeDataInput,
+    options: AudioDecodeStreamOptions = {}
+  ): Promise<AudioDecodeStream> {
+    // The native side converts the rate to an integer, which is undefined for
+    // a NaN, an infinity or a value out of range.
+    assertValidDecodeStreamSampleRate(options.sampleRate);
+    const sampleRate = options.sampleRate ?? 0;
+
+    // Before any await, for the reason given in decodeAudioDataImplementation.
+    if (input instanceof ArrayBuffer) {
+      return this.openStreamFromArrayBuffer(input, sampleRate);
+    }
+
+    const source = await this.loadEncodedSource(input, options.fetchOptions);
+    if (source instanceof ArrayBuffer) {
+      return this.openStreamFromArrayBuffer(source, sampleRate);
+    }
+
+    const stream = await this.decoder.openStreamWithFilePath(
+      source,
+      sampleRate
+    );
+    return new AudioDecodeStream(stream);
+  }
+
+  private async openStreamFromArrayBuffer(
+    arrayBuffer: ArrayBuffer,
+    sampleRate: number
+  ): Promise<AudioDecodeStream> {
+    const stream = await this.decoder.openStreamWithMemoryBlock(
+      // @ts-ignore internal function
+      new Uint8Array(arrayBuffer),
+      sampleRate
+    );
+    return new AudioDecodeStream(stream);
+  }
+
   public async decodePCMInBase64Instance(
     base64String: string,
     inputSampleRate: number,
@@ -147,6 +199,18 @@ export async function decodeAudioData(
     sampleRate,
     fetchOptions
   );
+}
+
+/**
+ * Opens `input` to decode it a few frames at a time instead of as one
+ * `AudioBuffer`. Takes the inputs `decodeAudioData` takes; close the stream
+ * once done with it.
+ */
+export async function openAudioDecodeStream(
+  input: DecodeDataInput,
+  options?: AudioDecodeStreamOptions
+): Promise<AudioDecodeStream> {
+  return AudioDecoder.getInstance().openDecodeStreamInstance(input, options);
 }
 
 export async function decodePCMInBase64(

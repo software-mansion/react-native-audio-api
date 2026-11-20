@@ -129,6 +129,22 @@ describe('getAudioDuration', () => {
     );
   });
 
+  it('keeps the percent sequences of a bare path, which name the file', async () => {
+    const fileUtils = createFileUtils();
+    installFileUtils(fileUtils);
+    installDecoder(createDecoder());
+
+    const { getAudioDuration } = loadAudioFileUtils();
+
+    await getAudioDuration('/tmp/clip%20mix.wav');
+
+    expect(fileUtils.probeDuration).toHaveBeenCalledWith(
+      '/tmp/clip%20mix.wav',
+      0,
+      undefined
+    );
+  });
+
   it('probes ArrayBuffer input through audio file utils', async () => {
     const fileUtils = createFileUtils(8.25);
     installFileUtils(fileUtils);

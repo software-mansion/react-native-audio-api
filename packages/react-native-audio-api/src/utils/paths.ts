@@ -2,14 +2,20 @@ export function isRemoteSource(url: string): boolean {
   return url.startsWith('http://') || url.startsWith('https://');
 }
 
+/**
+ * The path of the file a local source names. A `file://` URI is
+ * percent-encoded, a bare path is not: `%20` in one is part of the file name.
+ */
 export function resolveLocalFilePath(stringSource: string): string {
-  const stripped = stringSource.startsWith('file://')
-    ? stringSource.slice('file://'.length)
-    : stringSource;
+  if (!stringSource.startsWith('file://')) {
+    return stringSource;
+  }
+
+  const encodedPath = stringSource.slice('file://'.length);
   try {
-    return decodeURIComponent(stripped);
+    return decodeURIComponent(encodedPath);
   } catch {
-    return stripped;
+    return encodedPath;
   }
 }
 

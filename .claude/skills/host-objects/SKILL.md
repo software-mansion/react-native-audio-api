@@ -97,8 +97,17 @@ HostObjects/
     ├── NodeOptionsParser.h      # Parses JS option objects into C++ structs
     │                            # Use setNumericOption (NumericOption concept) for scalar numbers
     ├── AudioDecoderHostObject.h/.cpp
+    ├── AudioDecodeStreamHostObject.h/.cpp  # Owns a serial lane (see below)
     └── AudioFileUtilsHostObject.h/.cpp
 ```
+
+**A HostObject wrapping an engine object that is not thread-safe owns a lane.** `AudioDecodeStreamHostObject` keeps an open decoder that `read`, `seek` and `close` must never touch concurrently, and whose calls must run in the order JS made them. It owns a `SerialTaskExecutor` and builds its `PromiseVendor` on it (`PromiseVendor(runtime, callInvoker, lane_)`): every promise body runs on that one worker, in call order, with no lock. A call that returns nothing to JS (`close`) is scheduled on the same lane directly, so it stays ordered with the promises. Build such a HostObject on the JS thread — inside the `PromiseResolver` when it is the result of an async open — because a lane takes a single producer. The engine logic itself lives outside `HostObjects/` (`decoding/AudioDecodeStream`), where the C++ tests can reach it.
+
+**Scheduling on a full lane blocks the JS thread.** `SerialTaskExecutor::schedule` waits when its queue (32 tasks by default) is full, and a HostObject function runs on the JS thread: a burst of unawaited `read` calls would hold it until the decoder caught up. Where JS may call without awaiting, the TypeScript wrapper forwards one operation at a time — `AudioDecodeStream.runInOrder` chains each `read`, `seek` and `close` on the one requested before it — so the lane never holds more than one operation and the burst waits in JS, in order. Keep the chain alive after a rejection (`result.then(() => undefined, () => undefined)`), or one failed read fails every later one.
+
+**A lane outlives what it served unless it is given up.** A `SerialTaskExecutor` keeps its worker thread for as long as it is referenced, and a HostObject lives until the collector reaches it: a closed decode stream kept an idle thread until then. `AudioDecodeStreamHostObject::close` schedules the close, then resets its `PromiseVendor` and its lane — the lane's deleter lets the close run and joins the worker on a thread of its own — and `read` / `seek` throw once the vendor is gone. The TypeScript wrapper rejects them itself after `close()`, so nothing reaches the native object in that state. Promise functions JS has not collected yet may still hold the vendor for a while.
+
+**A HostObject destructor runs inside the garbage collector, on a thread it does not choose: it must not wait.** Dropping the last reference to a `SerialTaskExecutor` drains its queue and joins its worker, and that last reference is not always the HostObject's — the promise executor function `PromiseVendor` hands to JS captures the executor too, until JS collects it. `AudioDecodeStreamHostObject` therefore builds its lane with a deleter that destroys it on a detached thread (`makeLane`), and its destructor hands the stream to a detached thread as well, because closing a decoder tears a codec down. An open decoder is also invisible to the collector unless it is reported: the stream's JS object carries a nominal `setExternalMemoryPressure`, plus the encoded bytes of an in-memory source.
 
 ---
 

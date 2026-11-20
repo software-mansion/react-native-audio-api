@@ -7,6 +7,7 @@
 #include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -60,54 +61,39 @@ constexpr size_t GROWTH_DENOMINATOR = 2;
 // allocation stays); more than that is worth an exact-size copy.
 constexpr size_t IN_PLACE_TRIM_SLACK_DIVISOR = 8;
 
-size_t initialDecodeCapacity(size_t estimatedFrames, float sampleRate, size_t chunkFrames) {
+// A request up to this many frames is allocated as asked: a chunked read then never
+// reallocates, and at 1.4 s of 48 kHz audio it cannot be a large allocation.
+constexpr size_t EAGER_REQUEST_FRAMES = 16 * decoding::AudioDecoderBackend::CHUNK_SIZE;
+
+// Frames to allocate before decoding. A larger request is bounded by the decoder's estimate of
+// the source, so asking for far more than a short source holds (decoding a whole file asks for
+// everything) allocates for the source, not for the request, and grows on demand.
+size_t initialDecodeCapacity(
+    size_t requestedFrames,
+    size_t estimatedFrames,
+    float sampleRate,
+    size_t chunkFrames) {
+  if (requestedFrames <= EAGER_REQUEST_FRAMES) {
+    return requestedFrames;
+  }
   const auto maxTrustedEstimate =
       static_cast<size_t>(std::max(1.0F, sampleRate) * MAX_TRUSTED_ESTIMATE_SECONDS);
   const size_t trustedEstimate = std::min(estimatedFrames, maxTrustedEstimate);
-  return trustedEstimate + trustedEstimate / ESTIMATE_HEADROOM_DIVISOR + chunkFrames;
+  return std::min(
+      requestedFrames, trustedEstimate + trustedEstimate / ESTIMATE_HEADROOM_DIVISOR + chunkFrames);
 }
 
-size_t grownDecodeCapacity(size_t currentCapacity, size_t requiredFrames) {
-  return std::max(requiredFrames, currentCapacity * GROWTH_NUMERATOR / GROWTH_DENOMINATOR);
+size_t grownDecodeCapacity(size_t currentCapacity, size_t requiredFrames, size_t maxFrames) {
+  const size_t grown =
+      std::max(requiredFrames, currentCapacity * GROWTH_NUMERATOR / GROWTH_DENOMINATOR);
+  return std::min(grown, maxFrames);
 }
 
-// Decodes straight into the returned planar buffer, sized up front from the
-// decoder's frame estimate, so peak memory stays near one copy of the PCM.
 AudioBufferResult decodeAll(decoding::AudioDecoderBackend &decoder) {
-  constexpr size_t chunkFrames = decoding::AudioDecoderBackend::CHUNK_SIZE;
   decoder.setPreferThroughput(true);
-  const int channels = std::max(1, decoder.outputChannels());
-  const auto outputSampleRate = static_cast<float>(decoder.outputSampleRate());
-
-  const size_t initialCapacity =
-      initialDecodeCapacity(decoder.getTotalPcmFrameCount(), outputSampleRate, chunkFrames);
-  auto audioBuffer = std::make_shared<AudioBuffer>(initialCapacity, channels, outputSampleRate);
-
-  std::vector<float> chunk(chunkFrames * static_cast<size_t>(channels));
-  size_t framesDecoded = 0;
-  while (true) {
-    const size_t framesRead = decoder.readPcmFrames(chunk.data(), chunkFrames);
-    if (framesRead == 0) {
-      break;
-    }
-    if (framesDecoded + framesRead > audioBuffer->getSize()) {
-      audioBuffer->resize(grownDecodeCapacity(audioBuffer->getSize(), framesDecoded + framesRead));
-    }
-    audioBuffer->deinterleaveFrom(chunk.data(), framesDecoded, framesRead);
-    framesDecoded += framesRead;
-  }
-
-  if (framesDecoded == 0) {
+  auto audioBuffer = decodeFrames(decoder, std::numeric_limits<size_t>::max());
+  if (audioBuffer == nullptr) {
     return Err("Failed to decode any frames");
-  }
-
-  const size_t capacity = audioBuffer->getSize();
-  if (capacity - framesDecoded <= framesDecoded / IN_PLACE_TRIM_SLACK_DIVISOR) {
-    audioBuffer->resize(framesDecoded);
-  } else {
-    auto exact = std::make_shared<AudioBuffer>(framesDecoded, channels, outputSampleRate);
-    exact->copy(*audioBuffer, 0, 0, framesDecoded);
-    audioBuffer = std::move(exact);
   }
   return Ok(std::move(audioBuffer));
 }
@@ -126,6 +112,50 @@ AudioBufferResult decodeFromSource(
 }
 
 } // namespace
+
+// Decodes straight into the returned planar buffer, sized up front, so peak memory stays near
+// one copy of the PCM.
+std::shared_ptr<AudioBuffer> decodeFrames(
+    decoding::AudioDecoderBackend &decoder,
+    size_t maxFrames) {
+  constexpr size_t chunkFrames = decoding::AudioDecoderBackend::CHUNK_SIZE;
+  const int channels = std::max(1, decoder.outputChannels());
+  const auto outputSampleRate = static_cast<float>(decoder.outputSampleRate());
+
+  const size_t initialCapacity = initialDecodeCapacity(
+      maxFrames, decoder.getTotalPcmFrameCount(), outputSampleRate, chunkFrames);
+  auto audioBuffer = std::make_shared<AudioBuffer>(initialCapacity, channels, outputSampleRate);
+
+  std::vector<float> chunk(chunkFrames * static_cast<size_t>(channels));
+  size_t framesDecoded = 0;
+  while (framesDecoded < maxFrames) {
+    const size_t framesWanted = std::min(chunkFrames, maxFrames - framesDecoded);
+    const size_t framesRead = decoder.readPcmFrames(chunk.data(), framesWanted);
+    if (framesRead == 0) {
+      break;
+    }
+    if (framesDecoded + framesRead > audioBuffer->getSize()) {
+      audioBuffer->resize(
+          grownDecodeCapacity(audioBuffer->getSize(), framesDecoded + framesRead, maxFrames));
+    }
+    audioBuffer->deinterleaveFrom(chunk.data(), framesDecoded, framesRead);
+    framesDecoded += framesRead;
+  }
+
+  if (framesDecoded == 0) {
+    return nullptr;
+  }
+
+  const size_t capacity = audioBuffer->getSize();
+  if (capacity - framesDecoded <= framesDecoded / IN_PLACE_TRIM_SLACK_DIVISOR) {
+    audioBuffer->resize(framesDecoded);
+  } else {
+    auto exact = std::make_shared<AudioBuffer>(framesDecoded, channels, outputSampleRate);
+    exact->copy(*audioBuffer, 0, 0, framesDecoded);
+    audioBuffer = std::move(exact);
+  }
+  return audioBuffer;
+}
 
 bool pathHasExtension(const std::string &path, const std::vector<std::string> &extensions) {
   return decoding::pathHasExtension(path, extensions);
