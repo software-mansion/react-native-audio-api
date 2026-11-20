@@ -91,6 +91,18 @@ describe('openAudioDecodeStream', () => {
     expect(stream.duration).toBe(12.5);
   });
 
+  it('keeps the percent sequences of a bare path, which name the file', async () => {
+    const decoder = installDecoder(createNativeStream());
+    const { openAudioDecodeStream } = loadAudioDecoder();
+
+    await openAudioDecodeStream('/tmp/clip%20mix.wav');
+
+    expect(decoder.openStreamWithFilePath).toHaveBeenCalledWith(
+      '/tmp/clip%20mix.wav',
+      0
+    );
+  });
+
   it('opens encoded bytes held in memory', async () => {
     const decoder = installDecoder(createNativeStream());
     const { openAudioDecodeStream } = loadAudioDecoder();
