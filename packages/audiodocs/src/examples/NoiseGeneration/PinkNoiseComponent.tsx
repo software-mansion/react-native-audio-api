@@ -45,9 +45,9 @@ const PinkNoise: FC = () => {
     return noiseBuffer;
   };
 
-  const onPressIn = async () => {
+  const onPressIn = () => {
     if (!bufferNodeRef.current && aCtxRef.current && gainRef.current) {
-      bufferNodeRef.current = await aCtxRef.current.createBufferSource();
+      bufferNodeRef.current = aCtxRef.current.createBufferSource();
       bufferNodeRef.current.buffer = bufferRef.current;
       bufferNodeRef.current.loop = true;
       bufferNodeRef.current.connect(gainRef.current);

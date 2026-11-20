@@ -8,8 +8,8 @@ export function downSampleLog(
   const binCount = fft.length;
   const maxFreq = nyquist;
 
-  const buckets = new Array<number>(targetBucketCount).fill(0);
-  const bucketCounts = new Array<number>(targetBucketCount).fill(0);
+  const buckets = Array.from({ length: targetBucketCount }, () => 0);
+  const bucketCounts = Array.from({ length: targetBucketCount }, () => 0);
 
   for (let i = 0; i < binCount; i += 1) {
     const freq = (i / binCount) * nyquist;

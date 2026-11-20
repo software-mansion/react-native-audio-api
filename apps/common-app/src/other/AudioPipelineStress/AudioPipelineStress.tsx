@@ -10,6 +10,7 @@ import type {
   ScenarioStatus,
   StepItem,
 } from '../../testComponents';
+import { describeError } from '../AudioIOPlayground/log';
 import { sleep } from '../sleep';
 import {
   DEFAULT_LOOP_COUNT,
@@ -520,9 +521,7 @@ const AudioPipelineStress: FC = () => {
 
               info(
                 'Recorder rejected the wrong category as expected',
-                startError instanceof Error
-                  ? startError.message
-                  : String(startError)
+                describeError(startError)
               );
 
               resourcesRef.current.recorder?.clearOnAudioReady();

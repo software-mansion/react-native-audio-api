@@ -61,7 +61,7 @@ const AudioVisualizer: React.FC = () => {
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
     } else {
@@ -69,8 +69,7 @@ const AudioVisualizer: React.FC = () => {
         return;
       }
 
-      bufferSourceRef.current =
-        await audioContextRef.current.createBufferSource();
+      bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
 

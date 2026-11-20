@@ -108,7 +108,7 @@ const PeriodicWaveExample: FC<PeriodicWaveExampleProps> = ({
 
     return () => {
       oscillatorRef.current = null;
-      void ctx.close();
+      ctx.close();
     };
   }, []);
 
@@ -201,7 +201,7 @@ const PeriodicWaveExample: FC<PeriodicWaveExampleProps> = ({
       />
 
       <button
-        onClick={() => (isPlaying ? stop() : void play())}
+        onClick={() => (isPlaying ? stop() : play())}
         className={`${styles.playButton} ${isPlaying ? styles.playing : ''}`}
       >
         {isPlaying ? 'Stop' : 'Play'}

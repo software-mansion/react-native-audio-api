@@ -23,7 +23,7 @@ const MockAudioContext = {
     onended: null,
   }),
   currentTime: 0,
-  decodeAudioData: (data: ArrayBuffer) =>
+  decodeAudioData: (_data: ArrayBuffer) =>
     Promise.resolve({
       duration: 0,
     } as AudioBuffer),

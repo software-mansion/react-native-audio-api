@@ -19,8 +19,6 @@ export default class AudioParam {
     this.defaultValue = audioParam.defaultValue;
     this.minValue = audioParam.minValue;
     this.maxValue = audioParam.maxValue;
-    this.context = context;
-    this.owner = owner;
   }
 
   public get value(): number {

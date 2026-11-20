@@ -39,7 +39,7 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
     };
   }, []);
 
-  const playSound = async () => {
+  const playSound = () => {
     const ctx = audioContextRef.current;
     if (!ctx) return;
 
@@ -56,8 +56,8 @@ const GainAdsrExample: FC<GainAdsrExampleProps> = (props) => {
     }
     setPlaybackProgress(0);
 
-    const osc = await ctx.createOscillator();
-    const gain = await ctx.createGain();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
     oscRef.current = osc;
     gainRef.current = gain;

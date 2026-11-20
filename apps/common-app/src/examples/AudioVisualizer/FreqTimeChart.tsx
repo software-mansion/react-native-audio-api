@@ -5,39 +5,26 @@ import Canvas from './Canvas';
 import Charts from './Charts';
 
 interface FreqTimeChartProps {
-  timeDataSV: SharedValue<Uint8Array>;
-  timeDataTickSV: SharedValue<number>;
-  frequencyDataSV: SharedValue<Uint8Array>;
-  frequencyDataTickSV: SharedValue<number>;
+  timeDataSV: SharedValue<Uint8Array<ArrayBuffer>>;
+  frequencyDataSV: SharedValue<Uint8Array<ArrayBuffer>>;
   fftSize: number;
   frequencyBinCount: number;
 }
 
 const FreqTimeChart: React.FC<FreqTimeChartProps> = (props) => {
-  const {
-    timeDataSV,
-    timeDataTickSV,
-    frequencyDataSV,
-    frequencyDataTickSV,
-    fftSize,
-    frequencyBinCount,
-  } = props;
+  const { timeDataSV, frequencyDataSV, fftSize, frequencyBinCount } = props;
 
   return (
     <Canvas>
       <Charts.TimeChart
         timeDataSV={timeDataSV}
-        timeDataTickSV={timeDataTickSV}
         frequencyDataSV={frequencyDataSV}
-        frequencyDataTickSV={frequencyDataTickSV}
         fftSize={fftSize}
         frequencyBinCount={frequencyBinCount}
       />
       <Charts.FrequencyChart
         timeDataSV={timeDataSV}
-        timeDataTickSV={timeDataTickSV}
         frequencyDataSV={frequencyDataSV}
-        frequencyDataTickSV={frequencyDataTickSV}
         fftSize={fftSize}
         frequencyBinCount={frequencyBinCount}
       />

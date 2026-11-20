@@ -25,8 +25,8 @@ export default class Equalizer {
     }
   }
 
-  setFrequencies(frequencies: number[]) {
-    frequencies.forEach((freq, i) => {
+  setFrequencies(values: number[]) {
+    values.forEach((freq, i) => {
       if (i < this.bands.length) {
         this.bands[i].frequency.value = freq;
       }

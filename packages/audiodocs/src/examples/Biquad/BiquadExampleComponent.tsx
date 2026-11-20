@@ -50,12 +50,12 @@ const BiquadExample: React.FC = () => {
     };
   }, []);
 
-  const playSound = async () => {
+  const playSound = () => {
     if (!audioContextRef.current || !audioBufferRef.current) return;
     if (bufferSourceRef.current != null) {
       stopSound();
     }
-    const source = await audioContextRef.current.createBufferSource();
+    const source = audioContextRef.current.createBufferSource();
     source.buffer = audioBufferRef.current;
     bufferSourceRef.current = source;
 

@@ -1,12 +1,19 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "customConditions": ["react-native"],
     "moduleSuffixes": [".ios", ".android", ".native", ""],
     "paths": {
       "@/*": ["../common-app/src/*"]
     }
   },
-  "include": ["**/*", "../common-app/types.d.ts"],
+  "include": [
+    "**/*",
+    "../common-app/types.d.ts",
+    "../common-app/assets/icons/nanoicons/*.d.ts"
+  ],
   "exclude": [
     "**/node_modules",
     "**/Pods",

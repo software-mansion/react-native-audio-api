@@ -12,11 +12,11 @@ export function createPlaybackPosition() {
 
   return {
     get: () => value,
-    set(next: number) {
+    set: (next: number) => {
       value = next;
       listeners.forEach((listener) => listener());
     },
-    subscribe(listener: () => void) {
+    subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);

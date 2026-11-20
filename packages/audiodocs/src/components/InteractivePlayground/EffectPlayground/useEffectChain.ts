@@ -67,13 +67,13 @@ export interface EffectChain<TParams> {
   enabled: boolean;
   isPlaying: boolean;
   isLoading: boolean;
-  setEnabled(enabled: boolean): void;
-  togglePlayback(): void;
+  setEnabled: (enabled: boolean) => void;
+  togglePlayback: () => void;
   /**
    * Click handler for the effect node: starts playback while silent, otherwise
    * toggles bypass.
    */
-  toggleEffect(): void;
+  toggleEffect: () => void;
 }
 
 /**
@@ -135,7 +135,7 @@ export function useEffectChain<TParams>({
       playRequestRef.current += 1;
       stopSourceNode(sourceNodeRef);
       effect.dispose();
-      void ctx.close();
+      ctx.close();
       nodesRef.current = null;
       decodedSamplesRef.current.clear();
     };
@@ -218,14 +218,14 @@ export function useEffectChain<TParams>({
     if (isPlayingRef.current) {
       stop();
     } else {
-      void play();
+      play();
     }
   }, [play, stop]);
 
   const toggleEffect = useCallback(() => {
     if (!isPlayingRef.current) {
       setEnabled(true);
-      void play();
+      play();
       return;
     }
     setEnabled(!enabledRef.current);
@@ -234,7 +234,7 @@ export function useEffectChain<TParams>({
   // `play` changes identity only with the sample, so this restarts playback on a sample switch.
   useEffect(() => {
     if (isPlayingRef.current) {
-      void play();
+      play();
     }
   }, [play]);
 
