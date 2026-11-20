@@ -96,8 +96,12 @@ lintable_files() {
 import json, os, subprocess, sys
 
 package_dir = os.path.realpath(sys.argv[1])
+clangd_db = sys.argv[2]
 databases = [db for db in sys.argv[2:] if db]
 excluded = ("/audioapi/libs/", "/audioapi/external/", "/dsp/r8brain/", "/clangd/build/", "/ios/spm/")
+# Needs folly, which the clangd project finds only through the example app's Pods:
+# take it from the app's Gradle database instead, so a run without Pods (CI) skips it.
+not_from_clangd = ("/audioworklets/NativeAudioWorkletsModule.cpp",)
 extensions = (".cpp", ".h", ".hpp", ".mm", ".m")
 linted_dirs = ("common/cpp/", "ios/", "android/src/main/cpp/")
 
@@ -107,6 +111,8 @@ for db_path in databases:
     for entry in json.load(open(db_path)):
         path = os.path.realpath(os.path.join(entry["directory"], entry["file"]))
         if not path.startswith(package_dir + "/") or any(part in path for part in excluded):
+            continue
+        if db_path == clangd_db and path.endswith(not_from_clangd):
             continue
         if os.path.splitext(path)[1] not in extensions or path in seen:
             continue
@@ -122,7 +128,7 @@ tracked = subprocess.run(
 hints = {
     "ios/": "iOS files are in the clangd database only with the example app's Pods installed",
     "android/src/main/cpp/": "an Android build of the example app writes their compile commands",
-    "common/cpp/": "the clangd project doesn't compile them; an Android build of the example app may",
+    "common/cpp/": "they need the compile commands of an Android build of the example app",
 }
 missing = {prefix: [] for prefix in linted_dirs}
 for name in tracked:
