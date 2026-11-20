@@ -1,0 +1,5 @@
+# Tests are full of literal sample counts and expected values.
+InheritParentConfig: true
+
+Checks: '-cppcoreguidelines-avoid-magic-numbers,
+        -readability-magic-numbers'

@@ -55,7 +55,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "pnpm lint:js && pnpm lint:cpp && pnpm lint:ios && pnpm lint:kotlin",
     "lint:js": "oxlint src",
-    "lint:cpp": "./scripts/cpplint.sh",
+    "lint:cpp": "bash ../../scripts/clang-tidy.sh",
     "lint:ios": "pnpm format:ios -Werror",
     "lint:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
     "format": "pnpm format:js && pnpm format:android:kotlin && pnpm format:ios && pnpm format:common",
@@ -72,7 +72,8 @@
   },
   "ci": {
     "tools": [
-      "cpplint",
+      "cmake",
+      "clang-tidy",
       "ktlint",
       "clang-format"
     ]
