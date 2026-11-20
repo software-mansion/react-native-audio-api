@@ -77,17 +77,19 @@ void StereoPannerNode::processNode(int framesToProcess) {
     for (int i = 0; i < framesToProcess; i++) {
       const auto pan = std::clamp(panParamValues[i], -1.0f, 1.0f);
       const auto x = (pan <= 0 ? pan + 1 : pan);
-      const auto gainL = std::cos(x * PI / 2);
-      const auto gainR = std::sin(x * PI / 2);
-      const float inputL = inputLeft[i];
-      const float inputR = inputRight[i];
+
+      const double angle = x * PI / 2;
+      const double gainL = std::cos(angle);
+      const double gainR = std::sin(angle);
+      const double inputL = inputLeft[i];
+      const double inputR = inputRight[i];
 
       if (pan <= 0) {
-        outputLeft[i] = inputL + inputR * gainL;
-        outputRight[i] = inputR * gainR;
+        outputLeft[i] = static_cast<float>(inputL + inputR * gainL);
+        outputRight[i] = static_cast<float>(inputR * gainR);
       } else {
-        outputLeft[i] = inputL * gainL;
-        outputRight[i] = inputR + inputL * gainR;
+        outputLeft[i] = static_cast<float>(inputL * gainL);
+        outputRight[i] = static_cast<float>(inputR + inputL * gainR);
       }
 
       time += deltaTime;
