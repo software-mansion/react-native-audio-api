@@ -21,6 +21,7 @@ namespace audioapi::test_support {
 struct FakeEncoderLog {
   std::atomic<size_t> fileSizeBytes{0};
   std::atomic<int> encodedBuffers{0};
+  std::atomic<size_t> encodedFrames{0};
   std::atomic<int> closedFiles{0};
   std::atomic<bool> failNextOpen{false};
   std::atomic<bool> failNextReprepare{false};
@@ -89,6 +90,7 @@ class FakeEncoder final : public AudioEncoder {
   EncodeResult encode(const AudioBuffer & /*input*/, int numFrames) override {
     addEncodedFrames(static_cast<size_t>(numFrames));
     log_.encodedBuffers.fetch_add(1, std::memory_order_acq_rel);
+    log_.encodedFrames.fetch_add(static_cast<size_t>(numFrames), std::memory_order_acq_rel);
     return EncodeResult::Ok(static_cast<size_t>(numFrames));
   }
 

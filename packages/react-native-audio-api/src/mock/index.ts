@@ -3,6 +3,7 @@ import type {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
+  AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -991,6 +992,7 @@ class AudioRecorderMock {
   private eventEmitter = new MockAudioEventEmitter();
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
+  private onMaxDurationReachedSubscription: MockEventSubscription | null = null;
   private consumers = new Set<AudioConsumerMock>();
 
   // Options only configure the native capture chain, so the mock ignores them.
@@ -1020,7 +1022,7 @@ class AudioRecorderMock {
     return Promise.resolve();
   }
 
-  start(): Promise<void> {
+  start(_options?: AudioRecorderStartOptions): Promise<void> {
     this._isRecording = true;
     this._isPaused = false;
     return Promise.resolve();
@@ -1131,6 +1133,22 @@ class AudioRecorderMock {
     if (this.onErrorSubscription) {
       this.onErrorSubscription.remove();
       this.onErrorSubscription = null;
+    }
+  }
+
+  onMaxDurationReached(callback: () => void): void {
+    this.clearOnMaxDurationReached();
+    this.onMaxDurationReachedSubscription =
+      this.eventEmitter.addAudioEventListener(
+        'recorderMaxDurationReached',
+        callback
+      );
+  }
+
+  clearOnMaxDurationReached(): void {
+    if (this.onMaxDurationReachedSubscription) {
+      this.onMaxDurationReachedSubscription.remove();
+      this.onMaxDurationReachedSubscription = null;
     }
   }
 }
