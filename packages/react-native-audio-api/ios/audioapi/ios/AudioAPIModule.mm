@@ -179,6 +179,16 @@ RCT_EXPORT_METHOD(observeAudioInterruptions : (NSString *)focusType enabled : (B
   [self.notificationManager observeAudioInterruptions:enabled];
 }
 
+RCT_EXPORT_METHOD(observeRecordingInterruptions : (BOOL)enabled)
+{
+  // noop: Android only, iOS reports capture interruptions through the audio session
+}
+
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(isRecordingSilenced)
+{
+  return @NO;
+}
+
 RCT_EXPORT_METHOD(activelyReclaimSession : (BOOL)enabled)
 {
   [self.notificationManager activelyReclaimSession:enabled];
