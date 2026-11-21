@@ -172,6 +172,8 @@ AudioEvent audioEventFromString(const std::string &event) {
     return AudioEvent::STATE_CHANGE;
   if (event == "contextError")
     return AudioEvent::CONTEXT_ERROR;
+  if (event == "recorderMaxDurationReached")
+    return AudioEvent::RECORDER_MAX_DURATION_REACHED;
 
   throw std::invalid_argument("Unknown audio event: " + event);
 }

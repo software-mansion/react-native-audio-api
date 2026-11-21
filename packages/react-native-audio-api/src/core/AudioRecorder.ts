@@ -9,6 +9,7 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
+  AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
   FileInfo,
@@ -44,6 +45,9 @@ function withDefaultFileOptions(
 
 export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
+  private onMaxDurationReachedSubscription: AudioEventSubscription | null =
+    null;
+
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
   /**
@@ -143,10 +147,11 @@ export default class AudioRecorder {
   /**
    * Starts the audio recording process with configured output options.
    *
-   * Rejects when the platform refuses to start the recording.
+   * Rejects when the platform refuses to start the recording, or
+   * `options.maxDuration` is not a positive number.
    */
-  start(): Promise<void> {
-    return this.recorder.start();
+  start(options?: AudioRecorderStartOptions): Promise<void> {
+    return this.recorder.start(options ?? {});
   }
 
   /**
@@ -341,5 +346,36 @@ export default class AudioRecorder {
 
     this.onErrorSubscription.remove();
     this.onErrorSubscription = null;
+  }
+
+  /**
+   * Called once a recording started with
+   * {@link AudioRecorderStartOptions.maxDuration} has recorded that long. The
+   * recording keeps running without writing anything until you call
+   * {@link stop}, so call it here.
+   */
+  onMaxDurationReached(callback: () => void): void {
+    this.clearOnMaxDurationReached();
+
+    this.onMaxDurationReachedSubscription =
+      this.audioEventEmitter.addAudioEventListener(
+        'recorderMaxDurationReached',
+        callback
+      );
+
+    this.recorder.setOnMaxDurationReached({
+      callbackId: this.onMaxDurationReachedSubscription.subscriptionId,
+    });
+  }
+
+  clearOnMaxDurationReached(): void {
+    if (!this.onMaxDurationReachedSubscription) {
+      return;
+    }
+
+    this.recorder.clearOnMaxDurationReached();
+
+    this.onMaxDurationReachedSubscription.remove();
+    this.onMaxDurationReachedSubscription = null;
   }
 }
