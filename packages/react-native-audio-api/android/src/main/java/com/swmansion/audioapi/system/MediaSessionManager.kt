@@ -37,6 +37,7 @@ object MediaSessionManager {
 
   private lateinit var audioManager: AudioManager
   private lateinit var audioFocusListener: AudioFocusListener
+  private lateinit var recordingSilenceListener: RecordingSilenceListener
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var deviceChangeListener: DeviceChangeListener
   private lateinit var playbackNotificationReceiver: PlaybackNotificationReceiver
@@ -95,6 +96,7 @@ object MediaSessionManager {
       }
     this.communicationSession =
       CommunicationSession(this.audioManager, this.audioFocusListener, mainHandler, ::emitRouteChange)
+    this.recordingSilenceListener = RecordingSilenceListener(this.audioManager, this.audioAPIModule, mainHandler)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
     this.inputRouter =
       AudioInputRouter(this.audioManager, BluetoothScoLink(this.audioManager, this.reactContext), ::dispatchRouteChange)
@@ -159,6 +161,10 @@ object MediaSessionManager {
     }
   }
 
+  fun observeRecordingInterruptions(enabled: Boolean) = recordingSilenceListener.setEnabled(enabled)
+
+  fun isRecordingSilenced(): Boolean = recordingSilenceListener.isRecordingSilenced()
+
   fun setCommunicationDevice(
     device: String,
     onComplete: (String?) -> Unit,
@@ -184,6 +190,10 @@ object MediaSessionManager {
       if (::audioFocusListener.isInitialized) {
         audioFocusListener.abandonAudioFocus()
       }
+    }
+
+    if (::recordingSilenceListener.isInitialized) {
+      recordingSilenceListener.release()
     }
 
     if (::volumeChangeListener.isInitialized) {

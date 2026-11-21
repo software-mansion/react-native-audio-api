@@ -62,6 +62,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   /// Closes the stream and leaves the recorder's state alone, so a restart can reopen it
   /// mid-session. The caller holds streamMutex_.
   void closeStream();
+  /// closeStream() for a session that is over. A restart keeps the stream's audio session id
+  /// published until the next stream replaces it, so an interruption it spans is not reset.
+  /// The caller holds streamMutex_.
+  void endCapture();
   /// The caller holds streamMutex_.
   [[nodiscard]] bool isStreamRecording() const;
   /// @brief Opens the stream on the adopted route and starts it when @p targetState is
@@ -91,6 +95,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback,
   int32_t streamMaxBufferSizeInFrames_{0};
   /// The device mStream_ was opened for. Guarded by streamMutex_.
   int32_t streamDeviceId_;
+  /// Published through NativeRecorderControl; 0 when none. Guarded by streamMutex_.
+  int32_t captureSessionId_{0};
   /// The route openAudioStream() opens on: held from start() until stop(), and given back while
   /// a restart waits for the next one. Guarded by streamMutex_.
   RouteLease route_;

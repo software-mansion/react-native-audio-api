@@ -1200,6 +1200,12 @@ class AudioManagerMock {
 
   static observeVolumeChanges(_observe: boolean): void {}
 
+  static observeRecordingInterruptions(_enabled: boolean): void {}
+
+  static isRecordingSilenced(): boolean {
+    return false;
+  }
+
   static setCommunicationDevice(_device: string): Promise<void> {
     return Promise.resolve();
   }
