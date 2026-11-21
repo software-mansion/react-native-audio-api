@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <thread>
@@ -1072,6 +1073,82 @@ TEST_F(AudioRecorderTest, CurrentDurationCountsRecordedInputWithoutAnyConsumer) 
 
   ASSERT_TRUE(recorder_->stop().is_ok());
   EXPECT_DOUBLE_EQ(clock->load(), 0.0);
+}
+
+TEST_F(AudioRecorderTest, NoFrameReachesTheConsumersPastTheMaxDuration) {
+  enableFileOutput();
+  constexpr int MAX_FRAMES = 300;
+  ASSERT_TRUE(recorder_->start(MAX_FRAMES / 48000.0).is_ok());
+
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_DOUBLE_EQ(recorder_->getDurationClock()->load(), MAX_FRAMES / 48000.0);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(log_.encodedFrames.load(), static_cast<size_t>(MAX_FRAMES));
+}
+
+TEST_F(AudioRecorderTest, ReachingTheMaxDurationIsReportedOnceFromTheAudioThread) {
+  recorder_->setOnMaxDurationReachedCallback(CALLBACK_ID);
+  EXPECT_CALL(
+      *registry_,
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
+      .Times(1);
+  ASSERT_TRUE(recorder_->start(FRAMES / 48000.0).is_ok());
+
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+}
+
+TEST_F(AudioRecorderTest, PausedTimeDoesNotCountTowardsTheMaxDuration) {
+  recorder_->setOnMaxDurationReachedCallback(CALLBACK_ID);
+  EXPECT_CALL(
+      *registry_,
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
+      .Times(0);
+  ASSERT_TRUE(recorder_->start(2 * FRAMES / 48000.0).is_ok());
+
+  input_->deliverFrames(FRAMES);
+  recorder_->pause();
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->resume().is_ok());
+  testing::Mock::VerifyAndClearExpectations(registry_.get());
+
+  EXPECT_CALL(
+      *registry_,
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
+      .Times(1);
+  input_->deliverFrames(FRAMES);
+}
+
+TEST_F(AudioRecorderTest, TheNextSessionStartsWithoutTheLimitOfThePreviousOne) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start(FRAMES / 48000.0).is_ok());
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+
+  EXPECT_EQ(log_.encodedFrames.load(), static_cast<size_t>(3 * FRAMES));
+}
+
+TEST_F(AudioRecorderTest, AMaxDurationThatIsNotPositiveIsRefused) {
+  EXPECT_TRUE(recorder_->start(0.0).is_err());
+  EXPECT_TRUE(recorder_->start(-1.0).is_err());
+  EXPECT_TRUE(recorder_->start(std::numeric_limits<double>::quiet_NaN()).is_err());
+  EXPECT_TRUE(recorder_->start(std::numeric_limits<double>::infinity()).is_err());
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_FALSE(input_->isOpen);
 }
 
 TEST_F(AudioRecorderTest, TheDurationClockFollowsTheRecordingAndOutlivesTheRecorder) {

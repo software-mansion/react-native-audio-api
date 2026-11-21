@@ -14,7 +14,9 @@
 #include <audioapi/utils/AudioRecorderOptions.h>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -46,7 +48,9 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, addConsumer),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, removeConsumer),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError));
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnMaxDurationReached),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnMaxDurationReached));
 
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(AudioRecorderHostObject, inputLatency),
@@ -58,6 +62,7 @@ AudioRecorderHostObject::~AudioRecorderHostObject() {
   // action, iOS session deactivation) may hold the recorder past the runtime, and its last
   // release must find no jsi::Function left to destroy.
   audioRecorder_->clearOnErrorCallback();
+  audioRecorder_->clearOnMaxDurationReachedCallback();
   // Queued rather than called, so a start() still waiting on the lane cannot outlive this stop.
   lifecycleLane_->schedule([audioRecorder = audioRecorder_] { audioRecorder->stop(); });
 }
@@ -104,20 +109,36 @@ std::shared_ptr<AudioConsumer> audioConsumerFrom(jsi::Runtime &runtime, const js
   return hostObject->consumer();
 }
 
+/// The `maxDuration` of the options passed to `start`, if any. The recorder validates it, so a
+/// value that is not a number reads as NaN and rejects the start like any other invalid one.
+std::optional<double> maxDurationFrom(jsi::Runtime &runtime, const jsi::Value *args, size_t count) {
+  if (count == 0 || !args[0].isObject()) {
+    return std::nullopt;
+  }
+  auto maxDuration = args[0].getObject(runtime).getProperty(runtime, "maxDuration");
+  if (maxDuration.isUndefined() || maxDuration.isNull()) {
+    return std::nullopt;
+  }
+  return maxDuration.isNumber() ? maxDuration.getNumber()
+                                : std::numeric_limits<double>::quiet_NaN();
+}
+
 } // namespace
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   auto audioRecorder = audioRecorder_;
+  auto maxDurationSeconds = maxDurationFrom(runtime, args, count);
 
-  return promiseVendor_->createAsyncPromise([audioRecorder]() -> PromiseResolver {
-    auto result = audioRecorder->start();
+  return promiseVendor_->createAsyncPromise(
+      [audioRecorder, maxDurationSeconds]() -> PromiseResolver {
+        auto result = audioRecorder->start(maxDurationSeconds);
 
-    if (result.is_err()) {
-      return rejectWith(result.unwrap_err());
-    }
+        if (result.is_err()) {
+          return rejectWith(result.unwrap_err());
+        }
 
-    return resolveWithUndefined();
-  });
+        return resolveWithUndefined();
+      });
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
@@ -215,6 +236,21 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnError) {
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
   audioRecorder_->clearOnErrorCallback();
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnMaxDurationReached) {
+  auto options = args[0].getObject(runtime);
+
+  uint64_t callbackId =
+      std::stoull(options.getProperty(runtime, "callbackId").getString(runtime).utf8(runtime));
+
+  audioRecorder_->setOnMaxDurationReachedCallback(callbackId);
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnMaxDurationReached) {
+  audioRecorder_->clearOnMaxDurationReachedCallback();
   return jsi::Value::undefined();
 }
 

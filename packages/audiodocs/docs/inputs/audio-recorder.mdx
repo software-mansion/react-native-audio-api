@@ -150,6 +150,25 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
+### Limiting the recording duration {#limiting-the-recording-duration}
+
+JS timers do not run while the app is in the background on Android, so a `setTimeout` cannot be trusted to end a recording made with the screen locked. Pass `maxDuration` to [start](#start) instead. The native recorder counts the recorded frames and, at the limit, stops writing and fires [onMaxDurationReached](#onmaxdurationreached). Events from native code keep reaching JS while the app is in the background, so the callback runs with the screen locked too.
+
+- The file ends at exactly `maxDuration` seconds of audio, however late your code reacts. Paused time does not count.
+- The recorder does **not** stop by itself: until you call [stop](#stop), the microphone stays open (and, on Android, the [recording notification](../system/recording-notification-manager.mdx) stays up) while nothing is written. Call `stop()` in the callback.
+
+```tsx
+audioRecorder.onMaxDurationReached(async () => {
+  const info = await audioRecorder.stop();
+  await RecordingNotificationManager.hide();
+  // info.paths holds the files
+});
+
+await audioRecorder.start({ maxDuration: 30 * 60 });
+```
+
+The recorder does not wake the device up.
+
 ### Building without the recorder {#building-without-the-recorder}
 
 Apps that only play audio can leave the recorder and every microphone API out of the native build
@@ -465,12 +484,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it.
+          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it or `maxDuration` is not a positive number.
+
+          Takes optional [`AudioRecorderStartOptions`](#audiorecorderstartoptions) for this session.
         </div>
 
         ```tsx
         try {
-          await audioRecorder.start();
+          await audioRecorder.start({ maxDuration: 60 });
         } catch (error) {
           console.error(error);
         }
@@ -660,6 +681,40 @@ export default MyRecorder;
 
         ```tsx
           audioRecorder.clearOnError();
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### onMaxDurationReached
+      </div></td>
+      <td>
+        <div class="text-content">
+          Sets a callback called once a recording started with [`maxDuration`](#audiorecorderstartoptions) has recorded that long. The recording keeps running without writing anything until you call [stop](#stop), so call it here. See [Limiting the recording duration](#limiting-the-recording-duration).
+        </div>
+        ```tsx
+          audioRecorder.onMaxDurationReached(async () => {
+            const info = await audioRecorder.stop();
+          });
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### clearOnMaxDurationReached
+      </div></td>
+      <td>
+        <div class="text-content">
+          Removes the max-duration callback.
+        </div>
+        ```tsx
+          audioRecorder.clearOnMaxDurationReached();
         ```
       </td>
     </tr>
@@ -956,6 +1011,18 @@ Both options are applied when the capture stream is created and cannot be change
 :::caution
 Voice processing changes the hardware input format and engages a shared platform processing unit, so the resolved sample rate and channel count of the recorded audio may differ from the raw microphone format.
 :::
+
+#### `AudioRecorderStartOptions`
+
+```tsx
+interface AudioRecorderStartOptions {
+  maxDuration?: number;
+}
+```
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :---: | :---- |
+| `maxDuration` <Optional /> | `number` | none | Seconds of audio after which nothing more is recorded. Must be positive. See [Limiting the recording duration](#limiting-the-recording-duration). |
 
 #### `AndroidInputPreset`
 

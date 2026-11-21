@@ -83,6 +83,7 @@ interface AudioAPIEvents {
   bufferingStateChanged: EventTypeWithBool;
   stateChange: EventEmptyType;
   contextError: EventEmptyType;
+  recorderMaxDurationReached: EventEmptyType;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;

@@ -154,6 +154,18 @@ export interface AudioRecorderOptions {
   iosVoiceProcessing?: boolean;
 }
 
+/** Configures one recording session, passed to `AudioRecorder.start`. */
+export interface AudioRecorderStartOptions {
+  /**
+   * Seconds of audio after which nothing more is recorded. The native recorder
+   * counts the recorded frames, so the limit holds in the background, where JS
+   * timers do not run. Paused time does not count. The file ends at exactly
+   * this duration and `onMaxDurationReached` fires; the recording keeps
+   * running, writing nothing, until you call `stop()`. Must be positive.
+   */
+  maxDuration?: number;
+}
+
 export interface AudioRecorderFileOptions {
   channelCount?: number;
   rotateIntervalBytes?: number;

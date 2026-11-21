@@ -45,7 +45,11 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   DELETE_COPY_AND_MOVE(AudioRecorder);
   ~AudioRecorder();
 
-  Result<NoneType, std::string> start();
+  /// With @p maxDurationSeconds, the consumers receive no frame past that much recorded audio
+  /// (paused time does not count) and the max-duration callback fires once, from the audio
+  /// thread; the session keeps running, delivering nothing, until stop(). Must be positive and
+  /// finite.
+  Result<NoneType, std::string> start(std::optional<double> maxDurationSeconds = std::nullopt);
   /// With @p openedGeneration, only while the input is still at that opening: once a later
   /// reroute or session has moved past it, that session is left alone and this fails.
   Result<FileInfo, std::string> stop(std::optional<uint64_t> openedGeneration = std::nullopt);
@@ -82,6 +86,9 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
+
+  void setOnMaxDurationReachedCallback(uint64_t callbackId);
+  void clearOnMaxDurationReachedCallback();
 
   /// The seconds recorded in the current session, for readers on any thread; `0` when idle.
   /// Holding it keeps only the value alive, never the recorder.
@@ -137,11 +144,20 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
     /// clock taken before a new session must keep reading it.
     std::shared_ptr<std::atomic<double>> recordedSeconds =
         std::make_shared<std::atomic<double>>(0.0);
+    /// Set by start(), read by the audio thread through the armed gate.
+    std::optional<double> maxDurationSeconds;
+    /// Audio thread only, through the armed gate: the session has recorded maxDurationSeconds, so
+    /// no further frame is delivered until it is stopped.
+    bool hasReachedMaxDuration = false;
   };
 
   /// Audio thread, through the armed gate only. @p channels holds @p channelCount pointers, each to
   /// numFrames float32 samples, valid only for the call.
   void onInputFrames(const float *const *channels, int channelCount, int numFrames);
+
+  /// Audio thread. How many more frames at @p sampleRate the session may record; no limit without
+  /// a max duration.
+  [[nodiscard]] int64_t framesLeftBeforeMaxDuration(double sampleRate) const;
 
   [[nodiscard]] SessionState getSessionState() const;
 
@@ -181,6 +197,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   std::shared_ptr<IRecorderInput> input_;
   std::shared_ptr<RecorderInputGate> inputGate_;
   std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent_;
+  std::unique_ptr<EventCaller<AudioEvent::RECORDER_MAX_DURATION_REACHED>> maxDurationReachedEvent_;
   RecorderConsumers consumers_;
   std::shared_ptr<RecordingSessionManager> sessionManager_;
 };

@@ -7,6 +7,9 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/events/EventCaller.hpp>
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -27,6 +30,13 @@ AudioRecorder::AudioRecorder(
               })),
       errorEvent_(
           std::make_shared<EventCaller<AudioEvent::RECORDER_ERROR>>(audioEventHandlerRegistry)),
+      // Dispatched from the audio thread, so through a lane of its own.
+      maxDurationReachedEvent_(
+          std::make_unique<EventCaller<AudioEvent::RECORDER_MAX_DURATION_REACHED>>(
+              audioEventHandlerRegistry,
+              audioEventHandlerRegistry != nullptr
+                  ? audioEventHandlerRegistry->createAudioEventProducer()
+                  : nullptr)),
       consumers_(errorEvent_, fileBackend != nullptr ? *fileBackend : osFileBackend()),
       sessionManager_(std::move(sessionManager)) {}
 
@@ -37,7 +47,12 @@ AudioRecorder::~AudioRecorder() {
   stop();
 }
 
-Result<NoneType, std::string> AudioRecorder::start() {
+Result<NoneType, std::string> AudioRecorder::start(std::optional<double> maxDurationSeconds) {
+  if (maxDurationSeconds.has_value() &&
+      (!std::isfinite(*maxDurationSeconds) || *maxDurationSeconds <= 0.0)) {
+    return Err("maxDuration must be a positive number of seconds");
+  }
+
   uint64_t startingSession = 0;
   uint64_t routedGeneration = 0;
 
@@ -53,6 +68,8 @@ Result<NoneType, std::string> AudioRecorder::start() {
       return Err(claimResult.unwrap_err());
     }
     startingSession = session_.id = claimResult.unwrap();
+    session_.maxDurationSeconds = maxDurationSeconds;
+    session_.hasReachedMaxDuration = false;
     routedGeneration = session_.inputGeneration;
     setSessionState({.phase = Phase::Starting});
   }
@@ -278,6 +295,14 @@ void AudioRecorder::clearOnErrorCallback() {
   errorEvent_->assignCallbackId(0);
 }
 
+void AudioRecorder::setOnMaxDurationReachedCallback(uint64_t callbackId) {
+  maxDurationReachedEvent_->assignCallbackId(callbackId);
+}
+
+void AudioRecorder::clearOnMaxDurationReachedCallback() {
+  maxDurationReachedEvent_->assignCallbackId(0);
+}
+
 bool AudioRecorder::isIdle() const {
   return getSessionState().phase == Phase::Idle;
 }
@@ -315,18 +340,34 @@ double AudioRecorder::getInputLatency() const {
 
 void AudioRecorder::onInputFrames(const float *const *channels, int channelCount, int numFrames) {
   if (channels == nullptr || numFrames <= 0 ||
-      channelCount != session_.format->layout.channelCount) {
+      channelCount != session_.format->layout.channelCount || session_.hasReachedMaxDuration) {
     return;
   }
 
-  const double bufferSeconds = static_cast<double>(numFrames) / session_.format->layout.sampleRate;
-  session_.lastBufferSeconds.store(bufferSeconds, std::memory_order_relaxed);
+  const double sampleRate = session_.format->layout.sampleRate;
+  const int64_t framesLeft = framesLeftBeforeMaxDuration(sampleRate);
+  const int framesToDeliver = static_cast<int>(std::min<int64_t>(numFrames, framesLeft));
+
+  session_.lastBufferSeconds.store(numFrames / sampleRate, std::memory_order_relaxed);
   // The only writer while the gate is armed, so a load and a store need no read-modify-write.
   session_.recordedSeconds->store(
-      session_.recordedSeconds->load(std::memory_order_relaxed) + bufferSeconds,
+      session_.recordedSeconds->load(std::memory_order_relaxed) + framesToDeliver / sampleRate,
       std::memory_order_relaxed);
+  consumers_.write(channels, framesToDeliver);
 
-  consumers_.write(channels, numFrames);
+  if (framesLeft <= numFrames) {
+    session_.hasReachedMaxDuration = true;
+    maxDurationReachedEvent_->dispatchEmptyFromAudioThread();
+  }
+}
+
+int64_t AudioRecorder::framesLeftBeforeMaxDuration(double sampleRate) const {
+  if (!session_.maxDurationSeconds.has_value()) {
+    return std::numeric_limits<int64_t>::max();
+  }
+  const double secondsLeft =
+      *session_.maxDurationSeconds - session_.recordedSeconds->load(std::memory_order_relaxed);
+  return std::max<int64_t>(0, std::llround(secondsLeft * sampleRate));
 }
 
 AudioRecorder::SessionState AudioRecorder::getSessionState() const {

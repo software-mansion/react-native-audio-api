@@ -4,6 +4,7 @@ import type {
   AudioBufferSourceOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
+  AudioRecorderStartOptions,
   AutomationEventData,
   AudioBufferQueueSourceOptions,
   BiquadFilterOptions,
@@ -361,7 +362,7 @@ export interface IAudioRecorderCallbackOptions extends AudioRecorderCallbackOpti
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: () => Promise<void>;
+  start: (options: AudioRecorderStartOptions) => Promise<void>;
   stop: () => Promise<FileInfo>;
   isRecording: () => boolean;
   isPaused: () => boolean;
@@ -378,6 +379,9 @@ export interface IAudioRecorder {
 
   setOnError: (options: { callbackId: string }) => void;
   clearOnError: () => void;
+
+  setOnMaxDurationReached: (options: { callbackId: string }) => void;
+  clearOnMaxDurationReached: () => void;
 
   getFilePath: () => string | null;
 
