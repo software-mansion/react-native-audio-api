@@ -32,7 +32,9 @@ using namespace facebook;
 ///   never allocates. Drops the event if the queue is full.
 ///
 /// - dispatchEvent() — any other (non-RT) thread (worker, platform/JNI callbacks, recorder
-///   cleanup, AudioAPIModule, etc.). Uses the implicit (multi-producer) enqueue path.
+///   cleanup, AudioAPIModule, etc.). All of them share one locked producer, never moodycamel's
+///   implicit per-thread ones: with thread-local support off (iOS, ARM) an exited thread's
+///   implicit producer keeps its partly used block forever, starving the audio-thread lanes.
 ///
 /// workerThread_ waits on itemsAvailable_, drains dispatchQueue_, and posts each event to the
 /// JS thread via callInvoker_. Handlers are registered/unregistered on the JS thread, and
@@ -69,11 +71,11 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
       AudioEventPayload &&payload) noexcept override;
 
  private:
+  // Every live context's audio-thread producer holds at least one block (32 events) until it
+  // is released, and audio-thread enqueues can only take blocks preallocated here.
 #ifdef RN_AUDIO_API_NODE
-  // The WPT harness runs dozens of test files, each with its own contexts, in
-  // one process. Queue blocks claimed by a producer are never recycled, so at
-  // the app-sized capacity the supply runs out mid-run and every later
-  // audio-thread event is dropped; the extra headroom keeps a run honest.
+  // The WPT harness runs dozens of test files in one process and most never close their
+  // contexts, so it keeps far more producers alive than an app does.
   static constexpr size_t kDispatchCapacity = 8192;
 #else
   static constexpr size_t kDispatchCapacity = 256;
@@ -97,8 +99,11 @@ class AudioEventHandlerRegistry : public IAudioEventHandlerRegistry,
       eventHandlers_;
 
   // Single producer-to-consumer channel for every thread. Audio threads bind their own
-  // AudioEventProducer to it; every other thread uses the implicit-producer path.
+  // AudioEventProducer to it; every other thread goes through nonAudioProducer_.
   moodycamel::ConcurrentQueue<DispatchEvent> dispatchQueue_;
+  // Declared after dispatchQueue_ so the token can bind to it during construction.
+  std::mutex nonAudioProducerMutex_;
+  moodycamel::ProducerToken nonAudioProducer_;
   // Counts queued items; workerThread_ waits on it instead of busy-spinning.
   moodycamel::LightweightSemaphore itemsAvailable_;
   std::atomic<bool> isExiting_{false};

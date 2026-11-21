@@ -2,6 +2,7 @@
 
 #include <audioapi/libs/concurrentqueue/concurrentqueue.h>
 #include <audioapi/utils/Macros.h>
+#include <optional>
 
 namespace audioapi {
 
@@ -16,20 +17,29 @@ namespace audioapi {
 /// fresh render thread on every resume — but never concurrently
 class AudioEventProducer {
  public:
-  /// @param queue The registry's dispatch queue; the token binds to it for its whole life.
+  /// @param queue The registry's dispatch queue; the token binds to it until release().
   template <typename TQueue>
-  explicit AudioEventProducer(TQueue &queue) : token_(queue) {}
+  explicit AudioEventProducer(TQueue &queue) : token_(std::in_place, queue) {}
 
   ~AudioEventProducer() = default;
 
   DELETE_COPY_AND_MOVE(AudioEventProducer);
 
-  [[nodiscard]] moodycamel::ProducerToken &token() noexcept {
-    return token_;
+  /// @return The token to enqueue through, or null once released.
+  [[nodiscard]] moodycamel::ProducerToken *token() noexcept {
+    return token_.has_value() ? &*token_ : nullptr;
+  }
+
+  /// @brief Hands the token, and the queue blocks it holds, back to the queue for the next
+  /// producer to reuse. Nodes keep this object alive long after their context is done, so
+  /// waiting for the destructor would strand the blocks; dispatching afterwards fails.
+  /// @note Only once no thread can dispatch through this producer any more.
+  void release() noexcept {
+    token_.reset();
   }
 
  private:
-  moodycamel::ProducerToken token_;
+  std::optional<moodycamel::ProducerToken> token_;
 };
 
 } // namespace audioapi

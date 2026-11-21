@@ -4,6 +4,7 @@
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
+#include <audioapi/events/AudioEventProducer.h>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <audioapi/core/types/ContextState.h>
@@ -146,6 +147,10 @@ void OfflineAudioContext::renderAudio(const std::shared_ptr<ContextStateResolver
 
     if (stopRendering_.load(std::memory_order_acquire)) {
       return;
+    }
+    {
+      Locker locker(driverMutex_);
+      getAudioEventProducer()->release();
     }
     resultPromise_->resolve(resultBuffer_);
     resultPromise_.reset();
