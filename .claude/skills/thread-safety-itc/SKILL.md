@@ -103,7 +103,11 @@ Low-level registry API (used internally by `EventCaller`):
 audioEventHandlerRegistry_->dispatchEvent(AudioEvent::ENDED, callbackId, AudioEventPayload{...});
 ```
 
-Internally calls `callInvoker_->invokeAsync()` — safe to call from the audio thread via `dispatchEvent`.
+Both paths enqueue into one preallocated moodycamel queue that the registry's worker drains to `callInvoker_->invokeAsync()`:
+
+- **`dispatchEvent` is NOT audio-thread safe**: every non-audio thread shares one `ProducerToken` behind a mutex and `enqueue` may allocate. Never route it through moodycamel's implicit per-thread producers: thread-local support is off on iOS and ARM, so an exited thread's implicit producer strands its partly used block forever (RNAA-586).
+- **Audio thread → `dispatchEventFromAudioThread(producer, …)`** with the context's own `AudioEventProducer` (`EventCaller(registry, context->getAudioEventProducer())`). `try_enqueue` never allocates, so it fails silently once the preallocated blocks run out. A token is single-producer: never share one across contexts.
+- **A finished context must `release()` its producer** (`AudioContext::close`, end of offline rendering), under `driverMutex_` once rendering is quiesced. Nodes keep the producer alive long after, and only a destroyed token returns its blocks for the next context to reuse.
 
 ---
 
