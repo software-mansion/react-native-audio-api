@@ -5,7 +5,6 @@ import AudioPlayback from './AudioPlayback';
 import AudioVisualizer from './AudioVisualizer';
 import ChannelCount from './ChannelCount';
 import DrumMachine from './DrumMachine';
-import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
 import PannerNode from './PannerNode';
@@ -20,7 +19,6 @@ import EchoCancellation from './EchoCancellation';
 type ExampleRoutes = {
   Oscillator: undefined;
   PannerNode: undefined;
-  Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
   AudioPlayback: undefined;
@@ -96,13 +94,6 @@ export const Examples: CategorizedExample[] = [
     title: 'Audio Playback',
     icon: 'music',
     screen: AudioPlayback,
-  },
-  {
-    key: 'Metronome',
-    category: 'instruments',
-    title: 'Metronome',
-    icon: 'thermometer',
-    screen: Metronome,
   },
   {
     key: 'Oscillator',

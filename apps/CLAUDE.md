@@ -26,7 +26,7 @@ apps/
     │   ├── utils/
     │   │   ├── audio.ts      # useAudioContext, useDecodedAudio, activatePlaybackSession
     │   │   ├── formatClock.ts # m:ss / mm:ss, worklet-safe
-    │   │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap); each voice disconnects itself on `onended`
+    │   │   ├── soundEngines/ # Reusable synth classes (Kick, HiHat, Clap); each voice disconnects itself on `onended`
     │   │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
     │   │   └── usePlayer.tsx # Hook for pattern-based scheduled playback
     │   ├── singletons/       # Global audioContext and audioRecorder instances
@@ -77,7 +77,7 @@ Commit the generated `assets/icons/nanoicons/*`, `ios/nanoicons-fonts/`, `Images
 
 ## Adding a New Example (Tests tab)
 
-Examples are focused single-feature demos (Oscillator, Metronome, AudioPlayback...).
+Examples are focused single-feature demos (Oscillator, AudioPlayback, PannerNode...).
 
 ### 1. Create the screen
 
@@ -225,18 +225,20 @@ const MyExample: FC = () => {
 
 `examples/AudioPlayback/AudioPlayer.ts` is a class built per screen around that screen's context: `new AudioPlayer(ctx, { onPositionChanged, onEnded })`, released with `dispose()`. The Audio Playback example also covers playback speed: `setPlaybackRate` changes the live source's `playbackRate`, while `setPitchCorrection` restarts the source from the last reported position, because `pitchCorrection` is fixed when a buffer source is created.
 
-### Pattern-based scheduling (Metronome, DrumMachine)
+### Pattern-based scheduling (DrumMachine)
 
 Use the shared `usePlayer` hook + a `SoundEngine` class:
 
 ```tsx
-import usePlayer, { type Pattern } from '../../utils/usePlayer';
-import MetronomeSound from '../../utils/soundEngines/MetronomeSound';
+import usePlayer, { type InstrumentName } from '../../utils/usePlayer';
+import Kick from '../../utils/soundEngines/Kick';
 
+// Keep `setup` stable (module scope or useCallback): usePlayer recreates its
+// context whenever it changes.
 function setupPlayer(ctx: AudioContext) {
-  const sound = new MetronomeSound(ctx, 1000);
+  const kick = new Kick(ctx);
   return {
-    playNote: (name: string, time: number) => sound.play(time),
+    playNote: (name: InstrumentName, time: number) => kick.play(time),
   };
 }
 
