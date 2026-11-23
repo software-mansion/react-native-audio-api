@@ -33,8 +33,9 @@ class AudioGraph {
     /// Head of the processable-link linked list in pool_. These are NOT audio
     /// edges: they mark other nodes whose processable state must follow this
     /// node's (e.g. DelayReader -> DelayWriter, which communicate through a
-    /// ring buffer rather than a graph edge). Links do not participate in the
-    /// topological sort, only in settleProcessableState().
+    /// ring buffer rather than a graph edge). The toposort orders a link
+    /// target before its holder unless that would close a cycle, and
+    /// settleProcessableState() follows links when pulling.
     std::uint32_t link_head = InputPool::kNull;
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
@@ -230,7 +231,9 @@ class AudioGraph {
     fn(node.link_head);
   }
 
-  /// @brief In-place Kahn's toposort (sources first, sinks last).
+  /// @brief In-place Kahn's toposort (sources first, sinks last). Processable
+  /// links count as ordering constraints (target before holder) unless they
+  /// would close a cycle, in which case audio edges alone order that cycle.
   ///
   /// Uses `target_place` as an embedded linked-list stack for the
   /// ready set, and cycle-sort for the final permutation.

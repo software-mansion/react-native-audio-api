@@ -22,14 +22,15 @@ DelayNodeHostObject::DelayNodeHostObject(
           std::make_unique<DelayNode>(context, options),
           options),
       delayNode_(typedAudioNode<DelayNode>(node_)) {
-  delayTimeParam_ =
-      std::make_shared<AudioParamHostObject>(graph_, node_, delayNode_->getDelayTimeParam());
-
   // order has to be preserved because adding cycle would not change their order in the graph
   delayReaderHostNode_ =
       std::make_shared<DelayReaderHostNode>(graph_, std::move(delayNode_->delayReader_));
   delayWriterHostNode_ =
       std::make_shared<DelayWriterHostNode>(graph_, std::move(delayNode_->delayWriter_));
+
+  // The writer is the sub-node that reads delayTime, so it owns the param's bridge
+  delayTimeParam_ = std::make_shared<AudioParamHostObject>(
+      graph_, delayWriterHostNode_->rawNode(), delayNode_->getDelayTimeParam());
 
   // Reader and writer communicate via the delay line (a ring buffer), not via
   // an audio edge. Linking their processable state ensures that when the

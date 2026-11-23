@@ -205,10 +205,15 @@ void AudioGraph::kahn_toposort() {
     return;
   }
 
-  // Phase 1: compute out-degree
+  // Phase 1: out-degree = audio consumers + processable-link holders. A link
+  // holder (DelayReader) reads what its target (DelayWriter) writes in the
+  // same quantum, so the target must run first.
   for (const auto &nd : nodes) {
     for (const auto inp : pool_.view(nd.input_head)) {
       nodes[inp].topo_out_degree++;
+    }
+    for (const auto lnk : pool_.view(nd.link_head)) {
+      nodes[lnk].topo_out_degree++;
     }
   }
 
@@ -219,25 +224,53 @@ void AudioGraph::kahn_toposort() {
     top = static_cast<std::int32_t>(i);
   };
 
+  // sinks are processed first, thus we start with n so they end up last
+  std::uint32_t write = n;
+  auto placeReady = [&](bool followLinks) {
+    while (top != -1) {
+      // pop
+      const auto idx = static_cast<std::uint32_t>(top);
+      top = nodes[idx].target_place;
+      nodes[idx].target_place =
+          static_cast<std::int32_t>(--write); // final: position after the sort
+
+      for (const auto inp : pool_.view(nodes[idx].input_head)) {
+        if (--nodes[inp].topo_out_degree == 0) {
+          push(inp);
+        }
+      }
+      if (!followLinks) {
+        continue;
+      }
+      for (const auto lnk : pool_.view(nodes[idx].link_head)) {
+        if (--nodes[lnk].topo_out_degree == 0) {
+          push(lnk);
+        }
+      }
+    }
+  };
+
   for (std::uint32_t i = 0; i < n; i++) {
     if (nodes[i].topo_out_degree == 0) {
       push(i);
     }
   }
+  placeReady(/*followLinks=*/true);
 
-  // sinks are processed first, thus we start with n so they end up last
-  std::uint32_t write = n;
-  while (top != -1) {
-    // pop
-    const auto idx = static_cast<std::uint32_t>(top);
-    top = nodes[idx].target_place;
-    nodes[idx].target_place = static_cast<std::int32_t>(--write); // final: position after the sort
-
-    for (const auto inp : pool_.view(nodes[idx].input_head)) {
-      if (--nodes[inp].topo_out_degree == 0) {
-        push(inp);
+  // Unplaced nodes left means a feedback cycle through a delay.
+  // Drop the links of the unplaced nodes and let edges alone order them.
+  if (write > 0) {
+    for (std::uint32_t i = 0; i < n; i++) {
+      if (nodes[i].target_place != -1) {
+        continue;
+      }
+      for (const auto lnk : pool_.view(nodes[i].link_head)) {
+        if (--nodes[lnk].topo_out_degree == 0) {
+          push(lnk);
+        }
       }
     }
+    placeReady(/*followLinks=*/false);
   }
 
   // Phase 3: remap input (and link) indices to new positions (before nodes move)

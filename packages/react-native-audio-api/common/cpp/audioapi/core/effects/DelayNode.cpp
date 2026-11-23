@@ -4,10 +4,12 @@
 #include <audioapi/core/effects/delay/DelayReader.h>
 #include <audioapi/core/effects/delay/DelayRingBufferOp.h>
 #include <audioapi/core/effects/delay/DelayWriter.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <algorithm>
 #include <memory>
 
 namespace audioapi {
@@ -18,9 +20,10 @@ DelayNode::DelayNode(const std::shared_ptr<BaseAudioContext> &context, const Del
           std::make_shared<AudioParam>(options.delayTime, 0, options.maxDelayTime, context)),
       delayBuffer_(
           std::make_shared<AudioBuffer>(
-              static_cast<size_t>(
-                  options.maxDelayTime * context->getSampleRate() +
-                  1), // +1 to enable delayTime equal to maxDelayTime
+              std::max(
+                  static_cast<size_t>(options.maxDelayTime * context->getSampleRate()),
+                  static_cast<size_t>(RENDER_QUANTUM_SIZE)) +
+                  RENDER_QUANTUM_SIZE,
               channelCount_,
               context->getSampleRate())) {
   delayLine_ = std::make_shared<DelayLine>(delayBuffer_, delayTimeParam_);
