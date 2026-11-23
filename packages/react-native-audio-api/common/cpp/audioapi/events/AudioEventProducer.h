@@ -19,15 +19,15 @@ class AudioEventProducer {
  public:
   /// @param queue The registry's dispatch queue; the token binds to it until release().
   template <typename TQueue>
-  explicit AudioEventProducer(TQueue &queue) : token_(std::in_place, queue) {}
+  explicit AudioEventProducer(TQueue &queue) : token_(queue) {}
 
   ~AudioEventProducer() = default;
 
   DELETE_COPY_AND_MOVE(AudioEventProducer);
 
-  /// @return The token to enqueue through, or null once released.
-  [[nodiscard]] moodycamel::ProducerToken *token() noexcept {
-    return token_.has_value() ? &*token_ : nullptr;
+  /// @return The token to enqueue through; empty once released.
+  [[nodiscard]] std::optional<moodycamel::ProducerToken> &token() noexcept {
+    return token_;
   }
 
   /// @brief Hands the token, and the queue blocks it holds, back to the queue for the next

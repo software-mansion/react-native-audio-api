@@ -16,7 +16,7 @@ AudioEventHandlerRegistry::AudioEventHandlerRegistry(
       dispatchQueue_(kDispatchCapacity),
       nonAudioProducer_(dispatchQueue_) {
   // Dispatch worker: wait for an item, dequeue it, then hop to the JS thread.
-  workerThread_ = std::thread([this]() {
+  workerThread_ = std::thread([this] {
     while (true) {
       itemsAvailable_.wait();
       if (isExiting_.load(std::memory_order_acquire)) {
@@ -102,8 +102,8 @@ bool AudioEventHandlerRegistry::dispatchEventFromAudioThread(
     AudioEvent eventName,
     uint64_t listenerId,
     AudioEventPayload &&payload) noexcept {
-  auto *token = producer.token();
-  if (runtime_ == nullptr || token == nullptr) {
+  auto &token = producer.token();
+  if (runtime_ == nullptr || !token.has_value()) {
     return false;
   }
   if (!dispatchQueue_.try_enqueue(
