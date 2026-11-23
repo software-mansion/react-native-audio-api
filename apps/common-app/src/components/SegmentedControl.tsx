@@ -1,7 +1,12 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import SegmentedControlClass, {
+  type SegmentedControlProps as NativeProps,
+} from '@react-native-segmented-control/segmented-control';
+import React, { ComponentType } from 'react';
 
-import { colors } from '../styles';
+// The package's class typing builds on `NativeMethods`, which React Native
+// 0.88's types no longer satisfy; its props are still accurate.
+const NativeSegmentedControl =
+  SegmentedControlClass as unknown as ComponentType<NativeProps>;
 
 export interface SegmentedControlOption<T extends string> {
   value: T;
@@ -12,13 +17,14 @@ interface SegmentedControlProps<T extends string> {
   options: ReadonlyArray<SegmentedControlOption<T>>;
   value: T;
   onChange: (value: T) => void;
+  /** Fills the selected segment; the system colour when omitted. */
   color?: string;
 }
 
-const height = 36;
-const inset = 3;
-
-/** A capsule row of 2–5 mutually exclusive options. */
+/**
+ * A row of 2–5 mutually exclusive options: `UISegmentedControl` on iOS, the
+ * library's JS rendering of it on Android.
+ */
 function SegmentedControl<T extends string>({
   options,
   value,
@@ -26,63 +32,16 @@ function SegmentedControl<T extends string>({
   color,
 }: SegmentedControlProps<T>) {
   return (
-    <View style={styles.track} accessibilityRole="tablist">
-      {options.map((option) => {
-        const isSelected = option.value === value;
-
-        return (
-          <Pressable
-            key={option.value}
-            onPress={() => onChange(option.value)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: isSelected }}
-            style={[
-              styles.segment,
-              isSelected &&
-                (color
-                  ? { backgroundColor: `${color}33`, borderColor: `${color}99` }
-                  : styles.selectedSegment),
-            ]}
-          >
-            <Text style={[styles.label, isSelected && styles.selectedLabel]}>
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    <NativeSegmentedControl
+      appearance="dark"
+      values={options.map((option) => option.label)}
+      selectedIndex={options.findIndex((option) => option.value === value)}
+      onChange={(event) =>
+        onChange(options[event.nativeEvent.selectedSegmentIndex].value)
+      }
+      tintColor={color}
+    />
   );
 }
 
 export default SegmentedControl;
-
-const styles = StyleSheet.create({
-  track: {
-    height,
-    padding: inset,
-    borderRadius: height / 2,
-    flexDirection: 'row',
-    backgroundColor: colors.track,
-  },
-  segment: {
-    flex: 1,
-    borderRadius: (height - inset * 2) / 2,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectedSegment: {
-    backgroundColor: 'rgba(238, 240, 255, 0.18)',
-    borderColor: 'transparent',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  selectedLabel: {
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-});

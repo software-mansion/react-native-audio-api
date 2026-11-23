@@ -2,14 +2,10 @@ import type { AppIconName } from '../components';
 import { colors } from '../styles';
 import PedalBoard from './PedalBoard/PedalBoard';
 import Record from './Record/Record';
-import RecorderSheet from './Record/RecorderSheet';
 import Crossfade from './Crossfade/Crossfade';
 import VoiceChat from './VoiceChat';
 
 export type DemoKey = 'RecordDemo' | 'PedalBoard' | 'Crossfade' | 'VoiceChat';
-
-/** Route of a demo's controls sheet, see `DemoScreen.controls`. */
-export type DemoControlsKey = `${DemoKey}Controls`;
 
 export interface DemoScreen {
   key: DemoKey;
@@ -18,11 +14,6 @@ export interface DemoScreen {
   icon: AppIconName;
   color: string;
   screen: React.FC;
-  /**
-   * Optional content of an always-visible bottom sheet. It's registered as the
-   * `<key>Controls` route; the screen presents it with `useControlsSheet`.
-   */
-  controls?: React.FC;
 }
 
 export const demos: DemoScreen[] = [
@@ -34,7 +25,6 @@ export const demos: DemoScreen[] = [
     icon: 'mic',
     color: colors.accent,
     screen: Record,
-    controls: RecorderSheet,
   },
   {
     key: 'PedalBoard',

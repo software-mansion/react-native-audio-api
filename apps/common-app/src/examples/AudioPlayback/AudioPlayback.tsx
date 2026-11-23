@@ -1,21 +1,37 @@
 import React, { FC, useEffect, useState } from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import {
   AudioManager,
   PlaybackNotificationManager,
 } from 'react-native-audio-api';
 import BackgroundTimer from 'react-native-background-timer';
 
-import { Container, ProgressBar, RoundButton } from '../../components';
+import {
+  Container,
+  ProgressBar,
+  RoundButton,
+  SegmentedControl,
+  Slider,
+  type SegmentedControlOption,
+} from '../../components';
 import { layout } from '../../styles';
 import { activatePlaybackSession, useAudioContext } from '../../utils/audio';
 import AudioPlayer from './AudioPlayer';
 import staticAsset from './voice-sample-landing.mp3';
 
+type TimeStretching = 'pitchCorrection' | 'linear';
+
+const timeStretchingOptions: SegmentedControlOption<TimeStretching>[] = [
+  { value: 'pitchCorrection', label: 'Keep pitch' },
+  { value: 'linear', label: 'Linear' },
+];
+
+const playbackSpeed = { min: 0.5, max: 2, step: 0.25 } as const;
+
 async function showPlaybackNotification(duration: number) {
   await AudioManager.requestNotificationPermissions();
   await PlaybackNotificationManager.show({
-    title: 'Audio File',
+    title: 'Audio Playback',
     artist: 'Software Mansion',
     artwork: 'https://wallpaperaccess.com/full/2658793.jpg',
     album: 'Audio API',
@@ -35,11 +51,14 @@ async function showPlaybackNotification(duration: number) {
   await PlaybackNotificationManager.enableControl('seekTo', true);
 }
 
-const AudioFile: FC = () => {
+const AudioPlayback: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [wasPlaying, setWasPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [timeStretching, setTimeStretching] =
+    useState<TimeStretching>('pitchCorrection');
 
   const audioContext = useAudioContext();
   const [player] = useState(
@@ -70,6 +89,16 @@ const AudioFile: FC = () => {
 
     await player.play();
     setIsPlaying(true);
+  };
+
+  const onSpeedChange = (newSpeed: number) => {
+    setSpeed(newSpeed);
+    player.setPlaybackRate(newSpeed);
+  };
+
+  const onTimeStretchingChange = (algorithm: TimeStretching) => {
+    setTimeStretching(algorithm);
+    player.setPitchCorrection(algorithm === 'pitchCorrection');
   };
 
   useEffect(() => {
@@ -189,18 +218,36 @@ const AudioFile: FC = () => {
         loading={isLoading}
         disabled={isLoading}
       />
-      <ProgressBar progress={progress} style={styles.progress} />
+      <ProgressBar progress={progress} style={styles.stretch} />
+      <View style={[styles.stretch, styles.speedControls]}>
+        <Slider
+          label="Playback speed"
+          min={playbackSpeed.min}
+          max={playbackSpeed.max}
+          step={playbackSpeed.step}
+          value={speed}
+          onValueChange={onSpeedChange}
+        />
+        <SegmentedControl
+          options={timeStretchingOptions}
+          value={timeStretching}
+          onChange={onTimeStretchingChange}
+        />
+      </View>
     </Container>
   );
 };
 
-export default AudioFile;
+export default AudioPlayback;
 
 const styles = StyleSheet.create({
   content: {
     gap: layout.screenPadding * 2,
   },
-  progress: {
+  stretch: {
     alignSelf: 'stretch',
+  },
+  speedControls: {
+    gap: layout.screenPadding,
   },
 });

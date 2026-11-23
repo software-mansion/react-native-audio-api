@@ -1493,6 +1493,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-segmented-control (2.6.0):
+    - React-Core
   - react-native-skia (2.11.0):
     - hermes-engine
     - RCTRequired
@@ -1956,6 +1958,29 @@ PODS:
     - React-perflogger (= 0.88.0)
     - React-utils (= 0.88.0)
     - ReactNativeDependencies
+  - ReactNativeBottomSheet (1.1.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - ReactNativeDependencies (0.88.0)
   - ReactNavigation (8.0.0-alpha.51):
     - hermes-engine
@@ -2479,6 +2504,7 @@ DEPENDENCIES:
   - "react-native-menu (from `../../common-app/node_modules/@react-native-menu/menu`)"
   - react-native-nano-icons (from `../../common-app/node_modules/react-native-nano-icons`)
   - react-native-safe-area-context (from `../../common-app/node_modules/react-native-safe-area-context`)
+  - "react-native-segmented-control (from `../../common-app/node_modules/@react-native-segmented-control/segmented-control`)"
   - "react-native-skia (from `../../common-app/node_modules/@shopify/react-native-skia`)"
   - "react-native-slider (from `../../common-app/node_modules/@react-native-community/slider`)"
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2517,6 +2543,7 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios/ReactAppDependencyProvider`)
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "ReactNativeBottomSheet (from `../../common-app/node_modules/@swmansion/react-native-bottom-sheet`)"
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - "ReactNavigation (from `../../common-app/node_modules/@react-navigation/native`)"
   - RNAudioAPI (from `../../../packages/react-native-audio-api`)
@@ -2635,6 +2662,8 @@ EXTERNAL SOURCES:
     :path: "../../common-app/node_modules/react-native-nano-icons"
   react-native-safe-area-context:
     :path: "../../common-app/node_modules/react-native-safe-area-context"
+  react-native-segmented-control:
+    :path: "../../common-app/node_modules/@react-native-segmented-control/segmented-control"
   react-native-skia:
     :path: "../../common-app/node_modules/@shopify/react-native-skia"
   react-native-slider:
@@ -2711,6 +2740,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios/ReactCodegen
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  ReactNativeBottomSheet:
+    :path: "../../common-app/node_modules/@swmansion/react-native-bottom-sheet"
   ReactNativeDependencies:
     :podspec: "../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec"
   ReactNavigation:
@@ -2787,6 +2818,7 @@ SPEC CHECKSUMS:
   react-native-menu: 4b594e5520ae74d069e3a088645823d557e2e7e2
   react-native-nano-icons: 4076e6ad207208090ea1f653e741887e8f026cae
   react-native-safe-area-context: 0613ae3f639560e81b2b1f84382a834ef5a205d2
+  react-native-segmented-control: 1e670006e2f5c2da2818072c2305c78884229b31
   react-native-skia: 293d9a1164933055b181712ae6bb8052583de4b6
   react-native-slider: 5f655882a4ec96c21d705abb305419c257a2f12b
   React-NativeModulesApple: 52f3def085f129de1307e3eb78e26729ff70f421
@@ -2825,6 +2857,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 782ee9546c9cd3b53b73f1e9e3dd728540085fc7
   ReactCodegen: 3cbf4ccc5dea3563828706198300efcd6af57ea9
   ReactCommon: 145a14b942b19fc2fe38927f261955ada56978aa
+  ReactNativeBottomSheet: dd7d6119d1ddaaa3b1843eae04c0d7a20c0672e5
   ReactNativeDependencies: d3b7423ba1e52525e42085c8470109abde583d2e
   ReactNavigation: 1cf3b6680f489f3dcddddab84a855717421796f7
   RNAudioAPI: 380a309007f833e513dda47cbb00e050c46cf90e

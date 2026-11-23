@@ -20,15 +20,11 @@ import {
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 
 import { Container } from '../../components';
-import { useControlsSheet } from '../../navigation/useControlsSheet';
 import { audioRecorder as Recorder, audioContext } from '../../singletons';
 import { layout } from '../../styles';
 import RecordingsList from './RecordingsList';
 import { addRecording } from './recordingsStore';
-import {
-  recorderSheetStore,
-  useRecorderSheetState,
-} from './recorderSheetStore';
+import RecorderSheet from './RecorderSheet';
 import { RecordingState } from './types';
 
 // concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) — the formats
@@ -74,9 +70,7 @@ const Record: FC = () => {
   const [isInterrupted, setIsInterrupted] = useState(false);
   const stateRef = useRef(state);
   const { availableInputs, currentInput, selectInput } = useAudioInput();
-  const { sheetHeight } = useRecorderSheetState();
-
-  useControlsSheet('RecordDemoControls');
+  const [sheetHeight, setSheetHeight] = useState(0);
 
   useLayoutEffect(() => {
     const onSelectInput = async (input: (typeof availableInputs)[number]) => {
@@ -272,15 +266,6 @@ const Record: FC = () => {
   }, [state]);
 
   useEffect(() => {
-    recorderSheetStore.publish({
-      state,
-      isInterrupted,
-      onRecordPress,
-      onPausePress,
-    });
-  }, [state, isInterrupted, onRecordPress, onPausePress]);
-
-  useEffect(() => {
     (async () => {
       const recordingPermissionStatus =
         await AudioManager.checkRecordingPermissions();
@@ -408,6 +393,13 @@ const Record: FC = () => {
       >
         <RecordingsList disabled={isTakeRunning} />
       </ScrollView>
+      <RecorderSheet
+        state={state}
+        isInterrupted={isInterrupted}
+        onRecordPress={onRecordPress}
+        onPausePress={onPausePress}
+        onCoveredHeightChange={setSheetHeight}
+      />
     </Container>
   );
 };

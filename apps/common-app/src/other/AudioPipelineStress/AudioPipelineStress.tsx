@@ -35,7 +35,7 @@ import {
   serializeUnknownError,
   waitForCondition,
 } from './helpers';
-import staticAsset from '../../examples/AudioFile/voice-sample-landing.mp3';
+import staticAsset from '../../examples/AudioPlayback/voice-sample-landing.mp3';
 import type {
   PlaybackProgressStats,
   RecordingCapture,

@@ -337,6 +337,9 @@ importers:
       '@react-native-menu/menu':
         specifier: 2.0.0
         version: 2.0.0(patch_hash=6dd0aa63e24fcd6cbc3e458eb8dc7e82a2a9a2ba426b6ce9b9ecd84542ff600d)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      '@react-native-segmented-control/segmented-control':
+        specifier: 2.6.0
+        version: 2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-navigation/bottom-tabs':
         specifier: 8.0.0-alpha.57
         version: 8.0.0-alpha.57(bdd4de7ea4ca2baaf30b7e43e446fc54)
@@ -352,6 +355,9 @@ importers:
       '@shopify/react-native-skia':
         specifier: 2.11.0
         version: 2.11.0(14e28dcd4e165fd3aca97217ed6314e4)
+      '@swmansion/react-native-bottom-sheet':
+        specifier: 1.1.0
+        version: 1.1.0(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-audio-api:
         specifier: workspace:*
         version: link:../../packages/react-native-audio-api
@@ -3311,6 +3317,12 @@ packages:
       react: '*'
       react-native: '*'
 
+  '@react-native-segmented-control/segmented-control@2.6.0':
+    resolution: {integrity: sha512-k5zMizxlEI9JIG2JNt+My/ilfybwqQeoxGyUvKjpj+p6WU3VaO8O1CQsMoA1udMQ9G9JZU2M13aVcbHIk+AenQ==}
+    peerDependencies:
+      react: '>=16.0'
+      react-native: '>=0.62'
+
   '@react-native/asset-utils@0.88.0':
     resolution: {integrity: sha512-Bj1DxQt5f4OrjdlgSVkZT37Z3hx5hUIN5AUDSqL/e99vgtTcqj5vnm067epZL1EF/QiqsniZO8Q1GSkItOakDg==}
     engines: {node: ^22.13.0 || ^24.3.0 || >= 26.0.0}
@@ -3628,6 +3640,19 @@ packages:
   '@svgr/webpack@8.1.0':
     resolution: {integrity: sha512-LnhVjMWyMQV9ZmeEy26maJk+8HTIbd59cH4F2MJ439k9DqejRisfFNGAPvRYlKETuh9LrImlS8aKsBgKjMA8WA==}
     engines: {node: '>=14'}
+
+  '@swmansion/react-native-bottom-sheet@1.1.0':
+    resolution: {integrity: sha512-v5snAzLjR2MC7BnLMfztSk9/b5xPDOAL9RSrDF5kr2eVeDsPmdxouNcFa47O8IuxHeTr4+IXzwQmPj7rAQxKDw==}
+    peerDependencies:
+      react: '>=19.1.1'
+      react-dom: '>=19.1.1'
+      react-native: '>=0.82.0'
+      react-native-web: '>=0.21.0'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native-web:
+        optional: true
 
   '@swmansion/t-rex-ui@1.3.3':
     resolution: {integrity: sha512-vk2LGZifWlAw1gij4sxHA4gE31XBLBoKPSk0TMqrEv631YOwAZ8qcwsbjeNlW9Gm/T/7+mq7aT+jcT6/cKWLJw==}
@@ -15138,6 +15163,11 @@ snapshots:
       react: 19.3.0
       react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
 
+  '@react-native-segmented-control/segmented-control@2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+    dependencies:
+      react: 19.3.0
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+
   '@react-native/asset-utils@0.88.0': {}
 
   '@react-native/babel-plugin-codegen@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1)':
@@ -15578,6 +15608,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
+
+  '@swmansion/react-native-bottom-sheet@1.1.0(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+    dependencies:
+      react: 19.3.0
+      react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)
+    optionalDependencies:
+      react-dom: 19.3.0(react@19.3.0)
+      react-native-web: 0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
 
   '@swmansion/t-rex-ui@1.3.3(7bb9905b33a1c36e9336e62c637659e6)':
     dependencies:

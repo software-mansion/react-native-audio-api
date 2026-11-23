@@ -1,17 +1,15 @@
 import type { AppIconName } from '../components';
 import { colors } from '../styles';
 
-import AudioFile from './AudioFile';
+import AudioPlayback from './AudioPlayback';
 import AudioVisualizer from './AudioVisualizer';
 import ChannelCount from './ChannelCount';
 import DrumMachine from './DrumMachine';
-import DrumMachineControls from './DrumMachine/DrumMachineControls';
 import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
 import Oscillator from './Oscillator';
 import PannerNode from './PannerNode';
 import Piano from './Piano';
-import PlaybackSpeed from './PlaybackSpeed';
 import Record from './Record/Record';
 import Worklets from './Worklets/Worklets';
 import AudioStream from './AudioTag/AudioTag';
@@ -25,10 +23,9 @@ type ExampleRoutes = {
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
-  AudioFile: undefined;
+  AudioPlayback: undefined;
   AudioPipelineStress: undefined;
   AudioIOPlayground: undefined;
-  PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
   Record: undefined;
@@ -45,19 +42,11 @@ type ExampleRoutes = {
 
 export type ExampleKey = keyof ExampleRoutes;
 
-/** Route of an example's controls sheet, see `Example.controls`. */
-export type ExampleControlsKey = `${ExampleKey}Controls`;
-
 export interface Example {
   key: ExampleKey;
   title: string;
   icon: AppIconName;
   screen: React.FC;
-  /**
-   * Optional content of an always-visible bottom sheet. It's registered as the
-   * `<key>Controls` route; the screen presents it with `useControlsSheet`.
-   */
-  controls?: React.FC;
 }
 
 export type ExampleCategoryKey =
@@ -93,7 +82,6 @@ export const Examples: CategorizedExample[] = [
     title: 'Drum Machine',
     icon: 'drum',
     screen: DrumMachine,
-    controls: DrumMachineControls,
   },
   {
     key: 'Piano',
@@ -103,18 +91,11 @@ export const Examples: CategorizedExample[] = [
     screen: Piano,
   },
   {
-    key: 'AudioFile',
+    key: 'AudioPlayback',
     category: 'sources',
-    title: 'Audio File',
+    title: 'Audio Playback',
     icon: 'music',
-    screen: AudioFile,
-  },
-  {
-    key: 'PlaybackSpeed',
-    category: 'sources',
-    icon: 'venetian-mask',
-    title: 'Playback Speed',
-    screen: PlaybackSpeed,
+    screen: AudioPlayback,
   },
   {
     key: 'Metronome',

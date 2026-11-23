@@ -25,6 +25,8 @@ export default class AudioPlayer {
   private isPlaying = false;
   private currentElapsedTime = 0;
   private volume = 1;
+  private playbackRate = 1;
+  private pitchCorrection = true;
 
   constructor(
     private readonly audioContext: AudioContext,
@@ -44,14 +46,16 @@ export default class AudioPlayer {
     }
 
     const sourceNode = this.audioContext.createBufferSource({
-      pitchCorrection: true,
+      pitchCorrection: this.pitchCorrection,
     });
     sourceNode.buffer = this.audioBuffer;
+    sourceNode.playbackRate.value = this.playbackRate;
     this.volumeNode = this.audioContext.createGain();
     this.volumeNode.gain.value = this.volume;
 
     sourceNode.connect(this.volumeNode).connect(this.audioContext.destination);
-    sourceNode.onpositionchangedInterval = 1000;
+    // Also where a restart resumes from, so it can't lag far behind.
+    sourceNode.onpositionchangedInterval = 250;
     sourceNode.onpositionchanged = (event) => {
       this.currentElapsedTime = event.value;
       PlaybackNotificationManager.show({
@@ -98,11 +102,25 @@ export default class AudioPlayer {
     PlaybackNotificationManager.show({
       elapsedTime: this.currentElapsedTime,
     });
+    this.restartIfPlaying();
+  };
 
-    if (this.isPlaying) {
-      this.isPlaying = false;
-      this.play();
+  setPlaybackRate = (rate: number) => {
+    this.playbackRate = rate;
+    if (this.sourceNode) {
+      this.sourceNode.playbackRate.value = rate;
     }
+    PlaybackNotificationManager.show({ speed: rate });
+  };
+
+  /** Pitch correction is fixed when a source is created, so this restarts it. */
+  setPitchCorrection = (enabled: boolean) => {
+    if (enabled === this.pitchCorrection) {
+      return;
+    }
+    this.pitchCorrection = enabled;
+    this.releaseSource();
+    this.restartIfPlaying();
   };
 
   loadBuffer = async (asset: string | number) => {
@@ -130,6 +148,13 @@ export default class AudioPlayer {
       this.volumeNode.gain.value = volume;
     }
   };
+
+  private restartIfPlaying() {
+    if (this.isPlaying) {
+      this.isPlaying = false;
+      this.play();
+    }
+  }
 
   /** Stops and disconnects the current source without reporting it as ended. */
   private releaseSource() {

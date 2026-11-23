@@ -11,6 +11,11 @@ packages:
 
 # 1 Week gate
 minimumReleaseAge: 10080
+# TEMPORARY: segmented-control shipped 2.5.8 to 2.6.0 within days after two
+# years without a release (2.6.0 vetted by hand: built by GitHub Actions with
+# provenance, no install scripts). Remove once 2.6.0 is older than the gate.
+minimumReleaseAgeExclude:
+  - '@react-native-segmented-control/segmented-control'
 
 overrides:
   typescript: ~6.0.3

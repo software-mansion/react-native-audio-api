@@ -12,10 +12,9 @@ import { useSharedValue } from 'react-native-reanimated';
 
 import {
   AppIcon,
-  BottomAccessory,
   Container,
+  ControlsSheet,
   ProgressBar,
-  useBottomAccessorySpace,
 } from '../../components';
 import { colors } from '../../styles';
 import { useAudioContext, useDecodedAudio } from '../../utils/audio';
@@ -53,7 +52,7 @@ const AudioVisualizer: React.FC = () => {
   const [offset, setOffset] = useState(0);
   /** Seconds into the track, refreshed while playing. */
   const [position, setPosition] = useState(0);
-  const accessorySpace = useBottomAccessorySpace();
+  const [sheetHeight, setSheetHeight] = useState(0);
 
   const audioContext = useAudioContext();
   const audioBuffer = useDecodedAudio(audioContext, URL);
@@ -184,7 +183,7 @@ const AudioVisualizer: React.FC = () => {
 
   return (
     <Container disablePadding>
-      <View style={[styles.chartArea, { paddingBottom: accessorySpace }]}>
+      <View style={[styles.chartArea, { paddingBottom: sheetHeight }]}>
         <FreqTimeChart
           timeDataSV={timeDataSV}
           timeDataTickSV={timeDataTickSV}
@@ -194,33 +193,35 @@ const AudioVisualizer: React.FC = () => {
           frequencyBinCount={FREQUENCY_BIN_COUNT}
         />
       </View>
-      <BottomAccessory>
-        <Pressable
-          onPress={handlePlayPause}
-          disabled={!audioBuffer}
-          accessibilityRole="button"
-          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-          accessibilityState={{ disabled: !audioBuffer }}
-          style={({ pressed }) => [
-            styles.playButton,
-            pressed && styles.playButtonPressed,
-          ]}
-        >
-          {!audioBuffer ? (
-            <ActivityIndicator color={colors.textPrimary} />
-          ) : (
-            <AppIcon
-              name={isPlaying ? 'pause' : 'play'}
-              size={22}
-              color={colors.textPrimary}
-            />
-          )}
-        </Pressable>
-        <ProgressBar progress={progress} style={styles.progress} />
-        <Text style={styles.time}>
-          {formatClock(position)} / {formatClock(duration)}
-        </Text>
-      </BottomAccessory>
+      <ControlsSheet onCoveredHeightChange={setSheetHeight}>
+        <View style={styles.transport}>
+          <Pressable
+            onPress={handlePlayPause}
+            disabled={!audioBuffer}
+            accessibilityRole="button"
+            accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+            accessibilityState={{ disabled: !audioBuffer }}
+            style={({ pressed }) => [
+              styles.playButton,
+              pressed && styles.playButtonPressed,
+            ]}
+          >
+            {!audioBuffer ? (
+              <ActivityIndicator color={colors.textPrimary} />
+            ) : (
+              <AppIcon
+                name={isPlaying ? 'pause' : 'play'}
+                size={22}
+                color={colors.textPrimary}
+              />
+            )}
+          </Pressable>
+          <ProgressBar progress={progress} style={styles.progress} />
+          <Text style={styles.time}>
+            {formatClock(position)} / {formatClock(duration)}
+          </Text>
+        </View>
+      </ControlsSheet>
     </Container>
   );
 };
@@ -231,6 +232,13 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'stretch',
+  },
+  transport: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 12,
   },
   playButton: {
     width: 40,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   RoundButton,
@@ -9,11 +9,11 @@ import {
   type SegmentedControlOption,
 } from '../../components';
 import { colors } from '../../styles';
-import {
-  drumMachineStore,
+import type {
+  DrumMachineActions,
+  DrumMachineState,
   SoundSource,
-  useDrumMachineState,
-} from './drumMachineStore';
+} from './useDrumMachine';
 import presets from './presets';
 
 const presetNames = Object.keys(presets);
@@ -28,20 +28,22 @@ const minBpm = 24;
 const maxBpm = 1500;
 const playButtonSize = 48;
 
-const onSheetLayout = (event: LayoutChangeEvent) => {
-  drumMachineStore.setControlsHeight(event.nativeEvent.layout.height);
-};
+interface DrumMachineControlsProps {
+  state: DrumMachineState;
+  actions: DrumMachineActions;
+}
 
 /** Content of the always-visible Drum Machine sheet. */
-const DrumMachineControls: React.FC = () => {
-  const { preset, bpm, isPlaying, soundSource } = useDrumMachineState();
-
+const DrumMachineControls: React.FC<DrumMachineControlsProps> = ({
+  state: { preset, bpm, isPlaying, soundSource },
+  actions,
+}) => {
   return (
-    <View style={styles.sheet} onLayout={onSheetLayout}>
+    <View style={styles.sheet}>
       <View style={styles.row}>
         <RoundButton
           icon={isPlaying ? 'pause' : 'play'}
-          onPress={drumMachineStore.togglePlayback}
+          onPress={actions.togglePlayback}
           accessibilityLabel={isPlaying ? 'Stop' : 'Play'}
           size={playButtonSize}
           iconSize={22}
@@ -51,7 +53,7 @@ const DrumMachineControls: React.FC = () => {
           <Select
             value={preset}
             options={presetNames}
-            onChange={drumMachineStore.selectPreset}
+            onChange={actions.selectPreset}
           />
         </View>
       </View>
@@ -62,12 +64,12 @@ const DrumMachineControls: React.FC = () => {
         step={1}
         scale="logarithmic"
         value={bpm}
-        onValueChange={drumMachineStore.setBpm}
+        onValueChange={actions.setBpm}
       />
       <SegmentedControl
         options={soundSourceOptions}
         value={soundSource}
-        onChange={drumMachineStore.setSoundSource}
+        onChange={actions.setSoundSource}
       />
     </View>
   );

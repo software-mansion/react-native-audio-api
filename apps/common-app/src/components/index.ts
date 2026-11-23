@@ -11,12 +11,9 @@ export { default as ListSection } from './ListSection';
 export { default as ListRow } from './ListRow';
 export { default as SegmentedControl } from './SegmentedControl';
 export type { SegmentedControlOption } from './SegmentedControl';
-export {
-  default as BottomAccessory,
-  useBottomAccessorySpace,
-} from './BottomAccessory';
 export { default as Knob } from './Knob';
 export { default as RoundButton } from './RoundButton';
 export { default as GlassSurface } from './GlassSurface';
+export { default as ControlsSheet } from './ControlsSheet';
 export { default as Card } from './Card';
 export { default as ProgressBar } from './ProgressBar';

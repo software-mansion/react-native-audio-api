@@ -25,7 +25,6 @@ apps/
     │   ├── testComponents/   # Test-report UI for the Other tab: TestLayout, useRunLog, StepRow, ScenarioResults, LiveLog
     │   ├── utils/
     │   │   ├── audio.ts      # useAudioContext, useDecodedAudio, activatePlaybackSession
-    │   │   ├── createStore.ts # Screen ↔ controls-sheet store (useSyncExternalStore)
     │   │   ├── formatClock.ts # m:ss / mm:ss, worklet-safe
     │   │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap); each voice disconnects itself on `onended`
     │   │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
@@ -48,13 +47,11 @@ Bottom Tabs (native)
 
 Each item navigates into a Stack screen. No manual stack registration needed — `examples/index.ts`, `other/index.ts` and `demos/index.ts` drive it automatically. The root param list is declared once in `RootStack.tsx` (`RootNavigator` module augmentation), so `useNavigation()` needs no generic or cast: `navigation.navigate(item.key)` is typed against the route keys (`ExampleKey`, `DemoKey`).
 
-Examples and demos can move their options into an always-visible bottom sheet: set `controls` on the `Examples` / `demos` entry (a component rendered as the sheet content) and call `useControlsSheet('<Key>Controls')` in the screen. `RootStack` registers a `<Key>Controls` route as a non-dismissable `formSheet` (`fitToContents`, nothing dimmed, transparent content so the native glass shows), and `ControlsSheetLayout` pops the sheet once its owner screen leaves the stack — a native back press only pops the owner. The screen and its sheet are separate routes, so they share state through a module-level store from `utils/createStore.ts` (see `examples/DrumMachine/drumMachineStore.ts`). References: Drum Machine; Recorder, where the screen keeps the recorder and publishes its state and handlers to the sheet through `demos/Record/recorderSheetStore.ts`.
+Screens with an always-visible control panel render `ControlsSheet` (`components/ControlsSheet.tsx`, built on `@swmansion/react-native-bottom-sheet`) as the last child of their `Container`. It is part of the screen, so it shares the screen's state directly; pad content with the height its `onCoveredHeightChange` reports. References: Drum Machine (`useDrumMachine` holds pattern, tempo and transport), Recorder, Audio Visualizer. These were once separate react-native-screens `formSheet` routes, which needed module stores to share state and a layout that popped the sheet when its owner screen left the stack.
 
 On iOS the `MainTabs` route keeps an empty, transparent stack header (`title: ''`) instead of `headerShown: false`. Popping to a screen with no navigation bar makes UIKit slide the whole bar (back button, title, header items) out with the leaving screen during a back swipe. Like the system apps, bar buttons then stay put and fully opaque until the swipe completes or cancels.
 
 On iOS 26 react-native-screens enables the system's content-wide back gesture by default (`fullScreenSwipeEnabled` → `interactiveContentPopGestureRecognizer`), so a rightward pan anywhere on a pushed screen can pop it. A screen with its own horizontal swipes sets `navigation.setOptions({ fullScreenGestureEnabled: false })`, which leaves the edge swipe and back button. Reference: `demos/Crossfade/Crossfade.tsx`.
-
-Controls sheets are transparent on iOS so the glass shows, but opaque (`colors.recess`, `layout.cardRadius` corners) on Android: react-native-screens gives Android sheets a 24 dp elevation, and through a transparent sheet that shadow reads as a lighter outline offset inside the real edge, so the controls looked like they spilled over it.
 
 React Navigation's native tabs report a tab bar height of 0 (`useBottomTabBarHeight`), so on Android, where the opaque tab bar overlays the scene, `TabScreen` wraps its scroll view in `SafeAreaView` from `react-native-screens/experimental` with the bottom edge and `insetType="interface"`, which reads the tab container's real bar height.
 
@@ -80,7 +77,7 @@ Commit the generated `assets/icons/nanoicons/*`, `ios/nanoicons-fonts/`, `Images
 
 ## Adding a New Example (Tests tab)
 
-Examples are focused single-feature demos (Oscillator, Metronome, AudioFile...).
+Examples are focused single-feature demos (Oscillator, Metronome, AudioPlayback...).
 
 ### 1. Create the screen
 
@@ -226,7 +223,7 @@ const MyExample: FC = () => {
 
 ### File playback pattern
 
-`examples/AudioFile/AudioPlayer.ts` is a class built per screen around that screen's context: `new AudioPlayer(ctx, { onPositionChanged, onEnded })`, released with `dispose()`.
+`examples/AudioPlayback/AudioPlayer.ts` is a class built per screen around that screen's context: `new AudioPlayer(ctx, { onPositionChanged, onEnded })`, released with `dispose()`. The Audio Playback example also covers playback speed: `setPlaybackRate` changes the live source's `playbackRate`, while `setPitchCorrection` restarts the source from the last reported position, because `pitchCorrection` is fixed when a buffer source is created.
 
 ### Pattern-based scheduling (Metronome, DrumMachine)
 
@@ -308,7 +305,7 @@ The Voice Chat demo never holds the OpenAI key. `pnpm server` (repository root) 
 
 Enable emission with `AudioManager.observeAudioInterruptions(true)`, then listen.
 
-**Playback:** native pause on `began`, but does not resume any audio contexts. The AudioFile example resumes on `ended` when it had been playing.
+**Playback:** native pause on `began`, but does not resume any audio contexts. The Audio Playback example resumes on `ended` when it had been playing.
 
 ```tsx
 useEffect(() => {
@@ -339,8 +336,8 @@ All in `apps/common-app/src/components/`:
 | `Spacer.Vertical` | `size` |
 | `Switch` | `value`, `onValueChange`, `testID?` (no label; render one beside it) — native switch tinted with the accent |
 | `Select` | `options`, `value`, `onChange`, `testID?` (single choice, no label; the id goes on the trigger, menu items are found by their title) — native pull-down menu (`@react-native-menu/menu`; glass UIMenu on iOS 26) |
-| `SegmentedControl` | `options` (`{ value, label }[]`), `value`, `onChange`, `color?` (tints the selected segment) — capsule row for 2–5 options |
-| `BottomAccessory` | children — liquid-glass capsule above the home indicator, shaped like the iOS 26 tab bar accessory (the system accessory only exists on bottom-tab screens, and examples are pushed on the root stack). Pad content with `useBottomAccessorySpace()`. Reference: Audio Visualizer |
+| `SegmentedControl` | `options` (`{ value, label }[]`), `value`, `onChange`, `color?` (fills the selected segment) — `UISegmentedControl` on iOS via `@react-native-segmented-control/segmented-control` (its pre-Fabric view runs through React Native's interop layer; the package's class typing is cast once in the wrapper), the package's JS rendering on Android |
+| `ControlsSheet` | children, `onCoveredHeightChange?` — always-visible liquid glass card floating above the home indicator, sized to its content (`@swmansion/react-native-bottom-sheet` with the single detent `'content'`: no closed position, nothing to drag, no handle). It overlays its parent and passes touches outside the card through. The reported height excludes the bottom safe area, which `Container` already keeps clear |
 | `ListSection` / `ListRow` / `IconBadge` | inset grouped list primitives used by the tabs; section header is inset by `layout.cardRadius` |
 
 `testID` is what E2E tools query: the accessibility identifier on iOS, the view tag on Android. The Audio I/O Playground (`other/AudioIOPlayground/`) sets one on every control.

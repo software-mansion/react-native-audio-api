@@ -19,8 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Container } from '../../components';
-import { useControlsSheet } from '../../navigation/useControlsSheet';
+import { Container, ControlsSheet } from '../../components';
 import { colors } from '../../styles';
 import type { XYWHRect } from './types';
 import Clap from '../../utils/soundEngines/Clap';
@@ -33,11 +32,8 @@ import usePlayer, {
 } from '../../utils/usePlayer';
 import CenterDisc from './CenterDisc';
 import { numBeats, size } from './constants';
-import {
-  drumMachineStore,
-  SoundSource,
-  useDrumMachineState,
-} from './drumMachineStore';
+import DrumMachineControls from './DrumMachineControls';
+import { SoundSource, useDrumMachine } from './useDrumMachine';
 import Grid from './Grid';
 import NotesHighlight from './NotesHighlight';
 import PatternShape from './PatternShape';
@@ -107,10 +103,9 @@ const TempoReadout: React.FC<TempoReadoutProps> = ({
 };
 
 const DrumMachine: React.FC = () => {
-  const { bpm, patterns, isPlaying, soundSource, controlsHeight } =
-    useDrumMachineState();
-
-  useControlsSheet('DrumMachineControls');
+  const [state, actions] = useDrumMachine();
+  const { bpm, patterns, isPlaying, soundSource } = state;
+  const [controlsHeight, setControlsHeight] = useState(0);
 
   const soundSourceRef = useRef<SoundSource>(soundSource);
   const sampleBuffersRef = useRef<SampleBuffers | null>(null);
@@ -130,7 +125,6 @@ const DrumMachine: React.FC = () => {
 
     return () => {
       isMounted = false;
-      drumMachineStore.reset();
     };
   }, []);
 
@@ -195,7 +189,7 @@ const DrumMachine: React.FC = () => {
 
   const gesture = useGestures({
     canvasRect,
-    onPatternChange: drumMachineStore.toggleStep,
+    onPatternChange: actions.toggleStep,
   });
 
   return (
@@ -224,6 +218,9 @@ const DrumMachine: React.FC = () => {
           </View>
         </GestureDetector>
       </View>
+      <ControlsSheet onCoveredHeightChange={setControlsHeight}>
+        <DrumMachineControls state={state} actions={actions} />
+      </ControlsSheet>
     </Container>
   );
 };

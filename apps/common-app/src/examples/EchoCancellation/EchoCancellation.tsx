@@ -17,7 +17,7 @@ import { Button, Card, Container } from '../../components';
 import { colors, layout, typography } from '../../styles';
 import { UnsupportedNotice } from '../../testComponents';
 import { activatePlaybackSession } from '../../utils/audio';
-import voiceSample from '../AudioFile/voice-sample-landing.mp3';
+import voiceSample from '../AudioPlayback/voice-sample-landing.mp3';
 
 interface SetupText {
   title: string;
