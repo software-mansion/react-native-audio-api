@@ -82,7 +82,7 @@ const RootStackNavigator: FC = () => (
     <RootStack.Screen
       name="MainTabs"
       component={MainTabsNavigator}
-      options={{ headerShown: false }}
+      options={{ headerShown: Platform.OS === 'ios', title: '' }}
     />
     {detailScreens.map((item) => (
       <RootStack.Screen
