@@ -3,9 +3,15 @@ import { colors } from '../styles';
 import PedalBoard from './PedalBoard/PedalBoard';
 import Record from './Record/Record';
 import Crossfade from './Crossfade/Crossfade';
+import Player from './Player/Player';
 import VoiceChat from './VoiceChat';
 
-export type DemoKey = 'RecordDemo' | 'PedalBoard' | 'Crossfade' | 'VoiceChat';
+export type DemoKey =
+  | 'RecordDemo'
+  | 'PedalBoard'
+  | 'Crossfade'
+  | 'Player'
+  | 'VoiceChat';
 
 export interface DemoScreen {
   key: DemoKey;
@@ -14,6 +20,8 @@ export interface DemoScreen {
   icon: AppIconName;
   color: string;
   screen: React.FC;
+  /** `false` for a screen that draws its own header, see the Player. */
+  headerShown?: boolean;
 }
 
 export const demos: DemoScreen[] = [
@@ -42,6 +50,18 @@ export const demos: DemoScreen[] = [
     icon: 'arrow-left-right',
     color: colors.purple,
     screen: Crossfade,
+  },
+  {
+    key: 'Player',
+    title: 'Player',
+    subtitle:
+      'A music player with a mini player that expands into the full player and its queue.',
+    icon: 'music',
+    color: colors.green,
+    screen: Player,
+    // The full player covers the whole screen, which it can't do under the
+    // native header, so the screen draws its own back button and title.
+    headerShown: false,
   },
   {
     key: 'VoiceChat',

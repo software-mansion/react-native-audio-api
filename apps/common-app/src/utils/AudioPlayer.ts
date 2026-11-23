@@ -2,6 +2,7 @@ import type {
   AudioBuffer,
   AudioBufferSourceNode,
   AudioContext,
+  AudioNode,
   GainNode,
 } from 'react-native-audio-api';
 import { PlaybackNotificationManager } from 'react-native-audio-api';
@@ -14,8 +15,8 @@ interface AudioPlayerCallbacks {
 }
 
 /**
- * Plays one buffer on a context owned by the caller, mirrored in the playback
- * notification.
+ * Plays one decoded track at a time on a context owned by the caller, mirrored
+ * in the playback notification. `load` swaps the track.
  */
 export default class AudioPlayer {
   private sourceNode: AudioBufferSourceNode | null = null;
@@ -27,6 +28,10 @@ export default class AudioPlayer {
   private volume = 1;
   private playbackRate = 1;
   private pitchCorrection = true;
+  /** Where the player's sound goes; the speakers unless set. */
+  private output: AudioNode | null = null;
+  /** Bumped by every `load`, so a decode overtaken by a newer one is dropped. */
+  private loadGeneration = 0;
 
   constructor(
     private readonly audioContext: AudioContext,
@@ -53,7 +58,9 @@ export default class AudioPlayer {
     this.volumeNode = this.audioContext.createGain();
     this.volumeNode.gain.value = this.volume;
 
-    sourceNode.connect(this.volumeNode).connect(this.audioContext.destination);
+    sourceNode
+      .connect(this.volumeNode)
+      .connect(this.output ?? this.audioContext.destination);
     // Also where a restart resumes from, so it can't lag far behind.
     sourceNode.onpositionchangedInterval = 250;
     sourceNode.onpositionchanged = (event) => {
@@ -105,6 +112,23 @@ export default class AudioPlayer {
     this.restartIfPlaying();
   };
 
+  /** Moves to `seconds` into the track, clamped to its length. */
+  seekTo = (seconds: number) => {
+    this.seekBy(seconds - this.currentElapsedTime);
+  };
+
+  /**
+   * Routes the player through `node`, an effects chain the caller connects
+   * onward, from now on; `null` goes straight to the speakers.
+   */
+  setOutput = (node: AudioNode | null) => {
+    this.output = node;
+    if (this.volumeNode) {
+      this.volumeNode.disconnect();
+      this.volumeNode.connect(node ?? this.audioContext.destination);
+    }
+  };
+
   setPlaybackRate = (rate: number) => {
     this.playbackRate = rate;
     if (this.sourceNode) {
@@ -123,12 +147,36 @@ export default class AudioPlayer {
     this.restartIfPlaying();
   };
 
-  loadBuffer = async (asset: string | number) => {
-    this.audioBuffer = await this.audioContext.decodeAudioData(asset);
+  /**
+   * Stops the current track and decodes `asset` as the next one, which then
+   * plays from its start. A decode the caller started earlier (a preloaded
+   * track) can be passed instead. Resolves `false` when a later `load` overtook
+   * this one; that track is dropped.
+   */
+  load = async (
+    asset: string | number | Promise<AudioBuffer>
+  ): Promise<boolean> => {
+    const generation = ++this.loadGeneration;
+    this.releaseSource();
+    this.isPlaying = false;
+    this.audioBuffer = null;
+    this.currentElapsedTime = 0;
+    this.callbacks.onPositionChanged(0);
+
+    const buffer =
+      typeof asset === 'object'
+        ? await asset
+        : await this.audioContext.decodeAudioData(asset);
+    if (generation !== this.loadGeneration) {
+      return false;
+    }
+    this.audioBuffer = buffer;
+    return true;
   };
 
   /** Stops playback for good; the context itself is closed by its owner. */
   dispose = () => {
+    this.loadGeneration++;
     this.releaseSource();
     this.audioBuffer = null;
     this.isPlaying = false;

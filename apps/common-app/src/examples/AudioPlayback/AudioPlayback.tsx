@@ -16,7 +16,7 @@ import {
 } from '../../components';
 import { layout } from '../../styles';
 import { activatePlaybackSession, useAudioContext } from '../../utils/audio';
-import AudioPlayer from './AudioPlayer';
+import AudioPlayer from '../../utils/AudioPlayer';
 import staticAsset from './voice-sample-landing.mp3';
 
 type TimeStretching = 'pitchCorrection' | 'linear';
@@ -105,7 +105,7 @@ const AudioPlayback: FC = () => {
     let isCancelled = false;
 
     (async () => {
-      await player.loadBuffer(staticAsset);
+      await player.load(staticAsset);
       if (isCancelled) {
         return;
       }

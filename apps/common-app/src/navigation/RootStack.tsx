@@ -22,7 +22,14 @@ declare module '@react-navigation/native' {
   interface RootNavigator extends RootStackType {}
 }
 
-const detailScreens = [...Examples, ...otherScreens, ...demos];
+interface DetailScreen {
+  key: ExampleKey | DemoKey;
+  title: string;
+  screen: FC;
+  headerShown?: boolean;
+}
+
+const detailScreens: DetailScreen[] = [...Examples, ...otherScreens, ...demos];
 
 const RootStackNavigator: FC = () => (
   <RootStack.Navigator
@@ -44,7 +51,7 @@ const RootStackNavigator: FC = () => (
         key={item.key}
         name={item.key}
         component={item.screen}
-        options={{ title: item.title }}
+        options={{ title: item.title, headerShown: item.headerShown ?? true }}
       />
     ))}
   </RootStack.Navigator>
