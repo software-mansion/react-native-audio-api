@@ -1,7 +1,3 @@
-import {
-  isLiquidGlassSupported,
-  LiquidGlassView,
-} from '@callstack/liquid-glass';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -9,7 +5,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { AppIcon } from '../../components';
+import { RoundButton } from '../../components';
 import { colors } from '../../styles';
 import { RecordingState } from './types';
 
@@ -52,33 +48,19 @@ const RecordControls: React.FC<RecordControlsProps> = ({
 
   return (
     <View style={styles.row}>
-      <View
-        style={[styles.sideSlot, !isTakeRunning && styles.hidden]}
-        pointerEvents={isTakeRunning ? 'auto' : 'none'}
-      >
-        <Pressable
-          onPress={onPausePress}
-          accessibilityRole="button"
-          accessibilityLabel={
-            state === RecordingState.Paused ? 'Resume' : 'Pause'
-          }
-          accessibilityElementsHidden={!isTakeRunning}
-        >
-          <LiquidGlassView
-            interactive
-            colorScheme="dark"
-            style={[
-              styles.sideButton,
-              !isLiquidGlassSupported && styles.sideButtonFallback,
-            ]}
-          >
-            <AppIcon
-              name={state === RecordingState.Paused ? 'play' : 'pause'}
-              size={22}
-              color={colors.textPrimary}
-            />
-          </LiquidGlassView>
-        </Pressable>
+      <View style={styles.sideSlot}>
+        {isTakeRunning && (
+          <RoundButton
+            variant="glass"
+            icon={state === RecordingState.Paused ? 'play' : 'pause'}
+            accessibilityLabel={
+              state === RecordingState.Paused ? 'Resume' : 'Pause'
+            }
+            onPress={onPausePress}
+            size={sideButtonSize}
+            iconSize={22}
+          />
+        )}
       </View>
 
       <Pressable
@@ -109,19 +91,6 @@ const styles = StyleSheet.create({
   sideSlot: {
     width: sideButtonSize,
     height: sideButtonSize,
-  },
-  hidden: {
-    opacity: 0,
-  },
-  sideButton: {
-    width: sideButtonSize,
-    height: sideButtonSize,
-    borderRadius: sideButtonSize / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sideButtonFallback: {
-    backgroundColor: colors.surface,
   },
   recordRing: {
     width: recordRingSize,

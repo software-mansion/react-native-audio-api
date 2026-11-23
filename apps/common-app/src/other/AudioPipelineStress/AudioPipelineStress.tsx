@@ -1,14 +1,16 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 import { AudioBuffer, AudioManager } from 'react-native-audio-api';
 
 import { Container } from '../../components';
-import {
-  TestUI,
-  type ControlAction,
-  type ScenarioItem,
-  type SummaryItem,
+import * as TestUI from '../../testComponents';
+import type {
+  ControlAction,
+  ScenarioItem,
+  ScenarioStatus,
+  StepItem,
 } from '../../testComponents';
+import { sleep } from '../sleep';
 import {
   DEFAULT_LOOP_COUNT,
   MIN_DECODED_DURATION_SECONDS,
@@ -29,10 +31,8 @@ import {
 import {
   formatDurationMs,
   formatPlaybackProgressStats,
-  formatTimestamp,
   getPlaybackProgressThreshold,
   serializeUnknownError,
-  sleep,
   waitForCondition,
 } from './helpers';
 import staticAsset from '../../examples/AudioFile/voice-sample-landing.mp3';
@@ -40,30 +40,35 @@ import type {
   PlaybackProgressStats,
   RecordingCapture,
   RunnerState,
-  ScenarioId,
-  ScenarioResult,
-  ScenarioStatus,
-  StepResult,
 } from './types';
+
+const READY_MESSAGE = 'Ready to run the audio pipeline stress suite.';
+
+interface ScenarioSteps {
+  /** Runs one step; a failure is recorded and aborts the scenario. */
+  run: (message: string, action: () => Promise<unknown>) => Promise<void>;
+  /** Records diagnostics that are neither a pass nor a failure. */
+  info: (message: string, details?: string) => void;
+}
 
 const AudioPipelineStress: FC = () => {
   const resourcesRef = useRef(new StressResourceOwner(staticAsset));
   const stopRequestedRef = useRef(false);
-  const runIdRef = useRef(0);
-  const isMountedRef = useRef(true);
-
-  const [runnerState, setRunnerState] = useState<RunnerState>('idle');
-  const [currentStep, setCurrentStep] = useState<string>(
-    'Ready to run the audio pipeline stress suite.'
-  );
-  const [scenarioResults, setScenarioResults] = useState<ScenarioResult[]>([]);
-  const [liveLog, setLiveLog] = useState<string[]>([]);
+  const {
+    runnerState,
+    setRunnerState,
+    currentStep,
+    showStep,
+    liveLog,
+    appendLog,
+    clearLog,
+  } = TestUI.useRunLog<RunnerState>('idle', READY_MESSAGE);
+  const [scenarioResults, setScenarioResults] = useState<ScenarioItem[]>([]);
 
   useEffect(() => {
     const resources = resourcesRef.current;
 
     return () => {
-      isMountedRef.current = false;
       stopRequestedRef.current = true;
       resources.cleanup().catch((error) => {
         console.warn('AudioPipelineStress cleanup failed', error);
@@ -71,24 +76,7 @@ const AudioPipelineStress: FC = () => {
     };
   }, []);
 
-  const appendLog = (message: string) => {
-    if (!isMountedRef.current) {
-      return;
-    }
-
-    setLiveLog((previous) => [
-      ...previous,
-      `${formatTimestamp(Date.now())} ${message}`,
-    ]);
-  };
-
-  const setVisibleStep = (message: string) => {
-    if (!isMountedRef.current) {
-      return;
-    }
-
-    setCurrentStep(message);
-  };
+  const isBusy = runnerState === 'running' || runnerState === 'stopping';
 
   const requestStop = () => {
     stopRequestedRef.current = true;
@@ -107,66 +95,6 @@ const AudioPipelineStress: FC = () => {
     await resourcesRef.current.recreate();
   };
 
-  const runStep = async (
-    scenarioLabel: string,
-    stepResults: StepResult[],
-    id: string,
-    message: string,
-    action: () => Promise<void>
-  ) => {
-    ensureCanContinue();
-    setVisibleStep(`${scenarioLabel}: ${message}`);
-    appendLog(`[${scenarioLabel}] ${message}`);
-
-    const startedAt = Date.now();
-
-    try {
-      await action();
-
-      stepResults.push({
-        id,
-        message,
-        status: 'pass',
-        startedAt,
-        finishedAt: Date.now(),
-      });
-    } catch (error) {
-      const serializedError = serializeUnknownError(
-        error,
-        `${scenarioLabel} / ${id}`
-      );
-
-      stepResults.push({
-        id,
-        message,
-        status: error instanceof StopRequestedError ? 'skipped' : 'fail',
-        startedAt,
-        finishedAt: Date.now(),
-        details: serializedError.details,
-      });
-
-      appendLog(`[${scenarioLabel}] ${serializedError.headline}`);
-      throw error;
-    }
-  };
-
-  const addInfoStep = (
-    stepResults: StepResult[],
-    id: string,
-    message: string,
-    details?: string
-  ) => {
-    const now = Date.now();
-    stepResults.push({
-      id,
-      message,
-      status: 'info',
-      startedAt: now,
-      finishedAt: now,
-      details,
-    });
-  };
-
   const waitForPlaybackProgress = async (
     minimumSeconds: number,
     contextLabel: string
@@ -180,31 +108,7 @@ const AudioPipelineStress: FC = () => {
     let lastSnapshot = playback.snapshot();
     let lastEngineTimeSeconds = engineStartTimeSeconds;
 
-    while (Date.now() - startedAt < PLAYBACK_PROGRESS_TIMEOUT_MS) {
-      ensureCanContinue();
-      lastSnapshot = playback.snapshot();
-      lastEngineTimeSeconds = context.currentTime;
-      positionSamples.push(Number(lastSnapshot.lastPositionSeconds.toFixed(3)));
-      engineSamples.push(Number(lastEngineTimeSeconds.toFixed(3)));
-      maxObserved = Math.max(maxObserved, lastSnapshot.lastPositionSeconds);
-
-      if (lastSnapshot.lastPositionSeconds >= minimumSeconds) {
-        return {
-          engineEndTimeSeconds: lastEngineTimeSeconds,
-          engineDeltaSeconds: lastEngineTimeSeconds - engineStartTimeSeconds,
-          engineSamples,
-          engineStartTimeSeconds,
-          positionMaxObservedSeconds: maxObserved,
-          positionSamples,
-          thresholdSeconds: minimumSeconds,
-        };
-      }
-
-      await sleep(POSITION_POLL_INTERVAL_MS);
-    }
-
-    const recorder = resourcesRef.current.recorder;
-    const stats: PlaybackProgressStats = {
+    const collectStats = (): PlaybackProgressStats => ({
       engineEndTimeSeconds: lastEngineTimeSeconds,
       engineDeltaSeconds: lastEngineTimeSeconds - engineStartTimeSeconds,
       engineSamples,
@@ -212,30 +116,35 @@ const AudioPipelineStress: FC = () => {
       positionMaxObservedSeconds: maxObserved,
       positionSamples,
       thresholdSeconds: minimumSeconds,
-    };
-    const diagnosis =
-      stats.engineDeltaSeconds < 0.05
-        ? 'engine-clock-stalled'
-        : 'engine-running-node-stalled';
+    });
 
+    while (Date.now() - startedAt < PLAYBACK_PROGRESS_TIMEOUT_MS) {
+      ensureCanContinue();
+      lastSnapshot = playback.snapshot();
+      lastEngineTimeSeconds = context.currentTime;
+      positionSamples.push(lastSnapshot.lastPositionSeconds);
+      engineSamples.push(lastEngineTimeSeconds);
+      maxObserved = Math.max(maxObserved, lastSnapshot.lastPositionSeconds);
+
+      if (lastSnapshot.lastPositionSeconds >= minimumSeconds) {
+        return collectStats();
+      }
+
+      await sleep(POSITION_POLL_INTERVAL_MS);
+    }
+
+    const { recorder, callbackCount, lastRecorderError } = resourcesRef.current;
     throw new Error(
       [
         `${contextLabel}: playback progress check failed`,
-        `diagnosis=${diagnosis}`,
-        `target=${minimumSeconds.toFixed(2)}s`,
-        `maxObserved=${maxObserved.toFixed(3)}s`,
-        `engineStart=${engineStartTimeSeconds.toFixed(3)}s`,
-        `engineEnd=${lastEngineTimeSeconds.toFixed(3)}s`,
-        `engineDelta=${stats.engineDeltaSeconds.toFixed(3)}s`,
-        `recentPositionSamples=[${positionSamples.slice(-8).join(', ')}]`,
-        `recentEngineSamples=[${engineSamples.slice(-8).join(', ')}]`,
+        formatPlaybackProgressStats(collectStats()),
         `contextState=${context.state}`,
         `playbackActive=${lastSnapshot.isActive}`,
         `playbackEnded=${lastSnapshot.ended}`,
         `recorderRecording=${recorder?.isRecording() ?? false}`,
         `recorderPaused=${recorder?.isPaused() ?? false}`,
-        `recorderCallbacks=${resourcesRef.current.callbackCount}`,
-        `lastRecorderError=${resourcesRef.current.lastRecorderError ?? 'none'}`,
+        `recorderCallbacks=${callbackCount}`,
+        `lastRecorderError=${lastRecorderError ?? 'none'}`,
       ].join(', ')
     );
   };
@@ -247,8 +156,7 @@ const AudioPipelineStress: FC = () => {
     const before = playback.snapshot().lastPositionSeconds;
     await sleep(PLAYBACK_STALL_WINDOW_MS);
     const after = playback.snapshot().lastPositionSeconds;
-    const engineEndTimeSeconds = context.currentTime;
-    const engineDeltaSeconds = engineEndTimeSeconds - engineStartTimeSeconds;
+    const engineDeltaSeconds = context.currentTime - engineStartTimeSeconds;
 
     if (after - before > 0.1) {
       throw new Error(
@@ -306,13 +214,12 @@ const AudioPipelineStress: FC = () => {
 
   const performCleanPlayback = async (
     buffer: AudioBuffer,
-    durationSeconds: number = 1.4,
-    contextLabel: string = 'clean playback'
+    durationSeconds: number,
+    contextLabel: string
   ): Promise<PlaybackProgressStats> => {
     const { playback } = resourcesRef.current.getReadyResources();
-    const expectedPlaybackWindow = Math.min(buffer.duration, durationSeconds);
     const progressThreshold = getPlaybackProgressThreshold(
-      expectedPlaybackWindow
+      Math.min(buffer.duration, durationSeconds)
     );
 
     await activatePlaybackSession();
@@ -327,67 +234,66 @@ const AudioPipelineStress: FC = () => {
     return playbackStats;
   };
 
-  const performCleanRecordPlaybackCycle = async (label: string) => {
-    const capture = await performCleanRecording();
-    await performCleanPlayback(
-      capture.decodedBuffer,
-      Math.min(capture.decodedBuffer.duration, 1.4),
-      `${label}: playback after recording`
-    );
-  };
-
   const runScenario = async (
-    scenarioId: ScenarioId,
     label: string,
-    action: (steps: StepResult[]) => Promise<void>
+    action: (steps: ScenarioSteps) => Promise<void>
   ) => {
     const startedAt = Date.now();
-    const stepResults: StepResult[] = [];
-    let status: ScenarioStatus = 'pass';
-    let errorMessage: string | undefined;
+    const stepItems: StepItem[] = [];
+    const addStep = (step: Omit<StepItem, 'id'>) => {
+      stepItems.push({ id: String(stepItems.length), ...step });
+    };
+    const steps: ScenarioSteps = {
+      run: async (message, stepAction) => {
+        ensureCanContinue();
+        showStep(`${label}: ${message}`);
+        appendLog(`[${label}] ${message}`);
 
+        try {
+          await stepAction();
+          addStep({ message, status: 'pass' });
+        } catch (error) {
+          const serializedError = serializeUnknownError(error, label);
+          addStep({
+            message,
+            status: error instanceof StopRequestedError ? 'skipped' : 'fail',
+            details: serializedError.details,
+          });
+          appendLog(`[${label}] ${serializedError.headline}`);
+          throw error;
+        }
+      },
+      info: (message, details) => addStep({ message, status: 'info', details }),
+    };
+
+    let status: ScenarioStatus = 'pass';
     appendLog(`Scenario start: ${label}`);
 
     try {
-      await action(stepResults);
+      await action(steps);
+      appendLog(`Scenario pass: ${label}`);
     } catch (error) {
       if (error instanceof StopRequestedError) {
         status = 'skipped';
-        errorMessage = error.message;
+        appendLog(`Scenario skipped: ${label}`);
       } else {
         status = 'fail';
-        errorMessage = serializeUnknownError(error, label).details;
+        const { headline, details } = serializeUnknownError(error, label);
+        steps.info('Scenario failed', details);
+        appendLog(`Scenario failed: ${headline}`);
       }
     }
 
-    const finishedAt = Date.now();
-    const result: ScenarioResult = {
-      scenarioId,
-      label,
-      status,
-      startedAt,
-      finishedAt,
-      steps: stepResults,
-      error: errorMessage,
-    };
-
-    if (status === 'fail' && errorMessage) {
-      addInfoStep(
-        stepResults,
-        `${scenarioId}-failure-summary`,
-        'Scenario failed',
-        errorMessage
-      );
-      appendLog(
-        `Scenario failed: ${label} (${errorMessage.split('\n')[0] ?? errorMessage})`
-      );
-    } else {
-      appendLog(`Scenario ${status}: ${label}`);
-    }
-
-    if (isMountedRef.current) {
-      setScenarioResults((previous) => [...previous, result]);
-    }
+    setScenarioResults((previous) => [
+      ...previous,
+      {
+        id: `${label}-${startedAt}`,
+        title: label,
+        status,
+        durationLabel: formatDurationMs(Date.now() - startedAt),
+        steps: stepItems,
+      },
+    ]);
 
     if (status === 'fail') {
       await hardResetResources(`${label} failed`);
@@ -399,18 +305,15 @@ const AudioPipelineStress: FC = () => {
   };
 
   const runSuite = async () => {
-    if (runnerState === 'running' || runnerState === 'stopping') {
+    if (isBusy) {
       return;
     }
 
-    runIdRef.current += 1;
-    const currentRunId = runIdRef.current;
     stopRequestedRef.current = false;
-
     setRunnerState('running');
     setScenarioResults([]);
-    setLiveLog([]);
-    setVisibleStep('Preparing audio pipeline resources...');
+    clearLog();
+    showStep('Preparing audio pipeline resources...');
 
     try {
       const permissionStatus = await AudioManager.requestRecordingPermissions();
@@ -423,179 +326,111 @@ const AudioPipelineStress: FC = () => {
 
       await resourcesRef.current.recreate();
 
-      await runScenario('playback_warmup', 'Playback Warmup', async (steps) => {
-        await runStep(
-          'Playback Warmup',
-          steps,
-          'activate-playback',
-          'Activate playback session',
-          async () => {
-            await activatePlaybackSession();
-          }
-        );
-        await runStep(
-          'Playback Warmup',
-          steps,
-          'play-asset',
-          'Play bundled asset and observe progress',
-          async () => {
-            const { assetBuffer, playback } =
-              resourcesRef.current.getReadyResources();
-            const progressThreshold = getPlaybackProgressThreshold(1.4);
-            await playback.play(assetBuffer, 1.4);
-            const playbackStats = await waitForPlaybackProgress(
-              progressThreshold,
-              'Playback Warmup'
-            );
-            await sleep(SHORT_PLAYBACK_MS);
-            playback.stop();
-            addInfoStep(
-              steps,
-              'playback-warmup-engine-timing',
-              'Playback engine timing',
-              formatPlaybackProgressStats(playbackStats)
-            );
-          }
-        );
-        await runStep(
-          'Playback Warmup',
-          steps,
-          'deactivate-playback',
-          'Deactivate playback session',
-          async () => {
-            await AudioManager.setAudioSessionActivity(false);
-          }
+      await runScenario('Playback Warmup', async ({ run, info }) => {
+        await run('Activate playback session', activatePlaybackSession);
+        await run('Play bundled asset and observe progress', async () => {
+          const { assetBuffer, playback } =
+            resourcesRef.current.getReadyResources();
+          await playback.play(assetBuffer, 1.4);
+          const playbackStats = await waitForPlaybackProgress(
+            getPlaybackProgressThreshold(1.4),
+            'Playback Warmup'
+          );
+          await sleep(SHORT_PLAYBACK_MS);
+          playback.stop();
+          info(
+            'Playback engine timing',
+            formatPlaybackProgressStats(playbackStats)
+          );
+        });
+        await run('Deactivate playback session', () =>
+          AudioManager.setAudioSessionActivity(false)
         );
       });
 
-      await runScenario('record_warmup', 'Record Warmup', async (steps) => {
-        await runStep(
-          'Record Warmup',
-          steps,
-          'record-and-decode',
-          'Record briefly, then decode output',
-          async () => {
-            const capture = await performCleanRecording();
-            addInfoStep(
-              steps,
-              'recorded-file',
-              'Decoded recording metadata',
-              `${capture.path} (${capture.fileDurationSeconds.toFixed(2)}s)`
-            );
-          }
-        );
+      await runScenario('Record Warmup', async ({ run, info }) => {
+        await run('Record briefly, then decode output', async () => {
+          const capture = await performCleanRecording();
+          info(
+            'Decoded recording metadata',
+            `${capture.path} (${capture.fileDurationSeconds.toFixed(2)}s)`
+          );
+        });
+      });
+
+      await runScenario('Record To Playback Loop', async ({ run, info }) => {
+        for (let cycle = 1; cycle <= DEFAULT_LOOP_COUNT; cycle += 1) {
+          await run(
+            `Cycle ${cycle}: record, decode, and play recorded audio`,
+            async () => {
+              const capture = await performCleanRecording();
+              const playbackStats = await performCleanPlayback(
+                capture.decodedBuffer,
+                1.4,
+                `Record To Playback Loop cycle ${cycle}`
+              );
+              info(
+                `Cycle ${cycle} recorded file metadata`,
+                `fileDuration=${capture.fileDurationSeconds.toFixed(3)}s, decodedDuration=${capture.decodedBuffer.duration.toFixed(3)}s, decodedLength=${capture.decodedBuffer.length}, path=${capture.path}`
+              );
+              info(
+                `Cycle ${cycle} playback engine timing`,
+                formatPlaybackProgressStats(playbackStats)
+              );
+            }
+          );
+        }
+      });
+
+      await runScenario('Playback To Record Loop', async ({ run, info }) => {
+        for (let cycle = 1; cycle <= DEFAULT_LOOP_COUNT; cycle += 1) {
+          await run(
+            `Cycle ${cycle}: play bundled asset, then record and decode`,
+            async () => {
+              const { assetBuffer } = resourcesRef.current.getReadyResources();
+              const playbackStats = await performCleanPlayback(
+                assetBuffer,
+                1.4,
+                `Playback To Record Loop cycle ${cycle}`
+              );
+              info(
+                `Cycle ${cycle} pre-record playback engine timing`,
+                formatPlaybackProgressStats(playbackStats)
+              );
+              await performCleanRecording();
+            }
+          );
+        }
       });
 
       await runScenario(
-        'record_to_playback_loop',
-        'Record To Playback Loop',
-        async (steps) => {
-          for (let index = 0; index < DEFAULT_LOOP_COUNT; index += 1) {
-            const cycle = index + 1;
-            await runStep(
-              'Record To Playback Loop',
-              steps,
-              `cycle-${cycle}`,
-              `Cycle ${cycle}: record, decode, and play recorded audio`,
-              async () => {
-                const capture = await performCleanRecording();
-
-                const playbackStats = await performCleanPlayback(
-                  capture.decodedBuffer,
-                  Math.min(capture.decodedBuffer.duration, 1.4),
-                  `Record To Playback Loop cycle ${cycle}`
-                );
-                addInfoStep(
-                  steps,
-                  `cycle-${cycle}-recorded-buffer`,
-                  `Cycle ${cycle} recorded file metadata`,
-                  `fileDuration=${capture.fileDurationSeconds.toFixed(3)}s, decodedDuration=${capture.decodedBuffer.duration.toFixed(3)}s, decodedLength=${capture.decodedBuffer.length}, path=${capture.path}`
-                );
-                addInfoStep(
-                  steps,
-                  `cycle-${cycle}-playback-engine-timing`,
-                  `Cycle ${cycle} playback engine timing`,
-                  formatPlaybackProgressStats(playbackStats)
-                );
-              }
-            );
-          }
-        }
-      );
-
-      await runScenario(
-        'playback_to_record_loop',
-        'Playback To Record Loop',
-        async (steps) => {
-          for (let index = 0; index < DEFAULT_LOOP_COUNT; index += 1) {
-            const cycle = index + 1;
-            await runStep(
-              'Playback To Record Loop',
-              steps,
-              `cycle-${cycle}`,
-              `Cycle ${cycle}: play bundled asset, then record and decode`,
-              async () => {
-                const { assetBuffer } =
-                  resourcesRef.current.getReadyResources();
-                const playbackStats = await performCleanPlayback(
-                  assetBuffer,
-                  1.4,
-                  `Playback To Record Loop cycle ${cycle}`
-                );
-                addInfoStep(
-                  steps,
-                  `cycle-${cycle}-pre-record-playback-engine-timing`,
-                  `Cycle ${cycle} pre-record playback engine timing`,
-                  formatPlaybackProgressStats(playbackStats)
-                );
-                await performCleanRecording();
-              }
-            );
-          }
-        }
-      );
-
-      await runScenario(
-        'playback_session_deactivation_mid_run',
         'Playback Session Deactivation Mid Run',
-        async (steps) => {
-          await runStep(
-            'Playback Session Deactivation Mid Run',
-            steps,
-            'start-playback',
+        async ({ run, info }) => {
+          await run(
             'Start playback and wait for initial progress',
             async () => {
               const { assetBuffer, playback } =
                 resourcesRef.current.getReadyResources();
-              const progressThreshold = getPlaybackProgressThreshold(2.2);
               await activatePlaybackSession();
               await playback.play(assetBuffer, 2.2);
               const playbackStats = await waitForPlaybackProgress(
-                progressThreshold,
+                getPlaybackProgressThreshold(2.2),
                 'Playback Session Deactivation Mid Run'
               );
-              addInfoStep(
-                steps,
-                'pre-deactivation-playback-engine-timing',
+              info(
                 'Playback engine timing before session deactivation',
                 formatPlaybackProgressStats(playbackStats)
               );
             }
           );
-          await runStep(
-            'Playback Session Deactivation Mid Run',
-            steps,
-            'deactivate-mid-playback',
+          await run(
             'Deactivate session without pausing playback first',
             async () => {
               await AudioManager.setAudioSessionActivity(false);
               await waitForPlaybackToStall();
             }
           );
-          await runStep(
-            'Playback Session Deactivation Mid Run',
-            steps,
-            'reactivate-playback',
+          await run(
             'Reactivate playback and confirm fresh playback still works',
             async () => {
               const { assetBuffer, playback } =
@@ -606,9 +441,7 @@ const AudioPipelineStress: FC = () => {
                 1.2,
                 'Playback Session Deactivation Recovery'
               );
-              addInfoStep(
-                steps,
-                'post-deactivation-recovery-engine-timing',
+              info(
                 'Playback engine timing after recovery',
                 formatPlaybackProgressStats(playbackStats)
               );
@@ -618,57 +451,34 @@ const AudioPipelineStress: FC = () => {
       );
 
       await runScenario(
-        'record_session_deactivation_mid_run',
         'Record Session Deactivation Mid Run',
-        async (steps) => {
-          await runStep(
-            'Record Session Deactivation Mid Run',
-            steps,
-            'start-recording',
-            'Start recording and wait for callback data',
-            async () => {
-              await activateRecordingSession();
-              resourcesRef.current.configureRecorderTap();
-              await resourcesRef.current.startRecording();
-              await waitForRecordingCallbacks(1);
-            }
-          );
-          await runStep(
-            'Record Session Deactivation Mid Run',
-            steps,
-            'deactivate-mid-recording',
+        async ({ run, info }) => {
+          await run('Start recording and wait for callback data', async () => {
+            await activateRecordingSession();
+            resourcesRef.current.configureRecorderTap();
+            await resourcesRef.current.startRecording();
+            await waitForRecordingCallbacks(1);
+          });
+          await run(
             'Deactivate session without stopping recording first',
             async () => {
               await AudioManager.setAudioSessionActivity(false);
               await waitForRecordingToStall();
-              const recorder = resourcesRef.current.recorder;
-
-              addInfoStep(
-                steps,
-                'post-deactivation-paused-state',
+              info(
                 'Recorder paused state after session deactivation',
-                `isPaused=${recorder?.isPaused() ?? false}`
+                `isPaused=${resourcesRef.current.recorder?.isPaused() ?? false}`
               );
             }
           );
-          await runStep(
-            'Record Session Deactivation Mid Run',
-            steps,
-            'stop-after-deactivation',
+          await run(
             'Attempt stop after deactivation, then recreate resources',
             async () => {
-              const recorder = resourcesRef.current.recorder;
-
-              if (!recorder) {
-                throw new Error('Recorder is not ready');
-              }
+              const { recorder } = resourcesRef.current.getReadyResources();
 
               try {
                 await recorder.stop();
               } catch (error) {
-                addInfoStep(
-                  steps,
-                  'stop-after-deactivation-result',
+                info(
                   'Recorder stop rejected after deactivation',
                   error instanceof Error ? error.message : String(error)
                 );
@@ -679,42 +489,25 @@ const AudioPipelineStress: FC = () => {
               await hardResetResources('recover after recording deactivation');
             }
           );
-          await runStep(
-            'Record Session Deactivation Mid Run',
-            steps,
-            'clean-recovery-cycle',
+          await run(
             'Run one clean record and decode cycle after recovery',
-            async () => {
-              await performCleanRecording();
-            }
+            performCleanRecording
           );
         }
       );
 
       await runScenario(
-        'wrong_category_then_recover',
         'Wrong Category Then Recover',
-        async (steps) => {
-          await runStep(
-            'Wrong Category Then Recover',
-            steps,
-            'attempt-wrong-category-record',
+        async ({ run, info }) => {
+          await run(
             'Attempt recording while the session is configured for playback',
             async () => {
-              AudioManager.setSystemOptions({
-                ios: {
-                  category: 'playback',
-                  mode: 'default',
-                  options: [],
-                },
-              });
-
-              await AudioManager.setAudioSessionActivity(true);
-
+              await activatePlaybackSession();
               resourcesRef.current.configureRecorderTap();
+
               let startError: unknown;
               try {
-                await resourcesRef.current.tryStartRecording();
+                await resourcesRef.current.startRecording();
               } catch (error) {
                 startError = error;
               }
@@ -725,9 +518,7 @@ const AudioPipelineStress: FC = () => {
                 );
               }
 
-              addInfoStep(
-                steps,
-                'expected-recording-failure',
+              info(
                 'Recorder rejected the wrong category as expected',
                 startError instanceof Error
                   ? startError.message
@@ -738,73 +529,51 @@ const AudioPipelineStress: FC = () => {
               await AudioManager.setAudioSessionActivity(false);
             }
           );
-          await runStep(
-            'Wrong Category Then Recover',
-            steps,
-            'clean-recovery-record',
+          await run(
             'Switch back to playAndRecord and confirm clean recording works',
-            async () => {
-              await performCleanRecording();
-            }
+            performCleanRecording
           );
         }
       );
 
-      await runScenario(
-        'final_clean_cycle',
-        'Final Clean Cycle',
-        async (steps) => {
-          await runStep(
-            'Final Clean Cycle',
-            steps,
-            'final-record-playback-cycle',
-            'Run one final clean record and playback cycle',
-            async () => {
-              await performCleanRecordPlaybackCycle('final-clean-cycle');
-            }
+      await runScenario('Final Clean Cycle', async ({ run }) => {
+        await run('Run one final clean record and playback cycle', async () => {
+          const capture = await performCleanRecording();
+          await performCleanPlayback(
+            capture.decodedBuffer,
+            1.4,
+            'Final Clean Cycle: playback after recording'
           );
-        }
-      );
+        });
+      });
 
-      if (!stopRequestedRef.current) {
-        appendLog('Suite completed.');
-        setVisibleStep('Suite completed.');
-      }
+      appendLog('Suite completed.');
+      showStep('Suite completed.');
     } catch (error) {
       if (error instanceof StopRequestedError) {
         appendLog('Suite stopped before completion.');
-        setVisibleStep('Suite stopped.');
+        showStep('Suite stopped.');
       } else {
         const serializedError = serializeUnknownError(error, 'Suite');
         appendLog(`Suite aborted: ${serializedError.headline}`);
-        setVisibleStep(serializedError.headline);
+        showStep(serializedError.headline);
       }
     } finally {
       await resourcesRef.current.cleanup();
-
-      if (!isMountedRef.current || currentRunId !== runIdRef.current) {
-        return;
-      }
-
-      setRunnerState(stopRequestedRef.current ? 'finished' : 'finished');
-
-      if (!stopRequestedRef.current && scenarioResults.length === 0) {
-        setVisibleStep('Suite finished.');
-      }
+      setRunnerState('finished');
     }
   };
 
   const resetSuite = async () => {
-    if (runnerState === 'running' || runnerState === 'stopping') {
+    if (isBusy) {
       return;
     }
 
-    setVisibleStep('Resetting resources...');
-    appendLog('Resetting screen state.');
+    showStep('Resetting resources...');
     setScenarioResults([]);
-    setLiveLog([]);
+    clearLog();
     await resourcesRef.current.cleanup();
-    setVisibleStep('Ready to run the audio pipeline stress suite.');
+    showStep(READY_MESSAGE);
     setRunnerState('idle');
   };
 
@@ -819,95 +588,41 @@ const AudioPipelineStress: FC = () => {
     );
   }
 
-  const passedScenarios = scenarioResults.filter(
-    (result) => result.status === 'pass'
-  ).length;
-  const failedScenarios = scenarioResults.filter(
-    (result) => result.status === 'fail'
-  ).length;
-  const skippedScenarios = scenarioResults.filter(
-    (result) => result.status === 'skipped'
-  ).length;
-  const summaryItems: SummaryItem[] = [
-    { label: 'State', value: runnerState },
-    { label: 'Passed', value: String(passedScenarios) },
-    { label: 'Failed', value: String(failedScenarios) },
-    { label: 'Skipped', value: String(skippedScenarios) },
-  ];
+  const countWithStatus = (status: ScenarioStatus) =>
+    String(scenarioResults.filter((result) => result.status === status).length);
   const controlActions: ControlAction[] = [
-    {
-      title: 'Run Suite',
-      onPress: () => {
-        runSuite();
-      },
-      disabled: runnerState === 'running' || runnerState === 'stopping',
-      minWidth: 120,
-    },
+    { title: 'Run Suite', onPress: runSuite, disabled: isBusy, minWidth: 120 },
     {
       title: 'Stop',
       onPress: requestStop,
       disabled: runnerState !== 'running',
       minWidth: 90,
     },
-    {
-      title: 'Reset',
-      onPress: () => {
-        resetSuite();
-      },
-      disabled: runnerState === 'running' || runnerState === 'stopping',
-      minWidth: 90,
-    },
+    { title: 'Reset', onPress: resetSuite, disabled: isBusy, minWidth: 90 },
   ];
-  const scenarioItems: ScenarioItem[] = scenarioResults.map((scenario) => ({
-    id: `${scenario.scenarioId}-${scenario.startedAt}`,
-    title: scenario.label,
-    status: scenario.status,
-    durationLabel: formatDurationMs(scenario.finishedAt - scenario.startedAt),
-    steps: scenario.steps.map((step) => ({
-      id: `${scenario.scenarioId}-${step.id}`,
-      message: step.message,
-      status: step.status,
-      details: step.details,
-    })),
-  }));
 
   return (
-    <Container disablePadding>
-      <TestUI.Header
-        title="Audio Pipeline Stress"
-        subtitle="Automated iOS playback and recording pipeline stress suite."
+    <TestUI.TestLayout
+      description="Automated iOS playback and recording pipeline stress suite."
+      summary={[
+        { label: 'State', value: runnerState },
+        { label: 'Passed', value: countWithStatus('pass') },
+        { label: 'Failed', value: countWithStatus('fail') },
+        { label: 'Skipped', value: countWithStatus('skipped') },
+      ]}
+      currentStep={currentStep}
+      actions={controlActions}
+    >
+      <TestUI.ScenarioResults
+        scenarios={scenarioResults}
+        emptyMessage="No scenario results yet."
       />
-      <TestUI.Summary items={summaryItems} />
-      <TestUI.CurrentStepCard message={currentStep} />
-      <TestUI.ControlBar actions={controlActions} />
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <TestUI.ScenarioResults
-          scenarios={scenarioItems}
-          emptyMessage="No scenario results yet."
-        />
-        <TestUI.LiveLog
-          entries={liveLog}
-          emptyMessage="Live log will appear here while the suite runs."
-        />
-      </ScrollView>
-    </Container>
+      <TestUI.LiveLog
+        entries={liveLog}
+        emptyMessage="Live log will appear here while the suite runs."
+      />
+    </TestUI.TestLayout>
   );
 };
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    gap: 12,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 32,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});
 
 export default AudioPipelineStress;

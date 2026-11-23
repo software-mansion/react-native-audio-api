@@ -44,6 +44,20 @@ const RECORDING_EXTENSION_NAME_MAP = {
   [FileFormat.Adts]: 'aac',
 };
 
+/** Shows the recording notification, or re-renders it for a pause / resume. */
+function setupNotification(paused: boolean) {
+  RecordingNotificationManager.show({
+    title: 'Recording Demo',
+    contentText: paused ? 'Paused recording' : 'Recording...',
+    paused,
+    smallIconResourceName: 'logo',
+    color: 0xff6200,
+    showStopAction: true,
+    deepLinkUri: 'audioapi-example://record',
+    usesChronometer: true,
+  });
+}
+
 const Record: FC = () => {
   const navigation = useNavigation('RecordDemo');
 
@@ -109,19 +123,6 @@ const Record: FC = () => {
     });
   }, [navigation, availableInputs, currentInput, selectInput]);
 
-  const setupNotification = (paused: boolean) => {
-    RecordingNotificationManager.show({
-      title: 'Recording Demo',
-      contentText: paused ? 'Paused recording' : 'Recording...',
-      paused,
-      smallIconResourceName: 'logo',
-      color: 0xff6200,
-      showStopAction: true,
-      deepLinkUri: 'audioapi-example://record',
-      usesChronometer: true
-    });
-  };
-
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
       return;
@@ -182,12 +183,14 @@ const Record: FC = () => {
 
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
+    setupNotification(true);
     setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
   const onResumeRecording = useCallback(() => {
     Recorder.resume();
+    setupNotification(false);
     setState(RecordingState.Recording);
   }, []);
 
@@ -195,17 +198,20 @@ const Record: FC = () => {
     setState(RecordingState.Saving);
 
     const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
-    const finalPath =
-      paths.length > 1
-        ? await concatAudioFiles(
-            paths,
-            paths[0].replace(/[^/]+$/, `recording.${extension}`)
-          )
-        : paths[0];
-
-    const audioBuffer = await audioContext.decodeAudioData(finalPath);
-    addRecording(audioBuffer);
-    setState(RecordingState.Idle);
+    try {
+      const finalPath =
+        paths.length > 1
+          ? await concatAudioFiles(
+              paths,
+              paths[0].replace(/[^/]+$/, `recording.${extension}`)
+            )
+          : paths[0];
+      addRecording(await audioContext.decodeAudioData(finalPath));
+    } catch (error) {
+      Alert.alert('Error', `Failed to save the recording: ${error}`);
+    } finally {
+      setState(RecordingState.Idle);
+    }
   }, []);
 
   const onStopRecording = useCallback(async () => {

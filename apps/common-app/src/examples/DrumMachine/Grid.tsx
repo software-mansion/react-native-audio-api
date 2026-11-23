@@ -3,8 +3,8 @@ import { StyleSheet } from 'react-native';
 import { Circle, Paint } from '@shopify/react-native-skia';
 
 import { numBeats, cPoint, inactiveStepRadius } from './constants';
-import { getAngle, getPointCX, getPointCY } from '../../utils/skiUtils';
-import type { Instrument } from '../../types';
+import { getAngle, getPointCX, getPointCY } from './skiUtils';
+import type { Instrument } from './types';
 import instruments from './instruments';
 
 const ringColor = 'rgba(238, 240, 255, 0.12)';

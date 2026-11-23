@@ -1,9 +1,4 @@
-export type InstrumentName =
-  | 'kick'
-  | 'clap'
-  | 'hi-hat'
-  | 'downbeat'
-  | 'regularbeat';
+import type { InstrumentName, Pattern } from '../../utils/usePlayer';
 
 export interface Instrument {
   color: string;
@@ -16,11 +11,6 @@ export interface Touché {
   cY: number;
   stepIdx: number;
   patternIdx: number;
-}
-
-export interface Pattern {
-  instrumentName: InstrumentName;
-  steps: Array<boolean>;
 }
 
 export interface Preset {
@@ -40,5 +30,3 @@ export interface XYPoint {
   x: number;
   y: number;
 }
-
-export type PlayingInstruments = Record<InstrumentName, boolean>;

@@ -2,8 +2,20 @@ import { AudioContext } from 'react-native-audio-api';
 import { useSharedValue } from 'react-native-reanimated';
 import { useRef, useState, useCallback, useLayoutEffect } from 'react';
 
-import type { InstrumentName, Pattern, PlayingInstruments } from '../types';
-import { instruments } from '../examples/DrumMachine/constants';
+export type InstrumentName =
+  | 'kick'
+  | 'clap'
+  | 'hi-hat'
+  | 'downbeat'
+  | 'regularbeat';
+
+export interface Pattern {
+  instrumentName: InstrumentName;
+  steps: Array<boolean>;
+}
+
+/** Instruments hit on the sounding step; absent ones are silent. */
+export type PlayingInstruments = Partial<Record<InstrumentName, boolean>>;
 
 type PlayNoteMethod = (name: InstrumentName, time: number) => void;
 
@@ -20,10 +32,7 @@ interface PlayerOptions {
 }
 
 function createNoHits(): PlayingInstruments {
-  return instruments.reduce((acc, name) => {
-    acc[name] = false;
-    return acc;
-  }, {} as PlayingInstruments);
+  return {};
 }
 
 /** How long a hit stays highlighted: most of a step, capped for slow tempos. */

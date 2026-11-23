@@ -2,7 +2,8 @@ import React, { memo } from 'react';
 import { Circle, Line, vec } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { Instrument, PlayingInstruments } from '../../types';
+import type { PlayingInstruments } from '../../utils/usePlayer';
+import type { Instrument } from './types';
 import {
   buttonRadius,
   cPoint,
@@ -10,7 +11,7 @@ import {
   maxSize,
   numBeats,
 } from './constants';
-import { getAngle, getPointCX, getPointCY } from '../../utils/skiUtils';
+import { getAngle, getPointCX, getPointCY } from './skiUtils';
 import instruments from './instruments';
 
 const playheadColor = 'rgba(238, 240, 255, 0.3)';

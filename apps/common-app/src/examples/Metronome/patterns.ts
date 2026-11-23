@@ -1,4 +1,4 @@
-import type { Pattern } from '../../types';
+import type { Pattern } from '../../utils/usePlayer';
 
 const oneBeatPerBar: Pattern[] = [
   {

@@ -1,8 +1,8 @@
 import React from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
 import {
-  AppIcon,
+  RoundButton,
   SegmentedControl,
   Select,
   Slider,
@@ -39,22 +39,14 @@ const DrumMachineControls: React.FC = () => {
   return (
     <View style={styles.sheet} onLayout={onSheetLayout}>
       <View style={styles.row}>
-        <Pressable
+        <RoundButton
+          icon={isPlaying ? 'pause' : 'play'}
           onPress={drumMachineStore.togglePlayback}
-          accessibilityRole="button"
           accessibilityLabel={isPlaying ? 'Stop' : 'Play'}
-          style={({ pressed }) => [
-            styles.playButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <AppIcon
-            name={isPlaying ? 'pause' : 'play'}
-            size={22}
-            color={colors.onAccent}
-            accessible={false}
-          />
-        </Pressable>
+          size={playButtonSize}
+          iconSize={22}
+          iconColor={colors.onAccent}
+        />
         <View style={styles.presetSelect}>
           <Select
             value={preset}
@@ -92,17 +84,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  playButton: {
-    width: playButtonSize,
-    height: playButtonSize,
-    borderRadius: playButtonSize / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accent,
-  },
-  pressed: {
-    opacity: 0.8,
   },
   presetSelect: {
     flex: 1,

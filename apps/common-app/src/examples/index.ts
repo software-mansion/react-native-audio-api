@@ -25,7 +25,6 @@ type ExampleRoutes = {
   Metronome: undefined;
   DrumMachine: undefined;
   Piano: undefined;
-  TextToSpeech: undefined;
   AudioFile: undefined;
   AudioPipelineStress: undefined;
   AudioIOPlayground: undefined;

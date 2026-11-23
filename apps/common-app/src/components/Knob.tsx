@@ -60,10 +60,13 @@ const Knob: React.FC<KnobProps> = ({
 }) => {
   const progress = useSharedValue(value);
   const dragStartValue = useSharedValue(value);
+  const isDragging = useSharedValue(false);
 
   useEffect(() => {
-    progress.value = withSpring(value, { damping: 20, stiffness: 180 });
-  }, [value, progress]);
+    if (!isDragging.value) {
+      progress.value = withSpring(value, { damping: 20, stiffness: 180 });
+    }
+  }, [value, progress, isDragging]);
 
   const center = size / 2;
   const trackRadius = center - TRACK_WIDTH;
@@ -91,7 +94,11 @@ const Knob: React.FC<KnobProps> = ({
 
   const pan = usePanGesture({
     onActivate: () => {
+      isDragging.value = true;
       dragStartValue.value = progress.value;
+    },
+    onFinalize: () => {
+      isDragging.value = false;
     },
     onUpdate: (event) => {
       const next = dragStartValue.value - event.translationY / DRAG_RANGE_PX;
@@ -146,7 +153,7 @@ const Knob: React.FC<KnobProps> = ({
                 p2={vec(center, center - faceRadius * 0.45)}
                 strokeWidth={3}
                 strokeCap="round"
-                color={colors.white}
+                color={colors.textPrimary}
               />
             </Group>
           </Canvas>

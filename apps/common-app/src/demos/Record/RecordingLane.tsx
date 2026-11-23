@@ -18,7 +18,8 @@ import {
 
 import { audioRecorder as Recorder } from '../../singletons';
 import { colors, layout } from '../../styles';
-import { formatDuration, levelFromAmplitude } from './levels';
+import { formatClock } from '../../utils/formatClock';
+import { levelFromAmplitude } from './levels';
 import { RecordingState } from './types';
 
 const sampleRate = 48000;
@@ -180,11 +181,15 @@ const RecordingLane: React.FC<RecordingLaneProps> = ({
       return;
     }
 
+    let isCancelled = false;
     workletContext.resume().then(() => {
-      Recorder.connect(workletContext, workletNode);
+      if (!isCancelled) {
+        Recorder.connect(workletContext, workletNode);
+      }
     });
 
     return () => {
+      isCancelled = true;
       Recorder.disconnect();
     };
   }, [state]);
@@ -291,7 +296,7 @@ const RecordingLane: React.FC<RecordingLaneProps> = ({
       second <= headSeconds + visibleSeconds;
       second += rulerIntervalSeconds
     ) {
-      const label = formatDuration(second);
+      const label = formatClock(second);
       const labelWidth = rulerFont.measureText(label).width;
       const x = xAt(second * barsPerSecond) - labelWidth / 2;
       if (x < 6 || x + labelWidth > width - 6) {

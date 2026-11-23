@@ -1,11 +1,11 @@
 import { AudioContext } from 'react-native-audio-api';
-import React, { useState, useCallback, FC } from 'react';
+import React, { useState, FC } from 'react';
+import { StyleSheet } from 'react-native';
 
-import { Container, Slider, Spacer, Button } from '../../components';
+import { Container, Slider, Button } from '../../components';
 import MetronomeSound from '../../utils/soundEngines/MetronomeSound';
-import { InstrumentName, Pattern } from '../../types';
+import usePlayer, { InstrumentName, Pattern } from '../../utils/usePlayer';
 import { patterns, defaultPattern } from './patterns';
-import usePlayer from '../../utils/usePlayer';
 
 const DOWN_BEAT_FREQUENCY = 1000;
 const REGULAR_BEAT_FREQUENCY = 500;
@@ -46,26 +46,17 @@ const Metronome: FC = () => {
     setup: setupPlayer,
   });
 
-  const onBeatsPerBarChange = useCallback((newBeatsPerBar: number) => {
+  const onBeatsPerBarChange = (newBeatsPerBar: number) => {
     setBeatsPerBar(newBeatsPerBar);
     setPattern([...patterns[newBeatsPerBar]]);
-  }, []);
-
-  const onPlayPress = useCallback(() => {
-    if (player.isPlaying) {
-      player.stop();
-    } else {
-      player.play();
-    }
-  }, [player]);
+  };
 
   return (
-    <Container centered>
+    <Container centered style={styles.content}>
       <Button
         title={player.isPlaying ? 'Stop' : 'Play'}
-        onPress={onPlayPress}
+        onPress={player.isPlaying ? player.stop : player.play}
       />
-      <Spacer.Vertical size={20} />
       <Slider
         label="BPM"
         step={1}
@@ -74,7 +65,6 @@ const Metronome: FC = () => {
         value={bpm}
         onValueChange={setBpm}
       />
-      <Spacer.Vertical size={20} />
       <Slider
         min={1}
         max={8}
@@ -88,3 +78,9 @@ const Metronome: FC = () => {
 };
 
 export default Metronome;
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 20,
+  },
+});

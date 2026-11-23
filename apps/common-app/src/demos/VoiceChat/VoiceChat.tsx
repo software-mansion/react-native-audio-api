@@ -11,7 +11,6 @@ import type { OrbState } from './orb/orbPalettes';
 import VoiceOrb from './orb/VoiceOrb';
 import type { SessionStatus } from './voiceSession';
 
-const ERROR_COLOR = '#ff8d8d';
 const ORB_SHARE_OF_WIDTH = 0.58;
 const MAX_ORB_SIZE = 240;
 
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   errorText: {
-    color: ERROR_COLOR,
+    color: colors.danger,
   },
   timer: {
     fontSize: 13,

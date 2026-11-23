@@ -1,5 +1,4 @@
 import type {
-  AnalyserNode,
   AudioBufferQueueSourceNode,
   AudioContext,
 } from 'react-native-audio-api';
@@ -11,14 +10,8 @@ type AssistantAudio = {
   renderedMs: number;
 };
 
-/** Samples per output level reading (about 43 ms at 24 kHz). */
-const LEVEL_WINDOW = 1024;
-
 export class AssistantPlayback {
   private readonly queue: AudioBufferQueueSourceNode;
-  /** Sits between the queue and the speakers to measure the reply's level. */
-  private readonly analyser: AnalyserNode;
-  private readonly levelSamples = new Float32Array(LEVEL_WINDOW);
   private speaking = false;
   private started = false;
   private closed = false;
@@ -39,10 +32,7 @@ export class AssistantPlayback {
     private readonly onSpeakingChange: (speaking: boolean) => void
   ) {
     this.queue = context.createBufferQueueSource();
-    this.analyser = context.createAnalyser();
-    this.analyser.fftSize = LEVEL_WINDOW;
-    this.queue.connect(this.analyser);
-    this.analyser.connect(context.destination);
+    this.queue.connect(context.destination);
     this.queue.onbufferended = ({ bufferId }) => {
       if (this.closed || !this.canPlay()) {
         return;
@@ -59,15 +49,6 @@ export class AssistantPlayback {
         this.setSpeaking(false);
       }
     };
-  }
-
-  /** The latest stretch of the reply's audio, while it's playing. */
-  readOutput(): Float32Array | null {
-    if (!this.speaking) {
-      return null;
-    }
-    this.analyser.getFloatTimeDomainData(this.levelSamples);
-    return this.levelSamples;
   }
 
   private setSpeaking(speaking: boolean) {
@@ -154,7 +135,6 @@ export class AssistantPlayback {
       this.interrupt();
       this.queue.stop();
       this.queue.disconnect();
-      this.analyser.disconnect();
     } catch {
       // Queue shutdown can race with a native audio-context teardown.
     }

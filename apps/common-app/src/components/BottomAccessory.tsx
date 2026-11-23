@@ -1,15 +1,12 @@
-import {
-  isLiquidGlassSupported,
-  LiquidGlassView,
-} from '@callstack/liquid-glass';
 import React, { FC, PropsWithChildren } from 'react';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, layout } from '../styles';
+import { layout } from '../styles';
+import GlassSurface from './GlassSurface';
 
 /** Height of the capsule, matching the iOS 26 tab bar accessory. */
-export const bottomAccessoryHeight = 52;
+const bottomAccessoryHeight = 52;
 const sideInset = 20;
 const bottomGap = 8;
 
@@ -24,16 +21,11 @@ const BottomAccessory: FC<PropsWithChildren> = ({ children }) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <LiquidGlassView
-      colorScheme="dark"
-      style={[
-        styles.capsule,
-        { bottom: insets.bottom + bottomGap },
-        !isLiquidGlassSupported && styles.fallback,
-      ]}
+    <GlassSurface
+      style={[styles.capsule, { bottom: insets.bottom + bottomGap }]}
     >
       {children}
-    </LiquidGlassView>
+    </GlassSurface>
   );
 };
 
@@ -56,8 +48,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     gap: 12,
-  },
-  fallback: {
-    backgroundColor: colors.surface,
   },
 });

@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState, FC } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState, FC } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   AudioBuffer,
   AudioBufferSourceNode,
-  AudioContext,
   BaseAudioContext,
   GainNode,
   OfflineAudioContext,
@@ -13,8 +12,16 @@ import type {
   ChannelInterpretation,
 } from 'react-native-audio-api';
 
-import { Container, Slider, Spacer, Button, Select } from '../../components';
-import { colors, layout } from '../../styles';
+import {
+  Button,
+  Card,
+  Container,
+  ProgressBar,
+  Select,
+  Slider,
+} from '../../components';
+import { colors, typography } from '../../styles';
+import { useAudioContext } from '../../utils/audio';
 
 // The source is a single buffer with SOURCE_CHANNELS channels, each carrying a
 // distinct tone at an ascending amplitude (channel c peaks at (c + 1) /
@@ -65,27 +72,25 @@ const ChannelCount: FC = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [peaks, setPeaks] = useState<number[] | null>(null);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioContext = useAudioContext();
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const mixRef = useRef<GainNode | null>(null);
 
   const setup = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-    const ctx = audioContextRef.current;
-
-    const source = ctx.createBufferSource();
-    source.buffer = createTestBuffer(ctx, Math.floor(ctx.sampleRate));
+    const source = audioContext.createBufferSource();
+    source.buffer = createTestBuffer(
+      audioContext,
+      Math.floor(audioContext.sampleRate)
+    );
     source.loop = true;
 
-    const mix = ctx.createGain();
+    const mix = audioContext.createGain();
     mix.channelCountMode = channelCountMode;
     mix.channelInterpretation = channelInterpretation;
     mix.channelCount = channelCount;
 
     source.connect(mix);
-    mix.connect(ctx.destination);
+    mix.connect(audioContext.destination);
 
     sourceRef.current = source;
     mixRef.current = mix;
@@ -93,6 +98,8 @@ const ChannelCount: FC = () => {
 
   const teardown = () => {
     sourceRef.current?.stop(0);
+    sourceRef.current?.disconnect();
+    mixRef.current?.disconnect();
     sourceRef.current = null;
     mixRef.current = null;
   };
@@ -190,19 +197,13 @@ const ChannelCount: FC = () => {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
-    };
-  }, []);
-
   return (
-    <Container centered>
-      <Button onPress={handlePlayPause} title={isPlaying ? 'Stop' : 'Play'} />
-      <Spacer.Vertical size={32} />
-
-      <View style={styles.fullWidth}>
+    <Container>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Button onPress={handlePlayPause} title={isPlaying ? 'Stop' : 'Play'} />
         <Slider
           label="Channels"
           value={channelCount}
@@ -211,136 +212,101 @@ const ChannelCount: FC = () => {
           max={8}
           step={1}
         />
-      </View>
-      <Spacer.Vertical size={20} />
-
-      <View style={styles.row}>
-        <Text style={[styles.label, { minWidth: labelWidth }]}>Count mode</Text>
-        <Spacer.Horizontal size={12} />
-        <View style={styles.selectWrapper}>
-          <Select
-            value={channelCountMode}
-            options={CHANNEL_COUNT_MODES}
-            onChange={handleModeChange}
-          />
+        <View style={styles.row}>
+          <Text style={styles.label}>Count mode</Text>
+          <View style={styles.selectWrapper}>
+            <Select
+              value={channelCountMode}
+              options={CHANNEL_COUNT_MODES}
+              onChange={handleModeChange}
+            />
+          </View>
         </View>
-      </View>
-      <Spacer.Vertical size={16} />
-
-      <View style={styles.row}>
-        <Text style={[styles.label, { minWidth: labelWidth }]}>
-          Interpretation
-        </Text>
-        <Spacer.Horizontal size={12} />
-        <View style={styles.selectWrapper}>
-          <Select
-            value={channelInterpretation}
-            options={CHANNEL_INTERPRETATIONS}
-            onChange={handleInterpretationChange}
-          />
+        <View style={styles.row}>
+          <Text style={styles.label}>Interpretation</Text>
+          <View style={styles.selectWrapper}>
+            <Select
+              value={channelInterpretation}
+              options={CHANNEL_INTERPRETATIONS}
+              onChange={handleInterpretationChange}
+            />
+          </View>
         </View>
-      </View>
-      <Spacer.Vertical size={32} />
-
-      <Button
-        onPress={handleAnalyze}
-        title={analyzing ? 'Analyzing…' : 'Analyze output'}
-        minWidth={160}
-        disabled={analyzing}
-      />
-      <Spacer.Vertical size={20} />
-
-      {peaks && (
-        <View style={styles.peaksContainer}>
-          <Text style={styles.peaksTitle}>Per-channel peak amplitude</Text>
-          <Spacer.Vertical size={12} />
-          {peaks.map((peak, index) => (
-            <View key={index} style={styles.peakRow}>
-              <Text style={styles.peakLabel}>ch {index}</Text>
-              <View style={styles.peakBarTrack}>
-                <View
-                  style={[
-                    styles.peakBarFill,
-                    { width: `${Math.min(1, peak) * 100}%` },
-                  ]}
+        <Button
+          onPress={handleAnalyze}
+          title={analyzing ? 'Analyzing…' : 'Analyze output'}
+          minWidth={160}
+          disabled={analyzing}
+        />
+        {peaks && (
+          <Card>
+            <Text style={typography.sectionTitle}>
+              Per-channel peak amplitude
+            </Text>
+            {peaks.map((peak, index) => (
+              <View key={index} style={styles.peakRow}>
+                <Text style={styles.peakLabel}>ch {index}</Text>
+                <ProgressBar
+                  progress={peak}
+                  color={colors.blue}
+                  height={12}
+                  style={styles.peakBar}
                 />
+                <Text style={styles.peakValue}>{peak.toFixed(3)}</Text>
               </View>
-              <Text style={styles.peakValue}>{peak.toFixed(3)}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <Spacer.Vertical size={20} />
-      <Text style={styles.hint}>
-        Source has {SOURCE_CHANNELS} channels with ascending amplitude. With
-        explicit/discrete, channelCount keeps the first N channels (the peak
-        ramp truncates) and zero-pads the rest. Compare with speakers
-        interpretation to see the up/down-mix summing rules.
-      </Text>
+            ))}
+          </Card>
+        )}
+        <Text style={styles.hint}>
+          Source has {SOURCE_CHANNELS} channels with ascending amplitude. With
+          explicit/discrete, channelCount keeps the first N channels (the peak
+          ramp truncates) and zero-pads the rest. Compare with speakers
+          interpretation to see the up/down-mix summing rules.
+        </Text>
+      </ScrollView>
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  fullWidth: {
-    width: '100%',
+  content: {
+    gap: 20,
+    paddingBottom: 24,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
+    gap: 12,
   },
   label: {
+    minWidth: labelWidth,
     fontSize: 16,
-    color: colors.white,
+    color: colors.textPrimary,
   },
   selectWrapper: {
     flex: 1,
   },
-  peaksContainer: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: layout.radius,
-    padding: layout.spacing,
-  },
-  peaksTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
   peakRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 3,
   },
   peakLabel: {
     width: 44,
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 13,
   },
-  peakBarTrack: {
+  peakBar: {
     flex: 1,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.backgroundLight,
-    overflow: 'hidden',
-  },
-  peakBarFill: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.main,
   },
   peakValue: {
     width: 56,
     textAlign: 'right',
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 13,
+    fontVariant: ['tabular-nums'],
   },
   hint: {
-    color: colors.gray,
-    fontSize: 13,
+    ...typography.hint,
     textAlign: 'center',
   },
 });

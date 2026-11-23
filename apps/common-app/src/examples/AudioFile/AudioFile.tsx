@@ -1,120 +1,109 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import React, { FC, useEffect, useState } from 'react';
+import { Alert, StyleSheet } from 'react-native';
 import {
   AudioManager,
   PlaybackNotificationManager,
 } from 'react-native-audio-api';
 import BackgroundTimer from 'react-native-background-timer';
 
-import { Button, Container, Spacer } from '../../components';
-import { colors } from '../../styles';
+import { Container, ProgressBar, RoundButton } from '../../components';
+import { layout } from '../../styles';
+import { activatePlaybackSession, useAudioContext } from '../../utils/audio';
 import AudioPlayer from './AudioPlayer';
-
-// const remoteAsset =
-//   'https://docs.swmansion.com/react-native-audio-api/audio/voice/example-voice-01.mp3';
-
 import staticAsset from './voice-sample-landing.mp3';
+
+async function showPlaybackNotification(duration: number) {
+  await AudioManager.requestNotificationPermissions();
+  await PlaybackNotificationManager.show({
+    title: 'Audio File',
+    artist: 'Software Mansion',
+    artwork: 'https://wallpaperaccess.com/full/2658793.jpg',
+    album: 'Audio API',
+    androidSmallIcon: 'logo',
+    duration,
+    state: 'paused',
+    speed: 1.0,
+    elapsedTime: 0,
+    skipInterval: 10, // seconds to skip on fast-forward/rewind; default: 15
+  });
+  await PlaybackNotificationManager.enableControl('skipBackward', true);
+  await PlaybackNotificationManager.enableControl('nextTrack', true);
+  await PlaybackNotificationManager.enableControl('skipForward', true);
+  await PlaybackNotificationManager.enableControl('previousTrack', true);
+  await PlaybackNotificationManager.enableControl('pause', true);
+  await PlaybackNotificationManager.enableControl('play', true);
+  await PlaybackNotificationManager.enableControl('seekTo', true);
+}
 
 const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [positionPercentage, setPositionPercentage] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
   const [wasPlaying, setWasPlaying] = useState(false);
+
+  const audioContext = useAudioContext();
+  const [player] = useState(
+    () =>
+      new AudioPlayer(audioContext, {
+        onPositionChanged: setProgress,
+        onEnded: () => setIsPlaying(false),
+      })
+  );
 
   const togglePlayPause = async () => {
     if (isPlaying) {
-      await AudioPlayer.pause();
-    } else {
-      AudioPlayer.setOnPositionChanged((offset) => {
-        setPositionPercentage(offset);
-      });
-
-      AudioManager.setSystemOptions({
-        ios: {
-          category: 'playback',
-          mode: 'default',
-          options: [],
-        },
-      });
-
-      try {
-        await AudioManager.setAudioSessionActivity(true);
-      } catch (error) {
-        console.error('Failed to activate audio session:', error);
-        Alert.alert(
-          'Audio Session Error',
-          'Failed to activate audio session for playback.'
-        );
-        return;
-      }
-
-      await AudioPlayer.play();
-
-      AudioManager.observeAudioInterruptions(true);
-
-      AudioManager.getDevicesInfo().then(console.log);
+      await player.pause();
+      setIsPlaying(false);
+      return;
     }
 
-    setIsPlaying((prev) => !prev);
-  };
-
-  const fetchAudioBuffer = useCallback(async () => {
-    setIsLoading(true);
-
-    await AudioPlayer.loadBuffer(staticAsset);
-
-    setIsLoading(false);
-  }, []);
-
-  const setupNotification = async () => {
     try {
-      await AudioManager.requestNotificationPermissions();
-      const duration = AudioPlayer.getDuration();
-      await PlaybackNotificationManager.show({
-        title: 'Audio File',
-        artist: 'Software Mansion',
-        artwork: 'https://wallpaperaccess.com/full/2658793.jpg',
-        album: 'Audio API',
-        androidSmallIcon: 'logo',
-        duration: duration,
-        state: 'paused',
-        speed: 1.0,
-        elapsedTime: 0,
-        skipInterval: 10, // seconds to skip on fast-forward/rewind; default: 15
-      });
-      await PlaybackNotificationManager.enableControl('skipBackward', true);
-      await PlaybackNotificationManager.enableControl('nextTrack', true);
-      await PlaybackNotificationManager.enableControl('skipForward', true);
-      await PlaybackNotificationManager.enableControl('previousTrack', true);
-      await PlaybackNotificationManager.enableControl('pause', true);
-      await PlaybackNotificationManager.enableControl('play', true);
-      await PlaybackNotificationManager.enableControl('seekTo', true);
+      await activatePlaybackSession();
     } catch (error) {
-      console.error('Failed to setup notification:', error);
+      console.error('Failed to activate audio session:', error);
+      Alert.alert(
+        'Audio Session Error',
+        'Failed to activate audio session for playback.'
+      );
+      return;
     }
+
+    await player.play();
+    setIsPlaying(true);
   };
 
   useEffect(() => {
-    const setup = async () => {
-      await fetchAudioBuffer();
-      await setupNotification();
-    };
-    setup();
+    let isCancelled = false;
+
+    (async () => {
+      await player.loadBuffer(staticAsset);
+      if (isCancelled) {
+        return;
+      }
+      setIsLoading(false);
+
+      await showPlaybackNotification(player.getDuration());
+      // Left the screen while the notification was being set up.
+      if (isCancelled) {
+        PlaybackNotificationManager.hide();
+      }
+    })().catch((error) => console.error('Failed to set up playback:', error));
+
     return () => {
-      AudioPlayer.reset();
+      isCancelled = true;
+      player.dispose();
       PlaybackNotificationManager.hide();
       AudioManager.setAudioSessionActivity(false);
     };
-  }, [fetchAudioBuffer]);
+  }, [player]);
 
   useEffect(() => {
     AudioManager.observeAudioInterruptions(true);
 
-    // Listen to notification control events
     const playListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationPlay',
       () => {
-        AudioPlayer.play();
+        player.play();
         setIsPlaying(true);
       }
     );
@@ -122,45 +111,41 @@ const AudioFile: FC = () => {
     const pauseListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationPause',
       () => {
-        AudioPlayer.pause();
+        player.pause();
         setIsPlaying(false);
       }
     );
 
     const skipForwardListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationSkipForward',
-      (event) => {
-        AudioPlayer.seekBy(event.value);
-      }
+      (event) => player.seekBy(event.value)
     );
 
     const skipBackwardListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationSkipBackward',
-      (event) => {
-        AudioPlayer.seekBy(-event.value);
-      }
+      (event) => player.seekBy(-event.value)
     );
 
     const nextTrackListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationNextTrack',
-      () => {
-        console.log('Next track event received from notification');
-      }
+      () => console.log('Next track event received from notification')
     );
 
     const previousTrackListener = PlaybackNotificationManager.addEventListener(
       'playbackNotificationPreviousTrack',
-      () => {
-        console.log('Previous track event received from notification');
-      }
+      () => console.log('Previous track event received from notification')
     );
 
-    // Keep interruption handling through AudioManager
+    const seekToListener = PlaybackNotificationManager.addEventListener(
+      'playbackNotificationSeekTo',
+      (event) => player.seekBy(event.value - player.getElapsedTime())
+    );
+
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       async (event) => {
         if (event.type === 'began' && isPlaying) {
-          await AudioPlayer.pause();
+          await player.pause();
           setIsPlaying(false);
           setWasPlaying(true);
           return;
@@ -168,27 +153,19 @@ const AudioFile: FC = () => {
 
         if (event.type === 'ended' && wasPlaying) {
           BackgroundTimer.setTimeout(async () => {
-            AudioPlayer.setVolume(1.0);
+            player.setVolume(1.0);
             AudioManager.setAudioSessionActivity(true);
-            await AudioPlayer.play();
+            await player.play();
             setIsPlaying(true);
             setWasPlaying(false);
-            console.log('Auto-resumed after transient interruption');
           }, 500);
         }
       }
     );
 
     const duckListener = AudioManager.addSystemEventListener('duck', () => {
-      AudioPlayer.setVolume(0.2);
+      player.setVolume(0.2);
     });
-
-    const seekToListener = PlaybackNotificationManager.addEventListener(
-      'playbackNotificationSeekTo',
-      (event) => {
-        AudioPlayer.seekBy(event.value - AudioPlayer.getElapsedTime());
-      }
-    );
 
     return () => {
       playListener.remove();
@@ -201,25 +178,18 @@ const AudioFile: FC = () => {
       nextTrackListener.remove();
       previousTrackListener.remove();
     };
-  }, [isPlaying, wasPlaying]);
+  }, [player, isPlaying, wasPlaying]);
 
   return (
-    <Container centered>
-      {isLoading && <ActivityIndicator color="#FFFFFF" />}
-      <Button
-        title={isPlaying ? 'Stop' : 'Play'}
+    <Container centered style={styles.content}>
+      <RoundButton
+        icon={isPlaying ? 'pause' : 'play'}
+        accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
         onPress={togglePlayPause}
+        loading={isLoading}
         disabled={isLoading}
       />
-      <Spacer.Vertical size={20} />
-      <View style={styles.progressContainer}>
-        <View
-          style={[
-            styles.progressBar,
-            { width: `${positionPercentage * 100}%` },
-          ]}
-        />
-      </View>
+      <ProgressBar progress={progress} style={styles.progress} />
     </Container>
   );
 };
@@ -227,17 +197,10 @@ const AudioFile: FC = () => {
 export default AudioFile;
 
 const styles = StyleSheet.create({
-  progressContainer: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#333',
-    borderRadius: 5,
-    overflow: 'hidden',
-    marginTop: 20,
+  content: {
+    gap: layout.screenPadding * 2,
   },
-  progressBar: {
-    height: '100%',
-    backgroundColor: colors.main,
-    borderRadius: 5,
+  progress: {
+    alignSelf: 'stretch',
   },
 });

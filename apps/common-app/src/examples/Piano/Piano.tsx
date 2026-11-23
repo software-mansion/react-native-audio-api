@@ -8,7 +8,6 @@ import React, {
   useState,
 } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
 import Animated, {
   useAnimatedReaction,
   useAnimatedRef,
@@ -18,6 +17,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Container } from '../../components';
 import { colors, layout } from '../../styles';
+import { useAudioContext } from '../../utils/audio';
 import Keyboard from './Keyboard';
 import KeyboardOverview from './KeyboardOverview';
 import {
@@ -40,7 +40,7 @@ const initialOctave = 4;
 const Piano: FC = () => {
   const navigation = useNavigation('Piano');
 
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioContext = useAudioContext();
   const samplesRef = useRef<SampleMap>(new Map());
   const notesRef = useRef(new Map<number, PianoNote>());
 
@@ -57,23 +57,13 @@ const Piano: FC = () => {
   const [loadedSamples, setLoadedSamples] = useState(0);
 
   useEffect(() => {
-    const audioContext = new AudioContext();
-    audioContextRef.current = audioContext;
-    samplesRef.current = new Map();
-    setLoadedSamples(0);
-
     loadSamples(audioContext, (midi, buffer) => {
       samplesRef.current.set(midi, buffer);
       setLoadedSamples((count) => count + 1);
     }).catch((error) => {
       console.warn('Piano: failed to load samples', error);
     });
-
-    return () => {
-      audioContextRef.current = null;
-      audioContext.close();
-    };
-  }, []);
+  }, [audioContext]);
 
   /**
    * Keys can be held by a finger and by a scheduled score at once, so each key
@@ -106,11 +96,6 @@ const Piano: FC = () => {
 
   const onNoteOn = useCallback(
     (midi: number) => {
-      const audioContext = audioContextRef.current;
-      if (!audioContext) {
-        return;
-      }
-
       let note = notesRef.current.get(midi);
       if (!note) {
         note = new PianoNote(audioContext, midi);
@@ -120,7 +105,7 @@ const Piano: FC = () => {
       note.start(samplesRef.current);
       showKey(midi);
     },
-    [showKey]
+    [audioContext, showKey]
   );
 
   const onNoteOff = useCallback(
@@ -176,7 +161,7 @@ const Piano: FC = () => {
   const onScoreEnd = useCallback(() => setPlayingScore(null), []);
 
   usePianoDevApi({
-    audioContextRef,
+    audioContext,
     samplesRef,
     isReady: loadedSamples === sampledMidis.length,
     showKey,

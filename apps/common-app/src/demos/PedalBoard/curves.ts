@@ -25,15 +25,3 @@ export function makeReverbCurve(
   }
   return impulse;
 }
-
-export function makeEchoCurve(
-  delayTime: number,
-  context: AudioContext
-): AudioBuffer {
-  const length = Math.floor(context.sampleRate * delayTime);
-  const echoBuffer = context.createBuffer(1, length, context.sampleRate);
-  const echoData = echoBuffer.getChannelData(0);
-  echoData[length * 0.3] = 0.6;
-  echoData[length * 0.7] = 0.2;
-  return echoBuffer;
-}

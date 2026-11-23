@@ -4,8 +4,6 @@ export { default as Spacer } from './Spacer';
 export { default as Switch } from './Switch';
 export { default as Select } from './Select';
 export { default as Container } from './Container';
-export { default as BGGradient } from './BGGradient';
-export { default as VerticalSlider } from './VerticalSlider';
 export { default as AppIcon } from './AppIcon';
 export type { AppIconName } from './AppIcon';
 export { default as IconBadge } from './IconBadge';
@@ -19,3 +17,6 @@ export {
 } from './BottomAccessory';
 export { default as Knob } from './Knob';
 export { default as RoundButton } from './RoundButton';
+export { default as GlassSurface } from './GlassSurface';
+export { default as Card } from './Card';
+export { default as ProgressBar } from './ProgressBar';

@@ -1,107 +1,100 @@
 import type {
   AudioBuffer,
   AudioBufferSourceNode,
-} from 'react-native-audio-api';
-import {
   AudioContext,
-  PlaybackNotificationManager,
   GainNode,
 } from 'react-native-audio-api';
+import { PlaybackNotificationManager } from 'react-native-audio-api';
 
-class AudioPlayer {
-  private readonly audioContext: AudioContext;
+interface AudioPlayerCallbacks {
+  /** Playback position as a fraction of the track, about once a second. */
+  onPositionChanged: (fraction: number) => void;
+  /** The track played to its end; the player rewound to the start. */
+  onEnded: () => void;
+}
+
+/**
+ * Plays one buffer on a context owned by the caller, mirrored in the playback
+ * notification.
+ */
+export default class AudioPlayer {
   private sourceNode: AudioBufferSourceNode | null = null;
   private audioBuffer: AudioBuffer | null = null;
   private volumeNode: GainNode | null = null;
 
-  private isPlaying: boolean = false;
+  private isPlaying = false;
+  private currentElapsedTime = 0;
+  private volume = 1;
 
-  private currentElapsedTime: number = 0;
-  private playbackRate: number = 1;
-  private volume: number = 1;
-  private onPositionChanged: ((offset: number) => void) | null = null;
-
-  constructor() {
-    this.audioContext = new AudioContext();
-  }
+  constructor(
+    private readonly audioContext: AudioContext,
+    private readonly callbacks: AudioPlayerCallbacks
+  ) {}
 
   play = async () => {
-    if (this.isPlaying) {
-      console.warn('Audio is already playing');
-      return;
-    }
-
-    if (!this.audioBuffer) {
-      console.warn('Audio buffer is not loaded');
+    if (this.isPlaying || !this.audioBuffer) {
       return;
     }
 
     this.isPlaying = true;
-    PlaybackNotificationManager.show({
-      state: 'playing',
-    });
+    PlaybackNotificationManager.show({ state: 'playing' });
 
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
 
-    this.sourceNode = this.audioContext.createBufferSource({
+    const sourceNode = this.audioContext.createBufferSource({
       pitchCorrection: true,
     });
-    this.sourceNode.buffer = this.audioBuffer;
-    this.sourceNode.playbackRate.value = this.playbackRate;
+    sourceNode.buffer = this.audioBuffer;
     this.volumeNode = this.audioContext.createGain();
     this.volumeNode.gain.value = this.volume;
 
-    this.sourceNode
-      .connect(this.volumeNode)
-      .connect(this.audioContext.destination);
-    this.sourceNode.onpositionchangedInterval = 1000;
-    this.sourceNode.onpositionchanged = (event) => {
+    sourceNode.connect(this.volumeNode).connect(this.audioContext.destination);
+    sourceNode.onpositionchangedInterval = 1000;
+    sourceNode.onpositionchanged = (event) => {
+      this.currentElapsedTime = event.value;
       PlaybackNotificationManager.show({
         elapsedTime: this.currentElapsedTime,
       });
-      this.currentElapsedTime = event.value;
-      if (this.onPositionChanged) {
-        this.onPositionChanged(
-          this.currentElapsedTime / this.audioBuffer!.duration
-        );
-      }
+      this.callbacks.onPositionChanged(
+        this.currentElapsedTime / this.getDuration()
+      );
+    };
+    sourceNode.onended = () => {
+      this.releaseSource();
+      this.isPlaying = false;
+      this.currentElapsedTime = 0;
+      PlaybackNotificationManager.show({ state: 'paused', elapsedTime: 0 });
+      this.callbacks.onPositionChanged(0);
+      this.callbacks.onEnded();
     };
 
-    this.sourceNode.start(
-      this.audioContext.currentTime,
-      this.currentElapsedTime
-    );
+    this.sourceNode = sourceNode;
+    sourceNode.start(this.audioContext.currentTime, this.currentElapsedTime);
   };
 
   pause = async () => {
     if (!this.isPlaying) {
-      console.warn('Audio is not playing');
       return;
     }
 
-    this.sourceNode?.stop(this.audioContext.currentTime);
-    this.sourceNode?.disconnect();
-    this.volumeNode?.disconnect();
+    this.releaseSource();
+    this.isPlaying = false;
 
     await this.audioContext.suspend();
     PlaybackNotificationManager.show({
       state: 'paused',
       elapsedTime: this.currentElapsedTime,
     });
-
-    this.isPlaying = false;
   };
 
   seekBy = (seconds: number) => {
-    this.sourceNode?.stop(this.audioContext.currentTime);
-    this.currentElapsedTime += seconds;
-    if (this.currentElapsedTime < 0) {
-      this.currentElapsedTime = 0;
-    } else if (this.currentElapsedTime > this.getDuration()) {
-      this.currentElapsedTime = this.getDuration();
-    }
+    this.releaseSource();
+    this.currentElapsedTime = Math.min(
+      this.getDuration(),
+      Math.max(0, this.currentElapsedTime + seconds)
+    );
     PlaybackNotificationManager.show({
       elapsedTime: this.currentElapsedTime,
     });
@@ -113,33 +106,14 @@ class AudioPlayer {
   };
 
   loadBuffer = async (asset: string | number) => {
-    const buffer = await this.audioContext.decodeAudioData(asset);
-
-    if (buffer) {
-      this.audioBuffer = buffer;
-      this.playbackRate = 1;
-    }
+    this.audioBuffer = await this.audioContext.decodeAudioData(asset);
   };
 
-  reset = async () => {
-    if (this.sourceNode) {
-      this.sourceNode.onended = null;
-      this.sourceNode.onpositionchanged = null;
-      this.sourceNode.stop(this.audioContext.currentTime);
-    }
+  /** Stops playback for good; the context itself is closed by its owner. */
+  dispose = () => {
+    this.releaseSource();
     this.audioBuffer = null;
-    this.sourceNode = null;
-    this.currentElapsedTime = 0;
-    this.playbackRate = 1;
     this.isPlaying = false;
-
-    await this.audioContext.suspend();
-  };
-
-  setOnPositionChanged = (
-    callback: null | ((offset: number) => void) = null
-  ) => {
-    this.onPositionChanged = callback;
   };
 
   getDuration = (): number => {
@@ -156,6 +130,17 @@ class AudioPlayer {
       this.volumeNode.gain.value = volume;
     }
   };
-}
 
-export default new AudioPlayer();
+  /** Stops and disconnects the current source without reporting it as ended. */
+  private releaseSource() {
+    if (this.sourceNode) {
+      this.sourceNode.onended = null;
+      this.sourceNode.onpositionchanged = null;
+      this.sourceNode.stop(this.audioContext.currentTime);
+      this.sourceNode.disconnect();
+    }
+    this.volumeNode?.disconnect();
+    this.sourceNode = null;
+    this.volumeNode = null;
+  }
+}

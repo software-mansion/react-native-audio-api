@@ -18,7 +18,7 @@ const Switch: FC<SwitchProps> = ({ value, onValueChange, testID }) => (
     onValueChange={onValueChange}
     trackColor={trackColor}
     ios_backgroundColor={colors.track}
-    thumbColor={colors.white}
+    thumbColor={colors.textPrimary}
   />
 );
 

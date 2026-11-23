@@ -17,7 +17,7 @@ const darkGlyphBadges: readonly string[] = [colors.yellow];
 const IconBadge: React.FC<IconBadgeProps> = ({ icon, color, size = 30 }) => {
   const glyphColor = darkGlyphBadges.includes(color)
     ? colors.onAccent
-    : colors.white;
+    : colors.textPrimary;
 
   return (
     <View

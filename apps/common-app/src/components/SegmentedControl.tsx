@@ -12,6 +12,7 @@ interface SegmentedControlProps<T extends string> {
   options: ReadonlyArray<SegmentedControlOption<T>>;
   value: T;
   onChange: (value: T) => void;
+  color?: string;
 }
 
 const height = 36;
@@ -22,6 +23,7 @@ function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  color,
 }: SegmentedControlProps<T>) {
   return (
     <View style={styles.track} accessibilityRole="tablist">
@@ -34,7 +36,13 @@ function SegmentedControl<T extends string>({
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected: isSelected }}
-            style={[styles.segment, isSelected && styles.selectedSegment]}
+            style={[
+              styles.segment,
+              isSelected &&
+                (color
+                  ? { backgroundColor: `${color}33`, borderColor: `${color}99` }
+                  : styles.selectedSegment),
+            ]}
           >
             <Text style={[styles.label, isSelected && styles.selectedLabel]}>
               {option.label}
@@ -59,11 +67,14 @@ const styles = StyleSheet.create({
   segment: {
     flex: 1,
     borderRadius: (height - inset * 2) / 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectedSegment: {
     backgroundColor: 'rgba(238, 240, 255, 0.18)',
+    borderColor: 'transparent',
   },
   label: {
     fontSize: 14,

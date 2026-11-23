@@ -6,10 +6,6 @@ import { encodeCaptureChunk, SAMPLE_RATE } from './audio/pcm';
 import { fetchEphemeralKey } from './backend/token';
 
 const CAPTURE_BUFFER_LENGTH = SAMPLE_RATE / 10;
-/** How often the assistant's output level is read for the orb. */
-const OUTPUT_LEVEL_INTERVAL_MS = 50;
-
-export type VoiceSource = 'user' | 'assistant';
 
 type SessionStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -40,8 +36,6 @@ type SessionHandlers = {
   onTranscript: (entry: TranscriptEntry) => void;
   /** Whether the assistant's reply is audible right now. */
   onAssistantSpeaking: (speaking: boolean) => void;
-  /** Raw audio of either voice, for level meters. */
-  onAudio: (source: VoiceSource, samples: Float32Array, frames: number) => void;
 };
 
 type UserTurn = {
@@ -70,7 +64,6 @@ export class VoiceSession {
   private tokenRequest: AbortController | null = null;
   private audioStartup: Promise<unknown> | null = null;
   private muted = false;
-  private outputLevelTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private readonly handlers: SessionHandlers) {}
 
@@ -127,12 +120,6 @@ export class VoiceSession {
           }
         }
       );
-      this.outputLevelTimer = setInterval(() => {
-        const samples = this.playback?.readOutput();
-        if (samples) {
-          this.handlers.onAudio('assistant', samples, samples.length);
-        }
-      }, OUTPUT_LEVEL_INTERVAL_MS);
 
       const socket = new WebSocket(
         `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(secret.model)}`,
@@ -243,7 +230,6 @@ export class VoiceSession {
           return;
         }
         const channel = buffer.getChannelData(0);
-        this.handlers.onAudio('user', channel, numFrames);
         this.send({
           type: 'input_audio_buffer.append',
           audio: encodeCaptureChunk(channel, numFrames, buffer.sampleRate),
@@ -478,10 +464,6 @@ export class VoiceSession {
     }
     this.socket = null;
 
-    if (this.outputLevelTimer) {
-      clearInterval(this.outputLevelTimer);
-      this.outputLevelTimer = null;
-    }
     this.playback?.close();
     this.playback = null;
     this.handlers.onAssistantSpeaking(false);
@@ -523,15 +505,13 @@ export class VoiceSession {
           this.pauseForSystemEvent();
         } else if (event.shouldResume) {
           this.resumeAfterSystemEvent();
-        } else {
+        } else if (this.systemInterrupted) {
           this.fail('Audio focus was not restored after an interruption');
         }
       }),
-      AudioManager.addSystemEventListener('duck', () => {
-        if (this.isCurrentConnectionAttempt(attempt)) {
-          this.pauseForSystemEvent();
-        }
-      }),
+      // A 'duck' (Android's transient loss that lets us keep playing) is left
+      // alone: pausing the call for it would silence both voices until the
+      // other app gives focus back, for something as short as a chime.
     ];
   }
 

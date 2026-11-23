@@ -1,21 +1,20 @@
-import React, {
-  useState,
-  FC,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-} from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Container, Button, Spacer, Slider, Select } from '../../components';
-import { AudioContext } from 'react-native-audio-api';
+import React, { FC, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import type {
   AudioBuffer,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
+
+import { Button, Container, Select, Slider } from '../../components';
+import { useAudioContext } from '../../utils/audio';
 import { PCM_DATA, PLAYBACK_SPEED_CONFIG, SAMPLE_RATE } from './constants';
-import { TimeStretchingAlgorithm, TIME_STRETCHING_OPTIONS } from './types';
-import { getAudioSettings } from './helpers';
+
+type TimeStretchingAlgorithm = 'linear' | 'pitchCorrection';
+
+const TIME_STRETCHING_OPTIONS: TimeStretchingAlgorithm[] = [
+  'linear',
+  'pitchCorrection',
+];
 
 const PlaybackSpeed: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -26,7 +25,7 @@ const PlaybackSpeed: FC = () => {
   const [timeStretchingAlgorithm, setTimeStretchingAlgorithm] =
     useState<TimeStretchingAlgorithm>('linear');
 
-  const aCtxRef = useRef<AudioContext | null>(null);
+  const audioContext = useAudioContext({ sampleRate: SAMPLE_RATE });
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const bufferRef = useRef<AudioBuffer | null>(null);
   const playbackSpeedRef = useRef<number>(playbackSpeed);
@@ -35,40 +34,23 @@ const PlaybackSpeed: FC = () => {
     offset: number;
   } | null>(null);
 
-  const audioSettings = useMemo(
-    () => getAudioSettings(timeStretchingAlgorithm),
-    [timeStretchingAlgorithm]
-  );
-
-  const initializeAudioContext = useCallback(() => {
-    if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
+  const loadBuffer = async (): Promise<AudioBuffer> => {
+    if (!bufferRef.current) {
+      bufferRef.current = await audioContext.decodePCMInBase64(
+        PCM_DATA,
+        48000,
+        1,
+        true
+      );
     }
-    return aCtxRef.current;
-  }, []);
+    return bufferRef.current;
+  };
 
-  const loadBuffer = useCallback(async (): Promise<AudioBuffer> => {
-    if (bufferRef.current) {
-      return bufferRef.current;
-    }
-
-    const audioContext = initializeAudioContext();
-    const buffer = await audioContext.decodePCMInBase64(
-      PCM_DATA,
-      48000,
-      1,
-      true
-    );
-    bufferRef.current = buffer;
-    return buffer;
-  }, [initializeAudioContext]);
-
-  const getCurrentOffset = useCallback((): number => {
-    const audioContext = aCtxRef.current;
+  const getCurrentOffset = (): number => {
     const buffer = bufferRef.current;
     const anchor = playbackAnchorRef.current;
 
-    if (!audioContext || !buffer || !anchor || buffer.duration <= 0) {
+    if (!buffer || !anchor || buffer.duration <= 0) {
       return 0;
     }
 
@@ -77,148 +59,110 @@ const PlaybackSpeed: FC = () => {
     const wrapped = advanced % buffer.duration;
 
     return wrapped < 0 ? wrapped + buffer.duration : wrapped;
-  }, []);
+  };
 
-  const createSource = useCallback(
-    async (pitchCorrection: boolean): Promise<AudioBufferSourceNode> => {
-      const audioContext = initializeAudioContext();
-
-      setIsLoading(true);
-
-      try {
-        const buffer = await loadBuffer();
-
-        const source = audioContext.createBufferSource({
-          pitchCorrection,
-        });
-
-        source.buffer = buffer;
-        source.playbackRate.value = playbackSpeedRef.current;
-        source.loop = true;
-
-        return source;
-      } catch (error) {
-        console.error('Failed to create audio source:', error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [initializeAudioContext, loadBuffer]
-  );
-
-  const stopPlayback = useCallback(() => {
+  const stopPlayback = () => {
     if (sourceRef.current) {
       sourceRef.current.onended = null;
       sourceRef.current.stop();
+      sourceRef.current.disconnect();
       sourceRef.current = null;
     }
     playbackAnchorRef.current = null;
     setIsPlaying(false);
-  }, []);
+  };
 
-  const startPlayback = useCallback(
-    async (pitchCorrection: boolean, startOffset: number = 0) => {
-      try {
-        const audioContext = initializeAudioContext();
-        const source = await createSource(pitchCorrection);
+  const startPlayback = async (
+    algorithm: TimeStretchingAlgorithm,
+    startOffset = 0
+  ) => {
+    setIsLoading(true);
 
-        sourceRef.current = source;
-
-        sourceRef.current.onended = () => {
-          setIsPlaying(false);
-          sourceRef.current = null;
-          playbackAnchorRef.current = null;
-        };
-
-        sourceRef.current.connect(audioContext.destination);
-
-        const startTime = audioContext.currentTime;
-        sourceRef.current.start(startTime, startOffset);
-        playbackAnchorRef.current = {
-          contextTime: startTime,
-          offset: startOffset,
-        };
-
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Failed to start playback:', error);
+    try {
+      const source = audioContext.createBufferSource({
+        pitchCorrection: algorithm === 'pitchCorrection',
+      });
+      source.buffer = await loadBuffer();
+      source.playbackRate.value = playbackSpeedRef.current;
+      source.loop = true;
+      source.onended = () => {
+        source.disconnect();
         setIsPlaying(false);
-      }
-    },
-    [createSource, initializeAudioContext]
-  );
+        sourceRef.current = null;
+        playbackAnchorRef.current = null;
+      };
+      source.connect(audioContext.destination);
 
-  const togglePlayPause = useCallback(async () => {
+      const startTime = audioContext.currentTime;
+      source.start(startTime, startOffset);
+      sourceRef.current = source;
+      playbackAnchorRef.current = {
+        contextTime: startTime,
+        offset: startOffset,
+      };
+
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('Failed to start playback:', error);
+      setIsPlaying(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const togglePlayPause = () => {
     if (isPlaying) {
       stopPlayback();
     } else {
-      await startPlayback(audioSettings.pitchCorrection);
+      startPlayback(timeStretchingAlgorithm);
     }
-  }, [isPlaying, stopPlayback, startPlayback, audioSettings]);
+  };
 
-  const handlePlaybackSpeedChange = useCallback(
-    (newSpeed: number) => {
-      const audioContext = aCtxRef.current;
+  const handlePlaybackSpeedChange = (newSpeed: number) => {
+    if (sourceRef.current && playbackAnchorRef.current) {
+      playbackAnchorRef.current = {
+        contextTime: audioContext.currentTime,
+        offset: getCurrentOffset(),
+      };
+      sourceRef.current.playbackRate.value = newSpeed;
+    }
 
-      if (sourceRef.current && playbackAnchorRef.current && audioContext) {
-        playbackAnchorRef.current = {
-          contextTime: audioContext.currentTime,
-          offset: getCurrentOffset(),
-        };
-        sourceRef.current.playbackRate.value = newSpeed;
-      }
+    playbackSpeedRef.current = newSpeed;
+    setPlaybackSpeed(newSpeed);
+  };
 
-      playbackSpeedRef.current = newSpeed;
-      setPlaybackSpeed(newSpeed);
-    },
-    [getCurrentOffset]
-  );
+  const handleTimeStretchingAlgorithmChange = (
+    algorithm: TimeStretchingAlgorithm
+  ) => {
+    setTimeStretchingAlgorithm(algorithm);
 
-  const handleTimeStretchingAlgorithmChange = useCallback(
-    (newMode: TimeStretchingAlgorithm) => {
-      const wasPlaying = isPlaying;
-      const resumeOffset = wasPlaying ? getCurrentOffset() : 0;
-
-      setTimeStretchingAlgorithm(newMode);
-
-      if (wasPlaying) {
-        stopPlayback();
-        const { pitchCorrection } = getAudioSettings(newMode);
-        startPlayback(pitchCorrection, resumeOffset);
-      }
-    },
-    [isPlaying, stopPlayback, startPlayback, getCurrentOffset]
-  );
-
-  useEffect(() => {
-    return () => {
+    if (isPlaying) {
+      const resumeOffset = getCurrentOffset();
       stopPlayback();
-      bufferRef.current = null;
-      aCtxRef.current?.close();
-      aCtxRef.current = null;
-    };
-  }, [stopPlayback]);
+      startPlayback(algorithm, resumeOffset);
+    }
+  };
+
+  useEffect(
+    () => () => {
+      sourceRef.current?.disconnect();
+    },
+    []
+  );
 
   return (
     <Container>
-      <View style={styles.algorithmSelectContainer}>
-        <Select
-          value={timeStretchingAlgorithm}
-          options={TIME_STRETCHING_OPTIONS}
-          onChange={handleTimeStretchingAlgorithmChange}
-        />
-      </View>
-
-      <View style={styles.controlsContainer}>
+      <Select
+        value={timeStretchingAlgorithm}
+        options={TIME_STRETCHING_OPTIONS}
+        onChange={handleTimeStretchingAlgorithmChange}
+      />
+      <View style={styles.controls}>
         <Button
           title={isPlaying ? 'Stop' : 'Play'}
           onPress={togglePlayPause}
           disabled={isLoading}
         />
-
-        <Spacer.Vertical size={20} />
-
         <Slider
           label="Playback Speed"
           value={playbackSpeed}
@@ -233,14 +177,10 @@ const PlaybackSpeed: FC = () => {
 };
 
 const styles = StyleSheet.create({
-  algorithmSelectContainer: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
-  },
-  controlsContainer: {
+  controls: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    gap: 20,
   },
 });
 

@@ -41,7 +41,7 @@ const MainTabsNavigator: FC = () => (
   <MainTabs.Navigator
     screenOptions={{
       tabBarActiveTintColor: colors.accent,
-      tabBarInactiveTintColor: colors.border,
+      tabBarInactiveTintColor: colors.textMuted,
       tabBarStyle: { backgroundColor: colors.background },
     }}
   >

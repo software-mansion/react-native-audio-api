@@ -26,7 +26,6 @@ interface VoiceOrbProps {
   size: number;
   onPress: () => void;
   accessibilityLabel: string;
-  disabled?: boolean;
 }
 
 const MAX_FRAME_DELTA_SECONDS = 0.05;
@@ -108,7 +107,6 @@ const VoiceOrb: React.FC<VoiceOrbProps> = ({
   size,
   onPress,
   accessibilityLabel,
-  disabled = false,
 }) => {
   const reduceMotion = useReduceMotion();
   const foreground = useForeground();
@@ -194,8 +192,6 @@ const VoiceOrb: React.FC<VoiceOrbProps> = ({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Starts or ends the conversation."
-      accessibilityState={{ disabled }}
-      disabled={disabled}
       onPress={() => {
         pulse();
         onPress();

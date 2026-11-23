@@ -1,8 +1,8 @@
 import React, { FC, PropsWithChildren } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Switch } from '../../components';
-import { colors, layout } from '../../styles';
+import { Button, Card, Switch } from '../../components';
+import { colors, layout, typography } from '../../styles';
 
 export const monospace = Platform.select({
   ios: 'Menlo',
@@ -19,10 +19,10 @@ export const Section: FC<PropsWithChildren<{ title: string }>> = ({
   title,
   children,
 }) => (
-  <View style={styles.section}>
-    <Text style={styles.title}>{title}</Text>
+  <Card>
+    <Text style={typography.sectionTitle}>{title}</Text>
     {children}
-  </View>
+  </Card>
 );
 
 export const Field: FC<PropsWithChildren<{ label: string }>> = ({
@@ -99,17 +99,6 @@ export const LabeledSwitch: FC<LabeledSwitchProps> = ({
 );
 
 const styles = StyleSheet.create({
-  section: {
-    gap: layout.spacing,
-    paddingVertical: 2 * layout.spacing,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.separator,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '600',
-  },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -117,7 +106,7 @@ const styles = StyleSheet.create({
   },
   label: {
     width: 80,
-    color: colors.gray,
+    color: colors.textSecondary,
   },
   fieldControl: {
     flex: 1,
@@ -128,7 +117,7 @@ const styles = StyleSheet.create({
     gap: layout.spacing,
   },
   call: {
-    color: colors.gray,
+    color: colors.textMuted,
     fontSize: 11,
     fontFamily: monospace,
   },

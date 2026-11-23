@@ -44,6 +44,11 @@ export default class CrossfadePlayer {
   /** Where every newly audible track starts, kept from the current track. */
   private position = 0;
   private isClosed = false;
+  /**
+   * Bumped by every play, pause and close, so an earlier call still awaiting
+   * the session or the context sees it was overtaken and stops there.
+   */
+  private transportRequest = 0;
 
   constructor(
     private readonly tracks: Track[],
@@ -69,25 +74,36 @@ export default class CrossfadePlayer {
   }
 
   async play() {
+    const request = ++this.transportRequest;
     AudioManager.setSystemOptions({
       ios: { category: 'playback', mode: 'default', options: [] },
     });
     await AudioManager.setAudioSessionActivity(true);
+    if (request !== this.transportRequest) {
+      return;
+    }
     if (this.context.state === 'suspended') {
       await this.context.resume();
+      if (request !== this.transportRequest) {
+        return;
+      }
     }
     this.isPlaying = true;
     this.applyMix();
   }
 
   async pause() {
+    const request = ++this.transportRequest;
     this.isPlaying = false;
     [...this.voices.keys()].forEach((index) => this.stopVoice(index));
     await this.context.suspend();
-    await AudioManager.setAudioSessionActivity(false);
+    if (request === this.transportRequest) {
+      await AudioManager.setAudioSessionActivity(false);
+    }
   }
 
   close() {
+    this.transportRequest += 1;
     this.isClosed = true;
     this.isPlaying = false;
     [...this.voices.keys()].forEach((index) => this.stopVoice(index));
@@ -144,7 +160,9 @@ export default class CrossfadePlayer {
         return;
       }
       const voice = this.voices.get(index) ?? this.startVoice(index);
-      voice?.gain.gain.setValueAtTime(gain, now);
+      // The mix follows a drag frame by frame; stepping the gain that often
+      // buzzes, so it glides.
+      voice?.gain.gain.setTargetAtTime(gain, now, 0.03);
     });
   }
 

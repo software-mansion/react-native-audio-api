@@ -22,12 +22,15 @@ import Animated, {
 import { Container } from '../../components';
 import { useControlsSheet } from '../../navigation/useControlsSheet';
 import { colors } from '../../styles';
-import type { InstrumentName, PlayingInstruments, XYWHRect } from '../../types';
+import type { XYWHRect } from './types';
 import Clap from '../../utils/soundEngines/Clap';
 import HiHat from '../../utils/soundEngines/HiHat';
 import Kick from '../../utils/soundEngines/Kick';
 import playSample from '../../utils/soundEngines/playSample';
-import usePlayer from '../../utils/usePlayer';
+import usePlayer, {
+  type InstrumentName,
+  type PlayingInstruments,
+} from '../../utils/usePlayer';
 import CenterDisc from './CenterDisc';
 import { numBeats, size } from './constants';
 import {

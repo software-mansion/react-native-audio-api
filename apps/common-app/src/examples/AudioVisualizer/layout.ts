@@ -1,5 +1,5 @@
 /** Proportions of the radial visualizer, as fractions of the square canvas. */
-export interface VisualizerLayout {
+interface VisualizerLayout {
   cx: number;
   cy: number;
   /** Where the frequency bars start. */

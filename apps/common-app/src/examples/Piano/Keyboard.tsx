@@ -9,6 +9,7 @@ import {
 import Animated, { AnimatedRef, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { colors } from '../../styles';
 import {
   blackKeyHeight,
   blackKeys,
@@ -30,7 +31,7 @@ const palette = {
   whiteLipPressed: '#e9a19d',
   ebony: '#0f1016',
   ebonyFace: '#2a2c37',
-  ebonyFacePressed: '#ff7774',
+  ebonyFacePressed: colors.accent,
   keySlip: '#11131c',
   felt: '#7d2633',
   label: '#9ba1b9',

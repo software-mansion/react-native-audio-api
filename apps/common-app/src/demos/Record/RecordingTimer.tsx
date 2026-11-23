@@ -3,16 +3,13 @@ import { StyleSheet, Text } from 'react-native';
 
 import { audioRecorder as Recorder } from '../../singletons';
 import { colors } from '../../styles';
+import { formatClock } from '../../utils/formatClock';
 import { RecordingState } from './types';
 
 const refreshIntervalMs = 50;
 
 interface RecordingTimerProps {
   state: RecordingState;
-}
-
-function twoDigits(value: number) {
-  return String(Math.floor(value)).padStart(2, '0');
 }
 
 /** Elapsed recording time as `mm:ss` with dimmed centiseconds. */
@@ -35,16 +32,14 @@ const RecordingTimer: React.FC<RecordingTimerProps> = ({ state }) => {
     return () => clearInterval(interval);
   }, [isActive]);
 
-  const minutes = twoDigits(elapsed / 60);
-  const seconds = twoDigits(elapsed % 60);
-  const centiseconds = twoDigits((elapsed % 1) * 100);
+  const centiseconds = String(Math.floor((elapsed % 1) * 100)).padStart(2, '0');
 
   return (
     <Text
       style={styles.timer}
       accessibilityLabel={`${Math.floor(elapsed)} seconds recorded`}
     >
-      {minutes}:{seconds}
+      {formatClock(elapsed, true)}
       <Text style={styles.centiseconds}>.{centiseconds}</Text>
     </Text>
   );

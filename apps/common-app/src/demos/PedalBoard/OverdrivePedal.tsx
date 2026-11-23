@@ -1,148 +1,69 @@
-// filepath: /Users/michal/react-native-audio-api/apps/common-app/src/demos/PedalBoard/OverdrivePedal.tsx
-import React, { useRef, useState, useEffect } from 'react';
-import {
-  GainNode,
-  BiquadFilterNode,
-  WaveShaperNode,
-  AudioNode,
-  AudioContext,
-} from 'react-native-audio-api';
+import React, { useState } from 'react';
+import { AudioContext } from 'react-native-audio-api';
 
 import { Knob } from '../../components';
 import { makeDistortionCurve } from './curves';
-import PedalShell from './PedalShell';
+import PedalShell, { PedalProps } from './PedalShell';
+import { glide, usePedalRouting } from './usePedalRouting';
 
 const PEDAL_COLOR = '#ffb020';
+const INITIAL_KNOB = 0.5;
 
 const MIN_DRIVE_GAIN = 0.05;
 const MAX_DRIVE_GAIN = 10;
 const MIN_FREQ = 500;
 const MAX_FREQ = 20000;
 
-interface OverdrivePedalProps {
-  context: AudioContext;
-  inputNode: AudioNode;
-  outputNode: AudioNode;
+const driveGain = (drive: number) =>
+  MIN_DRIVE_GAIN + drive * (MAX_DRIVE_GAIN - MIN_DRIVE_GAIN);
+const toneFrequency = (tone: number) =>
+  MIN_FREQ * Math.pow(MAX_FREQ / MIN_FREQ, tone);
+
+function createOverdrive(context: AudioContext) {
+  const drive = context.createGain();
+  drive.gain.value = driveGain(INITIAL_KNOB);
+
+  const shaper = context.createWaveShaper();
+  shaper.curve = makeDistortionCurve(50, context.sampleRate);
+  shaper.oversample = '4x';
+
+  const tone = context.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.Q.value = 1;
+  tone.frequency.value = toneFrequency(INITIAL_KNOB);
+
+  const level = context.createGain();
+  level.gain.value = INITIAL_KNOB;
+
+  return [drive, shaper, tone, level] as const;
 }
 
-export default function OverdrivePedal({
-  context,
-  inputNode,
-  outputNode,
-}: OverdrivePedalProps) {
-  const [isActive, setIsActive] = useState(false);
-  const [drive, setDrive] = useState(0.5);
-  const [tone, setTone] = useState(0.5);
-  const [level, setLevel] = useState(0.5);
-
-  const driveRef = useRef<GainNode | null>(null);
-  const toneRef = useRef<BiquadFilterNode | null>(null);
-  const levelRef = useRef<GainNode | null>(null);
-  const shaperRef = useRef<WaveShaperNode | null>(null);
-  // Whether inputNode is currently routed through the effect chain (vs bypassed)
-  const isChainConnectedRef = useRef(false);
-
-  useEffect(() => {
-    initialize(context);
-  }, [context]);
-
-  useEffect(() => {
-    if (inputNode == null || outputNode == null) {
-      return;
-    }
-    if (isActive) {
-      applyEffect(inputNode, outputNode);
-    } else {
-      discardEffect(inputNode, outputNode);
-    }
-  }, [isActive]);
-
-  useEffect(() => {
-    updateAudioParams(drive, tone, level);
-  }, [drive, tone, level]);
-
-  const initialize = (context: AudioContext) => {
-    driveRef.current = context.createGain();
-    toneRef.current = context.createBiquadFilter();
-    levelRef.current = context.createGain();
-    shaperRef.current = context.createWaveShaper();
-    shaperRef.current.curve = makeDistortionCurve(50, context.sampleRate);
-    shaperRef.current.oversample = '4x';
-    toneRef.current.type = 'lowpass';
-    toneRef.current.Q.value = 1;
-    updateAudioParams(drive, tone, level);
-  };
-
-  const updateAudioParams = (d: number, t: number, l: number) => {
-    if (!driveRef.current || !toneRef.current || !levelRef.current) {
-      return;
-    }
-
-    const driveGain = MIN_DRIVE_GAIN + d * (MAX_DRIVE_GAIN - MIN_DRIVE_GAIN);
-    driveRef.current.gain.value = driveGain;
-
-    // logarithmic mapping for tone
-    const freq = MIN_FREQ * Math.pow(MAX_FREQ / MIN_FREQ, t);
-    toneRef.current.frequency.value = freq;
-
-    levelRef.current.gain.value = l;
-  };
-
-  const applyEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    if (
-      !driveRef.current ||
-      !toneRef.current ||
-      !levelRef.current ||
-      !shaperRef.current
-    ) {
-      console.warn('OverdrivePedal: Audio nodes not initialized');
-      return;
-    }
-    inputNode
-      .connect(driveRef.current!)
-      .connect(shaperRef.current!)
-      .connect(toneRef.current!)
-      .connect(levelRef.current!)
-      .connect(outputNode);
-    inputNode.disconnect(outputNode);
-    isChainConnectedRef.current = true;
-  };
-
-  const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    if (isChainConnectedRef.current) {
-      inputNode.disconnect(driveRef.current!);
-      isChainConnectedRef.current = false;
-    }
-    inputNode.connect(outputNode);
-  };
-
-  const togglePower = () => {
-    setIsActive((prev) => !prev);
-  };
+export default function OverdrivePedal(props: PedalProps) {
+  const { context } = props;
+  const [chain] = useState(() => createOverdrive(context));
+  const [drive, , tone, level] = chain;
+  const power = usePedalRouting(props, chain);
 
   return (
-    <PedalShell
-      name="OVERDRIVE"
-      color={PEDAL_COLOR}
-      isActive={isActive}
-      onToggle={togglePower}
-    >
+    <PedalShell name="OVERDRIVE" color={PEDAL_COLOR} {...power}>
       <Knob
         label="Drive"
-        value={drive}
-        onValueChange={setDrive}
+        value={INITIAL_KNOB}
+        onValueChange={(value) => glide(context, drive.gain, driveGain(value))}
         color={PEDAL_COLOR}
       />
       <Knob
         label="Tone"
-        value={tone}
-        onValueChange={setTone}
+        value={INITIAL_KNOB}
+        onValueChange={(value) =>
+          glide(context, tone.frequency, toneFrequency(value))
+        }
         color={PEDAL_COLOR}
       />
       <Knob
         label="Level"
-        value={level}
-        onValueChange={setLevel}
+        value={INITIAL_KNOB}
+        onValueChange={(value) => glide(context, level.gain, value)}
         color={PEDAL_COLOR}
       />
     </PedalShell>

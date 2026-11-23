@@ -14,7 +14,7 @@ import { colors, layout } from '../styles';
 import { ControlsSheetLayout } from './ControlsSheetLayout';
 import MainTabsNavigator, { MainTabs } from './MainTabs';
 
-type RootStackParamList = {
+export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<typeof MainTabs>;
 } & Record<
   ExampleKey | ExampleControlsKey | DemoKey | DemoControlsKey,
@@ -73,7 +73,7 @@ const RootStackNavigator: FC = () => (
   <RootStack.Navigator
     screenOptions={{
       headerTransparent: true,
-      headerTintColor: colors.white,
+      headerTintColor: colors.textPrimary,
       headerBackButtonDisplayMode: 'minimal',
       headerBackTitle: 'Back',
       contentStyle: { backgroundColor: colors.background },

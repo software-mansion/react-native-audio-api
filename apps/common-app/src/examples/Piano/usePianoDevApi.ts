@@ -46,7 +46,7 @@ const scheduleAheadTime = 1;
 const schedulerIntervalMs = 250;
 
 interface PianoDevApiOptions {
-  audioContextRef: RefObject<AudioContext | null>;
+  audioContext: AudioContext;
   samplesRef: RefObject<SampleMap>;
   isReady: boolean;
   showKey: (midi: number) => void;
@@ -62,7 +62,7 @@ interface PianoDevApiOptions {
  * about 1.3 octaves and gestures have at most two fingers.
  */
 export function usePianoDevApi({
-  audioContextRef,
+  audioContext,
   samplesRef,
   isReady,
   showKey,
@@ -125,11 +125,6 @@ export function usePianoDevApi({
     };
 
     const play = (score: ScoreNote[]) => {
-      const audioContext = audioContextRef.current;
-      if (!audioContext) {
-        return 0;
-      }
-
       stop();
       const origin = audioContext.currentTime + scoreStartDelay;
       const msUntil = (at: number) =>
@@ -201,7 +196,7 @@ export function usePianoDevApi({
       globalThis.__piano = undefined;
     };
   }, [
-    audioContextRef,
+    audioContext,
     samplesRef,
     isReady,
     showKey,

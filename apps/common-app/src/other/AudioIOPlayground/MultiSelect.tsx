@@ -8,9 +8,8 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Spacer } from '../../components';
-import AppIcon from '../../components/AppIcon';
-import { colors } from '../../styles';
+import { AppIcon, Button } from '../../components';
+import { colors, layout } from '../../styles';
 
 interface MultiSelectProps<T extends string> {
   values: T[];
@@ -23,7 +22,10 @@ interface MultiSelectProps<T extends string> {
   testID: string;
 }
 
-/** The shared `Select` modal, except that a tap toggles and Done closes it. */
+/**
+ * A `Select`-style trigger for several choices. A native menu closes on every
+ * tap, so this opens a sheet where taps toggle options and Done closes it.
+ */
 function MultiSelect<T extends string>(props: MultiSelectProps<T>) {
   const { values, options, onChange, testID } = props;
   const [isModalOpen, setModalOpen] = useState(false);
@@ -38,8 +40,8 @@ function MultiSelect<T extends string>(props: MultiSelectProps<T>) {
   return (
     <>
       <Pressable testID={testID} onPress={() => setModalOpen(true)}>
-        <View style={styles.box}>
-          <Text style={styles.text}>
+        <View style={styles.trigger}>
+          <Text style={styles.text} numberOfLines={1}>
             {values.length ? values.join(', ') : 'none'}
           </Text>
           <AppIcon name="chevrons-up-down" size={16} color={colors.textMuted} />
@@ -60,9 +62,10 @@ function MultiSelect<T extends string>(props: MultiSelectProps<T>) {
                   <AppIcon
                     name={values.includes(option) ? 'circle-check' : 'circle'}
                     size={20}
-                    color={colors.white}
+                    color={
+                      values.includes(option) ? colors.accent : colors.textMuted
+                    }
                   />
-                  <Spacer.Horizontal size={12} />
                   <Text style={styles.text}>{option}</Text>
                 </View>
               </Pressable>
@@ -81,27 +84,25 @@ function MultiSelect<T extends string>(props: MultiSelectProps<T>) {
 
 export default MultiSelect;
 
+const triggerHeight = 44;
+
 const styles = StyleSheet.create({
-  box: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
+  trigger: {
+    height: triggerHeight,
+    borderRadius: triggerHeight / 2,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    gap: 8,
+    backgroundColor: colors.surface,
   },
   text: {
     flex: 1,
-    color: colors.white,
-    fontSize: 16,
-    paddingVertical: 12,
+    color: colors.textPrimary,
+    fontSize: 15,
   },
   backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#00000040',
   },
   spacer: {
@@ -110,13 +111,15 @@ const styles = StyleSheet.create({
   sheet: {
     flex: 2,
     gap: 12,
-    backgroundColor: `${colors.background}ee`,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: colors.recess,
+    borderTopLeftRadius: layout.cardRadius,
+    borderTopRightRadius: layout.cardRadius,
     padding: 24,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
   },
 });

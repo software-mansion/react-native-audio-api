@@ -21,13 +21,17 @@ apps/
     │   │   └── index.ts      # Exports Examples array — register new screens here
     │   ├── demos/            # "Demo Apps" tab — full mini-apps
     │   │   └── index.ts      # Exports demos array — register new screens here
-    │   ├── components/       # Shared UI: AppIcon, Container, Button, Slider, Spacer, Switch, Select
+    │   ├── components/       # Shared UI (table below)
+    │   ├── testComponents/   # Test-report UI for the Other tab: TestLayout, useRunLog, StepRow, ScenarioResults, LiveLog
     │   ├── utils/
-    │   │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap)
+    │   │   ├── audio.ts      # useAudioContext, useDecodedAudio, activatePlaybackSession
+    │   │   ├── createStore.ts # Screen ↔ controls-sheet store (useSyncExternalStore)
+    │   │   ├── formatClock.ts # m:ss / mm:ss, worklet-safe
+    │   │   ├── soundEngines/ # Reusable synth classes (MetronomeSound, Kick, HiHat, Clap); each voice disconnects itself on `onended`
     │   │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
     │   │   └── usePlayer.tsx # Hook for pattern-based scheduled playback
     │   ├── singletons/       # Global audioContext and audioRecorder instances
-    │   └── styles.ts         # Shared colors and layout constants
+    │   └── styles.ts         # Shared colors, layout constants and typography roles
     └── assets/icons/         # SVG sources for icons (see Icons below)
 ```
 
@@ -44,7 +48,7 @@ Bottom Tabs (native)
 
 Each item navigates into a Stack screen. No manual stack registration needed — `examples/index.ts`, `other/index.ts` and `demos/index.ts` drive it automatically. The root param list is declared once in `RootStack.tsx` (`RootNavigator` module augmentation), so `useNavigation()` needs no generic or cast: `navigation.navigate(item.key)` is typed against the route keys (`ExampleKey`, `DemoKey`).
 
-Examples and demos can move their options into an always-visible bottom sheet: set `controls` on the `Examples` / `demos` entry (a component rendered as the sheet content) and call `useControlsSheet('<Key>Controls')` in the screen. `RootStack` registers a `<Key>Controls` route as a non-dismissable `formSheet` (`fitToContents`, nothing dimmed, transparent content so the native glass shows), and `ControlsSheetLayout` pops the sheet once its owner screen leaves the stack — a native back press only pops the owner. The screen and its sheet are separate routes, so they share state through a small `useSyncExternalStore` store (see `examples/DrumMachine/drumMachineStore.ts`). References: Drum Machine; Recorder, where the screen keeps the recorder and publishes its state and handlers to the sheet through `demos/Record/recorderSheetStore.ts`.
+Examples and demos can move their options into an always-visible bottom sheet: set `controls` on the `Examples` / `demos` entry (a component rendered as the sheet content) and call `useControlsSheet('<Key>Controls')` in the screen. `RootStack` registers a `<Key>Controls` route as a non-dismissable `formSheet` (`fitToContents`, nothing dimmed, transparent content so the native glass shows), and `ControlsSheetLayout` pops the sheet once its owner screen leaves the stack — a native back press only pops the owner. The screen and its sheet are separate routes, so they share state through a module-level store from `utils/createStore.ts` (see `examples/DrumMachine/drumMachineStore.ts`). References: Drum Machine; Recorder, where the screen keeps the recorder and publishes its state and handlers to the sheet through `demos/Record/recorderSheetStore.ts`.
 
 On iOS 26 react-native-screens enables the system's content-wide back gesture by default (`fullScreenSwipeEnabled` → `interactiveContentPopGestureRecognizer`), so a rightward pan anywhere on a pushed screen can pop it. A screen with its own horizontal swipes sets `navigation.setOptions({ fullScreenGestureEnabled: false })`, which leaves the edge swipe and back button. Reference: `demos/Crossfade/Crossfade.tsx`.
 
@@ -91,20 +95,12 @@ export { default } from './MyExample';
 
 ```tsx
 // MyExample.tsx
-import React, { useEffect, useRef, FC } from 'react';
-import { AudioContext, GainNode } from 'react-native-audio-api';
+import React, { FC } from 'react';
 import { Container, Button, Slider } from '../../components';
+import { useAudioContext } from '../../utils/audio';
 
 const MyExample: FC = () => {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const gainRef = useRef<GainNode | null>(null);
-
-  useEffect(() => {
-    audioContextRef.current = new AudioContext();
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
+  const audioContext = useAudioContext(); // closed on unmount
 
   return (
     <Container centered>
@@ -190,16 +186,8 @@ const MyExample: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1.0);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioContext = useAudioContext();
   const gainRef = useRef<GainNode | null>(null);
-
-  // Initialize audio context once
-  useEffect(() => {
-    audioContextRef.current = new AudioContext();
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
 
   // Real-time parameter update
   const handleVolumeChange = (value: number) => {
@@ -226,36 +214,24 @@ const MyExample: FC = () => {
 };
 ```
 
+### Audio lifetime rules
+
+- A screen owns its context through `useAudioContext()` (`utils/audio.ts`). Never create one at module scope (`export default new Player()` opened a context at app launch that was never closed) or in a `useRef(new AudioContext())` initializer (runs every render).
+- Load buffers with `useDecodedAudio(ctx, source)`: it drops a decode that finishes after unmount. Hand-rolled loads need the same cancelled flag, or they re-create nodes and notifications for a screen that is gone.
+- Disconnect nodes when playback stops, not only on unmount. The engine frees a node by itself only once its JS handle is garbage-collected, it has no inputs and (for a source) it has ended (`AudioGraph::sortAndCompact`, cascading downstream). Until Hermes collects the handles, a finished voice's gain stays connected to the destination and renders every quantum, so every Play or drum hit adds load (finished Piano voices left connected turned simulator playback glitchy after about a minute). Use the no-argument `disconnect()`: it never throws, even when nothing is connected or after `close()`, whereas `disconnect(target)` throws `InvalidAccessError` when that edge is missing. `onended` fires even for a source nothing pulls (`advanceWithoutRender`), so `source.onended = () => gain.disconnect()` is reliable. Clear a source's `onended` before stopping it by hand, or a late `onended` tears down the graph that replaced it.
+- `activatePlaybackSession()` is the iOS `playback` category plus `setAudioSessionActivity(true)`.
+- The `singletons` recorder and context are shared with the Recorder demo, whose take keeps running in the background. A screen cleans up only what it started (`examples/Record` tracks `ownsRecorderRef`); Latency Validation opens its own context and recorder per run and refuses to start while `AudioRecorder.isRecordingOngoing()`.
+
 ### File playback pattern
 
-Use a singleton helper class to avoid managing node lifecycle inside the component:
-
-```tsx
-// AudioPlayer.ts
-class AudioPlayer {
-  private ctx = new AudioContext();
-  private buffer: AudioBuffer | null = null;
-
-  async load(asset: string | number) {
-    this.buffer = await this.ctx.decodeAudioData(asset);
-  }
-
-  play() {
-    const src = this.ctx.createBufferSource();
-    src.buffer = this.buffer;
-    src.connect(this.ctx.destination);
-    src.start();
-  }
-}
-export default new AudioPlayer();
-```
+`examples/AudioFile/AudioPlayer.ts` is a class built per screen around that screen's context: `new AudioPlayer(ctx, { onPositionChanged, onEnded })`, released with `dispose()`.
 
 ### Pattern-based scheduling (Metronome, DrumMachine)
 
 Use the shared `usePlayer` hook + a `SoundEngine` class:
 
 ```tsx
-import usePlayer from '../../utils/usePlayer';
+import usePlayer, { type Pattern } from '../../utils/usePlayer';
 import MetronomeSound from '../../utils/soundEngines/MetronomeSound';
 
 function setupPlayer(ctx: AudioContext) {
@@ -287,29 +263,18 @@ Never assign `param.value` once per frame for continuous motion: each assignment
 
 ### Effects chain (PedalBoard pattern)
 
-Sub-components receive `inputNode` / `outputNode` and wire their effect in between:
+Each pedal gets a board slot (`PedalProps` from `demos/PedalBoard/PedalShell.tsx`: `context`, `inputNode`, `outputNode`) and hands its nodes to `usePedalRouting`, which bypasses `input → output` while off, routes through the chain while on, applies makeup gain, and disconnects everything on unmount:
 
 ```tsx
-// Parent
-const inputNode = ctx.createGain();
-const outputNode = ctx.createGain();
-inputNode.connect(outputNode); // bypass by default
-
-// Sub-component (pedal)
-function MyPedal({ context, inputNode, outputNode }: PedalProps) {
-  const effectRef = useRef<WaveShaperNode | null>(null);
-
-  const initEffect = () => {
-    if (effectRef.current) return;
-    const ws = context.createWaveShaper();
-    inputNode.disconnect(outputNode); // remove bypass
-    inputNode.connect(ws);
-    ws.connect(outputNode);
-    effectRef.current = ws;
-  };
-  // ...
+export default function MyPedal(props: PedalProps) {
+  // useState initializer: the chain must keep its identity across renders.
+  const [chain] = useState(() => [props.context.createWaveShaper()] as const);
+  const power = usePedalRouting(props, chain, /* makeupGain */ 1.5);
+  return <PedalShell name="MY PEDAL" color={colors.green} {...power}>…</PedalShell>;
 }
 ```
+
+Knob values reach their params through `glide()` (`setTargetAtTime`), because a knob reports every drag frame.
 
 ### iOS audio session (required on device)
 
@@ -364,25 +329,29 @@ All in `apps/common-app/src/components/`:
 | `Container` | `centered?`, `disablePadding?` — stack-screen root; content starts below the measured (transparent) header via `useHeaderHeight` |
 | `Button` | `title`, `onPress`, `disabled?`, `minWidth?` (default 100), `testID?` — liquid glass capsule sized to its title; plain `surface` capsule before iOS 26 |
 | `Slider` | `label?`, `min`, `max`, `step`, `value`, `scale?` (`'linear'` \| `'logarithmic'`, needs `min > 0`), `onValueChange` (called on release, rounded to `step`) — system slider (`@react-native-community/slider`, UISlider with the glass thumb on iOS 26) under a label / live value row; stretches to the parent width, so place it in a column |
-| `VerticalSlider` | `label`, `value` (0–1), `onValueChange`, `labelColor?`, `valueColor?`, `possibleValues?` (snap points, drawn as ticks) — hardware-style fader (thin slot, square cap); only the cap is draggable. Currently unused (the Pedal Board moved to `Knob`) |
-| `Knob` | `label`, `value` (0–1), `onValueChange`, `color?`, `size?` (default 64), `formatValue?` (worklet) — Skia rotary control turned by a vertical pan (160 px = full range); the readout is an animated `TextInput` so dragging does not re-render. Reference: Pedal Board pedals |
-| `RoundButton` | `icon` (`AppIconName` or `'stop'`, a filled square the font lacks), `onPress`, `label?`, `size?` (default 64), `color?`, `variant?` (`'solid'` fill \| `'outline'` surface circle with tinted glyph), `disabled?` — circular transport button with a glow in its colour. Reference: Pedal Board transport row |
+| `Knob` | `label`, `value` (0–1), `onValueChange`, `color?`, `size?` (default 64), `formatValue?` (worklet) — Skia rotary control turned by a vertical pan (160 px = full range); the readout is an animated `TextInput` so dragging does not re-render. It ignores `value` changes while dragging (they echo the gesture a few frames late and springing to them pulled the pointer back). Reference: Pedal Board pedals |
+| `RoundButton` | `icon` (`AppIconName` or `'stop'`, a filled square the font lacks), `onPress`, `label?` (caption under the circle), `accessibilityLabel?`, `size?` (default 64), `iconSize?`, `color?`, `iconColor?`, `variant?` (`'solid'` glowing fill \| `'outline'` surface circle with tinted glyph \| `'glass'` liquid glass circle, tinted with `color` while `selected`), `selected?`, `loading?`, `disabled?` — every circular icon button. References: Pedal Board transport, Recorder, Voice Chat call controls |
+| `GlassSurface` | `LiquidGlassView` props + `pressed?`, `fallbackColor?` — dark liquid glass with the `surface` fallback before iOS 26 / on Android. Use it instead of `LiquidGlassView` directly |
+| `Card` | `View` props — `surface` panel with `layout.cardRadius`, 16 padding, 8 gap |
+| `ProgressBar` | `progress` (0–1), `color?`, `height?`, `style?` — playback position and level meters |
 | `Spacer.Vertical` | `size` |
 | `Switch` | `value`, `onValueChange`, `testID?` (no label; render one beside it) — native switch tinted with the accent |
 | `Select` | `options`, `value`, `onChange`, `testID?` (single choice, no label; the id goes on the trigger, menu items are found by their title) — native pull-down menu (`@react-native-menu/menu`; glass UIMenu on iOS 26) |
-| `SegmentedControl` | `options` (`{ value, label }[]`), `value`, `onChange` — capsule row for 2–5 options |
+| `SegmentedControl` | `options` (`{ value, label }[]`), `value`, `onChange`, `color?` (tints the selected segment) — capsule row for 2–5 options |
 | `BottomAccessory` | children — liquid-glass capsule above the home indicator, shaped like the iOS 26 tab bar accessory (the system accessory only exists on bottom-tab screens, and examples are pushed on the root stack). Pad content with `useBottomAccessorySpace()`. Reference: Audio Visualizer |
 | `ListSection` / `ListRow` / `IconBadge` | inset grouped list primitives used by the tabs; section header is inset by `layout.cardRadius` |
 
 `testID` is what E2E tools query: the accessibility identifier on iOS, the view tag on Android. The Audio I/O Playground (`other/AudioIOPlayground/`) sets one on every control.
 
-Colours come from the audiodocs dark palette in `styles.ts` (`surface`, `textPrimary`/`textSecondary`/`textMuted`, `accent` + `onAccent`, `track`, hues `blue`/`green`/`purple`/`yellow`). Content drawn on an `accent` fill uses `onAccent` (navy) for contrast.
+Colours come from the audiodocs dark palette in `styles.ts` (`surface`/`surfacePressed`/`recess`, `textPrimary`/`textSecondary`/`textMuted`, `accent` + `onAccent`, `track`, `danger`, hues `blue`/`green`/`purple`/`yellow`/`navy`). Content drawn on an `accent` fill uses `onAccent` (navy) for contrast. Don't write hex values that already have a token; the pre-redesign keys (`white`, `main`, `gray`, `backgroundLight`, `border`, `layout.radius`) are gone. Repeated text roles live in `typography` (`caption`, `hint`, `sectionTitle`); spread them into a StyleSheet entry.
+
+Other-tab test screens build on `testComponents/`: `TestLayout` (description, summary badges, current step, controls, scrolling body; no title, the native header has it) and `useRunLog` (mounted guard, current step, live log, runner state).
 
 A tap gesture (`useTapGesture`, Gesture Handler 3) acts in `onActivate`, which fires only for a recognised tap. `onDeactivate` also fires for touches the tap never claimed: the pedals' footswitches once toggled whenever a fader on the same pedal was dragged (they are plain `Pressable`s now, in `demos/PedalBoard/PedalShell.tsx`).
 
 The icon font has no `power` glyph; `PedalShell` draws Lucide's power symbol inline with `react-native-svg` instead of regenerating the font. Add the SVG to `assets/icons/app/` and regenerate when a second screen needs it.
 
-Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents; animate transforms, not opacity, on wrappers.
+Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents, or unmount it; animate transforms, not opacity, on wrappers. That is why a disabled glass `RoundButton` dims its glyph instead of its opacity.
 
 `@react-native-menu/menu` 2.0.0 is patched (`patches/`, registered under `patchedDependencies` in `pnpm-workspace.yaml`) to import `<React/RCTBridge.h>` instead of the quoted `"RCTBridge.h"`, which RN 0.88's header layout no longer resolves.
 

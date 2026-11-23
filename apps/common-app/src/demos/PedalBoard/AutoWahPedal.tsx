@@ -1,188 +1,82 @@
-import React, { useRef, useState, useEffect } from 'react';
-import {
-  GainNode,
-  BiquadFilterNode,
-  AudioNode,
-  AudioContext,
-  OscillatorNode,
-} from 'react-native-audio-api';
+import React, { useEffect, useState } from 'react';
+import { AudioContext } from 'react-native-audio-api';
 
 import { Knob } from '../../components';
-import PedalShell from './PedalShell';
+import PedalShell, { PedalProps } from './PedalShell';
+import { glide, usePedalRouting } from './usePedalRouting';
 
 const PEDAL_COLOR = '#a78bfa';
+const INITIAL_KNOB = 0.5;
+/** The band-pass filter loses most of the signal, so the slot is boosted. */
+const MAKEUP_GAIN = 7;
 
-// LFO Settings
-const MIN_LFO_RATE = 0.3; // Slow sweep (0.5 Hz)
-const MAX_LFO_RATE = 4; // Fast wobble (8 Hz)
-const MIN_DEPTH = 50; // Narrow frequency sweep
-const MAX_DEPTH = 250; // Wide frequency sweep
-
-// Filter Settings
-const BASE_FREQ = 800; // Center frequency for the sweep
+// The LFO sweeps the band-pass centre around BASE_FREQ by up to ±depth Hz.
+const MIN_LFO_RATE = 0.3;
+const MAX_LFO_RATE = 4;
+const MIN_DEPTH = 50;
+const MAX_DEPTH = 250;
+const BASE_FREQ = 800;
 const MIN_Q = 1;
 const MAX_Q = 20;
 
-interface AutoWahPedalProps {
-  context: AudioContext;
-  inputNode: AudioNode;
-  outputNode: AudioNode;
+const lfoRate = (rate: number) =>
+  MIN_LFO_RATE + rate * (MAX_LFO_RATE - MIN_LFO_RATE);
+const sweepWidth = (depth: number) =>
+  MIN_DEPTH + depth * (MAX_DEPTH - MIN_DEPTH);
+const filterQ = (resonance: number) => MIN_Q + resonance * (MAX_Q - MIN_Q);
+
+function createAutoWah(context: AudioContext) {
+  const filter = context.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = BASE_FREQ;
+  filter.Q.value = filterQ(INITIAL_KNOB);
+
+  const lfo = context.createOscillator();
+  lfo.frequency.value = lfoRate(INITIAL_KNOB);
+
+  const lfoDepth = context.createGain();
+  lfoDepth.gain.value = sweepWidth(INITIAL_KNOB);
+
+  return { chain: [filter] as const, lfo, lfoDepth };
 }
 
-export default function AutoWahPedal({
-  context,
-  inputNode,
-  outputNode,
-}: AutoWahPedalProps) {
-  const [isActive, setIsActive] = useState(false);
-
-  // Repurposed State Variables
-  const [rate, setRate] = useState(0.5); // LFO Speed (was Frequency)
-  const [resonance, setResonance] = useState(0.5);
-  const [depth, setDepth] = useState(0.5); // LFO Width (was Sensitivity)
-
-  // Audio Nodes
-  const inputGainRef = useRef<GainNode | null>(null);
-  const filterRef = useRef<BiquadFilterNode | null>(null);
-  const outputGainRef = useRef<GainNode | null>(null);
-
-  // LFO specific nodes
-  const lfoOscillatorRef = useRef<OscillatorNode | null>(null);
-  const lfoGainRef = useRef<GainNode | null>(null);
-
-  // Whether inputNode is currently routed through the effect chain (vs bypassed)
-  const isChainConnectedRef = useRef(false);
+export default function AutoWahPedal(props: PedalProps) {
+  const { context } = props;
+  const [{ chain, lfo, lfoDepth }] = useState(() => createAutoWah(context));
+  const [filter] = chain;
+  const power = usePedalRouting(props, chain, MAKEUP_GAIN);
 
   useEffect(() => {
-    initialize(context);
+    lfo.connect(lfoDepth);
+    lfoDepth.connect(filter.frequency);
+    lfo.start();
     return () => {
-      try {
-        lfoOscillatorRef.current?.stop();
-      } catch (e) {}
+      lfo.stop();
+      lfo.disconnect();
+      lfoDepth.disconnect();
     };
-  }, [context]);
-
-  useEffect(() => {
-    if (inputNode == null || outputNode == null) {
-      return;
-    }
-    if (isActive) {
-      applyEffect(inputNode, outputNode);
-    } else {
-      discardEffect(inputNode, outputNode);
-    }
-  }, [isActive]);
-
-  useEffect(() => {
-    updateAudioParams(rate, resonance, depth);
-  }, [rate, resonance, depth]);
-
-  const initialize = (context: AudioContext) => {
-    inputGainRef.current = context.createGain();
-    inputGainRef.current.gain.value = 1;
-
-    outputGainRef.current = context.createGain();
-    outputGainRef.current.gain.value = 1;
-
-    // 1. Create the Filter (The "Wah")
-    filterRef.current = context.createBiquadFilter();
-    filterRef.current.type = 'bandpass';
-    filterRef.current.frequency.value = BASE_FREQ; // Set center point
-
-    // 2. Create the LFO (The "Automatic Foot")
-    lfoOscillatorRef.current = context.createOscillator();
-    lfoOscillatorRef.current.type = 'sine'; // Smooth sweep
-    lfoOscillatorRef.current.start();
-
-    // 3. Create LFO Depth Control
-    lfoGainRef.current = context.createGain();
-
-    // 4. Connect LFO -> Depth -> Filter Frequency
-    if (lfoOscillatorRef.current && lfoGainRef.current && filterRef.current) {
-      lfoOscillatorRef.current.connect(lfoGainRef.current);
-      lfoGainRef.current.connect(filterRef.current.frequency);
-    }
-
-    updateAudioParams(rate, resonance, depth);
-  };
-
-  const updateAudioParams = (r: number, res: number, d: number) => {
-    if (
-      !filterRef.current ||
-      !lfoOscillatorRef.current ||
-      !lfoGainRef.current
-    ) {
-      return;
-    }
-
-    // 1. Update LFO Speed (Rate)
-    const lfoRate = MIN_LFO_RATE + r * (MAX_LFO_RATE - MIN_LFO_RATE);
-    lfoOscillatorRef.current.frequency.value = lfoRate;
-
-    // 2. Update Filter Q (Resonance)
-    const q = MIN_Q + res * (MAX_Q - MIN_Q);
-    filterRef.current.Q.value = q;
-
-    // 3. Update Sweep Width (Depth)
-    const sweepWidth = MIN_DEPTH + d * (MAX_DEPTH - MIN_DEPTH);
-    lfoGainRef.current.gain.value = sweepWidth;
-  };
-
-  const applyEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    if (!inputGainRef.current || !filterRef.current || !outputGainRef.current) {
-      return;
-    }
-
-    inputNode.connect(inputGainRef.current);
-    inputGainRef.current.connect(filterRef.current);
-    filterRef.current.connect(outputGainRef.current);
-    outputGainRef.current.connect(outputNode);
-    (outputNode as GainNode).gain.value = 7; // Boost output level to compensate for wah attenuation
-
-    inputNode.disconnect(outputNode);
-    isChainConnectedRef.current = true;
-  };
-
-  const discardEffect = (inputNode: AudioNode, outputNode: AudioNode) => {
-    if (isChainConnectedRef.current) {
-      inputNode.disconnect(inputGainRef.current!);
-      inputGainRef.current!.disconnect(filterRef.current!);
-      filterRef.current!.disconnect(outputGainRef.current!);
-      outputGainRef.current!.disconnect(outputNode);
-      isChainConnectedRef.current = false;
-    }
-
-    inputNode.connect(outputNode);
-    (outputNode as GainNode).gain.value = 1; // Boost output level to compensate for wah attenuation
-  };
-
-  const togglePower = () => {
-    setIsActive((prev) => !prev);
-  };
+  }, [lfo, lfoDepth, filter]);
 
   return (
-    <PedalShell
-      name="AUTO WAH"
-      color={PEDAL_COLOR}
-      isActive={isActive}
-      onToggle={togglePower}
-    >
+    <PedalShell name="AUTO WAH" color={PEDAL_COLOR} {...power}>
       <Knob
         label="Rate"
-        value={rate}
-        onValueChange={setRate}
+        value={INITIAL_KNOB}
+        onValueChange={(value) => glide(context, lfo.frequency, lfoRate(value))}
         color={PEDAL_COLOR}
       />
       <Knob
         label="Depth"
-        value={depth}
-        onValueChange={setDepth}
+        value={INITIAL_KNOB}
+        onValueChange={(value) =>
+          glide(context, lfoDepth.gain, sweepWidth(value))
+        }
         color={PEDAL_COLOR}
       />
       <Knob
         label="Res"
-        value={resonance}
-        onValueChange={setResonance}
+        value={INITIAL_KNOB}
+        onValueChange={(value) => glide(context, filter.Q, filterQ(value))}
         color={PEDAL_COLOR}
       />
     </PedalShell>

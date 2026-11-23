@@ -1,8 +1,8 @@
 import { colors } from '../../styles';
 import { maxSize } from './constants';
-import type { Instrument } from '../../types';
+import type { Instrument } from './types';
 
-export const HiHat: Instrument = {
+const HiHat: Instrument = {
   name: 'hi-hat',
   color: colors.yellow,
   radius: maxSize / 2,

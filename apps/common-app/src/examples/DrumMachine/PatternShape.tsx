@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { Circle, Paint, Path, vec, Skia } from '@shopify/react-native-skia';
 
-import { getAngle, getPointCX, getPointCY } from '../../utils/skiUtils';
+import { getAngle, getPointCX, getPointCY } from './skiUtils';
 import instruments from './instruments';
-import type { Pattern } from '../../types';
+import type { Pattern } from '../../utils/usePlayer';
 import { buttonRadius, cPoint, numBeats } from './constants';
 
 interface PatternShapeProps {

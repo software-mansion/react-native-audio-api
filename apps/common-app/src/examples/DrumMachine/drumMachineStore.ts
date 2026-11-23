@@ -1,16 +1,15 @@
-import { useSyncExternalStore } from 'react';
-
-import type { Pattern } from '../../types';
+import type { Pattern } from '../../utils/usePlayer';
+import { createStore } from '../../utils/createStore';
 import presets from './presets';
 
 export type SoundSource = 'samples' | 'synth';
 
 /** Shown in the preset picker once the user edits a preset's pattern. */
-export const customPresetName = 'Custom';
+const customPresetName = 'Custom';
 
 const defaultPreset = 'Empty';
 
-export interface DrumMachineState {
+interface DrumMachineState {
   preset: string;
   bpm: number;
   patterns: Pattern[];
@@ -35,32 +34,18 @@ function createInitialState(): DrumMachineState {
   };
 }
 
-let state = createInitialState();
-const listeners = new Set<() => void>();
+const store = createStore(createInitialState());
 
-function update(changes: Partial<DrumMachineState>) {
-  state = { ...state, ...changes };
-  listeners.forEach((listener) => listener());
-}
-
-/**
- * State shared by the Drum Machine screen and its controls sheet. They are
- * separate navigation routes, so a component-level context can't span both.
- */
+/** State shared by the Drum Machine screen and its controls sheet. */
 export const drumMachineStore = {
-  subscribe(listener: () => void) {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  },
-  getState: () => state,
-  reset: () => update(createInitialState()),
+  reset: () => store.setState(createInitialState()),
 
-  setBpm: (bpm: number) => update({ bpm }),
-  setSoundSource: (soundSource: SoundSource) => update({ soundSource }),
-  setControlsHeight: (controlsHeight: number) => update({ controlsHeight }),
-  togglePlayback: () => update({ isPlaying: !state.isPlaying }),
+  setBpm: (bpm: number) => store.setState({ bpm }),
+  setSoundSource: (soundSource: SoundSource) => store.setState({ soundSource }),
+  setControlsHeight: (controlsHeight: number) =>
+    store.setState({ controlsHeight }),
+  togglePlayback: () =>
+    store.setState({ isPlaying: !store.getState().isPlaying }),
 
   selectPreset(name: string) {
     const preset = presets[name];
@@ -68,7 +53,7 @@ export const drumMachineStore = {
       return;
     }
 
-    update({
+    store.setState({
       preset: name,
       bpm: preset.bpm,
       patterns: clonePatterns(preset.pattern),
@@ -76,17 +61,12 @@ export const drumMachineStore = {
   },
 
   toggleStep(patternIndex: number, stepIndex: number) {
-    const patterns = clonePatterns(state.patterns);
+    const patterns = clonePatterns(store.getState().patterns);
     const steps = patterns[patternIndex].steps;
     steps[stepIndex] = !steps[stepIndex];
 
-    update({ preset: customPresetName, patterns });
+    store.setState({ preset: customPresetName, patterns });
   },
 };
 
-export function useDrumMachineState(): DrumMachineState {
-  return useSyncExternalStore(
-    drumMachineStore.subscribe,
-    drumMachineStore.getState
-  );
-}
+export const useDrumMachineState = store.useStore;

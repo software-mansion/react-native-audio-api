@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { useEffect } from 'react';
 
 import type { DemoControlsKey, DemoKey } from '../demos';
@@ -18,6 +18,6 @@ export function useControlsSheet(route: ControlsSheetKey) {
   const navigation = useNavigation();
 
   useEffect(() => {
-    navigation.navigate(route);
+    navigation.dispatch(CommonActions.navigate(route));
   }, [navigation, route]);
 }

@@ -1,7 +1,3 @@
-import {
-  isLiquidGlassSupported,
-  LiquidGlassView,
-} from '@callstack/liquid-glass';
 import { useNavigation } from '@react-navigation/native';
 import React, {
   FC,
@@ -29,8 +25,9 @@ import {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { AppIcon, Container } from '../../components';
+import { AppIcon, Container, ProgressBar, RoundButton } from '../../components';
 import { colors } from '../../styles';
+import { formatClock } from '../../utils/formatClock';
 import ArtworkStack from './ArtworkStack';
 import CoverBackdrop from './CoverBackdrop';
 import CrossfadePlayer from './CrossfadePlayer';
@@ -59,11 +56,6 @@ const HEART_BUTTON_SIZE = 40;
 
 const LAST_TRACK = TRACKS.length - 1;
 const COVERS = TRACKS.map((track) => track.cover);
-
-function formatTime(seconds: number): string {
-  const whole = Math.max(0, Math.floor(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-}
 
 /**
  * A playlist you move through by swiping the artwork (or with the skip
@@ -236,44 +228,31 @@ const Crossfade: FC = () => {
                     {track.artist}
                   </Text>
                 </View>
-                <Pressable
+                <RoundButton
+                  variant="glass"
+                  icon="heart"
+                  accessibilityLabel={
+                    isLiked ? 'Remove from favourites' : 'Favourite'
+                  }
                   onPress={toggleLiked}
-                  accessibilityRole="button"
-                  accessibilityLabel="Favourite"
-                  accessibilityState={{ selected: isLiked }}
-                >
-                  <LiquidGlassView
-                    interactive
-                    colorScheme="dark"
-                    style={[
-                      styles.heartButton,
-                      !isLiquidGlassSupported && styles.glassFallback,
-                    ]}
-                  >
-                    <AppIcon
-                      name="heart"
-                      size={19}
-                      color={isLiked ? colors.accent : colors.textPrimary}
-                    />
-                  </LiquidGlassView>
-                </Pressable>
+                  size={HEART_BUTTON_SIZE}
+                  iconSize={19}
+                  iconColor={isLiked ? colors.accent : colors.textPrimary}
+                />
               </View>
             </View>
           </GestureDetector>
 
           <View>
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${elapsedShare * 100}%` },
-                ]}
-              />
-            </View>
+            <ProgressBar
+              progress={elapsedShare}
+              color={colors.textPrimary}
+              style={styles.progressTrack}
+            />
             <View style={styles.times}>
-              <Text style={styles.time}>{formatTime(position)}</Text>
+              <Text style={styles.time}>{formatClock(position)}</Text>
               <Text style={styles.time}>
-                −{formatTime(duration - position)}
+                −{formatClock(duration - position)}
               </Text>
             </View>
           </View>
@@ -290,7 +269,7 @@ const Crossfade: FC = () => {
                 pressed && styles.pressed,
               ]}
             >
-              <AppIcon name="skip-back" size={30} color={colors.white} />
+              <AppIcon name="skip-back" size={30} color={colors.textPrimary} />
             </Pressable>
             <Pressable
               onPress={isPlaying ? pause : play}
@@ -322,7 +301,11 @@ const Crossfade: FC = () => {
                 pressed && styles.pressed,
               ]}
             >
-              <AppIcon name="skip-forward" size={30} color={colors.white} />
+              <AppIcon
+                name="skip-forward"
+                size={30}
+                color={colors.textPrimary}
+              />
             </Pressable>
           </View>
         </View>
@@ -367,28 +350,11 @@ const styles = StyleSheet.create({
   artist: {
     marginTop: 2,
     fontSize: 15,
-    color: 'rgba(238, 240, 255, 0.65)',
-  },
-  heartButton: {
-    width: HEART_BUTTON_SIZE,
-    height: HEART_BUTTON_SIZE,
-    borderRadius: HEART_BUTTON_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glassFallback: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    color: colors.textSecondary,
   },
   progressTrack: {
-    height: 4,
     marginHorizontal: TEXT_INSET,
-    borderRadius: 2,
-    overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.textPrimary,
   },
   times: {
     marginTop: 6,
@@ -399,7 +365,7 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 12,
     fontVariant: ['tabular-nums'],
-    color: 'rgba(238, 240, 255, 0.65)',
+    color: colors.textSecondary,
   },
   controls: {
     flexDirection: 'row',

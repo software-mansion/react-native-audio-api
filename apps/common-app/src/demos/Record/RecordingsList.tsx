@@ -1,15 +1,11 @@
-import {
-  isLiquidGlassSupported,
-  LiquidGlassView,
-} from '@callstack/liquid-glass';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AudioBufferSourceNode, AudioManager } from 'react-native-audio-api';
 
-import { AppIcon, ListSection } from '../../components';
+import { ListSection, RoundButton } from '../../components';
 import { audioContext } from '../../singletons';
 import { colors } from '../../styles';
-import { formatDuration } from './levels';
+import { formatClock } from '../../utils/formatClock';
 import { Recording, useRecordings } from './recordingsStore';
 
 const rowPadding = 14;
@@ -62,30 +58,18 @@ const RecordingRow: React.FC<RecordingRowProps> = ({
         {recording.title}
       </Text>
       <Text style={styles.subtitle}>
-        {dayLabel(recording.createdAt)} · {formatDuration(recording.duration)}
+        {dayLabel(recording.createdAt)} · {formatClock(recording.duration)}
       </Text>
     </View>
     <Preview levels={recording.preview} />
-    <Pressable
-      onPress={() => onTogglePlay(recording)}
-      accessibilityRole="button"
+    <RoundButton
+      variant="glass"
+      icon={isPlaying ? 'pause' : 'play'}
       accessibilityLabel={`${isPlaying ? 'Stop' : 'Play'} ${recording.title}`}
-    >
-      <LiquidGlassView
-        interactive
-        colorScheme="dark"
-        style={[
-          styles.playButton,
-          !isLiquidGlassSupported && styles.playButtonFallback,
-        ]}
-      >
-        <AppIcon
-          name={isPlaying ? 'pause' : 'play'}
-          size={15}
-          color={colors.textPrimary}
-        />
-      </LiquidGlassView>
-    </Pressable>
+      onPress={() => onTogglePlay(recording)}
+      size={playButtonSize}
+      iconSize={15}
+    />
   </View>
 );
 
@@ -99,13 +83,11 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ disabled }) => {
   const recordings = useRecordings();
   const [playingId, setPlayingId] = useState<number | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped by every stop, so a play still awaiting the session sees it lost.
+  const playGenerationRef = useRef(0);
 
   const stop = useCallback(() => {
-    if (endTimerRef.current) {
-      clearTimeout(endTimerRef.current);
-      endTimerRef.current = null;
-    }
+    playGenerationRef.current += 1;
     try {
       // A source that already ended may throw; there is nothing left to stop.
       sourceRef.current?.stop();
@@ -123,16 +105,25 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ disabled }) => {
         return;
       }
 
+      const generation = playGenerationRef.current;
       await AudioManager.setAudioSessionActivity(true);
+      if (generation !== playGenerationRef.current) {
+        return;
+      }
+
       const source = audioContext.createBufferSource();
       source.buffer = recording.buffer;
       source.connect(audioContext.destination);
+      source.onended = () => {
+        if (sourceRef.current === source) {
+          stop();
+        }
+      };
       source.start(audioContext.currentTime);
       // The source must stay referenced until it ends, or it can be collected
       // mid-playback.
       sourceRef.current = source;
       setPlayingId(recording.id);
-      endTimerRef.current = setTimeout(stop, recording.duration * 1000 + 100);
     },
     [disabled, playingId, stop]
   );
@@ -217,15 +208,5 @@ const styles = StyleSheet.create({
     width: 2.2,
     borderRadius: 1.1,
     backgroundColor: colors.textMuted,
-  },
-  playButton: {
-    width: playButtonSize,
-    height: playButtonSize,
-    borderRadius: playButtonSize / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playButtonFallback: {
-    backgroundColor: colors.surfacePressed,
   },
 });

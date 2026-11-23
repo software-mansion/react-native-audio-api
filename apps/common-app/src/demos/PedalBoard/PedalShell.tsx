@@ -1,8 +1,16 @@
 import React, { PropsWithChildren } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AudioContext, GainNode } from 'react-native-audio-api';
 import Svg, { Line, Path } from 'react-native-svg';
 
-import { colors } from '../../styles';
+import { colors, layout } from '../../styles';
+
+/** The board slot a pedal is wired into, between `inputNode` and `outputNode`. */
+export interface PedalProps {
+  context: AudioContext;
+  inputNode: GainNode;
+  outputNode: GainNode;
+}
 
 type PedalShellProps = PropsWithChildren<{
   name: string;
@@ -29,7 +37,7 @@ const PedalShell: React.FC<PedalShellProps> = ({
   <View
     style={[
       styles.body,
-      { borderColor: isActive ? `${color}66` : colors.listSeparator },
+      { borderColor: isActive ? `${color}66` : colors.track },
     ]}
   >
     <View style={[styles.stripe, { backgroundColor: color }]} />
@@ -37,7 +45,10 @@ const PedalShell: React.FC<PedalShellProps> = ({
       <View>
         <Text style={styles.brand}>RN AUDIO API</Text>
         <Text
-          style={[styles.model, { color: isActive ? color : colors.white }]}
+          style={[
+            styles.model,
+            { color: isActive ? color : colors.textPrimary },
+          ]}
         >
           {name}
         </Text>
@@ -46,10 +57,10 @@ const PedalShell: React.FC<PedalShellProps> = ({
         <View
           style={[
             styles.led,
+            isActive && styles.ledLit,
             {
               backgroundColor: isActive ? color : colors.recess,
               shadowColor: color,
-              shadowOpacity: isActive ? 0.9 : 0,
             },
           ]}
         />
@@ -102,7 +113,7 @@ const PowerGlyph: React.FC<{ color: string; size: number }> = ({
 const styles = StyleSheet.create({
   body: {
     backgroundColor: colors.surface,
-    borderRadius: 22,
+    borderRadius: layout.cardRadius,
     borderWidth: 1,
     paddingVertical: 16,
     paddingHorizontal: 18,
@@ -144,6 +155,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 6,
+    shadowOpacity: 0,
+  },
+  ledLit: {
+    shadowOpacity: 0.9,
   },
   stomp: {
     width: stompSize,
@@ -151,7 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: stompSize / 2,
     backgroundColor: colors.surfacePressed,
     borderWidth: 1,
-    borderColor: colors.listSeparator,
+    borderColor: colors.track,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -2,7 +2,6 @@ import React, { Children, PropsWithChildren } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, layout } from '../styles';
-import withSeparators from '../utils/withSeparators';
 
 type ListSectionProps = PropsWithChildren<{
   title?: string;
@@ -30,15 +29,16 @@ const ListSection: React.FC<ListSectionProps> = ({
         </Text>
       )}
       <View style={styles.group}>
-        {withSeparators(
-          rows,
-          (index) => (
-            <View
-              key={`separator-${index}`}
-              style={[styles.separator, { marginLeft: separatorInset }]}
-            />
-          ),
-          (row) => row
+        {rows.flatMap((row, index) =>
+          index === 0
+            ? [row]
+            : [
+                <View
+                  key={`separator-${index}`}
+                  style={[styles.separator, { marginLeft: separatorInset }]}
+                />,
+                row,
+              ]
         )}
       </View>
     </View>
@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.listSeparator,
+    backgroundColor: colors.track,
   },
 });

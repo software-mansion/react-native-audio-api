@@ -1,21 +1,9 @@
+import { sleep } from '../sleep';
 import { POSITION_POLL_INTERVAL_MS } from './constants';
 import type { PlaybackProgressStats, SerializedError } from './types';
 
-export async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export function formatDurationMs(durationMs: number): string {
   return `${(durationMs / 1000).toFixed(2)}s`;
-}
-
-export function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
 }
 
 export function getPlaybackProgressThreshold(durationSeconds: number): number {

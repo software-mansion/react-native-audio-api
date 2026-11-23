@@ -39,6 +39,8 @@ export default AudioIOPlayground;
 
 const styles = StyleSheet.create({
   panels: {
-    paddingHorizontal: 2 * layout.spacing,
+    gap: 12,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: 32,
   },
 });

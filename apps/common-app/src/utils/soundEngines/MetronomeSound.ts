@@ -31,6 +31,7 @@ class MetronomeSound implements SoundEngine {
 
     oscillator.start(time);
     oscillator.stop(time + this.decay);
+    oscillator.onended = () => gain.disconnect();
   }
 }
 

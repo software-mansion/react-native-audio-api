@@ -7,17 +7,23 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  AudioBuffer,
   AudioBufferSourceNode,
-  AudioContext,
   AudioParam,
   PannerNode,
 } from 'react-native-audio-api';
 
-import { Button, Container, Slider, Spacer } from '../../components';
-import { colors, layout } from '../../styles';
+import {
+  Button,
+  Container,
+  ProgressBar,
+  SegmentedControl,
+  Slider,
+  type SegmentedControlOption,
+} from '../../components';
+import { colors, layout, typography } from '../../styles';
+import { useAudioContext, useDecodedAudio } from '../../utils/audio';
 
 const MUSIC_URL =
   'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
@@ -28,6 +34,11 @@ const VIEW_SCALE = VIEW_SIZE / 2 / 4.5;
 const SPEAKER_SIZE = 32;
 
 type Mode = 'figureEight' | 'guided';
+
+const modeOptions: SegmentedControlOption<Mode>[] = [
+  { value: 'figureEight', label: 'Figure 8' },
+  { value: 'guided', label: 'Guided test' },
+];
 
 type Vec3 = { x: number; y: number; z: number };
 
@@ -347,26 +358,20 @@ const LivePanel: FC<LivePanelProps> = ({
   return (
     <>
       {mode === 'guided' && (
-        <>
-          <Text style={styles.section}>
+        <View style={styles.stepHeader}>
+          <Text style={typography.sectionTitle}>
             Step {stepIndex + 1}/{GUIDED_STEPS.length}: {step.title}
           </Text>
-          <View style={styles.progressTrack}>
-            <View
-              style={[styles.progressFill, { width: `${stepProgress * 100}%` }]}
-            />
-          </View>
-          <Spacer.Vertical size={8} />
-        </>
+          <ProgressBar progress={stepProgress} />
+        </View>
       )}
 
-      <Text style={styles.expectLabel}>You should hear</Text>
-      <Text style={styles.expect}>{expectation}</Text>
-      <Text style={styles.facing}>{describeFacing(pose)}</Text>
-      <Spacer.Vertical size={12} />
+      <View>
+        <Text style={typography.caption}>You should hear</Text>
+        <Text style={styles.expect}>{expectation}</Text>
+        <Text style={styles.facing}>{describeFacing(pose)}</Text>
+      </View>
       <BalanceMeter balance={expectedBalance(pose.position)} />
-      <Spacer.Vertical size={16} />
-
       <TopDownView pose={pose} showPath={mode === 'figureEight'} />
     </>
   );
@@ -374,14 +379,13 @@ const LivePanel: FC<LivePanelProps> = ({
 
 const PannerNodeExample: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('figureEight');
   const [periodSeconds, setPeriodSeconds] = useState(8);
   const [stepIndex, setStepIndex] = useState(0);
   const frameSinkRef = useRef<FrameSink | null>(null);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const musicBufferRef = useRef<AudioBuffer | null>(null);
+  const audioContext = useAudioContext();
+  const musicBuffer = useDecodedAudio(audioContext, MUSIC_URL);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const pannerRef = useRef<PannerNode | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -396,27 +400,16 @@ const PannerNodeExample: FC = () => {
   /** Recent frames by animation time, oldest first, still waiting to be heard. */
   const pendingFramesRef = useRef<{ time: number; frame: Frame }[]>([]);
 
-  useEffect(() => {
-    const ctx = new AudioContext();
-    audioContextRef.current = ctx;
-    fetch(MUSIC_URL)
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
-      .then((buffer) => {
-        musicBufferRef.current = buffer;
-      })
-      .catch((error) => {
-        console.error('PannerNode: failed to load music', error);
-      })
-      .finally(() => setIsLoading(false));
-    return () => {
+  useEffect(
+    () => () => {
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
       }
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
-    };
-  }, []);
+      sourceRef.current?.disconnect();
+      pannerRef.current?.disconnect();
+    },
+    []
+  );
 
   const goToStep = (index: number) => {
     const wrapped = (index + GUIDED_STEPS.length) % GUIDED_STEPS.length;
@@ -425,15 +418,14 @@ const PannerNodeExample: FC = () => {
   };
 
   const tick = () => {
-    const ctx = audioContextRef.current;
     const panner = pannerRef.current;
-    if (!ctx || !panner) {
+    if (!panner) {
       return;
     }
     const wallTime = performance.now() / 1000;
     const wallElapsed = wallTime - lastWallTimeRef.current;
     lastWallTimeRef.current = wallTime;
-    const audioTime = ctx.currentTime;
+    const audioTime = audioContext.currentTime;
     const now = Math.max(
       lastTimeRef.current,
       audioTime,
@@ -479,7 +471,8 @@ const PannerNodeExample: FC = () => {
         stepProgress: progress,
       },
     });
-    const audibleTime = now - ctx.outputLatency - POSE_SMOOTHING_SECONDS;
+    const audibleTime =
+      now - audioContext.outputLatency - POSE_SMOOTHING_SECONDS;
     while (pending.length > 1 && pending[1].time <= audibleTime) {
       pending.shift();
     }
@@ -488,15 +481,14 @@ const PannerNodeExample: FC = () => {
   };
 
   const start = () => {
-    const ctx = audioContextRef.current;
-    if (!ctx || !musicBufferRef.current) {
+    if (!musicBuffer) {
       return;
     }
-    const source = ctx.createBufferSource();
-    source.buffer = musicBufferRef.current;
+    const source = audioContext.createBufferSource();
+    source.buffer = musicBuffer;
     source.loop = true;
 
-    const panner = ctx.createPanner();
+    const panner = audioContext.createPanner();
     panner.distanceModel = 'inverse';
     panner.refDistance = 1;
     panner.rolloffFactor = 1;
@@ -505,11 +497,11 @@ const PannerNodeExample: FC = () => {
     panner.coneOuterGain = 0.1;
 
     source.connect(panner);
-    panner.connect(ctx.destination);
+    panner.connect(audioContext.destination);
     sourceRef.current = source;
     pannerRef.current = panner;
 
-    lastTimeRef.current = ctx.currentTime;
+    lastTimeRef.current = audioContext.currentTime;
     lastWallTimeRef.current = performance.now() / 1000;
     pendingFramesRef.current = [];
     goToStep(0);
@@ -523,6 +515,8 @@ const PannerNodeExample: FC = () => {
       frameRef.current = null;
     }
     sourceRef.current?.stop();
+    sourceRef.current?.disconnect();
+    pannerRef.current?.disconnect();
     sourceRef.current = null;
     pannerRef.current = null;
   };
@@ -544,35 +538,19 @@ const PannerNodeExample: FC = () => {
   return (
     <Container>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>PannerNode</Text>
-        <Text style={styles.hint}>
+        <Text style={typography.hint}>
           Use headphones. Only left/right balance and loudness are rendered.
         </Text>
-        <Spacer.Vertical size={16} />
-
-        <View style={styles.row}>
-          {(['figureEight', 'guided'] as const).map((option) => (
-            <Pressable
-              key={option}
-              style={[styles.chip, mode === option && styles.chipActive]}
-              onPress={() => selectMode(option)}
-            >
-              <Text style={styles.chipText}>
-                {option === 'figureEight' ? 'Figure 8' : 'Guided test'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Spacer.Vertical size={12} />
-
-        <View style={styles.row}>
-          <Button
-            onPress={handlePlayPause}
-            title={isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play'}
-            disabled={isLoading}
-          />
-        </View>
-        <Spacer.Vertical size={20} />
+        <SegmentedControl
+          options={modeOptions}
+          value={mode}
+          onChange={selectMode}
+        />
+        <Button
+          onPress={handlePlayPause}
+          title={!musicBuffer ? 'Loading music…' : isPlaying ? 'Stop' : 'Play'}
+          disabled={!musicBuffer}
+        />
 
         <LivePanel
           sinkRef={frameSinkRef}
@@ -580,7 +558,6 @@ const PannerNodeExample: FC = () => {
           mode={mode}
           stepIndex={stepIndex}
         />
-        <Spacer.Vertical size={16} />
 
         {mode === 'figureEight' ? (
           <Slider
@@ -593,21 +570,21 @@ const PannerNodeExample: FC = () => {
           />
         ) : (
           <View style={styles.row}>
-            <Pressable
-              style={styles.chip}
+            <Button
+              title="Previous"
               onPress={() => goToStep(stepIndex - 1)}
-            >
-              <Text style={styles.chipText}>Previous</Text>
-            </Pressable>
-            <Pressable style={styles.chip} onPress={() => goToStep(stepIndex)}>
-              <Text style={styles.chipText}>Repeat</Text>
-            </Pressable>
-            <Pressable
-              style={styles.chip}
+              minWidth={0}
+            />
+            <Button
+              title="Repeat"
+              onPress={() => goToStep(stepIndex)}
+              minWidth={0}
+            />
+            <Button
+              title="Next"
               onPress={() => goToStep(stepIndex + 1)}
-            >
-              <Text style={styles.chipText}>Next</Text>
-            </Pressable>
+              minWidth={0}
+            />
           </View>
         )}
       </ScrollView>
@@ -617,33 +594,12 @@ const PannerNodeExample: FC = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
+    gap: 16,
     paddingVertical: layout.spacing,
     paddingBottom: 40,
   },
-  title: {
-    color: colors.white,
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  hint: {
-    color: colors.white,
-    opacity: 0.7,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  section: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    opacity: 0.85,
-  },
-  expectLabel: {
-    color: colors.white,
-    opacity: 0.6,
-    fontSize: 12,
-    textTransform: 'uppercase',
+  stepHeader: {
+    gap: 8,
   },
   expect: {
     color: colors.yellow,
@@ -653,8 +609,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   facing: {
-    color: colors.white,
-    opacity: 0.8,
+    color: colors.textSecondary,
     fontSize: 14,
     marginTop: 4,
   },
@@ -664,44 +619,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: layout.radius,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  chipActive: {
-    backgroundColor: colors.main,
-    borderColor: colors.main,
-  },
-  chipText: {
-    color: colors.white,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.backgroundLight,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.main,
-  },
   meterLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
   meterLabel: {
-    color: colors.white,
-    opacity: 0.6,
+    color: colors.textMuted,
     fontSize: 12,
   },
   meterTrack: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.track,
     justifyContent: 'center',
   },
   meterCentre: {
@@ -709,7 +639,7 @@ const styles = StyleSheet.create({
     left: '50%',
     width: 1,
     height: '100%',
-    backgroundColor: colors.border,
+    backgroundColor: colors.textMuted,
   },
   meterMarker: {
     position: 'absolute',
@@ -723,15 +653,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: VIEW_SIZE,
     height: VIEW_SIZE,
-    borderRadius: layout.radius,
-    backgroundColor: colors.backgroundLight,
+    borderRadius: layout.cardRadius,
+    backgroundColor: colors.surface,
   },
   pathDot: {
     position: 'absolute',
     width: 2,
     height: 2,
     borderRadius: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.textMuted,
   },
   head: {
     position: 'absolute',
@@ -740,7 +670,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.textSecondary,
     alignItems: 'center',
   },
   nose: {
@@ -749,20 +679,20 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.textSecondary,
   },
   earLeft: {
     position: 'absolute',
     left: -14,
     top: 6,
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 12,
   },
   earRight: {
     position: 'absolute',
     right: -14,
     top: 6,
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 12,
   },
   speaker: {
@@ -794,8 +724,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     alignSelf: 'center',
-    color: colors.white,
-    opacity: 0.5,
+    color: colors.textMuted,
     fontSize: 10,
   },
 });

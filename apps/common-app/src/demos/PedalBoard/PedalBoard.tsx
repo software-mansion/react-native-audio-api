@@ -8,11 +8,10 @@ import {
   View,
 } from 'react-native';
 import {
-  AudioBufferSourceNode,
   AudioBuffer,
-  GainNode,
-  AudioRecorder,
+  AudioBufferSourceNode,
   AudioManager,
+  AudioRecorder,
 } from 'react-native-audio-api';
 
 import { Container, RoundButton } from '../../components';
@@ -22,135 +21,122 @@ import AutoWahPedal from './AutoWahPedal';
 import OverdrivePedal from './OverdrivePedal';
 import ReverbPedal from './ReverbPedal';
 
-const URL = 'https://files.catbox.moe/xbj6gn.flac';
-const PEDALS = [
-  { id: 0, component: OverdrivePedal },
-  { id: 1, component: AutoWahPedal },
-  { id: 2, component: ReverbPedal },
-];
+const LOOP_URL = 'https://files.catbox.moe/xbj6gn.flac';
+const LOOP_FETCH_OPTIONS = {
+  headers: {
+    'User-Agent':
+      'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
+  },
+};
+const PEDALS = [OverdrivePedal, AutoWahPedal, ReverbPedal];
 
-let permissionsGranted = false;
+let hasRecordingPermission = false;
 
 export default function PedalBoard() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loop, setLoop] = useState<AudioBuffer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
-  const sourceNodeRef = useRef<AudioBufferSourceNode | AudioRecorder>(null);
-  const recorderRef = useRef<AudioRecorder | null>(null);
-  const pedalInputNodesRef = useRef<GainNode[]>([]);
-  const pedalOutputNodesRef = useRef<GainNode[]>([]);
+  const [recorder] = useState(() => new AudioRecorder());
+  const [slots] = useState(() =>
+    PEDALS.map(() => ({
+      input: audioContext.createGain(),
+      output: audioContext.createGain(),
+    }))
+  );
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  // Each pedal routes its own slot's input to its output; the board chains
+  // the slots and owns every edge out of their outputs.
+  useEffect(() => {
+    slots.forEach(({ output }, index) =>
+      output.connect(slots[index + 1]?.input ?? audioContext.destination)
+    );
+
+    return () => {
+      const source = sourceRef.current;
+      if (source) {
+        source.onended = null;
+        source.stop();
+        source.disconnect();
+      }
+      if (recorder.isRecording()) {
+        recorder.stop().catch((error) => console.warn(error));
+      }
+      recorder.disconnect();
+      slots.forEach(({ output }) => output.disconnect());
+    };
+  }, [slots, recorder]);
 
   useEffect(() => {
-    const init = async () => {
-      setIsLoading(true);
-      AudioManager.setSystemOptions({
-        ios: {
-          category: 'playAndRecord',
-          mode: 'default',
-        },
-      });
-      AudioManager.setAudioSessionActivity(true);
+    let isCancelled = false;
+    AudioManager.setSystemOptions({
+      ios: { category: 'playAndRecord', mode: 'default' },
+    });
+    AudioManager.setAudioSessionActivity(true);
 
-      try {
-        // Load audio file
-        const audioBuffer = await fetch(URL, {
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
-          },
-        })
-          .then((response) => response.arrayBuffer())
-          .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
+    audioContext
+      .decodeAudioData(LOOP_URL, LOOP_FETCH_OPTIONS)
+      .then((buffer) => !isCancelled && setLoop(buffer))
+      .catch((error) => console.error('Error loading audio:', error))
+      .finally(() => !isCancelled && setIsLoading(false));
 
-        for (let i = 0; i < PEDALS.length; i++) {
-          const input = audioContext.createGain();
-          const output = audioContext.createGain();
-          pedalInputNodesRef.current.push(input);
-          pedalOutputNodesRef.current.push(output);
-        }
-        setAudioBuffer(audioBuffer);
-        sourceNodeRef.current = audioContext.createBufferSource();
-        sourceNodeRef.current.buffer = audioBuffer;
-        handleConnections();
-      } catch (error) {
-        console.error('Error loading audio:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    init();
     return () => {
-      sourceNodeRef.current?.disconnect();
+      isCancelled = true;
     };
   }, []);
 
-  const handleConnections = () => {
-    if (!sourceNodeRef.current) {
+  const startLoop = () => {
+    if (!loop) {
       return;
     }
-    const sourceNode = sourceNodeRef.current;
-    if (sourceNode instanceof AudioRecorder) {
-      sourceNode.connect(audioContext, pedalInputNodesRef.current[0]);
-    } else {
-      sourceNode.connect(pedalInputNodesRef.current[0]);
-    }
-    for (let i = 0; i < PEDALS.length; i++) {
-      pedalInputNodesRef.current[i].connect(pedalOutputNodesRef.current[i]);
-    }
-
-    for (let i = 0; i < PEDALS.length - 1; i++) {
-      pedalOutputNodesRef.current[i].connect(pedalInputNodesRef.current[i + 1]);
-    }
-    pedalOutputNodesRef.current[PEDALS.length - 1].connect(
-      audioContext.destination
-    );
-  };
-
-  const togglePlayback = () => {
-    if (isPlaying) {
-      sourceNodeRef.current?.disconnect();
+    const source = audioContext.createBufferSource();
+    source.buffer = loop;
+    source.connect(slots[0].input);
+    source.onended = () => {
+      source.disconnect();
+      sourceRef.current = null;
       setIsPlaying(false);
-    } else {
-      if (!audioBuffer) {
-        return;
-      }
-      sourceNodeRef.current = audioContext.createBufferSource();
-      sourceNodeRef.current.buffer = audioBuffer;
-      sourceNodeRef.current.connect(pedalInputNodesRef.current[0]);
-      sourceNodeRef.current.start();
-      setIsPlaying(true);
-    }
+    };
+    source.start();
+    sourceRef.current = source;
+    setIsPlaying(true);
   };
+
+  const togglePlayback = () =>
+    isPlaying ? sourceRef.current?.stop() : startLoop();
 
   const toggleRecording = async () => {
     if (isRecording) {
-      await recorderRef.current?.stop();
-      sourceNodeRef.current?.disconnect();
+      await recorder.stop().catch((error) => console.warn(error));
+      recorder.disconnect();
       setIsRecording(false);
-    } else {
-      if (!permissionsGranted) {
-        const recPerm = await AudioManager.requestRecordingPermissions();
-        permissionsGranted = recPerm === 'Granted';
-      }
-      if (permissionsGranted) {
-        const recorder = new AudioRecorder();
-        sourceNodeRef.current = recorder;
-        recorderRef.current = recorder;
-        recorder.connect(audioContext, pedalInputNodesRef.current[0]);
-        if (audioContext.state === 'suspended') {
-          audioContext.resume();
-        }
-        await recorder.start();
-        setIsRecording(true);
-      } else {
-        Alert.alert(
-          'Insufficient permissions!',
-          'You need to grant audio recording permissions to use this feature.'
-        );
-      }
+      return;
+    }
+
+    if (!hasRecordingPermission) {
+      hasRecordingPermission =
+        (await AudioManager.requestRecordingPermissions()) === 'Granted';
+    }
+    if (!hasRecordingPermission) {
+      Alert.alert(
+        'Insufficient permissions!',
+        'You need to grant audio recording permissions to use this feature.'
+      );
+      return;
+    }
+
+    recorder.connect(audioContext, slots[0].input);
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    try {
+      await recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      recorder.disconnect();
+      Alert.alert('Could not start the microphone', String(error));
     }
   };
 
@@ -167,17 +153,14 @@ export default function PedalBoard() {
             contentContainerStyle={styles.board}
             showsVerticalScrollIndicator={false}
           >
-            {PEDALS.map((pedal, index) => {
-              const PedalComponent = pedal.component;
-              return (
-                <PedalComponent
-                  key={pedal.id}
-                  context={audioContext}
-                  inputNode={pedalInputNodesRef.current[index]}
-                  outputNode={pedalOutputNodesRef.current[index]}
-                />
-              );
-            })}
+            {PEDALS.map((Pedal, index) => (
+              <Pedal
+                key={index}
+                context={audioContext}
+                inputNode={slots[index].input}
+                outputNode={slots[index].output}
+              />
+            ))}
           </ScrollView>
           {/* Both sources feed the first pedal, so only one runs at a time. */}
           <View style={styles.transport}>
@@ -193,7 +176,7 @@ export default function PedalBoard() {
               label={isRecording ? 'Stop' : 'Live mic'}
               onPress={toggleRecording}
               disabled={isPlaying}
-              color={colors.main}
+              color={colors.blue}
               variant={isRecording ? 'solid' : 'outline'}
             />
           </View>
@@ -226,6 +209,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
     borderTopWidth: 1,
-    borderTopColor: colors.listSeparator,
+    borderTopColor: colors.track,
   },
 });

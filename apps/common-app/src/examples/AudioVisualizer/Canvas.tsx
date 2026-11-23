@@ -24,36 +24,22 @@ const CanvasContext = createContext<CanvasContext>({
 });
 
 const Canvas: React.FC<PropsWithChildren> = ({ children }) => {
-  const [squareSide, setSquareSide] = useState(0);
-  const [renderSize, setRenderSize] = useState<Size>({ width: 0, height: 0 });
-
-  const ready = squareSide > 0;
+  const [side, setSide] = useState(0);
 
   const context = useMemo(
-    () => ({
-      ready,
-      size: renderSize,
-    }),
-    [ready, renderSize]
+    () => ({ ready: side > 0, size: { width: side, height: side } }),
+    [side]
   );
 
   const handleWrapperLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
-
-    if (width <= 0 || height <= 0) {
-      return;
-    }
-
-    const side = Math.min(width, height);
-
-    setSquareSide(side);
-    setRenderSize({ width: side, height: side });
+    setSide(Math.max(0, Math.min(width, height)));
   };
 
   return (
     <View style={styles.wrapper} onLayout={handleWrapperLayout}>
-      {ready ? (
-        <SKCanvas style={{ width: squareSide, height: squareSide }}>
+      {context.ready ? (
+        <SKCanvas style={{ width: side, height: side }}>
           <CanvasContext.Provider value={context}>
             {children}
           </CanvasContext.Provider>

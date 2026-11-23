@@ -1,11 +1,8 @@
-import {
-  isLiquidGlassSupported,
-  LiquidGlassView,
-} from '@callstack/liquid-glass';
 import { FC } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors } from '../styles';
+import GlassSurface from './GlassSurface';
 
 interface ButtonProps {
   title: string;
@@ -39,15 +36,10 @@ const Button: FC<ButtonProps> = ({
       style={styles.hitArea}
     >
       {({ pressed }) => (
-        <LiquidGlassView
+        <GlassSurface
           interactive={!disabled}
-          colorScheme="dark"
-          style={[
-            styles.capsule,
-            { minWidth },
-            !isLiquidGlassSupported && styles.fallback,
-            !isLiquidGlassSupported && pressed && styles.fallbackPressed,
-          ]}
+          pressed={pressed}
+          style={[styles.capsule, { minWidth }]}
         >
           <Text
             style={[styles.title, disabled && styles.titleDisabled]}
@@ -55,7 +47,7 @@ const Button: FC<ButtonProps> = ({
           >
             {title}
           </Text>
-        </LiquidGlassView>
+        </GlassSurface>
       )}
     </Pressable>
   );
@@ -71,12 +63,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fallback: {
-    backgroundColor: colors.surface,
-  },
-  fallbackPressed: {
-    backgroundColor: colors.surfacePressed,
   },
   title: {
     color: colors.textPrimary,

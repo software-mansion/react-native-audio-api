@@ -1,14 +1,21 @@
-import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme,
+  LinkingOptions,
+  NavigationContainer,
+} from '@react-navigation/native';
 import type { FC } from 'react';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import RootStackNavigator from './navigation/RootStack';
+import RootStackNavigator, {
+  type RootStackParamList,
+} from './navigation/RootStack';
 
-const linking = {
+const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['audioapi-example://'],
   config: {
+    initialRouteName: 'MainTabs',
     screens: {
       RecordDemo: 'record',
     },
