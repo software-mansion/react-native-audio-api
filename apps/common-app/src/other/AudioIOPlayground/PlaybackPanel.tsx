@@ -26,7 +26,7 @@ function fileName(path: string): string {
 }
 
 const PlaybackPanel: FC<PlaybackPanelProps> = ({
-  playback: { status, options, play, pause, resume, stop },
+  playback: { status, options, play, pause, resume, stop, disconnect },
   lastTakePath,
 }) => {
   const [sourceName, setSourceName] =
@@ -78,6 +78,12 @@ const PlaybackPanel: FC<PlaybackPanelProps> = ({
         title="Stop"
         call={PLAYBACK_CALLS.stop}
         onPress={stop}
+      />
+      <CallButton
+        testID="playback-disconnect"
+        title="Disconnect"
+        call={PLAYBACK_CALLS.disconnect}
+        onPress={disconnect}
       />
       <StatusText testID="playback-options" text={JSON.stringify(options)} />
       <Call text={PLAYBACK_CALLS.options} />
