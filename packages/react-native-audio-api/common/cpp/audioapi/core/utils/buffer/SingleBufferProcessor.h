@@ -7,6 +7,7 @@
 #include <audioapi/utils/FatFunction.hpp>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace audioapi {
@@ -45,6 +46,12 @@ class SingleBufferProcessor : public BufferProcessorBase {
     buffer_ = std::move(buffer);
   }
 
+  /// @brief Limit playback to this many buffer frames, counted across loop iterations.
+  /// @note A spent budget is a boundary the processor stops at, even when looping.
+  void setFrameBudget(double frames) {
+    frameBudget_ = frames;
+  }
+
  protected:
   CursorState advance(double rate) override;
   void consume(size_t frames) override;
@@ -60,6 +67,18 @@ class SingleBufferProcessor : public BufferProcessorBase {
   bool loop_ = false;
   size_t startFrame_ = 0;
   size_t endFrame_ = 0;
+  /// Fractional, because interpolated playback spends `|rate|` buffer frames per output frame.
+  std::optional<double> frameBudget_;
+
+  [[nodiscard]] bool isFrameBudgetSpent() const {
+    return frameBudget_ && *frameBudget_ <= 0.0;
+  }
+
+  void spendFrameBudget(double frames) {
+    if (frameBudget_) {
+      *frameBudget_ -= frames;
+    }
+  }
 };
 
 } // namespace audioapi

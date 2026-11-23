@@ -30,6 +30,9 @@ class MiniAudioDecoder : public AudioDecoderBackend {
 
  private:
   void teardownDecoder();
+  /// Drops a decoder whose ma_decoder_init_* failed. Init has already released what it
+  /// acquired, so uninit would close that file a second time.
+  void discardFailedDecoder();
 
   std::unique_ptr<ma_decoder> decoder_;
   EncodedBytes memoryCopy_;

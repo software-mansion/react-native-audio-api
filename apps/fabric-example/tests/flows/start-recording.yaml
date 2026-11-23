@@ -1,0 +1,9 @@
+executionPrerequisite: Audio I/O Playground is open, scrolled to the top, with an idle recorder
+steps:
+  - echo: Apply the selected session preset and activate the audio session
+  - tap: { id: system-apply }
+  - tap: { id: system-activate }
+  - echo: Scroll to the Recorder panel and start recording
+  - scroll-to: { target: { id: recorder-start } }
+  - tap: { id: recorder-start }
+  - await: { text: { in: { id: recorder-status }, matches: '^recording ' } }

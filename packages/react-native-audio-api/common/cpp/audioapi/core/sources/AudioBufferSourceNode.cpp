@@ -10,6 +10,7 @@
 
 #include <audioapi/core/utils/buffer/SingleBufferProcessor.h>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -44,7 +45,8 @@ void AudioBufferSourceNode::setLoopSkip(bool loopSkip) {
 
 void AudioBufferSourceNode::setLoopStart(double loopStart) {
   if (loopSkip_) {
-    vReadIndex_ = loopStart * getContextSampleRate();
+    vReadIndex_ =
+        loopStart * (buffer_ != nullptr ? buffer_->getSampleRate() : getContextSampleRate());
   }
   loopStart_ = loopStart;
 }
@@ -77,29 +79,39 @@ void AudioBufferSourceNode::setBuffer(
   buffer_ = buffer;
   audioBuffer_ = audioBuffer;
   processor_->setBuffer(buffer_);
+  applyStartToBuffer();
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
   AudioScheduledSourceNode::start(when);
 
-  if (duration > 0) {
-    AudioScheduledSourceNode::stop(when + duration);
-  }
+  // Spec: both wait for a buffer assigned after start().
+  startAwaitingBuffer_ = StartArguments{
+      .offset = offset,
+      .duration =
+          duration >= 0 && std::isfinite(duration) ? std::optional(duration) : std::nullopt};
+  applyStartToBuffer();
+}
 
-  if (buffer_ == nullptr) {
+void AudioBufferSourceNode::applyStartToBuffer() {
+  if (buffer_ == nullptr || !startAwaitingBuffer_) {
     return;
   }
+  const auto [offset, duration] = *std::exchange(startAwaitingBuffer_, std::nullopt);
+  const auto sampleRate = buffer_->getSampleRate();
 
   // Past the (effective) loop end, or past the buffer when not looping, playback starts
   // at that boundary instead.
-  const auto sampleRate = buffer_->getSampleRate();
-  offset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
-
+  double startOffset = std::min(offset, getVirtualEndFrame(sampleRate) / sampleRate);
   if (loop_) {
-    offset = std::min(offset, loopEnd_);
+    startOffset = std::min(startOffset, loopEnd_);
   }
+  vReadIndex_ = sampleRate * startOffset;
 
-  vReadIndex_ = sampleRate * offset;
+  if (duration) {
+    // Spec: `duration` counts buffer content, not context time.
+    processor_->setFrameBudget(dsp::timeToFractionalFrames(*duration, sampleRate));
+  }
 }
 
 void AudioBufferSourceNode::disable() {
@@ -141,9 +153,10 @@ void AudioBufferSourceNode::runBufferProcessor(
     return;
   }
 
-  const float sampleRate = getContextSampleRate();
-  const double startFrame = getVirtualStartFrame(sampleRate);
-  const double endFrame = getVirtualEndFrame(sampleRate);
+  const float bufferSampleRate = buffer_->getSampleRate();
+  const double startFrame = getVirtualStartFrame(bufferSampleRate);
+  const double endFrame = getVirtualEndFrame(bufferSampleRate);
+  const double resampleRatio = bufferSampleRate / getContextSampleRate();
 
   // start(when, offset=duration) sets vReadIndex_ to endFrame, so clamp it
   if (playbackRate < 0 && vReadIndex_ >= endFrame && endFrame > startFrame) {
@@ -153,7 +166,12 @@ void AudioBufferSourceNode::runBufferProcessor(
   processor_->setPosition(vReadIndex_);
   processor_->setEndFrame(static_cast<size_t>(endFrame));
   processor_->setStartFrame(static_cast<size_t>(startFrame));
-  processor_->process(processingBuffer, startOffset, offsetLength, playbackRate, interpolate);
+  processor_->process(
+      processingBuffer,
+      startOffset,
+      offsetLength,
+      playbackRate * resampleRatio,
+      interpolate || resampleRatio != 1.0);
 
   if (processor_->atBoundary() && processor_->shouldStop()) {
     playbackState_ = PlaybackState::STOP_SCHEDULED;

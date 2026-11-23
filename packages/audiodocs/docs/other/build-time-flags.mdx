@@ -12,7 +12,7 @@ time; each adds memory overhead to the app binary. Changing a flag needs a nativ
 | Flag | Default | Effect |
 | :---- | :---: | :---- |
 | [`enableFFmpeg`](#enableffmpeg) | `false` | Links FFmpeg: remote URL streaming, HLS (`.m3u8`) and remote URL metadata. |
-| [`disableStaticExternalLibs`](#disablestaticexternallibs) | `false` | Removes the bundled Opus / Ogg / Vorbis libraries: no `ogg`, `opus` or `oga` decoding. |
+| [`disableStaticExternalLibs`](#disablestaticexternallibs) | `false` | Removes the bundled Opus / Ogg / Vorbis libraries: `ogg`, `opus` and `oga` decoding falls back to the system decoder, which on Android is much slower. |
 | [`disableAudioRecorder`](#disableaudiorecorder) | `false` | Leaves the recorder and every microphone API out of the build. |
 
 The flags apply to both iOS and Android, are independent, and can be combined.
@@ -79,8 +79,10 @@ notice that applies to FFmpeg-enabled builds.
 ```
 
 Removes the bundled Opus / Ogg / Vorbis static libraries (`libopus`, `libopusfile`, `libogg`,
-`libvorbis`, `libvorbisenc`, `libvorbisfile`), which are linked by default. Decoding `.ogg`, `.opus` or `.oga` files
-through `AudioContext.decodeAudioData` (or any other decoding path) will fail. The `OpusOgg` recording
+`libvorbis`, `libvorbisenc`, `libvorbisfile`), which are linked by default and decode `.ogg`, `.opus`
+and `.oga` files inside miniaudio. Without them, decoding those files through
+`AudioContext.decodeAudioData` (or any other decoding path) falls back to the system decoder, which
+on Android is much slower. The `OpusOgg` recording
 format and Ogg/Opus [file concatenation](../utils/file-concatenation.mdx) are affected as well.
 
 ## `disableAudioRecorder` {#disableaudiorecorder}

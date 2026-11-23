@@ -19,6 +19,8 @@ overrides:
   'react-native-audio-api-monorepo>@typescript-eslint/parser': 8.58.1
   # needed as swm/t-rex-ui pins docusaurus at 3.9.2 which is not compatible with webpack >=
   webpack: 5.101.3
+  # webpack does not load entry module and skips d3-transitions which throws on higher versions
+  d3: 7.9.0
 
 catalog:
   '@babel/core': '^7.25.2'

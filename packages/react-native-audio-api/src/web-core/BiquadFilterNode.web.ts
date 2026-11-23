@@ -1,6 +1,6 @@
 import AudioParam from './AudioParam.web';
 import AudioNode from './AudioNode.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import { InvalidAccessError } from '../errors';
 import { BiquadFilterOptions } from '../types';
 

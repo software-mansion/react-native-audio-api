@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import type { AudioContext, GainNode } from 'react-native-audio-api';
+import type { AudioContext, PannerNode } from 'react-native-audio-api';
 
 import FilterList from '@site/src/ui/FilterList';
 import SliderInput from '@site/src/ui/SliderInput';
@@ -35,23 +35,7 @@ const distanceModelOptions: Array<{ value: DistanceModel; label: string }> = [
   { value: 'exponential', label: 'Exponential' },
 ];
 
-/**
- * The web wrapper bundled with the docs predates PannerNode, so the playground builds the browser
- * node directly and splices it between two wrapper gains that the chain can connect to.
- */
-interface BrowserBackedContext {
-  context: globalThis.AudioContext;
-}
-
-interface BrowserBackedNode {
-  node: globalThis.AudioNode;
-}
-
-function browserNodeOf(node: GainNode): globalThis.AudioNode {
-  return (node as unknown as BrowserBackedNode).node;
-}
-
-function applyPannerParams(panner: globalThis.PannerNode, params: PannerParams, ctx: AudioContext): void {
+function applyPannerParams(panner: PannerNode, params: PannerParams, ctx: AudioContext): void {
   panner.distanceModel = params.distanceModel;
   panner.rolloffFactor = params.rolloffFactor;
   panner.positionX.setTargetAtTime(params.positionX, ctx.currentTime, POSITION_SMOOTHING_SECONDS);
@@ -65,10 +49,7 @@ function describePosition(x: number, z: number): string {
 }
 
 const createPannerEffect: EffectFactory<PannerParams> = (ctx, params) => {
-  const input = ctx.createGain();
-  const output = ctx.createGain();
-  const browserContext = (ctx as unknown as BrowserBackedContext).context;
-  const panner = browserContext.createPanner();
+  const panner = ctx.createPanner();
 
   panner.panningModel = 'equalpower';
   panner.maxDistance = MAX_DISTANCE;
@@ -76,18 +57,11 @@ const createPannerEffect: EffectFactory<PannerParams> = (ctx, params) => {
   panner.positionZ.value = params.positionZ;
   applyPannerParams(panner, params, ctx);
 
-  browserNodeOf(input).connect(panner);
-  panner.connect(browserNodeOf(output));
-
   return {
-    input,
-    output,
+    input: panner,
+    output: panner,
     update: (next) => applyPannerParams(panner, next, ctx),
-    dispose: () => {
-      input.disconnect();
-      panner.disconnect();
-      output.disconnect();
-    },
+    dispose: () => panner.disconnect(),
   };
 };
 

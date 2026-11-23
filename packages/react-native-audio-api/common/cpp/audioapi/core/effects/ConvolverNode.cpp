@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -91,6 +92,10 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   power = 1 / power;
   power *= std::pow(10, GAIN_CALIBRATION * 0.05f);
   power *= gainCalibrationSampleRate_ / buffer->getSampleRate();
+  // True-stereo compensation, as in Chrome.
+  if (numberOfChannels == 4) {
+    power *= 0.5f;
+  }
 
   return power;
 }
@@ -124,7 +129,18 @@ void ConvolverNode::processNode(int framesToProcess) {
   if (internalBufferIndex_ < framesToProcess) {
     performConvolution(audioBuffer_); // reads from audioBuffer_, result goes to intermediateBuffer_
     audioBuffer_->zero();
-    audioBuffer_->sum(*intermediateBuffer_);
+    if (intermediateBuffer_->getNumberOfChannels() == 4) {
+      // outputChannelMap_ puts the left terms in 0 and 2 and the right terms in 1 and 3,
+      // so channel % busChannels folds them at unity; a mono bus averages the pair.
+      const size_t busChannels = audioBuffer_->getNumberOfChannels();
+      const float gain = busChannels == 1 ? 0.5f : 1.0f;
+      for (size_t channel = 0; channel < 4; ++channel) {
+        audioBuffer_->getChannel(channel % busChannels)
+            ->sum(*intermediateBuffer_->getChannel(channel), 0, 0, RENDER_QUANTUM_SIZE, gain);
+      }
+    } else {
+      audioBuffer_->sum(*intermediateBuffer_);
+    }
 
     internalBuffer_->copy(*audioBuffer_, 0, internalBufferIndex_, RENDER_QUANTUM_SIZE);
     internalBufferIndex_ += RENDER_QUANTUM_SIZE;
@@ -181,13 +197,14 @@ void ConvolverNode::scheduleTails() {
     return;
   }
   for (const auto &convolver : convolvers_) {
-    if (!convolver->hasTail()) {
+    const std::optional<size_t> completedBlock = convolver->takeCompletedTailBlock();
+    if (!completedBlock.has_value()) {
       continue;
     }
     // A full queue means the workers are starved; the tail is then simply never published
     // and process() computes it inline when that block comes up.
     (void)threadPool_->trySchedule(
-        [convolver, block = convolver->nextTailBlock()] { convolver->computeTail(block); });
+        [convolver, block = *completedBlock] { convolver->computeTail(block); });
   }
 }
 } // namespace audioapi

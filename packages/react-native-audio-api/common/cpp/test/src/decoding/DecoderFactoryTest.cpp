@@ -99,6 +99,19 @@ TEST(DecoderFactoryTest, RejectsUnsupportedLocalFile) {
   EXPECT_EQ(result.unwrap_err(), "Cannot open local file: unsupported or invalid audio format");
 }
 
+TEST(DecoderFactoryTest, RejectsExistingNonAudioLocalFile) {
+  const std::string path = testFilePath("decoder-factory-not-audio.txt");
+  {
+    std::ofstream output(path, std::ios::binary);
+    output << std::string(4096, 'x');
+  }
+
+  auto result = decoding::createDecoder(decoding::LocalFileSource{.path = path, .sampleRate = 0});
+  EXPECT_TRUE(result.is_err());
+
+  removeFile(path);
+}
+
 TEST(DecoderFactoryTest, OpensRawPcmSource) {
   decoding::EncodedBytes pcmBytes(2);
   pcmBytes[0] = 0x00;
