@@ -30,7 +30,6 @@ AudioRecorder::AudioRecorder(
               })),
       errorEvent_(
           std::make_shared<EventCaller<AudioEvent::RECORDER_ERROR>>(audioEventHandlerRegistry)),
-      // Dispatched from the audio thread, so through a lane of its own.
       maxDurationReachedEvent_(
           std::make_unique<EventCaller<AudioEvent::RECORDER_MAX_DURATION_REACHED>>(
               audioEventHandlerRegistry,

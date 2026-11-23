@@ -992,7 +992,6 @@ class AudioRecorderMock {
   private eventEmitter = new MockAudioEventEmitter();
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
-  private onMaxDurationReachedSubscription: MockEventSubscription | null = null;
   private consumers = new Set<AudioConsumerMock>();
 
   // Options only configure the native capture chain, so the mock ignores them.
@@ -1136,21 +1135,9 @@ class AudioRecorderMock {
     }
   }
 
-  onMaxDurationReached(callback: () => void): void {
-    this.clearOnMaxDurationReached();
-    this.onMaxDurationReachedSubscription =
-      this.eventEmitter.addAudioEventListener(
-        'recorderMaxDurationReached',
-        callback
-      );
-  }
+  onMaxDurationReached(_callback: (stopped: Promise<FileInfo>) => void): void {}
 
-  clearOnMaxDurationReached(): void {
-    if (this.onMaxDurationReachedSubscription) {
-      this.onMaxDurationReachedSubscription.remove();
-      this.onMaxDurationReachedSubscription = null;
-    }
-  }
+  clearOnMaxDurationReached(): void {}
 }
 
 const decodeAudioData = (_audioData: ArrayBuffer): Promise<AudioBufferMock> => {

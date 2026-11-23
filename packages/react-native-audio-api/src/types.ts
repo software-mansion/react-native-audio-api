@@ -157,11 +157,11 @@ export interface AudioRecorderOptions {
 /** Configures one recording session, passed to `AudioRecorder.start`. */
 export interface AudioRecorderStartOptions {
   /**
-   * Seconds of audio after which nothing more is recorded. The native recorder
-   * counts the recorded frames, so the limit holds in the background, where JS
-   * timers do not run. Paused time does not count. The file ends at exactly
-   * this duration and `onMaxDurationReached` fires; the recording keeps
-   * running, writing nothing, until you call `stop()`. Must be positive.
+   * Seconds of audio after which the recording stops and the recording
+   * notification is hidden. The native recorder counts the recorded frames, so
+   * the limit holds in the background, where JS timers do not run, and the file
+   * ends at exactly this duration. Paused time does not count. Must be
+   * positive.
    */
   maxDuration?: number;
 }

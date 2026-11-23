@@ -20,6 +20,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSDoc link target
 import { concatAudioFiles } from './AudioFileUtils';
 import FilePreset from '../utils/filePresets';
+import RecordingNotificationManager from '../system/notification/RecordingNotificationManager';
 import AudioBuffer from './AudioBuffer';
 import AudioConsumer from './AudioConsumer';
 import type AudioNode from './AudioNode';
@@ -45,8 +46,14 @@ function withDefaultFileOptions(
 
 export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
-  private onMaxDurationReachedSubscription: AudioEventSubscription | null =
-    null;
+  /**
+   * From a start with `maxDuration` until the next stop: the subscription that
+   * stops the recording once the native recorder reports the limit.
+   */
+  private maxDurationSubscription: AudioEventSubscription | null = null;
+  private onMaxDurationReachedCallback:
+    | ((stopped: Promise<FileInfo>) => void)
+    | null = null;
 
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
@@ -151,6 +158,9 @@ export default class AudioRecorder {
    * `options.maxDuration` is not a positive number.
    */
   start(options?: AudioRecorderStartOptions): Promise<void> {
+    if (options?.maxDuration != null) {
+      this.listenForMaxDuration();
+    }
     return this.recorder.start(options ?? {});
   }
 
@@ -161,6 +171,7 @@ export default class AudioRecorder {
    * recorder was not started, or the output files could not be finalized.
    */
   stop(): Promise<FileInfo> {
+    this.stopListeningForMaxDuration();
     return this.recorder.stop();
   }
 
@@ -349,33 +360,52 @@ export default class AudioRecorder {
   }
 
   /**
-   * Called once a recording started with
-   * {@link AudioRecorderStartOptions.maxDuration} has recorded that long. The
-   * recording keeps running without writing anything until you call
-   * {@link stop}, so call it here.
+   * Called when a recording started with
+   * {@link AudioRecorderStartOptions.maxDuration} reaches it. The recorder then
+   * calls {@link stop} and hides the recording notification; `stopped` settles
+   * like that stop does, once the notification is hidden.
    */
-  onMaxDurationReached(callback: () => void): void {
-    this.clearOnMaxDurationReached();
-
-    this.onMaxDurationReachedSubscription =
-      this.audioEventEmitter.addAudioEventListener(
-        'recorderMaxDurationReached',
-        callback
-      );
-
-    this.recorder.setOnMaxDurationReached({
-      callbackId: this.onMaxDurationReachedSubscription.subscriptionId,
-    });
+  onMaxDurationReached(callback: (stopped: Promise<FileInfo>) => void): void {
+    this.onMaxDurationReachedCallback = callback;
   }
 
   clearOnMaxDurationReached(): void {
-    if (!this.onMaxDurationReachedSubscription) {
+    this.onMaxDurationReachedCallback = null;
+  }
+
+  private listenForMaxDuration(): void {
+    this.stopListeningForMaxDuration();
+
+    this.maxDurationSubscription = this.audioEventEmitter.addAudioEventListener(
+      'recorderMaxDurationReached',
+      () => this.stopAtMaxDuration()
+    );
+
+    this.recorder.setOnMaxDurationReached({
+      callbackId: this.maxDurationSubscription.subscriptionId,
+    });
+  }
+
+  private stopListeningForMaxDuration(): void {
+    if (!this.maxDurationSubscription) {
       return;
     }
 
     this.recorder.clearOnMaxDurationReached();
+    this.maxDurationSubscription.remove();
+    this.maxDurationSubscription = null;
+  }
 
-    this.onMaxDurationReachedSubscription.remove();
-    this.onMaxDurationReachedSubscription = null;
+  private stopAtMaxDuration(): void {
+    const stopped = this.stop().finally(() =>
+      RecordingNotificationManager.hide().catch((error: unknown) => {
+        console.warn(
+          'AudioRecorder: the recording stopped at its max duration, but the recording notification could not be hidden:',
+          error
+        );
+      })
+    );
+    stopped.catch(() => {});
+    this.onMaxDurationReachedCallback?.(stopped);
   }
 }
