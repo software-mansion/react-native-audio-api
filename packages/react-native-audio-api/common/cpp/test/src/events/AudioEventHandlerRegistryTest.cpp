@@ -23,6 +23,11 @@ class DiscardingCallInvoker : public facebook::react::CallInvoker {
 // per thread runs the supply out within the loop.
 constexpr int kMoreThanEveryPreallocatedBlock = 300;
 
+// More producers than the queue's 8 preallocated blocks, so a producer that keeps its block
+// after release() runs the supply out; fewer events than its 256 slots, so the test does not
+// depend on the dispatch worker draining any of them.
+constexpr int kMoreProducersThanPreallocatedBlocks = 64;
+
 class AudioEventHandlerRegistryTest : public ::testing::Test {
  protected:
   // The registry refuses to dispatch without a runtime, but only dereferences it to call a
@@ -66,7 +71,7 @@ TEST_F(AudioEventHandlerRegistryTest, ReleasedProducerHandsItsBlocksToTheNextOne
   // Kept alive the way a closed context's nodes keep its producer alive.
   std::vector<std::shared_ptr<AudioEventProducer>> closedContextProducers;
 
-  for (int i = 0; i < kMoreThanEveryPreallocatedBlock; ++i) {
+  for (int i = 0; i < kMoreProducersThanPreallocatedBlocks; ++i) {
     auto producer = registry_->createAudioEventProducer();
     ASSERT_TRUE(dispatchFromAudioThread(*producer)) << "context " << i;
     producer->release();
