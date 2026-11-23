@@ -2,8 +2,14 @@
 #include <cstddef>
 #include <new>
 
-#ifdef __APPLE__
+/// AddressSanitizer replaces malloc and free to poison the bytes around each block.
+/// It sees nothing of a block mapped from the kernel, so sanitized builds stay on malloc.
+#if defined(__APPLE__) && !(defined(__SANITIZE_ADDRESS__) || __has_feature(address_sanitizer))
+#define RN_AUDIO_API_DIRECT_MAPPING 1
+#include <mach/vm_statistics.h>
 #include <sys/mman.h>
+#else
+#define RN_AUDIO_API_DIRECT_MAPPING 0
 #endif
 
 template <typename T, std::size_t Align = 16>
@@ -20,9 +26,10 @@ class AlignedAllocator {
       return nullptr;
     }
     const std::size_t bytes = elementCount * sizeof(T);
-#ifdef __APPLE__
+#if RN_AUDIO_API_DIRECT_MAPPING
     if (isMappedDirectly(bytes)) {
-      void *mapping = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+      void *mapping = mmap(
+          nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, DIRECT_MAPPING_VM_TAG, 0);
       if (mapping == MAP_FAILED) [[unlikely]] {
         throw std::bad_alloc();
       }
@@ -35,7 +42,7 @@ class AlignedAllocator {
   /// @param elementCount must equal the count given to the `allocate` call that returned
   /// @p block. It selects the path that releases the block, and unmapping needs the length.
   void deallocate(T *block, std::size_t elementCount) noexcept {
-#ifdef __APPLE__
+#if RN_AUDIO_API_DIRECT_MAPPING
     const std::size_t bytes = elementCount * sizeof(T);
     if (isMappedDirectly(bytes)) {
       munmap(block, bytes);
@@ -62,11 +69,12 @@ class AlignedAllocator {
     return Align != UAlign;
   }
 
-#ifdef __APPLE__
-
- private:
+#if RN_AUDIO_API_DIRECT_MAPPING
+  static constexpr auto DIRECT_MAPPING_VM_TAG = VM_MAKE_TAG(VM_MEMORY_APPLICATION_SPECIFIC_1);
   // 4 MB, because large allocations get only fraction of speedup from the kernel memory cache
   static constexpr std::size_t DIRECT_MAPPING_THRESHOLD_BYTES = std::size_t{4} * 1024 * 1024;
+
+ private:
   static constexpr std::size_t SMALLEST_PAGE_SIZE_BYTES = 4096;
 
   /// A mapping starts on a page boundary, which is the only alignment it guarantees.
