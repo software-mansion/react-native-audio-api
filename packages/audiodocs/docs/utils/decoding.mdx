@@ -28,6 +28,11 @@ Supported file formats:
 - caf (ios)
 :::
 
+:::info
+On mobile, a local file is named by its path or by a `file://` URI. A URI is percent-encoded: `file:///tmp/my%20clip.wav` opens `my clip.wav`.
+A path is used as written, so the `%20` of `/tmp/clip%20mix.wav` is part of the file name.
+:::
+
 ## Methods
 
 ### `decodeAudioData`
