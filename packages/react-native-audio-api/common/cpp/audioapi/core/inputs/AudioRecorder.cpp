@@ -68,7 +68,7 @@ Result<NoneType, std::string> AudioRecorder::start(std::optional<double> maxDura
     }
     startingSession = session_.id = claimResult.unwrap();
     session_.maxDurationSeconds = maxDurationSeconds;
-    session_.hasReachedMaxDuration = false;
+    session_.isMaxDurationReported = false;
     routedGeneration = session_.inputGeneration;
     setSessionState({.phase = Phase::Starting});
   }
@@ -339,7 +339,7 @@ double AudioRecorder::getInputLatency() const {
 
 void AudioRecorder::onInputFrames(const float *const *channels, int channelCount, int numFrames) {
   if (channels == nullptr || numFrames <= 0 ||
-      channelCount != session_.format->layout.channelCount || session_.hasReachedMaxDuration) {
+      channelCount != session_.format->layout.channelCount || session_.isMaxDurationReported) {
     return;
   }
 
@@ -355,8 +355,7 @@ void AudioRecorder::onInputFrames(const float *const *channels, int channelCount
   consumers_.write(channels, framesToDeliver);
 
   if (framesLeft <= numFrames) {
-    session_.hasReachedMaxDuration = true;
-    maxDurationReachedEvent_->dispatchEmptyFromAudioThread();
+    session_.isMaxDurationReported = maxDurationReachedEvent_->dispatchEmptyFromAudioThread();
   }
 }
 

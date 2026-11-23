@@ -20,7 +20,6 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSDoc link target
 import { concatAudioFiles } from './AudioFileUtils';
 import FilePreset from '../utils/filePresets';
-import RecordingNotificationManager from '../system/notification/RecordingNotificationManager';
 import AudioBuffer from './AudioBuffer';
 import AudioConsumer from './AudioConsumer';
 import type AudioNode from './AudioNode';
@@ -157,11 +156,9 @@ export default class AudioRecorder {
    * Rejects when the platform refuses to start the recording, or
    * `options.maxDuration` is not a positive number.
    */
-  start(options?: AudioRecorderStartOptions): Promise<void> {
-    if (options?.maxDuration != null) {
-      this.listenForMaxDuration();
-    }
-    return this.recorder.start(options ?? {});
+  async start(options?: AudioRecorderStartOptions): Promise<void> {
+    await this.recorder.start(options ?? {});
+    this.listenForMaxDuration();
   }
 
   /**
@@ -361,9 +358,9 @@ export default class AudioRecorder {
 
   /**
    * Called when a recording started with
-   * {@link AudioRecorderStartOptions.maxDuration} reaches it. The recorder then
-   * calls {@link stop} and hides the recording notification; `stopped` settles
-   * like that stop does, once the notification is hidden.
+   * {@link AudioRecorderStartOptions.maxDuration} reaches it, right after the
+   * recorder has called {@link stop}; `stopped` is that stop's promise. The
+   * recording notification stays shown: hide it once `stopped` settles.
    */
   onMaxDurationReached(callback: (stopped: Promise<FileInfo>) => void): void {
     this.onMaxDurationReachedCallback = callback;
@@ -397,14 +394,7 @@ export default class AudioRecorder {
   }
 
   private stopAtMaxDuration(): void {
-    const stopped = this.stop().finally(() =>
-      RecordingNotificationManager.hide().catch((error: unknown) => {
-        console.warn(
-          'AudioRecorder: the recording stopped at its max duration, but the recording notification could not be hidden:',
-          error
-        );
-      })
-    );
+    const stopped = this.stop();
     stopped.catch(() => {});
     this.onMaxDurationReachedCallback?.(stopped);
   }

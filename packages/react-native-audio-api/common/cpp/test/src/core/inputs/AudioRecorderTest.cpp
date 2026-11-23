@@ -1097,10 +1097,43 @@ TEST_F(AudioRecorderTest, ReachingTheMaxDurationIsReportedOnceFromTheAudioThread
       *registry_,
       dispatchEventFromAudioThread(
           testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
-      .Times(1);
+      .WillOnce(testing::Return(true));
   ASSERT_TRUE(recorder_->start(FRAMES / 48000.0).is_ok());
 
   input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+}
+
+TEST_F(AudioRecorderTest, AMaxDurationEventTheQueueRefusedIsRetriedOnTheNextBuffer) {
+  enableFileOutput();
+  recorder_->setOnMaxDurationReachedCallback(CALLBACK_ID);
+  EXPECT_CALL(
+      *registry_,
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(false))
+      .WillOnce(testing::Return(true));
+  ASSERT_TRUE(recorder_->start(FRAMES / 48000.0).is_ok());
+
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+  input_->deliverFrames(FRAMES);
+
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(log_.encodedFrames.load(), static_cast<size_t>(FRAMES));
+}
+
+TEST_F(AudioRecorderTest, AMaxDurationReachedBeforeTheCallbackIsSetIsReportedOnceItIs) {
+  EXPECT_CALL(
+      *registry_,
+      dispatchEventFromAudioThread(
+          testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
+      .WillOnce(testing::Return(true));
+  ASSERT_TRUE(recorder_->start(FRAMES / 48000.0).is_ok());
+
+  input_->deliverFrames(FRAMES);
+  recorder_->setOnMaxDurationReachedCallback(CALLBACK_ID);
   input_->deliverFrames(FRAMES);
   input_->deliverFrames(FRAMES);
 }
@@ -1124,7 +1157,7 @@ TEST_F(AudioRecorderTest, PausedTimeDoesNotCountTowardsTheMaxDuration) {
       *registry_,
       dispatchEventFromAudioThread(
           testing::_, AudioEvent::RECORDER_MAX_DURATION_REACHED, CALLBACK_ID, testing::_))
-      .Times(1);
+      .WillOnce(testing::Return(true));
   input_->deliverFrames(FRAMES);
 }
 

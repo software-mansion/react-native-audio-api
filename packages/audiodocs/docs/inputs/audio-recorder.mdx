@@ -154,15 +154,20 @@ if (AudioRecorder.isRecordingOngoing()) {
 
 ### Limiting the recording duration {#limiting-the-recording-duration}
 
-JS timers do not run while the app is in the background on Android, so a `setTimeout` cannot be trusted to end a recording made with the screen locked. Pass `maxDuration` to [start](#start) instead. The native recorder counts the recorded frames, so the limit holds with the screen locked too. When it is reached, the recorder does what the notification's [stop action](../system/recording-notification-manager.mdx#native-action-handling) does: it stops the recording and hides the [recording notification](../system/recording-notification-manager.mdx).
+JS timers do not run while the app is in the background on Android, so a `setTimeout` cannot be trusted to end a recording made with the screen locked. Pass `maxDuration` to [start](#start) instead. The native recorder counts the recorded frames, so the limit holds with the screen locked too. When it is reached, the recorder calls [stop](#stop).
 
 - The file ends at exactly `maxDuration` seconds of audio. Paused time does not count.
 - [onMaxDurationReached](#onmaxdurationreached) receives the promise of that stop, which resolves with the [FileInfo](#fileinfo) or rejects when the file could not be finalized.
+- The [recording notification](../system/recording-notification-manager.mdx) stays shown. Hide it in [onMaxDurationReached](#onmaxdurationreached) once the stop settles, unless your app wants to keep it or show something else.
 
 ```tsx
 audioRecorder.onMaxDurationReached(async (stopped) => {
-  const info = await stopped;
-  // info.paths holds the files
+  try {
+    const info = await stopped;
+    // info.paths holds the files
+  } finally {
+    await RecordingNotificationManager.hide();
+  }
 });
 
 await audioRecorder.start({ maxDuration: 30 * 60 });
@@ -696,7 +701,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Sets a callback called when a recording started with [`maxDuration`](#audiorecorderstartoptions) reaches it. By then the recorder has called [stop](#stop) and hidden the recording notification; the callback receives that stop's `Promise<FileInfo>`. See [Limiting the recording duration](#limiting-the-recording-duration).
+          Sets a callback called when a recording started with [`maxDuration`](#audiorecorderstartoptions) reaches it. The recorder has called [stop](#stop) just before, and the callback receives that stop's `Promise<FileInfo>`; await it before you rely on the recording being finalized. The recording notification stays shown, so hide it here if your app should. See [Limiting the recording duration](#limiting-the-recording-duration).
         </div>
         ```tsx
           audioRecorder.onMaxDurationReached(async (stopped) => {

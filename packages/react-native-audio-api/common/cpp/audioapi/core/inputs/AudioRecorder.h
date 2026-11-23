@@ -146,9 +146,9 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
         std::make_shared<std::atomic<double>>(0.0);
     /// Set by start(), read by the audio thread through the armed gate.
     std::optional<double> maxDurationSeconds;
-    /// Audio thread only, through the armed gate: the session has recorded maxDurationSeconds, so
-    /// no further frame is delivered until it is stopped.
-    bool hasReachedMaxDuration = false;
+    /// Audio thread only, through the armed gate: the session has recorded maxDurationSeconds and
+    /// RECORDER_MAX_DURATION_REACHED was queued, so later buffers are skipped until it is stopped.
+    bool isMaxDurationReported = false;
   };
 
   /// Audio thread, through the armed gate only. @p channels holds @p channelCount pointers, each to
