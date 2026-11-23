@@ -267,9 +267,6 @@ overrides:
   react-native-audio-api-monorepo>@typescript-eslint/parser: 8.58.1
   webpack: 5.101.3
 
-patchedDependencies:
-  '@react-native-menu/menu@2.0.0': 6dd0aa63e24fcd6cbc3e458eb8dc7e82a2a9a2ba426b6ce9b9ecd84542ff600d
-
 importers:
 
   .:
@@ -335,8 +332,8 @@ importers:
         specifier: 5.2.2
         version: 5.2.2
       '@react-native-menu/menu':
-        specifier: 2.0.0
-        version: 2.0.0(patch_hash=6dd0aa63e24fcd6cbc3e458eb8dc7e82a2a9a2ba426b6ce9b9ecd84542ff600d)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        specifier: 2.1.2
+        version: 2.1.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-native-segmented-control/segmented-control':
         specifier: 2.6.0
         version: 2.6.0(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -3311,8 +3308,8 @@ packages:
   '@react-native-community/slider@5.2.2':
     resolution: {integrity: sha512-KdWURcFqHZ/nvQwt9S7P2PHBREl83GZeflWZU1VpR/qJ+lF/mdiOBZshJQztE2hBDgW5iBIrRb3RY9uAie5k/w==}
 
-  '@react-native-menu/menu@2.0.0':
-    resolution: {integrity: sha512-hb8Mirw6aKPGONhgo52IiNpwHtISVrgCT3rMdFX1qS7eOFNzOcQh8d2UDnaH5zVpxN+QuvWtaaiRMGFpIjzdtA==}
+  '@react-native-menu/menu@2.1.2':
+    resolution: {integrity: sha512-Am/1HMt21CL+jr/fLTDWCddAUQYpMe8NpVSZrEbITXEMOaNxQqfNGApkuOY72hjV92aR7L7OHuqXLaqrlXZfOA==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -15158,7 +15155,7 @@ snapshots:
 
   '@react-native-community/slider@5.2.2': {}
 
-  '@react-native-menu/menu@2.0.0(patch_hash=6dd0aa63e24fcd6cbc3e458eb8dc7e82a2a9a2ba426b6ce9b9ecd84542ff600d)(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
+  '@react-native-menu/menu@2.1.2(react-native@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)':
     dependencies:
       react: 19.3.0
       react-native: 0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@6.0.3))(@react-native/metro-config@0.88.0(@babel/core@7.29.0(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.14)(react@19.3.0)(supports-color@8.1.1)

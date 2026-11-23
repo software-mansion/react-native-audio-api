@@ -12,7 +12,7 @@
   "dependencies": {
     "@callstack/liquid-glass": "0.8.2",
     "@react-native-community/slider": "5.2.2",
-    "@react-native-menu/menu": "2.0.0",
+    "@react-native-menu/menu": "2.1.2",
     "@react-native-segmented-control/segmented-control": "2.6.0",
     "@react-navigation/bottom-tabs": "8.0.0-alpha.57",
     "@react-navigation/elements": "3.0.0-alpha.55",

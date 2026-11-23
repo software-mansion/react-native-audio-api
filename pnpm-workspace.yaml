@@ -67,10 +67,6 @@ allowBuilds:
   core-js: false
   core-js-pure: false
 
-# RN 0.88's header layout no longer resolves the quoted "RCTBridge.h" import
-patchedDependencies:
-  '@react-native-menu/menu@2.0.0': patches/@react-native-menu__menu@2.0.0.patch
-
 tasks:
   check:
     dependsOn: ['^build', 'build']

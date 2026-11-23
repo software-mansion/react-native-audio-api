@@ -1374,7 +1374,7 @@ PODS:
     - Yoga
   - react-native-background-timer (2.4.1):
     - React-Core
-  - react-native-menu (2.0.0):
+  - react-native-menu (2.1.2):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2815,7 +2815,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 8b3aaa5f3b907ecf071b105589868d9f027a448d
   React-mutationobservernativemodule: 11d77d3f7360578f07847843544ada23cc473049
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
-  react-native-menu: 4b594e5520ae74d069e3a088645823d557e2e7e2
+  react-native-menu: b6116ddbc1c183b68c1ff3b5a67fd4a66b6ac614
   react-native-nano-icons: 4076e6ad207208090ea1f653e741887e8f026cae
   react-native-safe-area-context: 0613ae3f639560e81b2b1f84382a834ef5a205d2
   react-native-segmented-control: 1e670006e2f5c2da2818072c2305c78884229b31

@@ -360,8 +360,6 @@ The icon font has no `power` glyph; `PedalShell` draws Lucide's power symbol inl
 
 Liquid glass (`LiquidGlassView` from `@callstack/liquid-glass`) stops rendering its material whenever it or any ancestor has an animated (or zero) `opacity`, even at 1. To show and hide a glass surface, switch its native `effect` (`'regular'` / `'none'`) and fade only its contents, or unmount it; animate transforms, not opacity, on wrappers. That is why a disabled glass `RoundButton` dims its glyph instead of its opacity.
 
-`@react-native-menu/menu` 2.0.0 is patched (`patches/`, registered under `patchedDependencies` in `pnpm-workspace.yaml`) to import `<React/RCTBridge.h>` instead of the quoted `"RCTBridge.h"`, which RN 0.88's header layout no longer resolves.
-
 ## Type Checking
 
 `common-app` resolves `react-native-audio-api` types from the library's built `lib/typescript`, not from `src`. After switching branches, rebuild before checking the app, or `tsc` checks against another branch's API:
