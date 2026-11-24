@@ -131,8 +131,8 @@ Opens an audio source to decode it a few frames at a time, instead of as one [`A
 Use it for work that goes through the audio once — waveforms, spectra, loudness, beat detection, speech recognition.
 
 :::tip
-[`decodeAudioData`](./decoding.mdx#decodeaudiodata) holds the whole source decoded: about 21 MB per minute of stereo sound at 44.1 kHz, whatever the size of the file.
-A stream only holds the chunk being read.
+[`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns the whole source decoded, which adds about 21 MB to the memory footprint per minute of stereo sound at 44.1 kHz, whatever the size of the file.
+Reading a stream only adds the chunk being read.
 :::
 
 | Parameter | Type | Description |
@@ -158,7 +158,7 @@ That is the size of the file, not of its decoded audio. To keep memory lowest, o
 | `fetchOptions` <Optional /> | [`RequestInit`](https://github.com/facebook/react-native/blob/ac06f3bdc76a9fd7c65ab899e82bff5cad9b94b6/packages/react-native/src/types/globals.d.ts#L265) | — | Fetch options for a remote `input` (for example, auth headers). |
 
 <details>
-<summary>Example computing a waveform without holding the decoded file</summary>
+<summary>Example computing a waveform chunk by chunk</summary>
 ```tsx
 import { openAudioDecodeStream } from 'react-native-audio-api';
 
@@ -207,15 +207,13 @@ The chunks of a stream, put end to end, hold exactly the samples [`decodeAudioDa
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `frameCount` | `number` | Number of frames to decode. A positive integer. A few thousand frames is a good chunk; a value larger than what is left returns what is left. |
+| `frameCount` | `number` | Number of frames to decode. A positive integer; a value larger than what is left returns what is left. |
 
 ##### Returns `Promise<AudioBuffer | null>`
 
 An [`AudioBuffer`](../sources/audio-buffer.mdx) of `frameCount` frames, shorter only when the source ends inside it, and `null` once the source has ended.
 
-A source the decoder fails on midway also ends with `null`, as [`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns what was decoded before the failure.
-A count of frames read well below `duration * sampleRate` hints at a truncated source. It is only a hint:
-`duration` is `0` when the source does not report one, and the duration of a container is an estimate.
+A source that cannot be decoded past some point (a download cut short, a corrupt frame) also ends with `null` there, as [`decodeAudioData`](./decoding.mdx#decodeaudiodata) returns what was decoded before it.
 
 ##### Errors
 

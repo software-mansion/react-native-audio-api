@@ -1,3 +1,4 @@
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/decoding/AudioDecodeStream.h>
 #include <audioapi/decoding/DecoderSource.h>
 
@@ -13,14 +14,12 @@ namespace audioapi::audiodecoding {
 
 namespace {
 
-/// The highest rate the Web Audio API lets a context run at.
-constexpr float MAX_OUTPUT_SAMPLE_RATE = 768000.0F;
 constexpr auto INVALID_SAMPLE_RATE_MESSAGE = "Cannot open a decode stream: invalid sample rate";
 
 /// Whether @p sampleRate can be handed to a decoder: `0` keeps the rate of the source.
 /// Converting a NaN, an infinity or a value out of range to `int` is undefined behavior.
 bool isOutputSampleRate(float sampleRate) {
-  return std::isfinite(sampleRate) && sampleRate >= 0.0F && sampleRate <= MAX_OUTPUT_SAMPLE_RATE;
+  return std::isfinite(sampleRate) && sampleRate >= 0.0F && sampleRate <= MAX_SAMPLE_RATE;
 }
 
 } // namespace

@@ -8,6 +8,8 @@
 
 #include <jsi/jsi.h>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <memory>
 
 namespace audioapi {
@@ -23,8 +25,8 @@ class AudioDecodeStreamHostObject : public HostObject {
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker,
       std::shared_ptr<audiodecoding::AudioDecodeStream> stream);
-  /// @note Runs inside the garbage collector, so it waits for nothing: the lane and the
-  /// decoder are released on threads of their own.
+  /// @note Runs inside the garbage collector, so it waits for nothing: the decoder is released
+  /// on the lane, and the lane on a thread of its own.
   ~AudioDecodeStreamHostObject() override;
   DELETE_COPY_AND_MOVE(AudioDecodeStreamHostObject);
 
@@ -48,7 +50,7 @@ class AudioDecodeStreamHostObject : public HostObject {
   static constexpr size_t OPEN_DECODER_MEMORY_PRESSURE = 1024 * 1024;
   /// Frame counts above this are requests for "everything left". Clamping them keeps the
   /// conversion from a JS number defined on every ABI.
-  static constexpr double MAX_FRAME_COUNT = 2147483647.0;
+  static constexpr double MAX_FRAME_COUNT = std::numeric_limits<int32_t>::max();
 
   std::shared_ptr<audiodecoding::AudioDecodeStream> stream_;
   std::shared_ptr<SerialTaskExecutor> lane_;

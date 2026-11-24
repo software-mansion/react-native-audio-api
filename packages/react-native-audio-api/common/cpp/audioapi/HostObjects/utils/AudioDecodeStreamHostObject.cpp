@@ -44,9 +44,13 @@ AudioDecodeStreamHostObject::AudioDecodeStreamHostObject(
 
 AudioDecodeStreamHostObject::~AudioDecodeStreamHostObject() {
   // Dropping the last reference to the stream closes its decoder, which can take a codec
-  // teardown: not inside the garbage collector. Reads still queued hold references of their
-  // own and release them on the lane.
-  std::thread([stream = std::move(stream_)]() mutable { stream.reset(); }).detach();
+  // teardown: not inside the garbage collector. The lane drops it, after the reads still
+  // queued, which hold references of their own.
+  if (lane_ == nullptr) {
+    // Closed: `close` already released the decoder on the lane.
+    return;
+  }
+  lane_->schedule([stream = std::move(stream_)]() mutable { stream.reset(); });
 }
 
 jsi::Object AudioDecodeStreamHostObject::createJsObject(

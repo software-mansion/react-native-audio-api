@@ -142,6 +142,8 @@ std::shared_ptr<AudioBuffer> decodeFrames(
     framesDecoded += framesRead;
   }
 
+  // Not an error here: the decoder has no frame left. A whole-file decode reports it as one
+  // (`decodeAll`), a stream as its end.
   if (framesDecoded == 0) {
     return nullptr;
   }
