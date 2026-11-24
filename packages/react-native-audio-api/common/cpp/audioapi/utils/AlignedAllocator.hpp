@@ -4,7 +4,15 @@
 
 /// AddressSanitizer replaces malloc and free to poison the bytes around each block.
 /// It sees nothing of a block mapped from the kernel, so sanitized builds stay on malloc.
-#if defined(__APPLE__) && !(defined(__SANITIZE_ADDRESS__) || __has_feature(address_sanitizer))
+#if defined(__SANITIZE_ADDRESS__)
+#define RN_AUDIO_API_ADDRESS_SANITIZER 1
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define RN_AUDIO_API_ADDRESS_SANITIZER 1
+#endif
+#endif
+
+#if defined(__APPLE__) && !defined(RN_AUDIO_API_ADDRESS_SANITIZER)
 #define RN_AUDIO_API_DIRECT_MAPPING 1
 #include <mach/vm_statistics.h>
 #include <sys/mman.h>
