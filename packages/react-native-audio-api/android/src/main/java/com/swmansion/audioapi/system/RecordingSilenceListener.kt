@@ -78,11 +78,14 @@ class RecordingSilenceListener(
     }
   }
 
+  /** Reads the recorder's configuration directly, so it does not need observation to be enabled. */
   fun isRecordingSilenced(): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || NativeRecorderControl.captureSessionId() == 0) {
+    val sessionId = NativeRecorderControl.captureSessionId()
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || sessionId == 0) {
       return false
     }
-    return isCaptureSilenced || isEndedHeld()
+    val config = audioManager.activeRecordingConfigurations.firstOrNull { it.clientAudioSessionId == sessionId }
+    return (config?.isClientSilenced ?: isCaptureSilenced) || isEndedHeld()
   }
 
   @RequiresApi(Build.VERSION_CODES.Q)
