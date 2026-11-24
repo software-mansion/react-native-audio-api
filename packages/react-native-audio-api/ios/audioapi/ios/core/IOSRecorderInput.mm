@@ -82,26 +82,6 @@ bool collectChannels(
   return true;
 }
 
-/// Marks the calling thread as inside an AudioEngine call made on the recorder's behalf.
-class EngineCallScope {
- public:
-  explicit EngineCallScope(std::atomic<std::thread::id> &engineCallThread)
-      : engineCallThread_(engineCallThread)
-  {
-    engineCallThread_.store(std::this_thread::get_id(), std::memory_order_release);
-  }
-
-  ~EngineCallScope()
-  {
-    engineCallThread_.store(std::thread::id{}, std::memory_order_release);
-  }
-
-  DELETE_COPY_AND_MOVE(EngineCallScope);
-
- private:
-  std::atomic<std::thread::id> &engineCallThread_;
-};
-
 } // namespace
 
 IOSRecorderInput::IOSRecorderInput(const AudioRecorderOptions &options)
@@ -143,7 +123,7 @@ Result<NoneType, std::string> IOSRecorderInput::open(
   AudioEngineInputNotificationBlock onInputNotification =
       ^(AudioEngineInputNotification notification, NSError *error) {
         auto input = weakSelf.lock();
-        if (input == nullptr || input->isInsideOwnEngineCall()) {
+        if (input == nullptr) {
           return;
         }
 
@@ -168,7 +148,6 @@ Result<NoneType, std::string> IOSRecorderInput::open(
   const auto detachAndRestorePlayback = [&] {
     close();
     if (playbackWasRunning) {
-      EngineCallScope engineCall(engineCallThread_);
       [audioEngine startIfNecessary:nil];
     }
   };
@@ -178,14 +157,13 @@ Result<NoneType, std::string> IOSRecorderInput::open(
   isOpen_.store(true, std::memory_order_release);
 
   @try {
-    EngineCallScope engineCall(engineCallThread_);
     // The engine is restarted around the attach: attaching the first input node to an engine
     // that playback already started is not allowed at runtime.
     [audioEngine stopIfNecessary];
     [audioEngine attachInputNodeWithReceiverBlock:receiverBlock
                            voiceProcessingEnabled:voiceProcessingEnabled_
                               onInputNotification:onInputNotification];
-    didStart = [audioEngine startIfNecessary:&startError];
+    didStart = [audioEngine startInputIfNecessary:&startError];
   } @catch (NSException *exception) {
     detachAndRestorePlayback();
     return Err(
@@ -224,8 +202,7 @@ Result<NoneType, std::string> IOSRecorderInput::start()
   BOOL didStart = NO;
 
   @try {
-    EngineCallScope engineCall(engineCallThread_);
-    didStart = [[AudioEngine sharedInstance] startIfNecessary:&startError];
+    didStart = [[AudioEngine sharedInstance] startInputIfNecessary:&startError];
   } @catch (NSException *exception) {
     return Err(
         withInputDiagnostics(describeException("Failed to start native recorder", exception)));
@@ -247,12 +224,7 @@ void IOSRecorderInput::pause()
 Result<NoneType, std::string> IOSRecorderInput::resume()
 {
   NSError *resumeError = nil;
-  BOOL didResume = NO;
-
-  {
-    EngineCallScope engineCall(engineCallThread_);
-    didResume = [[AudioEngine sharedInstance] resumeInput:&resumeError];
-  }
+  const BOOL didResume = [[AudioEngine sharedInstance] resumeInput:&resumeError];
 
   if (!didResume) {
     return Err(
@@ -269,7 +241,6 @@ void IOSRecorderInput::close()
   }
 
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  EngineCallScope engineCall(engineCallThread_);
   [audioEngine detachInputNode];
   [audioEngine stopIfPossible];
   [audioEngine restartAudioEngine];
@@ -305,11 +276,6 @@ double IOSRecorderInput::latency(double callbackSeconds) const
   const double bufferLatency =
       callbackSeconds > 0.0 ? callbackSeconds : [sessionManager ioBufferDurationSeconds];
   return bufferLatency + [sessionManager inputLatencySeconds];
-}
-
-bool IOSRecorderInput::isInsideOwnEngineCall() const
-{
-  return engineCallThread_.load(std::memory_order_acquire) == std::this_thread::get_id();
 }
 
 std::shared_ptr<IRecorderInput> createPlatformRecorderInput(const AudioRecorderOptions &options)
