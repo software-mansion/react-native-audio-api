@@ -28,7 +28,7 @@ struct PlatformFileBackend;
 /// fed from the audio thread.
 ///
 /// Control calls are not synchronized with each other: the owner serializes them, and disarms its
-/// input before follow() so that no frames in the old format arrive while the outputs change.
+/// input before reprepare() so that no frames in the old format arrive while the outputs change.
 /// write() runs on the audio thread alongside them and never blocks.
 class RecorderOutputs final {
  public:
@@ -59,7 +59,7 @@ class RecorderOutputs final {
   /// adapter node are rebuilt. Every prepared output is attempted, so none is left prepared for
   /// the old format: one that fails stays off until the next prepare(). Returns the failures,
   /// joined.
-  Result<NoneType, std::string> follow(const StreamFormat &format);
+  Result<NoneType, std::string> reprepare(const StreamFormat &format);
 
   /// The session ended: takes every output away from write(). The writer leaves with this
   /// session's file; the callback and the adapter node stay requested, so the next prepare()

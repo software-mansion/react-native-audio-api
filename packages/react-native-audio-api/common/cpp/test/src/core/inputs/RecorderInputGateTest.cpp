@@ -9,17 +9,25 @@ using namespace audioapi;
 
 // NOLINTBEGIN
 
-// No test delivers frames, so the gate never reaches a recorder.
+TEST(RecorderInputGateTest, OnlyACallbackEnteringAnArmedGateDelivers) {
+  int deliveredFrames = 0;
+  RecorderInputGate gate([&deliveredFrames](const float *const *, int, int numFrames) {
+    deliveredFrames += numFrames;
+  });
+  const auto deliverThroughPass = [&gate](int numFrames) {
+    const auto pass = gate.enter();
+    pass.deliver(nullptr, 1, numFrames);
+    return static_cast<bool>(pass);
+  };
 
-TEST(RecorderInputGateTest, OnlyACallbackEnteringAnArmedGateIsAdmitted) {
-  RecorderInputGate gate(nullptr);
-  EXPECT_FALSE(gate.enter());
+  EXPECT_FALSE(deliverThroughPass(1));
 
   gate.arm();
-  EXPECT_TRUE(gate.enter());
+  EXPECT_TRUE(deliverThroughPass(10));
 
   gate.disarmAndWait();
-  EXPECT_FALSE(gate.enter());
+  EXPECT_FALSE(deliverThroughPass(100));
+  EXPECT_EQ(deliveredFrames, 10);
 }
 
 // A platform callback converts into buffers a reopen reallocates before it delivers; the drain has

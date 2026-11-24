@@ -90,22 +90,22 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   [[nodiscard]] double getInputLatency() const;
 
  private:
-  friend class RecorderInputGate;
-
   /// Where the session is. What holds in each phase:
   ///
-  /// | Phase     | input                    | gate     | outputs                           |
-  /// |-----------|--------------------------|----------|-----------------------------------|
-  /// | Idle      | closed                   | disarmed | not prepared                      |
-  /// | Recording | open, started            | armed    | prepared for SessionState::format |
-  /// | Paused    | open, stopped by pause() | disarmed | prepared for SessionState::format |
-  /// | Rerouting | closed, route on its way | disarmed | prepared for the old format       |
-  enum class Phase : uint8_t { Idle, Recording, Paused, Rerouting };
+  /// | Phase                | input                    | gate     | outputs                           |
+  /// |----------------------|--------------------------|----------|-----------------------------------|
+  /// | Idle                 | closed                   | disarmed | not prepared                      |
+  /// | Recording            | open, started            | armed    | prepared for SessionState::format |
+  /// | Paused               | open, stopped by pause() | disarmed | prepared for SessionState::format |
+  /// | ReroutingToRecording | closed, route on its way | disarmed | prepared for the old format       |
+  /// | ReroutingToPaused    | closed, route on its way | disarmed | prepared for the old format       |
+  ///
+  /// A reroute comes back as the phase its name ends in; pause() during it turns
+  /// ReroutingToRecording into ReroutingToPaused.
+  enum class Phase : uint8_t { Idle, Recording, Paused, ReroutingToRecording, ReroutingToPaused };
 
   struct SessionState {
     std::atomic<Phase> phase{Phase::Idle};
-    /// Recording or Paused: what a reroute brings the session back as.
-    std::atomic<Phase> phaseAfterReroute{Phase::Recording};
 
     /// Bumped every time the input is closed, so it identifies one opening of the input.
     uint64_t inputGeneration = 0;
@@ -126,7 +126,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   void enterPhase(Phase phase);
 
   /// Has the outputs follow @p format when it differs from the one they are prepared for
-  /// (RecorderOutputs::follow()), with the gate disarmed meanwhile. Leaves the gate as the
+  /// (RecorderOutputs::reprepare()), with the gate disarmed meanwhile. Leaves the gate as the
   /// phase requires: armed again only when recording. The caller holds controlMutex_.
   Result<NoneType, std::string> repointOutputsAt(const StreamFormat &format);
 

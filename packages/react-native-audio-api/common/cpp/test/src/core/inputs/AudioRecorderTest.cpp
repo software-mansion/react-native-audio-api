@@ -501,6 +501,35 @@ TEST_F(AudioRecorderTest, PauseAndResumeWhileAReroutedInputIsOnItsWayAreRemember
   EXPECT_TRUE(recorder_->isRecording());
 }
 
+TEST_F(AudioRecorderTest, ARecordingSessionReadsAsRecordingAndAcceptsResumeWhileRerouting) {
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->duringAcquireRoute = [this] {
+    EXPECT_TRUE(recorder_->isRecording());
+    EXPECT_TRUE(recorder_->resume().is_ok());
+  };
+
+  ASSERT_TRUE(recorder_->rerouteInput().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_TRUE(input_->running.load());
+}
+
+TEST_F(AudioRecorderTest, ARerouteArrivingWhileAnotherWaitsForItsRouteTakesOver) {
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->duringAcquireRoute = [this] {
+    ASSERT_TRUE(recorder_->rerouteInput().is_ok());
+  };
+
+  ASSERT_TRUE(recorder_->rerouteInput().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_EQ(
+      input_->openPurposes,
+      (std::vector{InputOpenPurpose::StartSession, InputOpenPurpose::ContinueSession}));
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+}
+
 TEST_F(AudioRecorderTest, ResumeWhileIdleFails) {
   auto result = recorder_->resume();
 

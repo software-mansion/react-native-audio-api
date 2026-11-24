@@ -69,7 +69,7 @@ Result<NoneType, std::string> RecorderOutputs::prepare(const StreamFormat &forma
   return Ok(None);
 }
 
-Result<NoneType, std::string> RecorderOutputs::follow(const StreamFormat &format) {
+Result<NoneType, std::string> RecorderOutputs::reprepare(const StreamFormat &format) {
   std::scoped_lock outputsLock(callback_.mutex, file_.mutex, adapter_.mutex);
 
   std::string failures;

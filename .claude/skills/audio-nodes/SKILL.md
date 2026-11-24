@@ -161,7 +161,7 @@ classDiagram
 `core/inputs/AudioRecorder` is a standalone `final` class, not part of the `AudioNode` hierarchy — it
 feeds the graph through a `RecorderAdapterNode` instead of being processed by it.
 
-It owns the session state machine: an explicit `Phase` (`Idle`, `Recording`, `Paused`, `Rerouting`;
+It owns the session state machine: an explicit `Phase` (`Idle`, `Recording`, `Paused`, `ReroutingToRecording`, `ReroutingToPaused`;
 the table of what holds in each is in `AudioRecorder.h`) that only `enterPhase()` changes; it arms the
 gate exactly for `Recording`, and `repointOutputsAt()`, which disarms the gate while the outputs
 follow a new format, re-arms it only when the phase is `Recording`. `start`/`stop`/`pause`/`resume`/`rerouteInput` are a `switch`
@@ -174,7 +174,7 @@ recorder's `outputs_`): one `OutputSlot` per output (`file_`, `callback_`, `adap
 target), `prepare` at start, `follow` on a format change, `detach`/`finalize` at the end, the
 setters, and the error callback id. Put a new output in a slot of its own there. `RecorderOutputs`
 does not synchronize its control calls: `AudioRecorder` calls it only under `controlMutex_`, and
-disarms the gate before `follow()`. When anything fails after `start()` opened the input it ends the
+disarms the gate before `reprepare()`. When anything fails after `start()` opened the input it ends the
 session like `stop()`: detach under the slot mutexes, finalize without them, so no file stays open.
 `detach()` moves the file writer out (a new one each session) but copies the callback and the
 adapter handle, which stay registered: JS `connect()` creates its adapter once, so moving the handle
