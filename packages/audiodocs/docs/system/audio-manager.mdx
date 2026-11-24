@@ -125,12 +125,14 @@ On iOS, passing `true` or `false` only enables or disables interruption event em
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `enabled` | `boolean` | Enables or disables observing interruptions of the active [`AudioRecorder`](../inputs/audio-recorder.mdx). Calls are counted, so each `true` needs a matching `false`. |
+| `enabled` | `boolean` | Enables or disables observing interruptions of the active [`AudioRecorder`](../inputs/audio-recorder.mdx). |
 
 Emits the `interruption` event when the system silences the active recorder's capture (a phone or VoIP call, the Assistant, another recorder, the microphone privacy toggle) and when it lets go:
 
 - `began` (`shouldResume: false`) once per interruption, including a recording that starts already silenced.
 - `ended` (`shouldResume: true`) once capture is no longer silenced. If a call started after `began`, `ended` waits until the call is over.
+
+Don't pause the recorder on `began`: a paused recorder stops capturing, so `ended` is not reported until it resumes. While capture is silenced the recording continues with silence.
 
 Unlike [`observeAudioInterruptions`](#observeaudiointerruptions), it requests no audio focus, so other apps' playback neither stops nor interrupts the recording. It is a no-op on iOS, web and below Android 10 (API 29).
 

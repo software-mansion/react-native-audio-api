@@ -28,7 +28,7 @@ class RecordingSilenceListener(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
   private val mainHandler: Handler,
 ) {
-  private var enabledCount = 0
+  private var isEnabled = false
   private var isReleased = false
   private var recordingCallback: AudioManager.AudioRecordingCallback? = null
 
@@ -53,22 +53,16 @@ class RecordingSilenceListener(
       }
     }
 
-  /** Calls are counted, so a late `false` from one owner does not stop observation another enabled. */
   fun setEnabled(enabled: Boolean) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
       return
     }
     mainHandler.post {
-      if (isReleased) {
+      if (isReleased || enabled == isEnabled) {
         return@post
       }
-      if (enabled) {
-        enabledCount += 1
-        if (enabledCount == 1) register()
-      } else if (enabledCount > 0) {
-        enabledCount -= 1
-        if (enabledCount == 0) unregister()
-      }
+      isEnabled = enabled
+      if (enabled) register() else unregister()
     }
   }
 
@@ -79,7 +73,7 @@ class RecordingSilenceListener(
     }
     mainHandler.post {
       isReleased = true
-      enabledCount = 0
+      isEnabled = false
       unregister()
     }
   }
