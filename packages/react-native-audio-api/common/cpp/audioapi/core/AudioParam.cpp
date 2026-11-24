@@ -122,7 +122,8 @@ std::optional<float> AudioParam::settledValueAt(int framesToProcess, double time
     return std::nullopt;
   }
 
-  return clampToNominalRange(getValueAtTimeUnmodulated(quantumStartTime));
+  // Same add as the a-rate path with zero modulation, which turns -0 into +0.
+  return clampToNominalRange(0.0f + getValueAtTimeUnmodulated(quantumStartTime));
 }
 
 float AudioParam::processKRateParam(double time) {

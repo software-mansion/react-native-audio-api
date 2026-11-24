@@ -6,6 +6,7 @@
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <cmath>
 #include <memory>
 
 using namespace audioapi;
@@ -155,6 +156,23 @@ TEST_F(GainTest, AutomatedGainMatchesBeforeAndAfterSettling) {
     // processNode alone does not tick the clock; processGraph does.
     auto clockBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
     context->processGraph(clockBuffer.get(), FRAMES_TO_PROCESS);
+  }
+}
+
+TEST_F(GainTest, SettledNegativeZeroGainMatchesARatePath) {
+  static constexpr int FRAMES_TO_PROCESS = 4;
+  auto gainNode = TestableGainNode(context);
+  gainNode.setGainParam(-0.0f);
+
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
+  }
+
+  gainNode.setInputBuffer(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FALSE(std::signbit((*buffer->getChannel(0))[i]));
   }
 }
 
