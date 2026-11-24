@@ -28,7 +28,7 @@ class IRecorderInput {
   virtual ~IRecorderInput() = default;
   DELETE_COPY_AND_MOVE(IRecorderInput);
 
-  virtual RouteLease acquireRoute() {
+  virtual RouteLease acquireRoute() noexcept {
     return {};
   }
 

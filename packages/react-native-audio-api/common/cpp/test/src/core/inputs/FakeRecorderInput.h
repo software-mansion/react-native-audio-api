@@ -51,7 +51,7 @@ class FakeRecorderInput final : public IRecorderInput {
   bool isOpen = false;
   std::atomic<bool> running{false};
 
-  RouteLease acquireRoute() override {
+  RouteLease acquireRoute() noexcept override {
     routesAcquired.fetch_add(1);
     RouteReleaser releaser{[this] { routesReleased.fetch_add(1); }};
     RouteLease route(new std::optional<int32_t>(routedDeviceId), std::move(releaser));

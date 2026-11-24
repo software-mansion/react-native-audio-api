@@ -285,7 +285,8 @@ TEST_F(AudioRecorderTest, ARerouteWhileAStartWaitsForItsRouteOpensTheInputOnTheN
   ASSERT_TRUE(recorder_->start().is_ok());
 
   EXPECT_TRUE(recorder_->isRecording());
-  EXPECT_EQ(input_->openPurposes, std::vector<InputOpenPurpose>{InputOpenPurpose::StartSession});
+  // Opened like a reroute, so a new route the platform cannot set up falls back instead of failing.
+  EXPECT_EQ(input_->openPurposes, std::vector<InputOpenPurpose>{InputOpenPurpose::ContinueSession});
   EXPECT_EQ(input_->openedDeviceIds, (std::vector<std::optional<int32_t>>{NEW_DEVICE}));
   EXPECT_EQ(input_->routesAcquired.load(), 2);
   EXPECT_EQ(input_->routesReleased.load(), 1);

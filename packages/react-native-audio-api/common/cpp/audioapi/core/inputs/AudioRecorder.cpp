@@ -58,6 +58,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
 
   Result<NoneType, std::string> startResult = Ok(None);
   RecorderOutputs::Detached abandoned;
+  auto purpose = InputOpenPurpose::StartSession;
 
   while (true) {
     // With the control mutex released, because it can wait seconds for a Bluetooth link, and every other
@@ -74,10 +75,11 @@ Result<NoneType, std::string> AudioRecorder::start() {
     // A reroute arrived meanwhile: this route was settled before the device changed.
     if (session_.inputGeneration != routedGeneration) {
       routedGeneration = session_.inputGeneration;
+      purpose = InputOpenPurpose::ContinueSession;
       continue;
     }
 
-    startResult = openInput(std::move(route), InputOpenPurpose::StartSession);
+    startResult = openInput(std::move(route), purpose);
     if (startResult.is_ok()) {
       return Ok(None);
     }
