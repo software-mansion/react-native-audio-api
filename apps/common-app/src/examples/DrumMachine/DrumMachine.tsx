@@ -50,8 +50,8 @@ type SampleBuffers = Record<DrumVoice, AudioBuffer>;
  * mode.
  */
 const sampleSources: Record<DrumVoice, number> = {
-  kick: kickSample,
-  clap: snareSample,
+  'kick': kickSample,
+  'clap': snareSample,
   'hi-hat': hiHatSample,
 };
 
@@ -135,8 +135,8 @@ const DrumMachine: React.FC = () => {
    */
   const setupPlayer = useCallback((audioContext: AudioContext) => {
     const synth: Record<DrumVoice, { play: (time: number) => void }> = {
-      kick: new Kick(audioContext),
-      clap: new Clap(audioContext),
+      'kick': new Kick(audioContext),
+      'clap': new Clap(audioContext),
       'hi-hat': new HiHat(audioContext),
     };
 

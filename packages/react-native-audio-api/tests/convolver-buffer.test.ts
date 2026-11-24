@@ -34,7 +34,7 @@ beforeAll(() => {
       copyFromChannel: jest.fn(),
       copyToChannel: jest.fn(),
     })
-  ) as unknown as typeof globalThis.createAudioBuffer;
+  );
 });
 
 describe('AudioBuffer channel count bounds', () => {

@@ -27,11 +27,20 @@ function snapToStep(value: number, min: number, step: number): number {
   return min + steps * step;
 }
 
-export function normalizeValue(value: number, min: number, max: number, step: number): number {
+export function normalizeValue(
+  value: number,
+  min: number,
+  max: number,
+  step: number
+): number {
   const clamped = clamp(value, min, max);
   const snapped = snapToStep(clamped, min, step);
   const bounded = clamp(snapped, min, max);
-  const precision = Math.max(getPrecision(step), getPrecision(min), getPrecision(max));
+  const precision = Math.max(
+    getPrecision(step),
+    getPrecision(min),
+    getPrecision(max)
+  );
 
   return Number(bounded.toFixed(precision));
 }

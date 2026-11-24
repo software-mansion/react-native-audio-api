@@ -8,7 +8,10 @@ export interface LoadedBuffer {
   buffer: AudioBuffer;
 }
 
-export type AudioManagerEventType = 'playing' | 'stopped' | 'outputVolumeChanged';
+export type AudioManagerEventType =
+  | 'playing'
+  | 'stopped'
+  | 'outputVolumeChanged';
 
 interface AudioManagerEventEmptyPayload {}
 
@@ -26,7 +29,9 @@ export type AudioManagerEventPayloads = {
   outputVolumeChanged: AudioManagerOutputVolumeChangedPayload;
 };
 
-export interface AudioManagerEvent<T extends AudioManagerEventType = AudioManagerEventType> {
+export interface AudioManagerEvent<
+  T extends AudioManagerEventType = AudioManagerEventType,
+> {
   type: T;
   payload: AudioManagerEventPayloads[T];
 }
@@ -46,5 +51,4 @@ export interface PlaySoundOptions {
   onEnded?: () => void;
 }
 
-
-export type PlaySoundReturnValue = false | { id: string, startedAt: number }
+export type PlaySoundReturnValue = false | { id: string; startedAt: number };

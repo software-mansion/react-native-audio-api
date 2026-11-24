@@ -239,7 +239,7 @@ const Record: FC = () => {
     } catch (error) {
       // Android refuses a switch while a recorder is running, and either
       // platform refuses a device that went away between listing and picking.
-      Alert.alert('Input Device Error', `${error}`);
+      Alert.alert('Input Device Error', String(error));
     }
   };
 

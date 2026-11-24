@@ -100,7 +100,7 @@ class PlaybackNotificationManager implements NotificationManager<
     const result = await NativeAudioAPIModule.showNotification(
       'playback',
       this.notificationKey,
-      params as Record<string, string | number | boolean | undefined>
+      params
     );
 
     if (result.error) {

@@ -4,7 +4,7 @@ import { StyleSheet, Text } from 'react-native';
 import { Spacer } from '../components';
 import { colors } from '../styles';
 
-interface UnsupportedNoticeProps {
+export interface UnsupportedNoticeProps {
   title: string;
   message: string;
 }

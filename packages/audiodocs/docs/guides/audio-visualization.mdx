@@ -15,18 +15,18 @@ It is a simple application that can load and play a sound from file.
 As previously if you would like to code along the tutorial, copy and paste the code provided below into your project.
 
 ```tsx
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-} from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   AudioContext,
   AudioBuffer,
   AudioBufferSourceNode,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View, Button, LayoutChangeEvent } from 'react-native';
+import {
+  ActivityIndicator,
+  View,
+  Button,
+  LayoutChangeEvent,
+} from 'react-native';
 
 const AudioVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -41,7 +41,7 @@ const AudioVisualizer: React.FC = () => {
       bufferSourceRef.current?.stop();
     } else {
       if (!audioContextRef.current) {
-        return
+        return;
       }
 
       bufferSourceRef.current = audioContextRef.current.createBufferSource();
@@ -61,8 +61,10 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      const url = 'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
-      audioBufferRef.current = await audioContextRef.current!.decodeAudioData(url);
+      const url =
+        'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
+      audioBufferRef.current =
+        await audioContextRef.current!.decodeAudioData(url);
       setIsLoading(false);
     };
 
@@ -74,18 +76,20 @@ const AudioVisualizer: React.FC = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1}}>
+    <View style={{ flex: 1 }}>
       <View style={{ flex: 0.2 }} />
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
         <View
           style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
-          }}>
-        <Button
+          }}
+        >
+          <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
@@ -106,6 +110,7 @@ To obtain frequency and time-domain data, we need to utilize the [`AnalyserNode`
 It is an [`AudioNode`](../core/audio-node.mdx) that passes data unchanged from input to output while enabling the extraction of this data in two domains: time and frequency.
 
 We will use two specific [`AnalyserNode`](../analysis/analyser-node.mdx) methods:
+
 - [`getByteTimeDomainData`](../analysis/analyser-node.mdx#getbytetimedomaindata)
 - [`getByteFrequencyData`](../analysis/analyser-node.mdx#getbytefrequencydata)
 

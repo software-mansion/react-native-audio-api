@@ -5,7 +5,7 @@ import { colors } from '../styles';
 import { statusTextColors } from './statusStyles';
 import type { StepItem } from './types';
 
-interface StepRowProps {
+export interface StepRowProps {
   step: StepItem;
 }
 

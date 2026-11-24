@@ -32,7 +32,10 @@ function createXMLHttpRequest(testsPath) {
         this.status = 200;
         this.readyState = 4;
         if (this.responseType === 'arraybuffer') {
-          this.response = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength);
+          this.response = body.buffer.slice(
+            body.byteOffset,
+            body.byteOffset + body.byteLength
+          );
         } else {
           this.responseText = body.toString('utf8');
           this.response = this.responseText;

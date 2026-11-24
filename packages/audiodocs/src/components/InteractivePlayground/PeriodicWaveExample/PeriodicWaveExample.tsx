@@ -1,15 +1,22 @@
-import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  FC,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AnalyserNode,
   AudioContext,
   GainNode,
   OscillatorNode,
-} from "react-native-audio-api";
+} from 'react-native-audio-api';
 
-import chartStyles from "../EffectPlayground/styles.module.css";
-import CurveChart from "../EffectPlayground/visualizers/CurveChart";
-import styles from "../styles.module.css";
-import { WaveformVisualizer } from "../WaveformVisualizer";
+import chartStyles from '../EffectPlayground/styles.module.css';
+import CurveChart from '../EffectPlayground/visualizers/CurveChart';
+import styles from '../styles.module.css';
+import { WaveformVisualizer } from '../WaveformVisualizer';
 
 const FFT_SIZE = 2048;
 const PARAM_SMOOTHING_SECONDS = 0.02;
@@ -22,7 +29,7 @@ export interface PeriodicWaveExampleProps {
   disableNormalization: boolean;
   frequency: number;
   volume: number;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
 }
 
 /** Index 0 of both arrays is the DC offset, which oscillators ignore. */
@@ -34,8 +41,9 @@ export function harmonicsToCoefficients(harmonics: number[]) {
 }
 
 /**
- * Sums the harmonics over a few periods, the way the oscillator renders them. Without
- * `disableNormalization` the spec scales the wave so its peak is exactly 1.
+ * Sums the harmonics over a few periods, the way the oscillator renders them.
+ * Without `disableNormalization` the spec scales the wave so its peak is
+ * exactly 1.
  */
 function computeWaveShape(
   harmonics: number[],
@@ -100,7 +108,7 @@ const PeriodicWaveExample: FC<PeriodicWaveExampleProps> = ({
 
     return () => {
       oscillatorRef.current = null;
-      void ctx.close();
+      ctx.close();
     };
   }, []);
 
@@ -116,7 +124,7 @@ const PeriodicWaveExample: FC<PeriodicWaveExampleProps> = ({
     if (!ctx || !gain) {
       return;
     }
-    if (ctx.state !== "running") {
+    if (ctx.state !== 'running') {
       await ctx.resume();
     }
 
@@ -155,7 +163,11 @@ const PeriodicWaveExample: FC<PeriodicWaveExampleProps> = ({
     const ctx = audioContextRef.current;
     const gain = gainRef.current;
     if (ctx && gain) {
-      gain.gain.setTargetAtTime(volume, ctx.currentTime, PARAM_SMOOTHING_SECONDS);
+      gain.gain.setTargetAtTime(
+        volume,
+        ctx.currentTime,
+        PARAM_SMOOTHING_SECONDS
+      );
     }
   }, [volume]);
 
@@ -182,13 +194,17 @@ const PeriodicWaveExample: FC<PeriodicWaveExampleProps> = ({
         </p>
       </div>
 
-      <WaveformVisualizer analyserNode={analyser} fftSize={FFT_SIZE} theme={theme} />
+      <WaveformVisualizer
+        analyserNode={analyser}
+        fftSize={FFT_SIZE}
+        theme={theme}
+      />
 
       <button
-        onClick={() => (isPlaying ? stop() : void play())}
-        className={`${styles.playButton} ${isPlaying ? styles.playing : ""}`}
+        onClick={() => (isPlaying ? stop() : play())}
+        className={`${styles.playButton} ${isPlaying ? styles.playing : ''}`}
       >
-        {isPlaying ? "Stop" : "Play"}
+        {isPlaying ? 'Stop' : 'Play'}
       </button>
     </div>
   );

@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-import styles from "./styles.module.css";
+import styles from './styles.module.css';
 
 interface LandingFeatureProps {
   title: string;
@@ -8,7 +8,11 @@ interface LandingFeatureProps {
   icon: React.ReactNode;
 }
 
-const LandingFeature: React.FC<LandingFeatureProps> = ({ title, description, icon }) => (
+const LandingFeature: React.FC<LandingFeatureProps> = ({
+  title,
+  description,
+  icon,
+}) => (
   <div className={styles.feature}>
     <div className={styles.featureIconContainer}>{icon}</div>
     <h3 className={styles.featureTitle}>{title}</h3>

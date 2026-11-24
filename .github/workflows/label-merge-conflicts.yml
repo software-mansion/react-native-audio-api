@@ -16,5 +16,5 @@ jobs:
     steps:
       - uses: eps1lon/actions-label-merge-conflict@v3
         with:
-          dirtyLabel: "conflicts"
+          dirtyLabel: 'conflicts'
           repoToken: ${{ secrets.GITHUB_TOKEN }}

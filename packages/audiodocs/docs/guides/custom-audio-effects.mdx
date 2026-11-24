@@ -30,6 +30,7 @@ npx rn-audioapi-custom-node-generator create -o # path where you want files to b
 ## Analyzing generated files
 
 You should see two directories:
+
 - `shared/` — contains C++ files (source code for the custom effect and the JSI layer — Host Objects used to communicate with JavaScript)
 - `specs/` — defines the TypeScript interface that invokes C++ code from JavaScript
 
@@ -75,6 +76,7 @@ public:
 
 } // namespace audioapi
 ```
+
 </details>
 
 <br />
@@ -102,6 +104,7 @@ namespace audioapi {
     }
 } // namespace audioapi
 ```
+
 </details>
 
 <br />
@@ -148,6 +151,7 @@ public:
 };
 } // namespace audioapi
 ```
+
 </details>
 
 ## Codegen
@@ -201,46 +205,51 @@ Finally, onboard your custom module by adding a `types.ts` file with a TypeScrip
 
 ```typescript
 // types.ts
-import { AudioNode, BaseAudioContext } from "react-native-audio-api";
-import { IAudioNode, IBaseAudioContext } from "react-native-audio-api/lib/typescript/interfaces";
+import { AudioNode, BaseAudioContext } from 'react-native-audio-api';
+import {
+  IAudioNode,
+  IBaseAudioContext,
+} from 'react-native-audio-api/lib/typescript/interfaces';
 
 export interface IMyProcessorNode extends IAudioNode {
-    gain: number;
+  gain: number;
 }
 
 export class MyProcessorNode extends AudioNode {
-    constructor(context: BaseAudioContext, node: IMyProcessorNode) {
-        super(context, node);
-    }
+  constructor(context: BaseAudioContext, node: IMyProcessorNode) {
+    super(context, node);
+  }
 
-    public set gain(value: number) {
-        (this.node as IMyProcessorNode).gain = value;
-    }
+  public set gain(value: number) {
+    (this.node as IMyProcessorNode).gain = value;
+  }
 
-    public get gain(): number {
-        return (this.node as IMyProcessorNode).gain;
-    }
+  public get gain(): number {
+    return (this.node as IMyProcessorNode).gain;
+  }
 }
 
 declare global {
-    var createCustomProcessorNode: (context: IBaseAudioContext) => IMyProcessorNode;
+  var createCustomProcessorNode: (
+    context: IBaseAudioContext
+  ) => IMyProcessorNode;
 }
 ```
 
 ## Example
 
 ```tsx
-import {
-  AudioContext,
-  OscillatorNode,
-} from 'react-native-audio-api';
+import { AudioContext, OscillatorNode } from 'react-native-audio-api';
 import { MyProcessorNode } from './types';
 
 function App() {
   const audioContext = new AudioContext();
   const oscillator = audioContext.createOscillator();
   // constructor is put in global scope
-  const processor = new MyProcessorNode(audioContext, global.createCustomProcessorNode(audioContext.context));
+  const processor = new MyProcessorNode(
+    audioContext,
+    global.createCustomProcessorNode(audioContext.context)
+  );
   oscillator.connect(processor);
   processor.connect(audioContext.destination);
   oscillator.start(audioContext.currentTime);

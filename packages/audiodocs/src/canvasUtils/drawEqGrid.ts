@@ -1,4 +1,3 @@
-
 interface GridColumn {
   label?: string;
 }
@@ -13,7 +12,7 @@ interface GridOptions {
 }
 
 const defaultOptions: GridOptions = {
-  columns: [{}, { label: '100' }, { label: '1k' }, { label: '10k' },  {}],
+  columns: [{}, { label: '100' }, { label: '1k' }, { label: '10k' }, {}],
   rows: [{}, { label: '+6' }, { label: '0' }, { label: '-6' }, {}],
 };
 
@@ -21,10 +20,16 @@ const defaultOptions: GridOptions = {
 // TODO: better name?
 const labelBoxSize = 32;
 
-export function getDrawingBounds(canvas: HTMLCanvasElement): { x: number; y: number; width: number; height: number } {
-  const dpr = typeof window !== 'undefined' && window.devicePixelRatio
-    ? window.devicePixelRatio
-    : 1;
+export function getDrawingBounds(canvas: HTMLCanvasElement): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const dpr =
+    typeof window !== 'undefined' && window.devicePixelRatio
+      ? window.devicePixelRatio
+      : 1;
   const width = canvas.clientWidth || Math.floor(canvas.width / dpr);
   const height = canvas.clientHeight || Math.floor(canvas.height / dpr);
 
@@ -36,7 +41,14 @@ export function getDrawingBounds(canvas: HTMLCanvasElement): { x: number; y: num
   };
 }
 
-function drawColumns(ctx: CanvasRenderingContext2D, columns: GridColumn[], x: number, y: number, width: number, height: number) {
+function drawColumns(
+  ctx: CanvasRenderingContext2D,
+  columns: GridColumn[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
   const columnWidth = width / (columns.length - 1);
 
   columns.forEach((_c, index) => {
@@ -51,7 +63,14 @@ function drawColumns(ctx: CanvasRenderingContext2D, columns: GridColumn[], x: nu
   });
 }
 
-function drawRows(ctx: CanvasRenderingContext2D, rows: GridRow[], x: number, y: number, width: number, height: number) {
+function drawRows(
+  ctx: CanvasRenderingContext2D,
+  rows: GridRow[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
   const rowHeight = height / (rows.length - 1);
 
   rows.forEach((_r, index) => {
@@ -66,7 +85,14 @@ function drawRows(ctx: CanvasRenderingContext2D, rows: GridRow[], x: number, y: 
   });
 }
 
-function drawColumnLabels(ctx: CanvasRenderingContext2D, columns: GridColumn[], x: number, y: number, width: number, height: number) {
+function drawColumnLabels(
+  ctx: CanvasRenderingContext2D,
+  columns: GridColumn[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
   const columnWidth = width / (columns.length - 1);
 
   columns.forEach((column, index) => {
@@ -76,7 +102,6 @@ function drawColumnLabels(ctx: CanvasRenderingContext2D, columns: GridColumn[], 
 
     ctx.fillStyle = '#C1C6E5';
     ctx.font = '400 16px Aeonik';
-    const textWidth = ctx.measureText(column.label).width;
 
     const colX = x + index * columnWidth;
     const textX = colX;
@@ -84,7 +109,14 @@ function drawColumnLabels(ctx: CanvasRenderingContext2D, columns: GridColumn[], 
   });
 }
 
-function drawRowLabels(ctx: CanvasRenderingContext2D, rows: GridRow[], x: number, y: number, width: number, height: number) {
+function drawRowLabels(
+  ctx: CanvasRenderingContext2D,
+  rows: GridRow[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
   const rowHeight = height / (rows.length - 1);
 
   rows.forEach((row, index) => {
@@ -94,15 +126,17 @@ function drawRowLabels(ctx: CanvasRenderingContext2D, rows: GridRow[], x: number
 
     ctx.fillStyle = '#C1C6E5';
     ctx.font = '400 16px Aeonik';
-    const textMetrics = ctx.measureText(row.label);
-    const textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
 
     const rowY = y + index * rowHeight;
     ctx.fillText(row.label, width + 16, rowY);
   });
 }
 
-export default function drawEqGrid(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: GridOptions = defaultOptions) {
+export default function drawEqGrid(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  options: GridOptions = defaultOptions
+) {
   const { columns, rows } = options;
   const { x, y, width, height } = getDrawingBounds(canvas);
 
@@ -111,4 +145,4 @@ export default function drawEqGrid(canvas: HTMLCanvasElement, ctx: CanvasRenderi
 
   drawColumnLabels(ctx, columns, x, y, width, height);
   drawRowLabels(ctx, rows, x, y, width, height);
-};
+}

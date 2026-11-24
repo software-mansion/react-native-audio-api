@@ -32,8 +32,7 @@ export default class PannerNode extends AudioNode {
   }
 
   get distanceModel(): DistanceModelType {
-    return (this.node as globalThis.PannerNode)
-      .distanceModel as DistanceModelType;
+    return (this.node as globalThis.PannerNode).distanceModel;
   }
 
   set distanceModel(value: DistanceModelType) {

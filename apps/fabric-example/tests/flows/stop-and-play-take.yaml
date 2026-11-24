@@ -5,7 +5,8 @@ steps:
   - tap: { id: recorder-stop }
   - echo: Play the take back through the playback panel
   - scroll-to: { target: { id: playback-source } }
-  - await: { text: { in: { id: playback-last-take }, contains: 'last take: take' } }
+  - await:
+      { text: { in: { id: playback-last-take }, contains: 'last take: take' } }
   - tap: { id: playback-source }
   - await: { visible: { id: playback-source-option-Last take } }
   - tap: { id: playback-source-option-Last take }

@@ -18,7 +18,7 @@
       "Bash(cmake *)",
       "Bash(clang-format *)",
       "Bash(node *)",
-      "Bash(npx prettier*)",
+      "Bash(pnpm exec oxfmt*)",
 
       "Bash(ls*)",
       "Bash(pwd)",

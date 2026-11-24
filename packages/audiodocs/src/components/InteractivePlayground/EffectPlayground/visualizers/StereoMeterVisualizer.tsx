@@ -1,14 +1,17 @@
 import React, { FC, useCallback, useEffect, useRef } from 'react';
 import type { AudioContext, GainNode } from 'react-native-audio-api';
 
-import ResponsiveCanvas, { ResponsiveCanvasDrawParams } from '@site/src/ui/ResponsiveCanvas';
+import ResponsiveCanvas, {
+  ResponsiveCanvasDrawParams,
+} from '@site/src/ui/ResponsiveCanvas';
 
 import { ANALYSER_FFT_SIZE } from '../useEffectChain';
 
 /**
- * The web wrappers expose the browser objects they decorate. The meter taps those directly
- * because it is documentation plumbing, not part of the example the reader follows, and the
- * wrapper build shipped with the docs does not always cover ChannelSplitterNode.
+ * The web wrappers expose the browser objects they decorate. The meter taps
+ * those directly because it is documentation plumbing, not part of the example
+ * the reader follows, and the wrapper build shipped with the docs does not
+ * always cover ChannelSplitterNode.
  */
 interface BrowserBackedContext {
   context: globalThis.AudioContext;
@@ -26,7 +29,10 @@ const LABEL_WIDTH = 24;
 
 interface StereoMeterVisualizerProps {
   ctx: AudioContext | null;
-  /** Node whose output is measured; the meter taps it without altering the graph's routing. */
+  /**
+   * Node whose output is measured; the meter taps it without altering the
+   * graph's routing.
+   */
   monitor: GainNode | null;
   theme: 'light' | 'dark';
 }
@@ -49,7 +55,11 @@ function rmsLevel(samples: Float32Array): number {
   return Math.min(1, Math.max(0, (db - METER_FLOOR_DB) / -METER_FLOOR_DB));
 }
 
-export const StereoMeterVisualizer: FC<StereoMeterVisualizerProps> = ({ ctx, monitor, theme }) => {
+export const StereoMeterVisualizer: FC<StereoMeterVisualizerProps> = ({
+  ctx,
+  monitor,
+  theme,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const analysersRef = useRef<ChannelAnalysers | null>(null);
@@ -91,7 +101,10 @@ export const StereoMeterVisualizer: FC<StereoMeterVisualizerProps> = ({ ctx, mon
 
       const cssWidth = canvas.clientWidth || 300;
       const cssHeight = canvas.clientHeight || 150;
-      const dpr = cssWidth > 0 && canvas.width > 0 ? canvas.width / cssWidth : window.devicePixelRatio || 1;
+      const dpr =
+        cssWidth > 0 && canvas.width > 0
+          ? canvas.width / cssWidth
+          : window.devicePixelRatio || 1;
       const isDark = theme === 'dark';
 
       const analysers = analysersRef.current;
@@ -106,8 +119,14 @@ export const StereoMeterVisualizer: FC<StereoMeterVisualizerProps> = ({ ctx, mon
         return rmsLevel(samples);
       };
 
-      levels.left = Math.max(measure(analysers?.left), levels.left * METER_DECAY_PER_FRAME);
-      levels.right = Math.max(measure(analysers?.right), levels.right * METER_DECAY_PER_FRAME);
+      levels.left = Math.max(
+        measure(analysers?.left),
+        levels.left * METER_DECAY_PER_FRAME
+      );
+      levels.right = Math.max(
+        measure(analysers?.right),
+        levels.right * METER_DECAY_PER_FRAME
+      );
 
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.clearRect(0, 0, cssWidth, cssHeight);
@@ -121,13 +140,20 @@ export const StereoMeterVisualizer: FC<StereoMeterVisualizerProps> = ({ ctx, mon
       context.textAlign = 'left';
 
       const drawBar = (label: string, level: number, y: number) => {
-        context.fillStyle = isDark ? 'rgba(252, 252, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)';
+        context.fillStyle = isDark
+          ? 'rgba(252, 252, 255, 0.8)'
+          : 'rgba(0, 0, 0, 0.7)';
         context.fillText(label, 0, y + BAR_HEIGHT / 2);
 
         context.fillStyle = 'rgba(145, 159, 207, 0.2)';
         context.fillRect(LABEL_WIDTH, y, trackWidth, BAR_HEIGHT);
 
-        const gradient = context.createLinearGradient(LABEL_WIDTH, 0, cssWidth, 0);
+        const gradient = context.createLinearGradient(
+          LABEL_WIDTH,
+          0,
+          cssWidth,
+          0
+        );
         gradient.addColorStop(0, isDark ? '#ff7774' : '#fa7f7c');
         gradient.addColorStop(1, isDark ? '#c7413e' : '#e0413d');
         context.fillStyle = gradient;
@@ -165,5 +191,11 @@ export const StereoMeterVisualizer: FC<StereoMeterVisualizerProps> = ({ ctx, mon
     };
   }, [draw]);
 
-  return <ResponsiveCanvas onDraw={handleCanvasDraw} canvasRef={canvasRef} throttleMs={16} />;
+  return (
+    <ResponsiveCanvas
+      onDraw={handleCanvasDraw}
+      canvasRef={canvasRef}
+      throttleMs={16}
+    />
+  );
 };

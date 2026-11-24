@@ -11,8 +11,10 @@ export interface ResponsiveCanvasDrawParams {
   dpr: number;
 }
 
-export interface ResponsiveCanvasProps
-  extends Omit<React.CanvasHTMLAttributes<HTMLCanvasElement>, 'height' | 'width'> {
+export interface ResponsiveCanvasProps extends Omit<
+  React.CanvasHTMLAttributes<HTMLCanvasElement>,
+  'height' | 'width'
+> {
   onDraw: (params: ResponsiveCanvasDrawParams) => void;
   aspectRatio?: number;
   height?: number;
@@ -41,18 +43,21 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
   const lastDrawTimeRef = useRef(0);
   const drawRef = useRef<() => void>(() => undefined);
 
-  const setCanvasRef = useCallback((element: HTMLCanvasElement | null) => {
-    internalCanvasRef.current = element;
+  const setCanvasRef = useCallback(
+    (element: HTMLCanvasElement | null) => {
+      internalCanvasRef.current = element;
 
-    if (typeof externalCanvasRef === 'function') {
-      externalCanvasRef(element);
-      return;
-    }
+      if (typeof externalCanvasRef === 'function') {
+        externalCanvasRef(element);
+        return;
+      }
 
-    if (externalCanvasRef) {
-      externalCanvasRef.current = element;
-    }
-  }, [externalCanvasRef]);
+      if (externalCanvasRef) {
+        externalCanvasRef.current = element;
+      }
+    },
+    [externalCanvasRef]
+  );
 
   const clearScheduledDraw = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -70,37 +75,40 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
     }
   }, []);
 
-  const scheduleDraw = useCallback((immediate = false) => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+  const scheduleDraw = useCallback(
+    (immediate = false) => {
+      if (typeof window === 'undefined') {
+        return;
+      }
 
-    const runDraw = () => {
-      rafIdRef.current = window.requestAnimationFrame(() => {
-        rafIdRef.current = null;
-        drawRef.current();
-        lastDrawTimeRef.current = Date.now();
-      });
-    };
+      const runDraw = () => {
+        rafIdRef.current = window.requestAnimationFrame(() => {
+          rafIdRef.current = null;
+          drawRef.current();
+          lastDrawTimeRef.current = Date.now();
+        });
+      };
 
-    if (immediate) {
-      clearScheduledDraw();
-      runDraw();
-      return;
-    }
+      if (immediate) {
+        clearScheduledDraw();
+        runDraw();
+        return;
+      }
 
-    if (timeoutIdRef.current !== null || rafIdRef.current !== null) {
-      return;
-    }
+      if (timeoutIdRef.current !== null || rafIdRef.current !== null) {
+        return;
+      }
 
-    const elapsed = Date.now() - lastDrawTimeRef.current;
-    const delay = Math.max(0, throttleMs - elapsed);
+      const elapsed = Date.now() - lastDrawTimeRef.current;
+      const delay = Math.max(0, throttleMs - elapsed);
 
-    timeoutIdRef.current = window.setTimeout(() => {
-      timeoutIdRef.current = null;
-      runDraw();
-    }, delay);
-  }, [clearScheduledDraw, throttleMs]);
+      timeoutIdRef.current = window.setTimeout(() => {
+        timeoutIdRef.current = null;
+        runDraw();
+      }, delay);
+    },
+    [clearScheduledDraw, throttleMs]
+  );
 
   useEffect(() => {
     drawRef.current = () => {
@@ -118,9 +126,10 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
         Math.floor(typeof height === 'number' ? height : cssWidth / ratio)
       );
 
-      const dpr = (typeof window !== 'undefined' && window.devicePixelRatio)
-        ? window.devicePixelRatio
-        : 1;
+      const dpr =
+        typeof window !== 'undefined' && window.devicePixelRatio
+          ? window.devicePixelRatio
+          : 1;
       const width = Math.max(1, Math.floor(cssWidth * dpr));
       const computedHeight = Math.max(1, Math.floor(cssHeight * dpr));
 
@@ -162,9 +171,10 @@ const ResponsiveCanvas: React.FC<ResponsiveCanvasProps> = ({
       scheduleDraw();
     };
 
-    const observer = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(handleResize)
-      : null;
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(handleResize)
+        : null;
 
     if (observer && containerRef.current) {
       observer.observe(containerRef.current);

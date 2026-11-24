@@ -90,12 +90,12 @@ Imports such as `react-native-audio-api/lib/...` or `react-native-audio-api/src/
 
 Event handler properties now follow the Web Audio API naming. The old camelCase names were removed without aliases.
 
-| 0.x | 1.x |
-| :-- | :-- |
-| `onEnded` | `onended` |
-| `onLoopEnded` | `onloopended` |
-| `onBufferEnded` | `onbufferended` |
-| `onPositionChanged` | `onpositionchanged` |
+| 0.x                         | 1.x                         |
+| :-------------------------- | :-------------------------- |
+| `onEnded`                   | `onended`                   |
+| `onLoopEnded`               | `onloopended`               |
+| `onBufferEnded`             | `onbufferended`             |
+| `onPositionChanged`         | `onpositionchanged`         |
 | `onPositionChangedInterval` | `onpositionchangedInterval` |
 
 ```tsx
@@ -113,14 +113,14 @@ Scheduled sources additionally support `addEventListener('ended', ...)` / `remov
 
 ### Removed APIs
 
-| Removed | Replacement |
-| :-- | :-- |
-| `StreamerNode`, `createStreamer()`, `StreamerOptions` | `createFileSource` or [`<Audio>`](../sources/audio-tag.mdx) (remote streaming requires [FFmpeg](#ffmpeg-is-now-opt-in)) |
-| `RecorderAdapterNode`, `createRecorderAdapter()` | [`recorder.connect(context, destination)`](#recorder-graph-connection) |
-| `createWorkletNode()`, `createWorkletProcessingNode()`, `createWorkletSourceNode()`, `AudioWorkletRuntime` | [`react-native-audio-worklets`](#worklet-nodes) |
-| `AudioRecorderStartOptions` | `fileName` in [`enableFileOutput`](#recorder-file-output) |
-| `SessionOptions` type | `SystemOptions` |
-| `BaseAudioBufferSourceOptions` type | `AudioBufferQueueSourceOptions` |
+| Removed                                                                                                    | Replacement                                                                                                             |
+| :--------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------- |
+| `StreamerNode`, `createStreamer()`, `StreamerOptions`                                                      | `createFileSource` or [`<Audio>`](../sources/audio-tag.mdx) (remote streaming requires [FFmpeg](#ffmpeg-is-now-opt-in)) |
+| `RecorderAdapterNode`, `createRecorderAdapter()`                                                           | [`recorder.connect(context, destination)`](#recorder-graph-connection)                                                  |
+| `createWorkletNode()`, `createWorkletProcessingNode()`, `createWorkletSourceNode()`, `AudioWorkletRuntime` | [`react-native-audio-worklets`](#worklet-nodes)                                                                         |
+| `AudioRecorderStartOptions`                                                                                | `fileName` in [`enableFileOutput`](#recorder-file-output)                                                               |
+| `SessionOptions` type                                                                                      | `SystemOptions`                                                                                                         |
+| `BaseAudioBufferSourceOptions` type                                                                        | `AudioBufferQueueSourceOptions`                                                                                         |
 
 ### `AudioRecorder`
 
@@ -151,13 +151,17 @@ recorder.connect(ctx, ctx.destination);
 ```tsx
 // diff-remove-start
 const result = recorder.enableFileOutput({ fileNamePrefix: 'take' });
-if (result.status === 'error') { /* ... */ }
+if (result.status === 'error') {
+  /* ... */
+}
 await recorder.start({ fileNameOverride: 'take1' });
 // diff-remove-end
 // diff-add-start
 try {
   recorder.enableFileOutput({ fileName: 'take1' });
-} catch (e) { /* NotSupportedError */ }
+} catch (e) {
+  /* NotSupportedError */
+}
 await recorder.start();
 // diff-add-end
 ```
@@ -236,36 +240,54 @@ Worklet nodes are classes imported from `react-native-audio-worklets` instead of
 ```tsx
 // diff-add-start
 import 'react-native-audio-api';
-import { WorkletNode, WorkletProcessingNode } from 'react-native-audio-worklets';
+import {
+  WorkletNode,
+  WorkletProcessingNode,
+} from 'react-native-audio-worklets';
 // diff-add-end
 
 // diff-remove-start
 const viz = ctx.createWorkletNode(
-  (audioData: Float32Array[], channelCount: number) => { 'worklet'; /* ... */ },
-  1024, 2, 'UIRuntime',
+  (audioData: Float32Array[], channelCount: number) => {
+    'worklet'; /* ... */
+  },
+  1024,
+  2,
+  'UIRuntime'
 );
 // diff-remove-end
 // diff-add-start
 const viz = new WorkletNode(
   ctx,
-  (audioData: Float32Array) => { 'worklet'; /* ... */ },
-  1024,
+  (audioData: Float32Array) => {
+    'worklet'; /* ... */
+  },
+  1024
 );
 // diff-add-end
 
 // diff-remove-start
 const fx = ctx.createWorkletProcessingNode(
-  (input, output, framesToProcess, currentTime) => { 'worklet'; /* ... */ },
-  'AudioRuntime',
+  (input, output, framesToProcess, currentTime) => {
+    'worklet'; /* ... */
+  },
+  'AudioRuntime'
 );
 // diff-remove-end
 // diff-add-start
 const fx = new WorkletProcessingNode(
   ctx,
-  (input, output, inputChannelCount, outputChannelCount, framesToProcess, currentTime) => {
+  (
+    input,
+    output,
+    inputChannelCount,
+    outputChannelCount,
+    framesToProcess,
+    currentTime
+  ) => {
     'worklet';
     /* ... */
-  },
+  }
 );
 // diff-add-end
 ```

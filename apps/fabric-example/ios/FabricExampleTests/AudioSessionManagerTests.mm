@@ -18,9 +18,9 @@
 
 @interface FakeAudioPortDescription : NSObject
 
-@property(nonatomic, copy) NSString *portName;
-@property(nonatomic, copy) NSString *portType;
-@property(nonatomic, copy) NSString *UID;
+@property (nonatomic, copy) NSString *portName;
+@property (nonatomic, copy) NSString *portType;
+@property (nonatomic, copy) NSString *UID;
 
 @end
 
@@ -30,8 +30,8 @@
 
 @interface FakeAudioRouteDescription : NSObject
 
-@property(nonatomic, strong) NSArray<FakeAudioPortDescription *> *inputs;
-@property(nonatomic, strong) NSArray<FakeAudioPortDescription *> *outputs;
+@property (nonatomic, strong) NSArray<FakeAudioPortDescription *> *inputs;
+@property (nonatomic, strong) NSArray<FakeAudioPortDescription *> *outputs;
 
 @end
 
@@ -41,27 +41,27 @@
 
 @interface FakeAVAudioSession : NSObject
 
-@property(nonatomic, copy) AVAudioSessionCategory category;
-@property(nonatomic, copy) AVAudioSessionMode mode;
-@property(nonatomic, assign) AVAudioSessionCategoryOptions categoryOptions;
-@property(nonatomic, assign) BOOL allowHapticsAndSystemSoundsDuringRecording;
-@property(nonatomic, assign) double sampleRate;
-@property(nonatomic, assign) NSTimeInterval preferredIOBufferDuration;
-@property(nonatomic, assign) NSInteger inputNumberOfChannels;
-@property(nonatomic, strong) NSArray<FakeAudioPortDescription *> *availableInputs;
-@property(nonatomic, strong) FakeAudioRouteDescription *currentRoute;
-@property(nonatomic, assign) NSInteger recordPermission;
-@property(nonatomic, strong) NSError *setCategoryError;
-@property(nonatomic, strong) NSError *setAllowHapticsError;
-@property(nonatomic, strong) NSError *setActiveError;
-@property(nonatomic, strong) NSError *setPreferredInputError;
-@property(nonatomic, assign) NSInteger setCategoryCallCount;
-@property(nonatomic, assign) NSInteger setAllowHapticsCallCount;
-@property(nonatomic, assign) NSInteger setActiveCallCount;
-@property(nonatomic, assign) NSInteger setPreferredInputCallCount;
-@property(nonatomic, assign) BOOL lastSetActiveValue;
-@property(nonatomic, assign) AVAudioSessionSetActiveOptions lastSetActiveOptions;
-@property(nonatomic, strong) FakeAudioPortDescription *lastPreferredInput;
+@property (nonatomic, copy) AVAudioSessionCategory category;
+@property (nonatomic, copy) AVAudioSessionMode mode;
+@property (nonatomic, assign) AVAudioSessionCategoryOptions categoryOptions;
+@property (nonatomic, assign) BOOL allowHapticsAndSystemSoundsDuringRecording;
+@property (nonatomic, assign) double sampleRate;
+@property (nonatomic, assign) NSTimeInterval preferredIOBufferDuration;
+@property (nonatomic, assign) NSInteger inputNumberOfChannels;
+@property (nonatomic, strong) NSArray<FakeAudioPortDescription *> *availableInputs;
+@property (nonatomic, strong) FakeAudioRouteDescription *currentRoute;
+@property (nonatomic, assign) NSInteger recordPermission;
+@property (nonatomic, strong) NSError *setCategoryError;
+@property (nonatomic, strong) NSError *setAllowHapticsError;
+@property (nonatomic, strong) NSError *setActiveError;
+@property (nonatomic, strong) NSError *setPreferredInputError;
+@property (nonatomic, assign) NSInteger setCategoryCallCount;
+@property (nonatomic, assign) NSInteger setAllowHapticsCallCount;
+@property (nonatomic, assign) NSInteger setActiveCallCount;
+@property (nonatomic, assign) NSInteger setPreferredInputCallCount;
+@property (nonatomic, assign) BOOL lastSetActiveValue;
+@property (nonatomic, assign) AVAudioSessionSetActiveOptions lastSetActiveOptions;
+@property (nonatomic, strong) FakeAudioPortDescription *lastPreferredInput;
 
 @end
 
@@ -107,7 +107,8 @@
   return YES;
 }
 
-- (BOOL)setAllowHapticsAndSystemSoundsDuringRecording:(BOOL)allowHapticsAndSystemSoundsDuringRecording
+- (BOOL)setAllowHapticsAndSystemSoundsDuringRecording:
+            (BOOL)allowHapticsAndSystemSoundsDuringRecording
                                                 error:(NSError **)error
 {
   self.setAllowHapticsCallCount += 1;
@@ -124,7 +125,9 @@
   return YES;
 }
 
-- (BOOL)setActive:(BOOL)active withOptions:(AVAudioSessionSetActiveOptions)options error:(NSError **)error
+- (BOOL)setActive:(BOOL)active
+      withOptions:(AVAudioSessionSetActiveOptions)options
+            error:(NSError **)error
 {
   self.setActiveCallCount += 1;
   self.lastSetActiveValue = active;
@@ -159,13 +162,13 @@
 
 @interface TestableAudioSessionManager : AudioSessionManager
 
-@property(nonatomic, assign) BOOL shouldOverrideMicrophoneUsageDescription;
-@property(nonatomic, strong) id overriddenMicrophoneUsageDescription;
-@property(nonatomic, assign) BOOL shouldUseAudioApplicationRecordPermissionAPI;
-@property(nonatomic, assign) BOOL hasOverriddenRecordPermissionStatus;
-@property(nonatomic, assign) NSInteger overriddenRecordPermissionStatus;
-@property(nonatomic, assign) BOOL overriddenRequestPermissionResult;
-@property(nonatomic, assign) NSInteger requestSystemRecordPermissionCallCount;
+@property (nonatomic, assign) BOOL shouldOverrideMicrophoneUsageDescription;
+@property (nonatomic, strong) id overriddenMicrophoneUsageDescription;
+@property (nonatomic, assign) BOOL shouldUseAudioApplicationRecordPermissionAPI;
+@property (nonatomic, assign) BOOL hasOverriddenRecordPermissionStatus;
+@property (nonatomic, assign) NSInteger overriddenRecordPermissionStatus;
+@property (nonatomic, assign) BOOL overriddenRequestPermissionResult;
+@property (nonatomic, assign) NSInteger requestSystemRecordPermissionCallCount;
 
 @end
 
@@ -204,8 +207,8 @@
 
 @interface AudioSessionManagerTests : XCTestCase
 
-@property(nonatomic, strong) TestableAudioSessionManager *manager;
-@property(nonatomic, strong) FakeAVAudioSession *fakeSession;
+@property (nonatomic, strong) TestableAudioSessionManager *manager;
+@property (nonatomic, strong) FakeAVAudioSession *fakeSession;
 
 @end
 
@@ -231,7 +234,9 @@
   [super tearDown];
 }
 
-- (FakeAudioPortDescription *)portWithName:(NSString *)name type:(NSString *)type uid:(NSString *)uid
+- (FakeAudioPortDescription *)portWithName:(NSString *)name
+                                      type:(NSString *)type
+                                       uid:(NSString *)uid
 {
   FakeAudioPortDescription *port = [[FakeAudioPortDescription alloc] init];
   port.portName = name;
@@ -284,8 +289,9 @@
 - (void)testConfigureAudioSessionReturnsFalseWhenSettingCategoryFails
 {
   self.manager.desiredCategory = AVAudioSessionCategoryRecord;
-  self.fakeSession.setCategoryError =
-      [NSError errorWithDomain:@"AudioSessionTests" code:100 userInfo:nil];
+  self.fakeSession.setCategoryError = [NSError errorWithDomain:@"AudioSessionTests"
+                                                          code:100
+                                                      userInfo:nil];
 
   NSError *error = nil;
   XCTAssertFalse([self.manager configureAudioSession:&error]);
@@ -301,8 +307,9 @@
   self.manager.desiredCategory = AVAudioSessionCategoryPlayAndRecord;
   self.manager.allowHapticsAndSounds = true;
   self.fakeSession.category = AVAudioSessionCategoryAmbient;
-  self.fakeSession.setAllowHapticsError =
-      [NSError errorWithDomain:@"AudioSessionTests" code:101 userInfo:nil];
+  self.fakeSession.setAllowHapticsError = [NSError errorWithDomain:@"AudioSessionTests"
+                                                              code:101
+                                                          userInfo:nil];
 
   NSError *error = nil;
   XCTAssertFalse([self.manager configureAudioSession:&error]);
@@ -422,8 +429,9 @@
 - (void)testActivateSessionIfNeededReturnsFalseWhenConfigurationFails
 {
   self.manager.desiredCategory = AVAudioSessionCategoryRecord;
-  self.fakeSession.setCategoryError =
-      [NSError errorWithDomain:@"AudioSessionTests" code:102 userInfo:nil];
+  self.fakeSession.setCategoryError = [NSError errorWithDomain:@"AudioSessionTests"
+                                                          code:102
+                                                      userInfo:nil];
 
   NSError *error = nil;
   XCTAssertFalse([self.manager activateSessionIfNeeded:false error:&error]);
@@ -450,8 +458,9 @@
   self.fakeSession.sampleRate = 48000;
   self.fakeSession.inputNumberOfChannels = 4;
   self.fakeSession.currentRoute.inputs = @[ [self portWithName:@"Mic" type:@"mic" uid:@"mic-1"] ];
-  self.fakeSession.currentRoute.outputs =
-      @[ [self portWithName:@"Speaker" type:@"speaker" uid:@"spk-1"] ];
+  self.fakeSession.currentRoute.outputs = @[ [self portWithName:@"Speaker"
+                                                           type:@"speaker"
+                                                            uid:@"spk-1"] ];
 
   NSString *snapshot = [self.manager inputDiagnosticsSnapshot];
 
@@ -471,74 +480,69 @@
   ]];
 
   XCTAssertEqualObjects(devices, (@[
-    @{
-      @"name" : @"Mic",
-      @"category" : @"mic",
-      @"id" : @"mic-1",
-    },
-    @{
-      @"name" : @"Speaker",
-      @"category" : @"speaker",
-      @"id" : @"spk-1",
-    },
-  ]));
+                          @{
+                            @"name" : @"Mic",
+                            @"category" : @"mic",
+                            @"id" : @"mic-1",
+                          },
+                          @{
+                            @"name" : @"Speaker",
+                            @"category" : @"speaker",
+                            @"id" : @"spk-1",
+                          },
+                        ]));
 }
 
 - (void)testGetDevicesInfoReturnsAvailableAndCurrentRouteSnapshots
 {
-  FakeAudioPortDescription *availableInput = [self portWithName:@"Available Mic" type:@"mic" uid:@"in-1"];
-  FakeAudioPortDescription *currentInput = [self portWithName:@"Current Mic" type:@"mic" uid:@"in-2"];
-  FakeAudioPortDescription *currentOutput =
-      [self portWithName:@"Speaker" type:@"speaker" uid:@"out-1"];
+  FakeAudioPortDescription *availableInput = [self portWithName:@"Available Mic"
+                                                           type:@"mic"
+                                                            uid:@"in-1"];
+  FakeAudioPortDescription *currentInput = [self portWithName:@"Current Mic"
+                                                         type:@"mic"
+                                                          uid:@"in-2"];
+  FakeAudioPortDescription *currentOutput = [self portWithName:@"Speaker"
+                                                          type:@"speaker"
+                                                           uid:@"out-1"];
   self.fakeSession.availableInputs = @[ availableInput ];
   self.fakeSession.currentRoute.inputs = @[ currentInput ];
   self.fakeSession.currentRoute.outputs = @[ currentOutput ];
 
   __block NSDictionary *resolvedValue = nil;
 
-  [self.manager getDevicesInfo:^(id result) {
-    resolvedValue = result;
-  }
-                     reject:^(NSString *code, NSString *message, NSError *error){
-                     }];
+  [self.manager
+      getDevicesInfo:^(id result) { resolvedValue = result; }
+              reject:^(NSString *code, NSString *message, NSError *error){}];
 
   XCTAssertNotNil(resolvedValue);
-  XCTAssertEqualObjects(
-      resolvedValue[@"availableInputs"],
-      (@[
-        @{
-          @"name" : @"Available Mic",
-          @"category" : @"mic",
-          @"id" : @"in-1",
-        },
-      ]));
-  XCTAssertEqualObjects(
-      resolvedValue[@"currentInputs"],
-      (@[
-        @{
-          @"name" : @"Current Mic",
-          @"category" : @"mic",
-          @"id" : @"in-2",
-        },
-      ]));
-  XCTAssertEqualObjects(
-      resolvedValue[@"availableOutputs"],
-      (@[
-        @{
-          @"name" : @"Speaker",
-          @"category" : @"speaker",
-          @"id" : @"out-1",
-        },
-      ]));
-  XCTAssertEqualObjects(
-      resolvedValue[@"currentOutputs"],
-      (@[
-        @{
-          @"name" : @"Speaker",
-          @"category" : @"speaker",
-          @"id" : @"out-1",
-        },
-      ]));
+  XCTAssertEqualObjects(resolvedValue[@"availableInputs"], (@[
+                          @{
+                            @"name" : @"Available Mic",
+                            @"category" : @"mic",
+                            @"id" : @"in-1",
+                          },
+                        ]));
+  XCTAssertEqualObjects(resolvedValue[@"currentInputs"], (@[
+                          @{
+                            @"name" : @"Current Mic",
+                            @"category" : @"mic",
+                            @"id" : @"in-2",
+                          },
+                        ]));
+  XCTAssertEqualObjects(resolvedValue[@"availableOutputs"], (@[
+                          @{
+                            @"name" : @"Speaker",
+                            @"category" : @"speaker",
+                            @"id" : @"out-1",
+                          },
+                        ]));
+  XCTAssertEqualObjects(resolvedValue[@"currentOutputs"], (@[
+                          @{
+                            @"name" : @"Speaker",
+                            @"category" : @"speaker",
+                            @"id" : @"out-1",
+                          },
+                        ]));
 }
 
 - (void)testSetInputDeviceRejectsWhenDeviceIsMissing
@@ -547,11 +551,8 @@
   __block NSString *rejectedMessage = nil;
 
   [self.manager setInputDevice:@"missing-device"
-                       resolve:^(id result){
-                       }
-                        reject:^(NSString *code, NSString *message, NSError *error) {
-                          rejectedMessage = message;
-                        }];
+      resolve:^(id result) {}
+      reject:^(NSString *code, NSString *message, NSError *error) { rejectedMessage = message; }];
 
   XCTAssertEqualObjects(rejectedMessage, @"Input device with id missing-device not found");
   XCTAssertEqual(self.fakeSession.setPreferredInputCallCount, 0);
@@ -561,18 +562,18 @@
 {
   FakeAudioPortDescription *input = [self portWithName:@"Mic" type:@"mic" uid:@"mic-1"];
   self.fakeSession.availableInputs = @[ input ];
-  self.fakeSession.setPreferredInputError =
-      [NSError errorWithDomain:@"AudioSessionTests" code:103 userInfo:nil];
+  self.fakeSession.setPreferredInputError = [NSError errorWithDomain:@"AudioSessionTests"
+                                                                code:103
+                                                            userInfo:nil];
   __block NSString *rejectedMessage = nil;
   __block NSError *rejectedError = nil;
 
   [self.manager setInputDevice:@"mic-1"
-                       resolve:^(id result){
-                       }
-                        reject:^(NSString *code, NSString *message, NSError *error) {
-                          rejectedMessage = message;
-                          rejectedError = error;
-                        }];
+      resolve:^(id result) {}
+      reject:^(NSString *code, NSString *message, NSError *error) {
+        rejectedMessage = message;
+        rejectedError = error;
+      }];
 
   XCTAssertNotNil(rejectedMessage);
   XCTAssertTrue([rejectedMessage containsString:@"Error while setting preferred input"]);
@@ -587,11 +588,8 @@
   __block id resolvedValue = nil;
 
   [self.manager setInputDevice:@"mic-1"
-                       resolve:^(id result) {
-                         resolvedValue = result;
-                       }
-                        reject:^(NSString *code, NSString *message, NSError *error){
-                        }];
+                       resolve:^(id result) { resolvedValue = result; }
+                        reject:^(NSString *code, NSString *message, NSError *error){}];
 
   XCTAssertNil(resolvedValue);
   XCTAssertEqual(self.fakeSession.setPreferredInputCallCount, 1);
@@ -611,12 +609,11 @@
   self.manager.overriddenMicrophoneUsageDescription = nil;
   __block NSString *rejectedMessage = nil;
 
-  [self.manager requestRecordingPermissions:^(id result) {
-    XCTFail(@"Expected missing microphone usage description to reject");
-  }
-                                reject:^(NSString *code, NSString *message, NSError *error) {
-                                  rejectedMessage = message;
-                                }];
+  [self.manager
+      requestRecordingPermissions:^(id result) {
+        XCTFail(@"Expected missing microphone usage description to reject");
+      }
+      reject:^(NSString *code, NSString *message, NSError *error) { rejectedMessage = message; }];
 
   XCTAssertEqualObjects(
       rejectedMessage,

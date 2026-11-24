@@ -19,7 +19,10 @@ interface GraphNode {
 interface GraphEdge {
   from: string;
   to: string;
-  /** Where the arrow enters the target's bottom edge, as a fraction of its width. */
+  /**
+   * Where the arrow enters the target's bottom edge, as a fraction of its
+   * width.
+   */
   entry?: number;
   /** Height of the horizontal run for edges that need to jog sideways. */
   elbowY?: number;
@@ -34,16 +37,52 @@ const LABEL_PADDING = 28;
 const CORNER_RADIUS = 8;
 
 const NODES: GraphNode[] = [
-  { id: 'destination', label: 'AudioDestinationNode', kind: 'destination', cx: 500, y: 20 },
+  {
+    id: 'destination',
+    label: 'AudioDestinationNode',
+    kind: 'destination',
+    cx: 500,
+    y: 20,
+  },
   { id: 'gainLeft', label: 'GainNode', kind: 'effect', cx: 300, y: 150 },
   { id: 'analyser', label: 'AnalyserNode', kind: 'analysis', cx: 720, y: 150 },
   { id: 'gainMiddle', label: 'GainNode', kind: 'effect', cx: 500, y: 250 },
   { id: 'biquad', label: 'BiquadFilterNode', kind: 'effect', cx: 160, y: 300 },
-  { id: 'bufferRight', label: 'AudioBufferSourceNode', kind: 'source', cx: 860, y: 300 },
-  { id: 'bufferLeft', label: 'AudioBufferSourceNode', kind: 'source', cx: 160, y: 420 },
-  { id: 'oscillatorLeft', label: 'OscillatorNode', kind: 'source', cx: 280, y: 560 },
-  { id: 'oscillatorMiddle', label: 'OscillatorNode', kind: 'source', cx: 500, y: 560 },
-  { id: 'oscillatorRight', label: 'OscillatorNode', kind: 'source', cx: 720, y: 560 },
+  {
+    id: 'bufferRight',
+    label: 'AudioBufferSourceNode',
+    kind: 'source',
+    cx: 860,
+    y: 300,
+  },
+  {
+    id: 'bufferLeft',
+    label: 'AudioBufferSourceNode',
+    kind: 'source',
+    cx: 160,
+    y: 420,
+  },
+  {
+    id: 'oscillatorLeft',
+    label: 'OscillatorNode',
+    kind: 'source',
+    cx: 280,
+    y: 560,
+  },
+  {
+    id: 'oscillatorMiddle',
+    label: 'OscillatorNode',
+    kind: 'source',
+    cx: 500,
+    y: 560,
+  },
+  {
+    id: 'oscillatorRight',
+    label: 'OscillatorNode',
+    kind: 'source',
+    cx: 720,
+    y: 560,
+  },
 ];
 
 const EDGES: GraphEdge[] = [
@@ -73,10 +112,18 @@ const KIND_CLASS: Record<NodeKind, string> = {
 };
 
 function nodeWidth(label: string): number {
-  return Math.max(MIN_NODE_WIDTH, Math.ceil(measureCodeText(label, LABEL_FONT_SIZE) + LABEL_PADDING));
+  return Math.max(
+    MIN_NODE_WIDTH,
+    Math.ceil(measureCodeText(label, LABEL_FONT_SIZE) + LABEL_PADDING)
+  );
 }
 
-function edgePath(from: GraphNode, to: GraphNode, edge: GraphEdge, widths: Map<string, number>): string {
+function edgePath(
+  from: GraphNode,
+  to: GraphNode,
+  edge: GraphEdge,
+  widths: Map<string, number>
+): string {
   const startX = from.cx;
   const startY = from.y;
   const targetWidth = widths.get(to.id) ?? MIN_NODE_WIDTH;
@@ -91,8 +138,9 @@ function edgePath(from: GraphNode, to: GraphNode, edge: GraphEdge, widths: Map<s
 }
 
 /**
- * A sample audio graph: sources at the bottom, the destination at the top, every connection an
- * arrow in signal direction, and each box colored by the kind of node it is.
+ * A sample audio graph: sources at the bottom, the destination at the top,
+ * every connection an arrow in signal direction, and each box colored by the
+ * kind of node it is.
  */
 const AudioGraphFigure: FC = () => {
   const markerId = useId();
@@ -107,9 +155,17 @@ const AudioGraphFigure: FC = () => {
           className={styles.svg}
           viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
           role="img"
-          aria-label="Example audio graph: two audio buffer sources and three oscillators feed filters, gains and an analyser that all end in the audio destination">
+          aria-label="Example audio graph: two audio buffer sources and three oscillators feed filters, gains and an analyser that all end in the audio destination"
+        >
           <defs>
-            <marker id={markerId} markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+            <marker
+              id={markerId}
+              markerWidth="9"
+              markerHeight="9"
+              refX="8"
+              refY="4.5"
+              orient="auto"
+            >
               <path className={styles.arrowHead} d="M0 0L9 4.5L0 9z" />
             </marker>
           </defs>
@@ -133,9 +189,23 @@ const AudioGraphFigure: FC = () => {
           {NODES.map((node) => {
             const width = widths.get(node.id) ?? MIN_NODE_WIDTH;
             return (
-              <g key={node.id} transform={`translate(${node.cx - width / 2} ${node.y})`}>
-                <rect className={clsx(styles.box, KIND_CLASS[node.kind])} width={width} height={NODE_HEIGHT} rx={CORNER_RADIUS} />
-                <text className={styles.label} x={width / 2} y={NODE_HEIGHT / 2} textAnchor="middle" dominantBaseline="middle">
+              <g
+                key={node.id}
+                transform={`translate(${node.cx - width / 2} ${node.y})`}
+              >
+                <rect
+                  className={clsx(styles.box, KIND_CLASS[node.kind])}
+                  width={width}
+                  height={NODE_HEIGHT}
+                  rx={CORNER_RADIUS}
+                />
+                <text
+                  className={styles.label}
+                  x={width / 2}
+                  y={NODE_HEIGHT / 2}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
                   {node.label}
                 </text>
               </g>

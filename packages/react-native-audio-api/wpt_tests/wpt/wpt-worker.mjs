@@ -8,12 +8,10 @@
  * process.exit() of each child tears down a small heap — the parent survives
  * even if that teardown hangs.
  *
- * Protocol (child -> parent):
- *   { type: 'suite-start', name }   a test file began
- *   { type: 'pass', message }       one subtest passed
- *   { type: 'fail', message }       one subtest failed
- *   { type: 'stack', stack }        stack trace for the preceding failure
- *   { type: 'done', fileFailures }  batch finished; parent may kill us
+ * Protocol (child -> parent): { type: 'suite-start', name } a test file began {
+ * type: 'pass', message } one subtest passed { type: 'fail', message } one
+ * subtest failed { type: 'stack', stack } stack trace for the preceding failure
+ * { type: 'done', fileFailures } batch finished; parent may kill us
  *
  * Parent -> child: a single { files: string[] } message starts the batch.
  */

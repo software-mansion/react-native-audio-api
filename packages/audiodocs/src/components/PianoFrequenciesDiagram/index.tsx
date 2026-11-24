@@ -11,7 +11,20 @@ const A4_MIDI = 69;
 const A4_HZ = 440;
 const WHITE_KEY_COUNT = 52;
 const WHITE_PITCH_CLASSES = new Set([0, 2, 4, 5, 7, 9, 11]);
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTE_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+];
 
 const FALLBACK_WIDTH = 880;
 const AXIS_LEFT = 48;
@@ -23,7 +36,10 @@ const GRID_STEP_HZ = 1000;
 const BLACK_KEY_WIDTH_RATIO = 0.62;
 const BLACK_KEY_HEIGHT_RATIO = 0.62;
 const BAR_WIDTH_RATIO = 0.36;
-/** Below this width the corner annotations would collide with the axis and each other. */
+/**
+ * Below this width the corner annotations would collide with the axis and each
+ * other.
+ */
 const ANNOTATION_MIN_WIDTH = 560;
 
 interface KeyGeometry {
@@ -45,7 +61,9 @@ function noteName(midi: number): string {
 }
 
 function formatHz(frequency: number): string {
-  return frequency >= 100 ? `${Math.round(frequency)} Hz` : `${frequency.toFixed(1)} Hz`;
+  return frequency >= 100
+    ? `${Math.round(frequency)} Hz`
+    : `${frequency.toFixed(1)} Hz`;
 }
 
 function layoutKeys(left: number, whiteKeyWidth: number): KeyGeometry[] {
@@ -57,12 +75,26 @@ function layoutKeys(left: number, whiteKeyWidth: number): KeyGeometry[] {
     const frequency = frequencyOf(midi);
     if (WHITE_PITCH_CLASSES.has(midi % 12)) {
       const x = left + whiteIndex * whiteKeyWidth;
-      keys.push({ midi, frequency, isBlack: false, center: x + whiteKeyWidth / 2, x, width: whiteKeyWidth });
+      keys.push({
+        midi,
+        frequency,
+        isBlack: false,
+        center: x + whiteKeyWidth / 2,
+        x,
+        width: whiteKeyWidth,
+      });
       whiteIndex += 1;
     } else {
       // A black key straddles the boundary between the white key before it and the one after.
       const boundary = left + whiteIndex * whiteKeyWidth;
-      keys.push({ midi, frequency, isBlack: true, center: boundary, x: boundary - blackKeyWidth / 2, width: blackKeyWidth });
+      keys.push({
+        midi,
+        frequency,
+        isBlack: true,
+        center: boundary,
+        x: boundary - blackKeyWidth / 2,
+        width: blackKeyWidth,
+      });
     }
   }
 
@@ -85,12 +117,16 @@ const PianoFrequenciesDiagram: FC = () => {
   const showCornerAnnotations = width >= ANNOTATION_MIN_WIDTH;
 
   const keys = layoutKeys(AXIS_LEFT, whiteKeyWidth);
-  const barTop = (frequency: number) => baseline - (frequency / AXIS_MAX_HZ) * chartHeight;
+  const barTop = (frequency: number) =>
+    baseline - (frequency / AXIS_MAX_HZ) * chartHeight;
   const lowestKey = keys[0];
   const highestKey = keys[keys.length - 1];
   const a4 = keys.find((key) => key.midi === A4_MIDI) ?? lowestKey;
 
-  const gridFrequencies = Array.from({ length: Math.floor(AXIS_MAX_HZ / GRID_STEP_HZ) }, (_, i) => (i + 1) * GRID_STEP_HZ);
+  const gridFrequencies = Array.from(
+    { length: Math.floor(AXIS_MAX_HZ / GRID_STEP_HZ) },
+    (_, i) => (i + 1) * GRID_STEP_HZ
+  );
 
   return (
     <figure ref={containerRef} className={styles.container}>
@@ -99,17 +135,42 @@ const PianoFrequenciesDiagram: FC = () => {
         viewBox={`0 0 ${width} ${height}`}
         width="100%"
         role="img"
-        aria-label={`Frequency of every piano key from ${noteName(FIRST_MIDI)} at ${formatHz(lowestKey.frequency)} to ${noteName(LAST_MIDI)} at ${formatHz(highestKey.frequency)}, rising exponentially across the keyboard`}>
+        aria-label={`Frequency of every piano key from ${noteName(FIRST_MIDI)} at ${formatHz(lowestKey.frequency)} to ${noteName(LAST_MIDI)} at ${formatHz(highestKey.frequency)}, rising exponentially across the keyboard`}
+      >
         {gridFrequencies.map((frequency) => (
           <g key={frequency}>
-            <line className={styles.gridLine} x1={AXIS_LEFT} y1={barTop(frequency)} x2={keyboardRight} y2={barTop(frequency)} />
-            <text className={styles.axisLabel} x={AXIS_LEFT - 6} y={barTop(frequency)} textAnchor="end" dominantBaseline="middle">
+            <line
+              className={styles.gridLine}
+              x1={AXIS_LEFT}
+              y1={barTop(frequency)}
+              x2={keyboardRight}
+              y2={barTop(frequency)}
+            />
+            <text
+              className={styles.axisLabel}
+              x={AXIS_LEFT - 6}
+              y={barTop(frequency)}
+              textAnchor="end"
+              dominantBaseline="middle"
+            >
               {frequency / 1000} kHz
             </text>
           </g>
         ))}
-        <line className={styles.axis} x1={AXIS_LEFT} y1={baseline} x2={keyboardRight} y2={baseline} />
-        <text className={styles.axisLabel} x={AXIS_LEFT - 6} y={baseline} textAnchor="end" dominantBaseline="middle">
+        <line
+          className={styles.axis}
+          x1={AXIS_LEFT}
+          y1={baseline}
+          x2={keyboardRight}
+          y2={baseline}
+        />
+        <text
+          className={styles.axisLabel}
+          x={AXIS_LEFT - 6}
+          y={baseline}
+          textAnchor="end"
+          dominantBaseline="middle"
+        >
           0
         </text>
         <text
@@ -117,14 +178,18 @@ const PianoFrequenciesDiagram: FC = () => {
           x={12}
           y={CHART_TOP + chartHeight / 2}
           textAnchor="middle"
-          transform={`rotate(-90 12 ${CHART_TOP + chartHeight / 2})`}>
+          transform={`rotate(-90 12 ${CHART_TOP + chartHeight / 2})`}
+        >
           frequency
         </text>
 
         {keys.map((key) => (
           <rect
             key={key.midi}
-            className={clsx(styles.bar, key.midi === A4_MIDI && styles.barHighlight)}
+            className={clsx(
+              styles.bar,
+              key.midi === A4_MIDI && styles.barHighlight
+            )}
             x={key.center - barWidth / 2}
             y={barTop(key.frequency)}
             width={barWidth}
@@ -132,15 +197,30 @@ const PianoFrequenciesDiagram: FC = () => {
           />
         ))}
 
-        <text className={styles.annotation} x={a4.center} y={barTop(a4.frequency) - 8} textAnchor="middle">
+        <text
+          className={styles.annotation}
+          x={a4.center}
+          y={barTop(a4.frequency) - 8}
+          textAnchor="middle"
+        >
           {noteName(A4_MIDI)} · {formatHz(a4.frequency)}
         </text>
         {showCornerAnnotations && (
           <>
-            <text className={styles.annotation} x={lowestKey.center + 8} y={baseline - 10} textAnchor="start">
+            <text
+              className={styles.annotation}
+              x={lowestKey.center + 8}
+              y={baseline - 10}
+              textAnchor="start"
+            >
               {noteName(FIRST_MIDI)} · {formatHz(lowestKey.frequency)}
             </text>
-            <text className={styles.annotation} x={highestKey.center - 8} y={barTop(highestKey.frequency) + 4} textAnchor="end">
+            <text
+              className={styles.annotation}
+              x={highestKey.center - 8}
+              y={barTop(highestKey.frequency) + 4}
+              textAnchor="end"
+            >
               {noteName(LAST_MIDI)} · {formatHz(highestKey.frequency)}
             </text>
           </>
@@ -149,7 +229,14 @@ const PianoFrequenciesDiagram: FC = () => {
         {keys
           .filter((key) => !key.isBlack)
           .map((key) => (
-            <rect key={key.midi} className={styles.whiteKey} x={key.x} y={keyboardTop} width={key.width} height={whiteKeyHeight} />
+            <rect
+              key={key.midi}
+              className={styles.whiteKey}
+              x={key.x}
+              y={keyboardTop}
+              width={key.width}
+              height={whiteKeyHeight}
+            />
           ))}
         {keys
           .filter((key) => key.isBlack)
@@ -164,11 +251,18 @@ const PianoFrequenciesDiagram: FC = () => {
               rx={1}
             />
           ))}
-        <rect className={styles.keyboardFrame} x={AXIS_LEFT} y={keyboardTop} width={keyboardRight - AXIS_LEFT} height={whiteKeyHeight} />
+        <rect
+          className={styles.keyboardFrame}
+          x={AXIS_LEFT}
+          y={keyboardTop}
+          width={keyboardRight - AXIS_LEFT}
+          height={whiteKeyHeight}
+        />
       </svg>
       <figcaption className={styles.caption}>
-        Each key is one semitone above the previous one and every octave doubles the frequency, so the 88 keys climb
-        from {formatHz(lowestKey.frequency)} to {formatHz(highestKey.frequency)} along an exponential curve.
+        Each key is one semitone above the previous one and every octave doubles
+        the frequency, so the 88 keys climb from {formatHz(lowestKey.frequency)}{' '}
+        to {formatHz(highestKey.frequency)} along an exponential curve.
       </figcaption>
     </figure>
   );

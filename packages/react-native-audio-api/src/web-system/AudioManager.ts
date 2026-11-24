@@ -19,10 +19,10 @@ class AudioManager implements IAudioManager {
   activelyReclaimSession = mockSync({});
   observeVolumeChanges = mockSync({});
   addSystemEventListener = mockSync(undefined);
-  requestRecordingPermissions = mockAsync('Granted' as PermissionStatus);
-  checkRecordingPermissions = mockAsync('Granted' as PermissionStatus);
-  requestNotificationPermissions = mockAsync('Granted' as PermissionStatus);
-  checkNotificationPermissions = mockAsync('Granted' as PermissionStatus);
+  requestRecordingPermissions = mockAsync<PermissionStatus>('Granted');
+  checkRecordingPermissions = mockAsync<PermissionStatus>('Granted');
+  requestNotificationPermissions = mockAsync<PermissionStatus>('Granted');
+  checkNotificationPermissions = mockAsync<PermissionStatus>('Granted');
   setInputDevice = mockAsync(undefined);
   setCommunicationDevice = mockAsync(undefined);
   getCommunicationDevice = mockAsync(null);

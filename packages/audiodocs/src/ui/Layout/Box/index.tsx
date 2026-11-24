@@ -1,8 +1,7 @@
-import clsx from "clsx";
-import React, { memo, PropsWithChildren } from "react";
+import clsx from 'clsx';
+import React, { memo, PropsWithChildren } from 'react';
 
-import styles from "./styles.module.css";
-
+import styles from './styles.module.css';
 
 type BoxProps = PropsWithChildren<{
   className?: string;
@@ -10,17 +9,13 @@ type BoxProps = PropsWithChildren<{
 }>;
 
 const Box: React.FC<BoxProps> = ({ className, variant = 'red', children }) => {
-  const variantClass = ({
+  const variantClass = {
     red: styles.boxRed,
-  })[variant]
+  }[variant];
 
   const classes = clsx(styles.box, className, variantClass);
 
-  return (
-    <section className={classes}>
-      {children}
-    </section>
-  );
-}
+  return <section className={classes}>{children}</section>;
+};
 
 export default memo(Box);

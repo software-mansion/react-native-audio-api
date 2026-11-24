@@ -28,10 +28,10 @@ const node = new WorkletSourceNode(context, callback);
 
 ### Parameters
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node. |
-| `callback` | `WorkletSourceNodeCallback` | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
+| Parameter  |                         Type                         | Description                                                                                       |
+| :--------: | :--------------------------------------------------: | :------------------------------------------------------------------------------------------------ |
+| `context`  | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node.                                                            |
+| `callback` |             `WorkletSourceNodeCallback`              | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
 
 ### `WorkletSourceNodeCallback`
 
@@ -45,20 +45,20 @@ type WorkletSourceNodeCallback = (
 ) => void;
 ```
 
-| Argument | Description |
-| :--- | :---- |
-| `audioData` | Stable per-channel `Float32Array` views over a reused native buffer pool. Each view spans the full render quantum (128 frames); write samples into indices `0 .. framesToProcess - 1`. |
-| `outputChannelCount` | Active output channel count (`audioData.length`). |
-| `framesToProcess` | Number of frames to generate this quantum. May be less than 128 when playback starts or stops mid-buffer. |
-| `currentTime` | Audio context time in seconds at the start of this quantum. |
-| `startOffset` | Silent prefix length (in samples) already zeroed in the output buffer when playback starts mid-quantum. Use for time math, not as a write index into `audioData`. |
+| Argument             | Description                                                                                                                                                                            |
+| :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audioData`          | Stable per-channel `Float32Array` views over a reused native buffer pool. Each view spans the full render quantum (128 frames); write samples into indices `0 .. framesToProcess - 1`. |
+| `outputChannelCount` | Active output channel count (`audioData.length`).                                                                                                                                      |
+| `framesToProcess`    | Number of frames to generate this quantum. May be less than 128 when playback starts or stops mid-buffer.                                                                              |
+| `currentTime`        | Audio context time in seconds at the start of this quantum.                                                                                                                            |
+| `startOffset`        | Silent prefix length (in samples) already zeroed in the output buffer when playback starts mid-quantum. Use for time math, not as a write index into `audioData`.                      |
 
 ### Errors
 
-| Error type | Condition |
-| :---: | :---- |
+|     Error type      | Condition                                                                                                                      |
+| :-----------------: | :----------------------------------------------------------------------------------------------------------------------------- |
 | `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
-| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`).                                               |
 
 ## Example
 
@@ -75,7 +75,13 @@ function SineGenerator() {
 
     const source = new WorkletSourceNode(
       ctx,
-      (audioData, outputChannelCount, framesToProcess, currentTime, startOffset) => {
+      (
+        audioData,
+        outputChannelCount,
+        framesToProcess,
+        currentTime,
+        startOffset
+      ) => {
         'worklet';
 
         const frequency = 440;
@@ -119,8 +125,8 @@ Inherits all properties from [`AudioScheduledSourceNode`](../sources/audio-sched
   numberOfInputs={0}
   numberOfOutputs={1}
   channelCount={2}
-  channelCountMode={"max"}
-  channelInterpretation={"speakers"}
+  channelCountMode={'max'}
+  channelInterpretation={'speakers'}
 />
 
 ## Methods

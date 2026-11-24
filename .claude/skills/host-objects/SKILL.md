@@ -28,7 +28,7 @@ Golden references: `GainNodeHostObject.h/.cpp` (effect node), `OscillatorNodeHos
 - **ALWAYS register getters/setters/functions in the constructor.** Anything not added to `addGetters`/`addSetters`/`addFunctions` is silently missing from JS.
 - **Match property names exactly.** The string in `JSI_EXPORT_PROPERTY_GETTER` becomes the JS property name. A typo means the property doesn't exist in JS.
 - **Clear callback IDs in the destructor** for any HO that registers audio events. Otherwise the audio thread fires into a destroyed JS function.
-- **Call `setExternalMemoryPressure` once per native allocation, on the JS object whose collection frees it**, never again on objects that merely share it (see *External memory pressure*).
+- **Call `setExternalMemoryPressure` once per native allocation, on the JS object whose collection frees it**, never again on objects that merely share it (see _External memory pressure_).
 - **Use `jsiutils::throwException()`** from `audioapi/jsi/JsiUtils.h` when throwing a named JS error (for example, `InvalidAccessError`) instead of rebuilding the `Error` object in a HostObject.
 - **Shadow state must be initialized** from `options` in the constructor — JS may read a property before ever setting it.
 - **Typed node pointers are `T *const`.** Mirror `AudioNode *const audioNode_` — declare as `GainNode *const gainNode_;` (const pointer, mutable object), initialize in the ctor initializer list via `typedAudioNode<T>(node_)`. Never use `T *foo_ = nullptr`.
@@ -149,15 +149,18 @@ The audio node's C++ state is read and written on the **audio thread**. JS runs 
 ### The Solution
 
 The HostObject maintains its own **copy** of the node's properties — the shadow state. This copy:
+
 - Is read/written **only by the JS thread**
 - Is always in sync with what JS last set
 - Is the source of truth for JS reads
 
 When JS sets a property:
+
 1. Update the shadow copy immediately (JS thread)
 2. Schedule an event on `CrossThreadEventScheduler` that will apply the change on the audio thread
 
 When JS reads a property:
+
 1. Return the shadow copy — **do not touch the C++ node**
 
 ```cpp
@@ -195,12 +198,12 @@ JSI_PROPERTY_SETTER_IMPL(OscillatorNodeHostObject, type) {
 
 ### When NOT to use shadow state
 
-| Scenario | Pattern |
-|---|---|
-| Primitive, only written by JS | Shadow state (standard) |
-| Non-primitive, only written by JS | Store in TS layer, pass to AudioNode when needed |
-| Primitive, can be written by audio thread | `std::atomic<T>` on the C++ node; read directly via getter |
-| Non-primitive, can be written by audio thread | Triple buffer pattern (see `AnalyserNode` for reference) |
+| Scenario                                      | Pattern                                                    |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| Primitive, only written by JS                 | Shadow state (standard)                                    |
+| Non-primitive, only written by JS             | Store in TS layer, pass to AudioNode when needed           |
+| Primitive, can be written by audio thread     | `std::atomic<T>` on the C++ node; read directly via getter |
+| Non-primitive, can be written by audio thread | Triple buffer pattern (see `AnalyserNode` for reference)   |
 
 ### AudioParam is a special case
 
@@ -363,11 +366,11 @@ That bookkeeping — copy-on-write against playing nodes, tracking exposed views
 
 ### External memory pressure
 
-`setExternalMemoryPressure(amount)` attaches `amount` to that one JS object. Hermes keeps a single global total; the amount leaves it only when *that* object is collected. It never looks at what an object references and never prioritizes big objects: the total only moves the next collection earlier, and a collection removes everything unreachable in the generation it covers. Report memory on the JS object **whose collection frees it**, and report each byte **once**:
+`setExternalMemoryPressure(amount)` attaches `amount` to that one JS object. Hermes keeps a single global total; the amount leaves it only when _that_ object is collected. It never looks at what an object references and never prioritizes big objects: the total only moves the next collection earlier, and a collection removes everything unreachable in the generation it covers. Report memory on the JS object **whose collection frees it**, and report each byte **once**:
 
 - **Samples are reported by the AudioBuffer's JS object only.** Every AudioBuffer reaches JS through `AudioBufferHostObject::createJsObject` (`createAudioBuffer`, decoding, offline rendering, recorder `onAudioReady`). Nodes keep the TS `AudioBuffer` in `_buffer`, which keeps the credited object reachable, so the samples stay counted for as long as any node or user reference exists.
 - **Never credit a shared buffer per node.** It was `size × nodes`: on Android, about 210 unstarted source nodes on one 22 MB buffer hit Hermes' `Max heap size was exceeded` at `external ≈ 4.6 GB` and crashed with SIGSEGV in `mqt_v_js`, the #1285 signature. On iOS it never aborted, but ran about one full GC per node (2000 created-and-dropped nodes: 2120 GCs instead of 55). A credit on a young object also shrinks the young generation, so a large credit per newly created node forces a young-generation collection almost every time a node is created.
-- **Storage left behind is deliberately unreported.** `detachSharedChannel` gives the *buffer* the fresh copy, so a JS write or `getChannelData` on a channel nodes are playing leaves the old storage to those nodes, and `acquireContent` leaves a cut-off view its old storage. Nobody reports that copy: writing into a buffer after `start()` is rare, and under-reporting only delays a collection, whereas over-reporting aborts the runtime. (Handing the old storage to the holders' JS objects via `jsi::WeakObject`s was implemented and then removed as not worth the bookkeeping.) So `getChannelData` views report nothing, and a node's own credit (`getMemoryPressure()`) covers only its own state.
+- **Storage left behind is deliberately unreported.** `detachSharedChannel` gives the _buffer_ the fresh copy, so a JS write or `getChannelData` on a channel nodes are playing leaves the old storage to those nodes, and `acquireContent` leaves a cut-off view its old storage. Nobody reports that copy: writing into a buffer after `start()` is rare, and under-reporting only delays a collection, whereas over-reporting aborts the runtime. (Handing the old storage to the holders' JS objects via `jsi::WeakObject`s was implemented and then removed as not worth the bookkeeping.) So `getChannelData` views report nothing, and a node's own credit (`getMemoryPressure()`) covers only its own state.
 
 Verify with `HermesInternal.getInstrumentedStats().js_externalBytes` around `gc()` (both exist in debug builds) through `debugger-evaluate`.
 
@@ -467,4 +470,4 @@ Also add `createMyNode()` to the C++ `BaseAudioContext` factory — see the `aud
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

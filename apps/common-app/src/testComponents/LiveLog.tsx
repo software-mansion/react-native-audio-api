@@ -6,7 +6,7 @@ import { colors } from '../styles';
 import EmptyState from './EmptyState';
 import SectionTitle from './SectionTitle';
 
-interface LiveLogProps {
+export interface LiveLogProps {
   entries: string[];
   emptyMessage: string;
 }

@@ -26,7 +26,11 @@ interface IIRFilterDesign {
   feedback: number[];
 }
 
-const initialState: IIRFilterParams = { type: 'lowpass', order: '2', frequency: 1000 };
+const initialState: IIRFilterParams = {
+  type: 'lowpass',
+  order: '2',
+  frequency: 1000,
+};
 
 const TYPE_OPTIONS: Array<{ value: IIRFilterType; label: string }> = [
   { value: 'lowpass', label: 'Low-pass' },
@@ -38,12 +42,16 @@ const ORDER_OPTIONS: Array<{ value: FilterOrder; label: string }> = [
   { value: '2', label: '2nd order' },
 ];
 
-/** Keeps the cutoff strictly below Nyquist, where the bilinear transform's tangent blows up. */
+/**
+ * Keeps the cutoff strictly below Nyquist, where the bilinear transform's
+ * tangent blows up.
+ */
 const MAX_CUTOFF_FRACTION_OF_NYQUIST = 0.99;
 
 /**
- * Butterworth coefficients via the bilinear transform, with `K = tan(π·fc/fs)`. The first
- * feedback coefficient is normalized to 1, which is what `createIIRFilter` expects.
+ * Butterworth coefficients via the bilinear transform, with `K = tan(π·fc/fs)`.
+ * The first feedback coefficient is normalized to 1, which is what
+ * `createIIRFilter` expects.
  */
 function designButterworthFilter(
   type: IIRFilterType,
@@ -51,7 +59,10 @@ function designButterworthFilter(
   cutoffHz: number,
   sampleRate: number
 ): IIRFilterDesign {
-  const cutoff = Math.min(cutoffHz, (sampleRate / 2) * MAX_CUTOFF_FRACTION_OF_NYQUIST);
+  const cutoff = Math.min(
+    cutoffHz,
+    (sampleRate / 2) * MAX_CUTOFF_FRACTION_OF_NYQUIST
+  );
   const K = Math.tan((Math.PI * cutoff) / sampleRate);
 
   if (order === '1') {
@@ -63,7 +74,11 @@ function designButterworthFilter(
   }
 
   const norm = 1 / (1 + Math.SQRT2 * K + K * K);
-  const feedback = [1, 2 * (K * K - 1) * norm, (1 - Math.SQRT2 * K + K * K) * norm];
+  const feedback = [
+    1,
+    2 * (K * K - 1) * norm,
+    (1 - Math.SQRT2 * K + K * K) * norm,
+  ];
   return type === 'lowpass'
     ? { feedforward: [K * K * norm, 2 * K * K * norm, K * K * norm], feedback }
     : { feedforward: [norm, -2 * norm, norm], feedback };
@@ -74,8 +89,9 @@ function formatCoefficients(coefficients: number[]): string {
 }
 
 /**
- * IIR coefficients are fixed at construction, so every parameter change swaps in a fresh node
- * between two pass-through gains that keep the chain's wiring untouched.
+ * IIR coefficients are fixed at construction, so every parameter change swaps
+ * in a fresh node between two pass-through gains that keep the chain's wiring
+ * untouched.
  */
 const createIIRFilterEffect: EffectFactory<IIRFilterParams> = (ctx, params) => {
   const input = ctx.createGain();
@@ -87,7 +103,12 @@ const createIIRFilterEffect: EffectFactory<IIRFilterParams> = (ctx, params) => {
       input.disconnect(filter);
       filter.disconnect();
     }
-    const { feedforward, feedback } = designButterworthFilter(next.type, next.order, next.frequency, ctx.sampleRate);
+    const { feedforward, feedback } = designButterworthFilter(
+      next.type,
+      next.order,
+      next.frequency,
+      ctx.sampleRate
+    );
     filter = ctx.createIIRFilter(feedforward, feedback);
     input.connect(filter);
     filter.connect(output);
@@ -114,18 +135,33 @@ export function useIIRFilterPlayground() {
   const [order, setOrder] = useState<FilterOrder>(initialState.order);
   const [frequency, setFrequency] = useState(initialState.frequency);
 
-  const params = useMemo<IIRFilterParams>(() => ({ type, order, frequency }), [type, order, frequency]);
+  const params = useMemo<IIRFilterParams>(
+    () => ({ type, order, frequency }),
+    [type, order, frequency]
+  );
 
   const orderLabel = order === '1' ? '1st-order' : '2nd-order';
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createIIRFilterEffect,
-    params,
-    initialSource: 'music',
-    effectNodes: [{ label: 'IIRFilterNode', sublabel: `${orderLabel} ${type} · ${formatFrequency(frequency)}` }],
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createIIRFilterEffect,
+      params,
+      initialSource: 'music',
+      effectNodes: [
+        {
+          label: 'IIRFilterNode',
+          sublabel: `${orderLabel} ${type} · ${formatFrequency(frequency)}`,
+        },
+      ],
+    }
+  );
 
-  const design = designButterworthFilter(type, order, frequency, chain.sampleRate);
+  const design = designButterworthFilter(
+    type,
+    order,
+    frequency,
+    chain.sampleRate
+  );
 
   const code = buildEffectCode({
     sampleVariable,
@@ -142,8 +178,19 @@ iirFilter.connect(ctx.destination);`,
   const controls = (
     <div className={styles.controlsPanel}>
       {commonControls}
-      <FilterList<IIRFilterType> ariaLabel="Filter type" options={TYPE_OPTIONS} value={type} onChange={setType} />
-      <FilterList<FilterOrder> ariaLabel="Filter order" label="Filter order" options={ORDER_OPTIONS} value={order} onChange={setOrder} />
+      <FilterList<IIRFilterType>
+        ariaLabel="Filter type"
+        options={TYPE_OPTIONS}
+        value={type}
+        onChange={setType}
+      />
+      <FilterList<FilterOrder>
+        ariaLabel="Filter order"
+        label="Filter order"
+        options={ORDER_OPTIONS}
+        value={order}
+        onChange={setOrder}
+      />
       <SliderInput
         label="Cutoff frequency"
         value={frequency}
