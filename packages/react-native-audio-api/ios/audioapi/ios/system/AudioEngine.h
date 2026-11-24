@@ -124,6 +124,8 @@ typedef void (^OnOutputRecoveryFailedBlock)(void);
 - (bool)startIfNecessary:(NSError **)error;
 /// @brief startIfNecessary: for calls the registered input makes itself: a graph rebuilt for new
 /// hardware is not reported back to it, since the input reads its format once the call returns.
+/// @note Any thread but the audio render thread: takes `_engineLock` and may rebuild and start
+/// the engine.
 - (bool)startInputIfNecessary:(NSError **)error;
 /// @brief Stops capture without stopping playback. Without playback, or once
 /// the last source detaches, the graph is rebuilt without the input, closing

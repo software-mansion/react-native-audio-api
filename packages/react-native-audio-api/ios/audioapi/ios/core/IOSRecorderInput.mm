@@ -224,7 +224,14 @@ void IOSRecorderInput::pause()
 Result<NoneType, std::string> IOSRecorderInput::resume()
 {
   NSError *resumeError = nil;
-  const BOOL didResume = [[AudioEngine sharedInstance] resumeInput:&resumeError];
+  BOOL didResume = NO;
+
+  @try {
+    didResume = [[AudioEngine sharedInstance] resumeInput:&resumeError];
+  } @catch (NSException *exception) {
+    return Err(
+        withInputDiagnostics(describeException("Failed to resume native recorder", exception)));
+  }
 
   if (!didResume) {
     return Err(
