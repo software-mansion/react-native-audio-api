@@ -14,9 +14,6 @@ namespace audioapi {
 
 class AudioRecorder;
 
-/// Numbers sessions in the order they were claimed.
-using RecordingSessionId = uint64_t;
-
 /// @brief Where recorders report their sessions: admits one at a time, and keeps the newest
 /// recording for consumeLastRecordingResult().
 ///
@@ -32,7 +29,7 @@ class RecordingSessionRegistry {
 
   /// A session of @p recorder is starting; returns its id. Fails while another recorder's session
   /// holds the claim.
-  Result<RecordingSessionId, std::string> claim(const std::shared_ptr<AudioRecorder> &recorder);
+  Result<uint64_t, std::string> claim(const std::shared_ptr<AudioRecorder> &recorder);
 
   /// The session of @p recorder has ended, or its start failed after claim(). Also called from the
   /// recorder's destructor, where @p recorder has expired but still identifies it.
@@ -41,7 +38,7 @@ class RecordingSessionRegistry {
   /// What @p session wrote, once its file is closed. Kept only when it wrote files and no later
   /// session's recording was kept before: the claim is released before the file closes, so a later
   /// session can start and keep its recording first.
-  void keepRecording(RecordingSessionId session, FileInfo recording);
+  void saveRecording(uint64_t session, FileInfo recording);
 
   /// Consume-once: the newest kept recording, or std::nullopt.
   std::optional<FileInfo> consumeLastRecordingResult();
@@ -55,9 +52,9 @@ class RecordingSessionRegistry {
   mutable std::mutex mutex_;
   std::weak_ptr<AudioRecorder> occupant_;
   std::optional<FileInfo> keptRecording_;
-  RecordingSessionId lastClaimedSession_ = 0;
+  uint64_t lastClaimedSession_ = 0;
   /// Outlives consumption, so a late recording of an older session is not kept after it.
-  RecordingSessionId keptSession_ = 0;
+  uint64_t keptSession_ = 0;
 };
 
 } // namespace audioapi

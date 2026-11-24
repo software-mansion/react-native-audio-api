@@ -249,8 +249,6 @@ TEST_F(AudioRecorderTest, APauseWhileAStartWaitsForItsRouteOpensTheInputStopped)
   input_->duringAcquireRoute = [this] {
     recorder_->pause();
     EXPECT_TRUE(recorder_->isPaused());
-    // The input opens stopped, so resuming has to wait for it.
-    EXPECT_TRUE(recorder_->resume().is_err());
   };
 
   ASSERT_TRUE(recorder_->start().is_ok());
@@ -260,6 +258,19 @@ TEST_F(AudioRecorderTest, APauseWhileAStartWaitsForItsRouteOpensTheInputStopped)
   EXPECT_FALSE(input_->running.load());
   EXPECT_TRUE(recorder_->resume().is_ok());
   EXPECT_TRUE(recorder_->isRecording());
+}
+
+TEST_F(AudioRecorderTest, APauseAndResumeWhileAStartWaitsForItsRouteOpensTheInputStarted) {
+  input_->duringAcquireRoute = [this] {
+    recorder_->pause();
+    EXPECT_TRUE(recorder_->resume().is_ok());
+    EXPECT_TRUE(recorder_->isRecording());
+  };
+
+  ASSERT_TRUE(recorder_->start().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_TRUE(input_->running.load());
 }
 
 // The route the start waits for was settled before the device changed: the start acquires again
@@ -332,6 +343,19 @@ TEST_F(AudioRecorderTest, AStopWhileAStartAcquiresItsRouteAgainAbandonsTheStart)
   EXPECT_TRUE(input_->openPurposes.empty());
   EXPECT_EQ(input_->routesAcquired.load(), 2);
   EXPECT_EQ(input_->routesReleased.load(), 2);
+  EXPECT_TRUE(anotherRecorderCanStart());
+}
+
+TEST_F(AudioRecorderTest, AStartWhoseInputFormatCannotBeReadEndsTheSession) {
+  enableFileOutput();
+  input_->formatUnavailable = true;
+
+  EXPECT_TRUE(recorder_->start().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_FALSE(input_->isOpen);
+  EXPECT_TRUE(log_.openedFileNames.empty());
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
   EXPECT_TRUE(anotherRecorderCanStart());
 }
 
@@ -577,7 +601,6 @@ TEST_F(AudioRecorderTest, AnOutputThatCannotFollowAFormatChangeDoesNotHoldTheOth
   EXPECT_TRUE(recorder_->stop().is_ok());
   EXPECT_EQ(encodedBuffers(), 0);
 }
-
 TEST_F(AudioRecorderTest, AFileThatCannotFollowAFormatChangeIsStillReturned) {
   input_->format.layout.channelCount = 2;
   enableFileOutput();
@@ -695,13 +718,11 @@ TEST_F(AudioRecorderTest, AnInputThatCannotBeReopenedEndsTheSessionAndClosesItsF
   EXPECT_EQ(log_.closedFiles.load(), 1);
 }
 
-TEST_F(AudioRecorderTest, PauseAndResumeWhileAReroutedInputIsOnItsWayAreRemembered) {
+TEST_F(AudioRecorderTest, APauseWhileAReroutedInputIsOnItsWayReopensItStopped) {
   ASSERT_TRUE(recorder_->start().is_ok());
   input_->duringAcquireRoute = [this] {
     recorder_->pause();
     EXPECT_TRUE(recorder_->isPaused());
-    // The reopened input comes back stopped, so resuming has to wait for it.
-    EXPECT_TRUE(recorder_->resume().is_err());
   };
 
   ASSERT_TRUE(recorder_->rerouteInput().is_ok());
@@ -711,6 +732,24 @@ TEST_F(AudioRecorderTest, PauseAndResumeWhileAReroutedInputIsOnItsWayAreRemember
   EXPECT_FALSE(input_->running.load());
   EXPECT_TRUE(recorder_->resume().is_ok());
   EXPECT_TRUE(recorder_->isRecording());
+}
+
+TEST_F(AudioRecorderTest, APauseAndResumeWhileAReroutedInputIsOnItsWayReopensItStarted) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->duringAcquireRoute = [this] {
+    recorder_->pause();
+    EXPECT_TRUE(recorder_->resume().is_ok());
+    EXPECT_TRUE(recorder_->isRecording());
+  };
+
+  ASSERT_TRUE(recorder_->rerouteInput().is_ok());
+
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_TRUE(input_->running.load());
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(encodedBuffers(), 1);
 }
 
 TEST_F(AudioRecorderTest, ARecordingSessionReadsAsRecordingAndAcceptsResumeWhileRerouting) {
@@ -757,6 +796,27 @@ TEST_F(AudioRecorderTest, ASessionWhoseInputIsNotRunningReadsAsPaused) {
   EXPECT_FALSE(recorder_->isRecording());
   EXPECT_TRUE(recorder_->isPaused());
   EXPECT_EQ(recorder_->getState(), RecorderState::Paused);
+}
+
+// A pause during a system interruption holds: capture the system brings back on its own reaches no
+// output until resume().
+TEST_F(AudioRecorderTest, APauseOfAnInputTheSystemStoppedHoldsUntilResume) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->running.store(false);
+
+  recorder_->pause();
+
+  EXPECT_TRUE(recorder_->isPaused());
+  input_->running.store(true);
+  EXPECT_TRUE(recorder_->isPaused());
+  input_->deliverFrames(FRAMES);
+
+  ASSERT_TRUE(recorder_->resume().is_ok());
+  EXPECT_TRUE(recorder_->isRecording());
+  input_->deliverFrames(FRAMES);
+  ASSERT_TRUE(recorder_->stop().is_ok());
+  EXPECT_EQ(encodedBuffers(), 1);
 }
 
 TEST_F(AudioRecorderTest, DestroyingARecordingRecorderFinalizesItsFile) {
@@ -813,6 +873,50 @@ TEST_F(AudioRecorderTest, ALostInputThatCannotBeReopenedEndsTheSession) {
 
   EXPECT_TRUE(recorder_->isIdle());
   EXPECT_EQ(log_.closedFiles.load(), 1);
+}
+
+TEST_F(AudioRecorderTest, AReopenedInputThatFailsToStartEndsTheSessionAndKeepsItsFile) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->startError = "stream refused to start";
+
+  EXPECT_TRUE(recorder_->rerouteInput().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_FALSE(input_->isOpen);
+  EXPECT_EQ(input_->routesReleased.load(), input_->routesAcquired.load());
+  auto kept = sessions_->consumeLastRecordingResult();
+  ASSERT_TRUE(kept.has_value());
+  EXPECT_EQ(kept->paths.size(), 1U);
+}
+
+TEST_F(AudioRecorderTest, AReopenedInputWhoseFormatCannotBeReadEndsTheSessionAndKeepsItsFile) {
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->formatUnavailable = true;
+
+  EXPECT_TRUE(recorder_->rerouteInput().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_FALSE(input_->isOpen);
+  auto kept = sessions_->consumeLastRecordingResult();
+  ASSERT_TRUE(kept.has_value());
+  EXPECT_EQ(kept->paths.size(), 1U);
+}
+
+TEST_F(AudioRecorderTest, OutputsThatCannotFollowTheReopenedInputsFormatEndTheSession) {
+  input_->format.layout.channelCount = 2;
+  enableFileOutput();
+  ASSERT_TRUE(recorder_->start().is_ok());
+  input_->format.layout.channelCount = 1;
+  log_.failNextReprepare.store(true);
+
+  EXPECT_TRUE(recorder_->rerouteInput().is_err());
+
+  EXPECT_TRUE(recorder_->isIdle());
+  EXPECT_FALSE(input_->isOpen);
+  EXPECT_EQ(log_.closedFiles.load(), 1);
+  EXPECT_TRUE(anotherRecorderCanStart());
 }
 
 TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteIsKept) {

@@ -267,14 +267,14 @@ TEST(ActiveRecorderHandleTest, ALateRecordingOfAnOlderSessionDoesNotReplaceANewe
   handle->release(newer);
 
   // The newer session's file closes first, as when the older one finalizes a long recording.
-  handle->keepRecording(newerSession.unwrap(), FileInfo{.paths = {"file:///newer.wav"}});
-  handle->keepRecording(olderSession.unwrap(), FileInfo{.paths = {"file:///older.wav"}});
+  handle->saveRecording(newerSession.unwrap(), FileInfo{.paths = {"file:///newer.wav"}});
+  handle->saveRecording(olderSession.unwrap(), FileInfo{.paths = {"file:///older.wav"}});
 
   auto kept = handle->consumeLastRecordingResult();
   ASSERT_TRUE(kept.has_value());
   EXPECT_EQ(kept->paths, (std::vector<std::string>{"file:///newer.wav"}));
 
-  handle->keepRecording(olderSession.unwrap(), FileInfo{.paths = {"file:///older.wav"}});
+  handle->saveRecording(olderSession.unwrap(), FileInfo{.paths = {"file:///older.wav"}});
   EXPECT_FALSE(handle->consumeLastRecordingResult().has_value());
 }
 

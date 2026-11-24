@@ -93,36 +93,35 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   [[nodiscard]] double getInputLatency() const;
 
  private:
-  /// Where the session is. What holds in each phase:
+  /// What the session's input is doing. What holds in each phase:
   ///
-  /// | Phase                | input                    | gate     | outputs                           |
-  /// |----------------------|--------------------------|----------|-----------------------------------|
-  /// | Idle                 | closed                   | disarmed | not prepared                      |
-  /// | StartingToRecording  | closed, route on its way | disarmed | not prepared                      |
-  /// | StartingToPaused     | closed, route on its way | disarmed | not prepared                      |
-  /// | Recording            | open, started            | armed    | prepared for SessionState::format |
-  /// | Paused               | open, stopped by pause() | disarmed | prepared for SessionState::format |
-  /// | ReroutingToRecording | closed, route on its way | disarmed | prepared for the old format       |
-  /// | ReroutingToPaused    | closed, route on its way | disarmed | prepared for the old format       |
+  /// | Phase     | input                                       | outputs                          |
+  /// |-----------|---------------------------------------------|----------------------------------|
+  /// | Idle      | closed                                      | not prepared                     |
+  /// | Starting  | closed, route on its way                    | not prepared                     |
+  /// | Open      | open; started unless SessionState::isPaused | prepared for SessionData::format |
+  /// | Rerouting | closed, route on its way                    | prepared for the old format      |
   ///
-  /// Starting and rerouting end in the phase their name ends in, once the input is open; pause()
-  /// meanwhile turns ...ToRecording into ...ToPaused. Starting already holds the session's claim,
-  /// so only the start that won it acquires a route.
-  enum class Phase : uint8_t {
-    Idle,
-    StartingToRecording,
-    StartingToPaused,
-    Recording,
-    Paused,
-    ReroutingToRecording,
-    ReroutingToPaused,
-  };
+  /// Starting already holds the session's claim, so only the start that won it acquires a route.
+  enum class Phase : uint8_t { Idle, Starting, Open, Rerouting };
 
+  /// The session's whole state, read and written as one value so no reader sees a phase with the
+  /// pause of another moment.
   struct SessionState {
-    std::atomic<Phase> phase{Phase::Idle};
+    Phase phase = Phase::Idle;
+    bool isPaused = false;
+
+    [[nodiscard]] bool feedsOutputs() const {
+      return phase == Phase::Open && !isPaused;
+    }
+  };
+  static_assert(std::atomic<SessionState>::is_always_lock_free);
+
+  struct SessionData {
+    std::atomic<SessionState> state;
 
     /// The session registry's id for the current session; set by start().
-    RecordingSessionId id = 0;
+    uint64_t id = 0;
     /// Bumped every time the input is closed, and by a reroute while starting, so it identifies one
     /// opening of the input, or the route a start waits for.
     uint64_t inputGeneration = 0;
@@ -137,14 +136,15 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// numFrames float32 samples, valid only for the call.
   void onInputFrames(const float *const *channels, int channelCount, int numFrames);
 
-  /// The only place the session changes phase: frames reach the outputs exactly while
-  /// recording, so it arms the gate for Recording and disarms it for any other phase. The caller
-  /// holds controlMutex_.
-  void enterPhase(Phase phase);
+  [[nodiscard]] SessionState getSessionState() const;
+
+  /// The only place the session's state changes: arms the gate exactly when @p next feeds the
+  /// outputs, and disarms it otherwise. The caller holds controlMutex_.
+  void setSessionState(SessionState next);
 
   /// Has the outputs follow @p format when it differs from the one they are prepared for
   /// (RecorderOutputs::reprepare()), with the gate disarmed meanwhile. Leaves the gate as the
-  /// phase requires: armed again only when recording. The caller holds controlMutex_.
+  /// state requires: armed again only when it feeds the outputs. The caller holds controlMutex_.
   Result<NoneType, std::string> repointOutputsAt(const StreamFormat &format);
 
   /// rerouteInput(), leaving a session whose input could not be reopened as it is. Sets
@@ -153,7 +153,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
       std::optional<uint64_t> openedGeneration,
       uint64_t &reopenedGeneration);
 
-  /// Ends the session from any phase: closes the input, releases the session's claim and takes
+  /// Ends the session from any state: closes the input, releases the session's claim and takes
   /// the outputs away from the audio thread; RecorderOutputs::finalize() on the result is the
   /// caller's, with no mutex held. The caller holds controlMutex_.
   RecorderOutputs::Detached endSession();
@@ -162,7 +162,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   void reportError(const std::string &message);
 
   std::mutex controlMutex_;
-  SessionState session_;
+  SessionData session_;
   std::shared_ptr<IRecorderInput> input_;
   std::shared_ptr<RecorderInputGate> inputGate_;
   RecorderOutputs outputs_;

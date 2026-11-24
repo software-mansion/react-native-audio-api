@@ -17,7 +17,7 @@ bool isSameRecorder(const std::weak_ptr<AudioRecorder> &a, const std::weak_ptr<A
 
 } // namespace
 
-Result<RecordingSessionId, std::string> RecordingSessionRegistry::claim(
+Result<uint64_t, std::string> RecordingSessionRegistry::claim(
     const std::shared_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
@@ -26,7 +26,7 @@ Result<RecordingSessionId, std::string> RecordingSessionRegistry::claim(
   }
 
   occupant_ = recorder;
-  return Result<RecordingSessionId, std::string>::Ok(++lastClaimedSession_);
+  return Result<uint64_t, std::string>::Ok(++lastClaimedSession_);
 }
 
 void RecordingSessionRegistry::release(const std::weak_ptr<AudioRecorder> &recorder) {
@@ -37,7 +37,7 @@ void RecordingSessionRegistry::release(const std::weak_ptr<AudioRecorder> &recor
   }
 }
 
-void RecordingSessionRegistry::keepRecording(RecordingSessionId session, FileInfo recording) {
+void RecordingSessionRegistry::saveRecording(uint64_t session, FileInfo recording) {
   if (recording.paths.empty()) {
     return;
   }
