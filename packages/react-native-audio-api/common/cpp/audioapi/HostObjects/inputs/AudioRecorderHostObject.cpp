@@ -2,9 +2,9 @@
 
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
-#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/inputs/IRecorderInput.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/jsi/JsiUtils.h>
@@ -26,7 +26,7 @@ AudioRecorderHostObject::AudioRecorderHostObject(
   audioRecorder_ = std::make_shared<AudioRecorder>(
       audioEventHandlerRegistry,
       createPlatformRecorderInput(options),
-      ActiveRecorderHandle::global());
+      RecordingSessionManager::global());
 
   lifecycleLane_ = std::make_shared<SerialTaskExecutor>();
   promiseVendor_ = std::make_shared<PromiseVendor>(runtime, callInvoker, lifecycleLane_);

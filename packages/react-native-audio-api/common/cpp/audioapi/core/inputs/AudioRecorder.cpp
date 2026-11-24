@@ -3,7 +3,7 @@
 #include <audioapi/core/inputs/IRecorderInput.h>
 #include <audioapi/core/inputs/RecorderInputEvents.h>
 #include <audioapi/core/inputs/RecorderInputGate.h>
-#include <audioapi/core/inputs/RecordingSessionRegistry.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 
@@ -17,7 +17,7 @@ namespace audioapi {
 AudioRecorder::AudioRecorder(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     std::shared_ptr<IRecorderInput> input,
-    std::shared_ptr<RecordingSessionRegistry> sessionRegistry,
+    std::shared_ptr<RecordingSessionManager> sessionManager,
     const PlatformFileBackend *fileBackend)
     : input_(std::move(input)),
       inputGate_(
@@ -27,7 +27,7 @@ AudioRecorder::AudioRecorder(
               })),
       outputs_(audioEventHandlerRegistry, fileBackend != nullptr ? *fileBackend : osFileBackend()),
       audioEventHandlerRegistry_(audioEventHandlerRegistry),
-      sessionRegistry_(std::move(sessionRegistry)) {}
+      sessionManager_(std::move(sessionManager)) {}
 
 /// The platform input can outlive the recorder and keeps calling the gate, whose sink holds a raw
 /// pointer to it: disarm before any teardown, whatever state the recorder is in.
@@ -47,7 +47,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
       return Err("Recorder is already recording");
     }
 
-    auto claimResult = sessionRegistry_->claim(shared_from_this());
+    auto claimResult = sessionManager_->claim(shared_from_this());
     if (claimResult.is_err()) {
       return Err(claimResult.unwrap_err());
     }
@@ -132,7 +132,7 @@ Result<FileInfo, std::string> AudioRecorder::stop(std::optional<uint64_t> opened
 
   auto stopResult = RecorderOutputs::finalize(std::move(detached));
   if (stopResult.is_ok()) {
-    sessionRegistry_->saveRecording(stoppedSession, stopResult.unwrap());
+    sessionManager_->saveRecording(stoppedSession, stopResult.unwrap());
   }
   return stopResult;
 }
@@ -483,7 +483,7 @@ RecorderOutputs::Detached AudioRecorder::endSession() {
   session_.format.reset();
   session_.lastBufferSeconds.store(0.0, std::memory_order_relaxed);
   session_.recordedSeconds.store(0.0, std::memory_order_relaxed);
-  sessionRegistry_->release(weak_from_this());
+  sessionManager_->release(weak_from_this());
 
   return outputs_.detach();
 }

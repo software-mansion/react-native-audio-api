@@ -3,7 +3,7 @@
 #include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderOutputs.h>
 #include <audioapi/core/inputs/RecorderState.h>
-#include <audioapi/core/inputs/RecordingSessionRegistry.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/utils/Macros.h>
@@ -30,13 +30,13 @@ struct PlatformFileBackend;
 /// platform's part is the capture stream behind IRecorderInput.
 class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
  public:
-  /// Reports its sessions to @p sessionRegistry (ActiveRecorderHandle::global() for the app's
+  /// Reports its sessions to @p sessionManager (RecordingSessionManager::global() for the app's
   /// recorders). Writes files through @p fileBackend, which must outlive the recorder; nullptr
   /// selects the platform's (osFileBackend()).
   AudioRecorder(
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
       std::shared_ptr<IRecorderInput> input,
-      std::shared_ptr<RecordingSessionRegistry> sessionRegistry,
+      std::shared_ptr<RecordingSessionManager> sessionManager,
       const PlatformFileBackend *fileBackend = nullptr);
 
   DELETE_COPY_AND_MOVE(AudioRecorder);
@@ -121,7 +121,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   struct SessionData {
     std::atomic<SessionState> state;
 
-    /// The session registry's id for the current session; set by start().
+    /// The session manager's id for the current session; set by start().
     uint64_t id = 0;
     /// Bumped every time the input is closed, and by a reroute while starting, so it identifies one
     /// opening of the input, or the route a start waits for.
@@ -168,7 +168,7 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   std::shared_ptr<RecorderInputGate> inputGate_;
   RecorderOutputs outputs_;
   std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  std::shared_ptr<RecordingSessionRegistry> sessionRegistry_;
+  std::shared_ptr<RecordingSessionManager> sessionManager_;
 };
 
 } // namespace audioapi

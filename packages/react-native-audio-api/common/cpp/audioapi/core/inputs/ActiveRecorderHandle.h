@@ -2,27 +2,28 @@
 
 #include <audioapi/core/inputs/FileInfo.h>
 #include <audioapi/core/inputs/RecorderState.h>
-#include <audioapi/core/inputs/RecordingSessionRegistry.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/utils/Result.hpp>
 
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace audioapi {
 
-/// @brief The registry the app's recorders report to, for native code that has no recorder of its
-/// own: notification actions, audio-session deactivation, input routing, and a recording that
-/// outlived its UI. Its forwards call the live session's recorder with no lock held.
-class ActiveRecorderHandle final : public RecordingSessionRegistry {
+/// @brief Acts on whichever recorder owns the recording session, for native code that has no
+/// recorder of its own: notification actions, audio-session deactivation, input routing, and a
+/// recording that outlived its UI. Its forwards call that recorder with no lock held.
+class ActiveRecorderHandle final {
  public:
-  /// The handle native code reaches and the app's recorders report to.
-  static const std::shared_ptr<ActiveRecorderHandle> &global();
+  explicit ActiveRecorderHandle(std::shared_ptr<RecordingSessionManager> sessionManager)
+      : sessionManager_(std::move(sessionManager)) {}
+
+  /// The handle native code reaches, over RecordingSessionManager::global().
+  static ActiveRecorderHandle &global();
 
   /// The occupant's state, or Idle when the slot is empty.
   [[nodiscard]] RecorderState currentState() const;
-
-  /// A paused recording counts as ongoing: it still owns an open output file.
-  [[nodiscard]] bool isRecordingOngoing() const;
 
   /// The occupant's AudioRecorder::pause(); returns the state it leaves.
   RecorderState pause();
@@ -40,6 +41,9 @@ class ActiveRecorderHandle final : public RecordingSessionRegistry {
 
   /// stopAndReturnInfo(), then the state it leaves.
   RecorderState stopAndReturnState();
+
+ private:
+  std::shared_ptr<RecordingSessionManager> sessionManager_;
 };
 
 } // namespace audioapi

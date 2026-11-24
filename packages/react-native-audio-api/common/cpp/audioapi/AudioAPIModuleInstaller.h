@@ -11,8 +11,8 @@
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/OfflineAudioContext.h>
-#include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/jsi/JsiPromise.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <audioapi/utils/AudioRecorderOptions.h>
@@ -178,7 +178,7 @@ class AudioAPIModuleInstaller {
         jsi::PropNameID::forAscii(*jsiRuntime, "isRecordingOngoing"),
         0,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
-            -> jsi::Value { return {ActiveRecorderHandle::global()->isRecordingOngoing()}; });
+            -> jsi::Value { return {RecordingSessionManager::global()->isRecordingOngoing()}; });
   }
 
   static jsi::Function getConsumeLastRecordingResultFunction(jsi::Runtime *jsiRuntime) {
@@ -188,7 +188,7 @@ class AudioAPIModuleInstaller {
         0,
         [](jsi::Runtime &runtime, const jsi::Value &thisValue, const jsi::Value *args, size_t count)
             -> jsi::Value {
-          auto result = ActiveRecorderHandle::global()->consumeLastRecordingResult();
+          auto result = RecordingSessionManager::global()->consumeLastRecordingResult();
           if (!result.has_value()) {
             return jsi::Value::null();
           }

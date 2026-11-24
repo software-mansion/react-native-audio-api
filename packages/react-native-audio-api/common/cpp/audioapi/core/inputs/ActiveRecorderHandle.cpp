@@ -7,22 +7,18 @@
 
 namespace audioapi {
 
-const std::shared_ptr<ActiveRecorderHandle> &ActiveRecorderHandle::global() {
-  static const auto handle = std::make_shared<ActiveRecorderHandle>();
+ActiveRecorderHandle &ActiveRecorderHandle::global() {
+  static ActiveRecorderHandle handle(RecordingSessionManager::global());
   return handle;
 }
 
 RecorderState ActiveRecorderHandle::currentState() const {
-  auto recorder = occupant();
+  auto recorder = sessionManager_->occupant();
   return recorder != nullptr ? recorder->getState() : RecorderState::Idle;
 }
 
-bool ActiveRecorderHandle::isRecordingOngoing() const {
-  return currentState() != RecorderState::Idle;
-}
-
 RecorderState ActiveRecorderHandle::pause() {
-  auto recorder = occupant();
+  auto recorder = sessionManager_->occupant();
   if (recorder == nullptr) {
     return RecorderState::Idle;
   }
@@ -32,7 +28,7 @@ RecorderState ActiveRecorderHandle::pause() {
 }
 
 RecorderState ActiveRecorderHandle::resume() {
-  auto recorder = occupant();
+  auto recorder = sessionManager_->occupant();
   if (recorder == nullptr) {
     return RecorderState::Idle;
   }
@@ -42,7 +38,7 @@ RecorderState ActiveRecorderHandle::resume() {
 }
 
 Result<NoneType, std::string> ActiveRecorderHandle::rerouteInput() {
-  auto recorder = occupant();
+  auto recorder = sessionManager_->occupant();
   if (recorder == nullptr) {
     return Ok(None);
   }
@@ -51,7 +47,7 @@ Result<NoneType, std::string> ActiveRecorderHandle::rerouteInput() {
 }
 
 Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo() {
-  auto recorder = occupant();
+  auto recorder = sessionManager_->occupant();
   if (recorder == nullptr) {
     return Err("Recorder is not in recording state.");
   }

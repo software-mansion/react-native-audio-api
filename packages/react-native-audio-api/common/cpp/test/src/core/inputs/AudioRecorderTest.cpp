@@ -1,7 +1,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/inputs/IRecorderInput.h>
-#include <audioapi/core/inputs/RecordingSessionRegistry.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/graph/NodeHandle.h>
@@ -67,7 +67,7 @@ class AudioRecorderTest : public ::testing::Test {
         nullptr, std::make_shared<FakeRecorderInput>(), sessions_, &backend_);
   }
 
-  /// False while a session of another recorder holds the registry's claim.
+  /// False while a session of another recorder holds the session manager's claim.
   bool anotherRecorderCanStart() {
     return makeOtherRecorder()->start().is_ok();
   }
@@ -83,8 +83,7 @@ class AudioRecorderTest : public ::testing::Test {
   FakeEncoderLog log_;
   PlatformFileBackend backend_;
   std::shared_ptr<FakeRecorderInput> input_ = std::make_shared<FakeRecorderInput>();
-  std::shared_ptr<RecordingSessionRegistry> sessions_ =
-      std::make_shared<RecordingSessionRegistry>();
+  std::shared_ptr<RecordingSessionManager> sessions_ = std::make_shared<RecordingSessionManager>();
   std::shared_ptr<AudioRecorder> recorder_;
 };
 

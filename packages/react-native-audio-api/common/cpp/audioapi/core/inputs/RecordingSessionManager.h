@@ -14,18 +14,22 @@ namespace audioapi {
 
 class AudioRecorder;
 
-/// @brief Where recorders report their sessions: admits one at a time, and keeps the newest
-/// recording for consumeLastRecordingResult().
+/// @brief Owns the process's recording session: admits one recorder's session at a time, and keeps
+/// the newest recording for consumeLastRecordingResult(). Recorders report to it; native code that
+/// has no recorder of its own reaches the session's recorder through ActiveRecorderHandle.
 ///
 /// Recorders call claim() and release() holding their control mutex, so mutex_ is a leaf: nothing
-/// under it calls a recorder. Under it the slot is only compared by owner, never locked: a
-/// shared_ptr made there could become the recorder's last owner and run its destructor, which
-/// releases the slot, under the mutex.
-class RecordingSessionRegistry {
+/// under it calls a recorder. No shared_ptr to a recorder is dropped under it: as the last owner it
+/// would run the recorder's destructor, which releases the slot, under the mutex. So the slot is
+/// compared by owner there, and occupant() hands its copy out of the lock.
+class RecordingSessionManager final {
  public:
-  RecordingSessionRegistry() = default;
-  virtual ~RecordingSessionRegistry() = default;
-  DELETE_COPY_AND_MOVE(RecordingSessionRegistry);
+  RecordingSessionManager() = default;
+  ~RecordingSessionManager() = default;
+  DELETE_COPY_AND_MOVE(RecordingSessionManager);
+
+  /// The manager the app's recorders report to.
+  static const std::shared_ptr<RecordingSessionManager> &global();
 
   /// A session of @p recorder is starting; returns its id. Fails while another recorder's session
   /// holds the claim.
@@ -43,12 +47,18 @@ class RecordingSessionRegistry {
   /// Consume-once: the newest kept recording, or std::nullopt.
   std::optional<FileInfo> consumeLastRecordingResult();
 
- protected:
-  /// The live session's recorder, or nullptr. Locked outside the mutex, so the copy is safe to be
-  /// its last owner.
-  [[nodiscard]] std::shared_ptr<AudioRecorder> occupant() const;
+  /// Whether a session holds the claim, from start() until it ends. A paused recording counts as
+  /// ongoing: it still owns an open output file.
+  [[nodiscard]] bool isRecordingOngoing() const;
 
  private:
+  friend class ActiveRecorderHandle;
+
+  /// The live session's recorder, or nullptr. Locked under the mutex, which guards occupant_, and
+  /// returned out of it, so the copy is dropped only after the mutex is released: safe even as the
+  /// recorder's last owner.
+  [[nodiscard]] std::shared_ptr<AudioRecorder> occupant() const;
+
   mutable std::mutex mutex_;
   std::weak_ptr<AudioRecorder> occupant_;
   std::optional<FileInfo> keptRecording_;

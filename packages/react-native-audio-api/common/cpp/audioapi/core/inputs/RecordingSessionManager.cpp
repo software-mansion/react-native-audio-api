@@ -1,4 +1,4 @@
-#include <audioapi/core/inputs/RecordingSessionRegistry.h>
+#include <audioapi/core/inputs/RecordingSessionManager.h>
 
 #include <memory>
 #include <optional>
@@ -17,7 +17,12 @@ bool isSameRecorder(const std::weak_ptr<AudioRecorder> &a, const std::weak_ptr<A
 
 } // namespace
 
-Result<uint64_t, std::string> RecordingSessionRegistry::claim(
+const std::shared_ptr<RecordingSessionManager> &RecordingSessionManager::global() {
+  static const auto manager = std::make_shared<RecordingSessionManager>();
+  return manager;
+}
+
+Result<uint64_t, std::string> RecordingSessionManager::claim(
     const std::shared_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
@@ -29,7 +34,7 @@ Result<uint64_t, std::string> RecordingSessionRegistry::claim(
   return Result<uint64_t, std::string>::Ok(++lastClaimedSession_);
 }
 
-void RecordingSessionRegistry::release(const std::weak_ptr<AudioRecorder> &recorder) {
+void RecordingSessionManager::release(const std::weak_ptr<AudioRecorder> &recorder) {
   std::scoped_lock lock(mutex_);
 
   if (isSameRecorder(occupant_, recorder)) {
@@ -37,7 +42,7 @@ void RecordingSessionRegistry::release(const std::weak_ptr<AudioRecorder> &recor
   }
 }
 
-void RecordingSessionRegistry::saveRecording(uint64_t session, FileInfo recording) {
+void RecordingSessionManager::saveRecording(uint64_t session, FileInfo recording) {
   if (recording.paths.empty()) {
     return;
   }
@@ -51,12 +56,17 @@ void RecordingSessionRegistry::saveRecording(uint64_t session, FileInfo recordin
   keptSession_ = session;
 }
 
-std::optional<FileInfo> RecordingSessionRegistry::consumeLastRecordingResult() {
+std::optional<FileInfo> RecordingSessionManager::consumeLastRecordingResult() {
   std::scoped_lock lock(mutex_);
   return std::exchange(keptRecording_, std::nullopt);
 }
 
-std::shared_ptr<AudioRecorder> RecordingSessionRegistry::occupant() const {
+bool RecordingSessionManager::isRecordingOngoing() const {
+  std::scoped_lock lock(mutex_);
+  return !occupant_.expired();
+}
+
+std::shared_ptr<AudioRecorder> RecordingSessionManager::occupant() const {
   std::scoped_lock lock(mutex_);
   return occupant_.lock();
 }
