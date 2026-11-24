@@ -12,6 +12,14 @@ namespace audioapi::dsp {
   return static_cast<size_t>(0.5 + time * sampleRate);
 }
 
+/// Fractional frames, with float noise near a whole frame snapped away.
+[[nodiscard]] inline double timeToFractionalFrames(double time, float sampleRate) {
+  constexpr double kWholeFrameTolerance = 1e-6;
+  const double frames = time * sampleRate;
+  const double wholeFrames = std::round(frames);
+  return std::fabs(frames - wholeFrames) < kWholeFrameTolerance ? wholeFrames : frames;
+}
+
 [[nodiscard]] inline double sampleFrameToTime(int sampleFrame, float sampleRate) {
   return static_cast<double>(sampleFrame) / sampleRate;
 }

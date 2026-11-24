@@ -1,0 +1,56 @@
+name: Check package
+
+# Runs a workspace package's `check` and `test` scripts.
+
+on:
+  workflow_call:
+    inputs:
+      directory:
+        description: Package directory, e.g. packages/react-native-audio-api
+        required: true
+        type: string
+      test-all:
+        description: Run every test suite, not only the ones the changes touch
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Read package manifest
+        id: manifest
+        env:
+          DIRECTORY: ${{ inputs.directory }}
+        run: |
+          echo "name=$(jq -r '.name' "$DIRECTORY/package.json")" >> "$GITHUB_OUTPUT"
+          echo "tools=$(jq -c '.ci.tools // []' "$DIRECTORY/package.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Setup
+        uses: ./.github/actions/setup-env
+        with:
+          tools: ${{ steps.manifest.outputs.tools }}
+          install-args: --filter "${{ steps.manifest.outputs.name }}..."
+
+      - name: Build
+        env:
+          PACKAGE: ${{ steps.manifest.outputs.name }}
+        run: pnpm -r --if-present --filter "$PACKAGE..." run build
+
+      - name: Check
+        env:
+          PACKAGE: ${{ steps.manifest.outputs.name }}
+        run: pnpm --filter "$PACKAGE" run check
+
+      - name: Test
+        env:
+          PACKAGE: ${{ steps.manifest.outputs.name }}
+          TEST_ALL: ${{ (github.event_name != 'pull_request' || inputs.test-all) && '1' || '' }}
+        run: pnpm --filter "$PACKAGE" run test

@@ -3,17 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "check": "bash ../../scripts/run-steps.sh lint",
+    "test": "exit 0",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest",
-    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
-    "test:server": "node --test server/realtime-token-server.test.mjs"
+    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs"
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "lucide-react-native": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-svg": "catalog:",

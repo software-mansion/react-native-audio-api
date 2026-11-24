@@ -142,8 +142,8 @@ TEST_F(AudioBufferTest, GetChannelByType_Stereo) {
   AudioBuffer buf(BUF_SIZE, 2, SR);
   fillChannel(buf, 0, 1.0f);
   fillChannel(buf, 1, 2.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelLeft))[0], 1.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelRight))[0], 2.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::LEFT))[0], 1.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::RIGHT))[0], 2.0f);
 }
 
 TEST_F(AudioBufferTest, GetChannelByType_5_1) {
@@ -151,17 +151,17 @@ TEST_F(AudioBufferTest, GetChannelByType_5_1) {
   for (size_t ch = 0; ch < 6; ++ch) {
     fillChannel(buf, ch, static_cast<float>(ch));
   }
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelLeft))[0], 0.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelRight))[0], 1.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelCenter))[0], 2.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelLFE))[0], 3.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelSurroundLeft))[0], 4.0f);
-  EXPECT_FLOAT_EQ((*buf.getChannelByType(AudioBuffer::ChannelSurroundRight))[0], 5.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::LEFT))[0], 0.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::RIGHT))[0], 1.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::CENTER))[0], 2.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::LFE))[0], 3.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::SURROUND_LEFT))[0], 4.0f);
+  EXPECT_FLOAT_EQ((*buf.getChannelByType(ChannelType::SURROUND_RIGHT))[0], 5.0f);
 }
 
 TEST_F(AudioBufferTest, GetChannelByType_ReturnsNullForUnknownLayout) {
   AudioBuffer buf(BUF_SIZE, 3, SR);
-  EXPECT_EQ(buf.getChannelByType(AudioBuffer::ChannelLeft), nullptr);
+  EXPECT_EQ(buf.getChannelByType(ChannelType::LEFT), nullptr);
 }
 
 // ---------------------------------------------------------------------------

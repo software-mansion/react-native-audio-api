@@ -1,15 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import Animated, {
-  runOnJS,
-  withSpring,
-  useSharedValue,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
+import NativeSlider from '@react-native-community/slider';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../styles';
-import Spacer from './Spacer';
 
 interface SliderProps {
   min: number;
@@ -18,195 +11,114 @@ interface SliderProps {
 
   value: number;
   label?: string;
-  minLabelWidth?: number;
+  /**
+   * `logarithmic` spreads a wide range evenly by ratio (each doubling covers
+   * the same track distance). Requires `min > 0`.
+   */
+  scale?: SliderScale;
+  /** Called once the drag ends, with the value rounded to `step`. */
   onValueChange: (value: number) => void;
 }
 
-const handleSize = 20;
+type SliderScale = 'linear' | 'logarithmic';
 
 function formatSliderValue(value: number, step: number): string {
-  const rounded = Math.round(value / step) * step;
+  const rounded = roundToStep(value, step);
   return step < 1 ? rounded.toFixed(2) : String(rounded);
 }
 
-function valueToOffset(
-  value: number,
-  sliderWidth: number,
-  min: number,
-  max: number
-): number {
-  'worklet';
-
-  return ((value - min) / (max - min)) * (sliderWidth - handleSize);
-}
-
-function offsetToValue(
-  offset: number,
-  sliderWidth: number,
-  min: number,
-  max: number
-): number {
-  'worklet';
-
-  return (offset / (sliderWidth - handleSize)) * (max - min) + min;
-}
-
 function roundToStep(value: number, step: number): number {
-  'worklet';
-
   return Math.round(value / step) * step;
 }
 
-const Slider: React.FC<SliderProps> = (props) => {
-  const { value, onValueChange, min, max, step, label, minLabelWidth } = props;
+function valueToProgress(value: number, min: number, max: number): number {
+  const progress = Math.log(value / min) / Math.log(max / min);
+  return Math.min(1, Math.max(0, progress));
+}
 
-  const offset = useSharedValue(0);
-  const sValue = useSharedValue(0);
-  const sliderWidth = useSharedValue(0);
-  const [displayValue, setDisplayValue] = useState(() =>
-    formatSliderValue(value, step),
-  );
+function progressToValue(progress: number, min: number, max: number): number {
+  return min * Math.pow(max / min, progress);
+}
 
-  const syncDisplayValue = useCallback(
-    (nextValue: number) => {
-      setDisplayValue(formatSliderValue(nextValue, step));
-    },
-    [step],
-  );
+/**
+ * The system slider (UISlider on iOS, with the liquid glass thumb on iOS 26)
+ * under a row holding the label and the live value.
+ *
+ * A logarithmic slider runs the native control over 0–1 and maps that progress
+ * to the value, so it rounds to `step` itself instead of letting the native
+ * control snap.
+ */
+const Slider: React.FC<SliderProps> = ({
+  value,
+  onValueChange,
+  min,
+  max,
+  step,
+  label,
+  scale = 'linear',
+}) => {
+  const isLogarithmic = scale === 'logarithmic';
+  const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
-    offset.value = valueToOffset(value, sliderWidth.value, min, max);
-    sValue.value = value;
-    setDisplayValue(formatSliderValue(value, step));
-  }, [value, min, max, step, sliderWidth, offset, sValue]);
+    setDisplayValue(value);
+  }, [value]);
 
-  const pan = usePanGesture({
-    onUpdate: (event) => {
-      offset.value = Math.max(
-        0,
-        Math.min(sliderWidth.value - handleSize, offset.value + event.changeX),
-      );
-
-      sValue.value = offsetToValue(offset.value, sliderWidth.value, min, max);
-      runOnJS(syncDisplayValue)(sValue.value);
-    },
-    onDeactivate: () => {
-      const rounded = roundToStep(sValue.value, step);
-      runOnJS(onValueChange)(rounded);
-      runOnJS(syncDisplayValue)(rounded);
-    },
-  });
-
-  const onSliderLayout = (event: LayoutChangeEvent) => {
-    sliderWidth.value = event.nativeEvent.layout.width;
-
-    offset.value = valueToOffset(
-      value,
-      event.nativeEvent.layout.width,
-      min,
-      max,
-    );
-
-    sValue.value = value;
-    setDisplayValue(formatSliderValue(value, step));
-  };
-
-  const handleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: offset.value }],
-  }));
-
-  const fillStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: offset.value + handleSize / 2 - sliderWidth.value },
-    ],
-  }));
-
-  const valueTextStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateX: withSpring(
-          sliderWidth.value > 0 && offset.value < 1.5 * handleSize
-            ? 1.5 * handleSize
-            : 0,
-        ),
-      },
-    ],
-  }));
+  const fromNative = (sliderValue: number) =>
+    isLogarithmic ? progressToValue(sliderValue, min, max) : sliderValue;
 
   return (
     <View style={styles.container}>
-      {!!label && (
-        <>
-          <Text
-            style={[
-              styles.label,
-              !!minLabelWidth && { minWidth: minLabelWidth },
-            ]}>
-            {label}
-          </Text>
-          <Spacer.Horizontal size={12} />
-        </>
-      )}
-      <GestureDetector gesture={pan}>
-        <View style={styles.slider} onLayout={onSliderLayout}>
-          <Animated.View style={[styles.fill, fillStyle]} />
-          <Animated.View style={[styles.valueTextContainer, valueTextStyle]}>
-            <Text style={styles.valueText}>{displayValue}</Text>
-          </Animated.View>
-          <Animated.View style={[styles.handle, handleStyle]} />
-        </View>
-      </GestureDetector>
+      <View style={styles.header}>
+        {!!label && <Text style={styles.label}>{label}</Text>}
+        <Text style={styles.value}>
+          {formatSliderValue(displayValue, step)}
+        </Text>
+      </View>
+      <NativeSlider
+        style={styles.slider}
+        value={isLogarithmic ? valueToProgress(value, min, max) : value}
+        minimumValue={isLogarithmic ? 0 : min}
+        maximumValue={isLogarithmic ? 1 : max}
+        step={isLogarithmic ? 0 : step}
+        minimumTrackTintColor={colors.accent}
+        maximumTrackTintColor={colors.track}
+        tapToSeek
+        accessibilityLabel={label}
+        onValueChange={(sliderValue) =>
+          setDisplayValue(fromNative(sliderValue))
+        }
+        onSlidingComplete={(sliderValue) =>
+          onValueChange(roundToStep(fromNative(sliderValue), step))
+        }
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    alignSelf: 'stretch',
+  },
+  header: {
     flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginHorizontal: 4,
   },
   label: {
-    fontSize: 16,
-    color: colors.white,
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  value: {
+    marginLeft: 'auto',
+    fontSize: 15,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    color: colors.textPrimary,
   },
   slider: {
-    flex: 1,
-    borderWidth: 1,
-    overflow: 'hidden',
-    height: handleSize,
-    borderColor: colors.border,
-    borderRadius: handleSize / 2,
-  },
-  fill: {
-    position: 'absolute',
-    zIndex: -1,
-    width: '100%',
-    marginTop: -1,
-    height: handleSize,
-    borderRadius: handleSize / 2,
-    backgroundColor: colors.main,
-  },
-  valueTextContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    paddingLeft: 12,
-  },
-  valueText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  handle: {
-    marginTop: -1,
-    marginLeft: -1,
-    width: handleSize,
-    height: handleSize,
-    borderColor: colors.border,
-    borderRadius: handleSize / 2,
-    backgroundColor: colors.white,
+    height: 40,
   },
 });
 

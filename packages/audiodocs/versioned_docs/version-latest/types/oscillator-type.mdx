@@ -2,9 +2,11 @@
 sidebar_position: 6
 ---
 
+import OscillatorWavesChart from '@site/src/components/OscillatorWavesChart';
+
 # OscillatorType
 
-`OscillatorType` is a string that specifies shape of an oscillator wave
+`OscillatorType` is a string that specifies the shape of an oscillator wave.
 
 ```jsx
 type OscillatorType =
@@ -16,9 +18,10 @@ type OscillatorType =
 ```
 
 Below you can see possible names with shapes corresponding to them.
-![](/img/oscillator-waves.png)
+
+<OscillatorWavesChart />
 
 ## `custom`
 
-This value can't be set explicitly, but it allows user to set any shape. See [`setPeriodicWave`](/docs/sources/oscillator-node#setperiodicwave) for reference.
+This value can't be set explicitly, but it allows user to set any shape. See [`setPeriodicWave`](../sources/oscillator-node.mdx#setperiodicwave) for reference.
 

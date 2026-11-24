@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "check": "exit 0",
+    "test": "exit 0",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
     "clear": "docusaurus clear",
-    "serve": "docusaurus serve",
-    "lint": "echo lint",
-    "typecheck": ""
+    "serve": "docusaurus serve"
   },
   "dependencies": {
     "@babel/preset-react": "^7.27.1",

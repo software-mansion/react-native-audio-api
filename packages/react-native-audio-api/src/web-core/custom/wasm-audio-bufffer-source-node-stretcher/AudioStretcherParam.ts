@@ -1,5 +1,5 @@
 import AudioParam from '../../AudioParam.web';
-import BaseAudioContext from '../../BaseAudioContext.web';
+import type BaseAudioContext from '../../BaseAudioContext.web';
 
 const RAMP_SAMPLE_INTERVAL = 0.05;
 

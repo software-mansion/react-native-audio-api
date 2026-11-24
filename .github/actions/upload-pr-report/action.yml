@@ -1,0 +1,32 @@
+name: Upload pull request report
+description: >
+  Uploads a folder of reports that pr-report-comment.yml posts on the pull request, one
+  comment per <kind>/report.md. Does nothing when the folder has no reports.
+
+inputs:
+  name:
+    description: Artifact suffix, unique per CI run (the artifact is pr-report-<name>)
+    required: true
+  path:
+    description: Folder holding <kind>/report.md
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Look for reports
+      id: reports
+      shell: bash
+      env:
+        REPORT_DIR: ${{ inputs.path }}
+      run: |
+        if [ -n "$(find "$REPORT_DIR" -mindepth 2 -maxdepth 2 -name report.md 2>/dev/null)" ]; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload reports
+      if: steps.reports.outputs.found == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: pr-report-${{ inputs.name }}
+        path: ${{ inputs.path }}

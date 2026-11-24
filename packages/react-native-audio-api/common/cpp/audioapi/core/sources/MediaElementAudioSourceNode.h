@@ -1,44 +1,21 @@
 #pragma once
 
 #include <audioapi/core/AudioNode.h>
-#include <cstdint>
 #include <memory>
-#include <optional>
 
 namespace audioapi {
 
-class AudioFileSourceNode;
-struct MediaElementAudioSourceOptions;
-
+/// @brief Represents an audio source from an `<Audio>` element.
+///
+/// The element's file source is connected to this node's input like any other
+/// node, so the node only forwards what the graph already mixed into its
+/// buffer.
 class MediaElementAudioSourceNode : public AudioNode {
  public:
-  explicit MediaElementAudioSourceNode(
-      const std::shared_ptr<BaseAudioContext> &context,
-      AudioFileSourceNode *fileSource,
-      const MediaElementAudioSourceOptions &options);
-
-  ~MediaElementAudioSourceNode() override;
-
-  [[nodiscard]] uint64_t getBindingId() const {
-    return bindingId_;
-  }
-
-  size_t getFileSourceNodeUseCount() const;
-  bool fileSourceNodePaused() const;
-  bool canBeDestructed() const override;
-  [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
-
-  /// @note Audio Thread only — called after graph disconnects are applied.
-  void onOutputsDisconnected();
+  explicit MediaElementAudioSourceNode(const std::shared_ptr<BaseAudioContext> &context);
 
  protected:
   void processNode(int framesToProcess) override;
-
- private:
-  static uint64_t generateBindingId();
-
-  const uint64_t bindingId_;
-  AudioFileSourceNode *fileSource_;
 };
 
 } // namespace audioapi

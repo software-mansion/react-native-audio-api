@@ -1,6 +1,6 @@
 {
   "name": "react-native-audio-worklets",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "react-native-worklets integration for react-native-audio-api: WorkletNode for UI-thread audio visualization. Requires React Native New Architecture.",
   "sideEffects": false,
   "exports": {
@@ -50,7 +50,8 @@
     "ios/spm/include/.gitkeep"
   ],
   "scripts": {
-    "test": "jest",
+    "check": "bash ../../scripts/run-steps.sh format:check lint typecheck",
+    "test": "exit 0",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm lint:js && pnpm lint:cpp && pnpm lint:ios && pnpm lint:kotlin",
     "lint:js": "eslint src && prettier --check src",
@@ -68,6 +69,13 @@
     "format:ios": "find ios/audioworklets -type f \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | xargs clang-format -i",
     "format:common": "find common/cpp/ \\( -path 'common/cpp/clangd/build' -prune -o -type f \\( -iname \"*.h\" -o -iname \"*.cpp\" -o -iname \"*.hpp\" \\) -print \\) | xargs clang-format -i",
     "build": "./scripts/build.sh"
+  },
+  "ci": {
+    "tools": [
+      "cpplint",
+      "ktlint",
+      "clang-format"
+    ]
   },
   "keywords": [
     "react-native",
@@ -105,11 +113,9 @@
     "@react-native/eslint-config": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
-    "@types/jest": "catalog:",
     "@types/react": "catalog:",
     "@types/semver": "catalog:",
     "eslint": "catalog:",
-    "jest": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",

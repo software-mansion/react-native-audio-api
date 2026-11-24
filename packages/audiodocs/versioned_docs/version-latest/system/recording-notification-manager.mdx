@@ -9,8 +9,12 @@ import {
 
 # RecordingNotificationManager <Android />
 
-The `RecordingNotificationManager` provides system integration with [`Recorder`](/docs/inputs/audio-recorder).
+The `RecordingNotificationManager` provides system integration with [`AudioRecorder`](../inputs/audio-recorder.mdx) on Android.
 It shows a standard notification with pause/resume and (optionally) stop actions, can route notification taps to a specific screen, and sends action events to your application.
+
+:::note iOS
+`RecordingNotificationManager` is not available on iOS. For a recording indicator on the Lock Screen and in the Dynamic Island, use a [Live Activity](https://docs.expo.dev/versions/latest/sdk/widgets/) built with [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/).
+:::
 
 ## Example
 ```typescript
@@ -43,10 +47,10 @@ RecordingNotificationManager.hide();
 
 ## Native action handling
 
-All notification actions act on the recorder **natively**, without a JS round-trip. This matters when the recording outlives the app UI (see [keeping the recording alive when the app is closed](/docs/inputs/audio-recorder#keeping-the-recording-alive-when-the-app-is-closed)) — pause, resume and stop keep working even after the app task has been removed and no JS listener is reachable.
+All notification actions act on the recorder **natively**, without a JS round-trip. This matters when the recording outlives the app UI (see [keeping the recording alive when the app is closed](../inputs/audio-recorder.mdx#keeping-the-recording-alive-when-the-app-is-closed)) — pause, resume and stop keep working even after the app task has been removed and no JS listener is reachable.
 
 - **Pause / resume** pause or resume the recorder and flip the notification's action button. The matching event (`recordingNotificationPause` / `recordingNotificationResume`) still fires so a live app can sync its UI — handlers calling `AudioRecorder.pause()` / `resume()` again are harmless, the recorder ignores same-state transitions.
-- **Stop** (`showStopAction: true`) stops the recorder and finalizes the output files (their info becomes available through [`AudioRecorder.consumeLastRecordingResult()`](/docs/inputs/audio-recorder#consumelastrecordingresult)), emits `recordingNotificationStop`, then hides the notification, which also stops the foreground service. Unlike pause/resume, your `recordingNotificationStop` listener should **not** call `AudioRecorder.stop()` — the recording is already stopped. Collect the files with `AudioRecorder.consumeLastRecordingResult()` instead.
+- **Stop** (`showStopAction: true`) stops the recorder and finalizes the output files (their info becomes available through [`AudioRecorder.consumeLastRecordingResult()`](../inputs/audio-recorder.mdx#consumelastrecordingresult)), emits `recordingNotificationStop`, then hides the notification, which also stops the foreground service. Unlike pause/resume, your `recordingNotificationStop` listener should **not** call `AudioRecorder.stop()` — the recording is already stopped. Collect the files with `AudioRecorder.consumeLastRecordingResult()` instead.
 
 ## Swiping the notification away
 
@@ -75,20 +79,17 @@ No `AndroidManifest.xml` changes are needed — the notification uses an explici
 
 Shows the recording notification with the parameters.
 
-:::info
 Metadata is saved between calls, so after the initial pass to the show method, you need only call it with elements that are supposed to change.
-:::
-
 
 | Parameter |Type| Description|
-| :-------: | :--: | :----|
+| :---: | :---: | :---- |
 | `info` | [`RecordingNotificationInfo`](recording-notification-manager#recordingnotificationinfo) | Initial notification metadata |
 
 #### Returns `Promise<void>`.
 
 :::info
 For more details, go to [android developer page](https://developer.android.com/develop/ui/views/notifications#Templates).
-Resource name is a path to resource plased in res/drawable folder. It has to be either .png file or .xml file, name is indicated without file extenstion. (photo.png -> photo).
+Resource name is a path to resource placed in res/drawable folder. It has to be either .png file or .xml file, name is indicated without file extension. (photo.png -> photo).
 :::
 
 :::caution
@@ -109,14 +110,14 @@ Checks if the notification is displayed.
 
 ### `addEventListener`
 
-Add an event listener for notification actions.
+Adds an event listener for notification actions.
 
 |  Parameter  | Type | Description |
-| :---------: | :----: | :---------------------- |
-| `eventName` | [`RecordingNotificationEvent`](recording-notification-manager#recordingnotificationevent) | The event to listen for |
-| `callback`  | ([`RecordingNotificationEvent](recording-notification-manager#recordingnotificationevent)) => void | Callback function |
+| :---: | :---: | :---- |
+| `eventName` | [`RecordingNotificationEventName`](recording-notification-manager#recordingnotificationeventname) | The event to listen for |
+| `callback`  | [`NotificationCallback`](recording-notification-manager#notificationcallback) | Callback function |
 
-#### Returns [`AudioEventSubscription`](/docs/system/audio-manager#audioeventsubscription).
+#### Returns [`AudioEventSubscription`](./audio-manager.mdx#audioeventsubscription).
 
 ## Remarks
 
@@ -143,16 +144,30 @@ interface RecordingNotificationInfo {
 ```
 </details>
 
-### `RecordingNotificationEvent`
+### `RecordingNotificationEventName`
 
 <details>
 <summary>Type definitions</summary>
 ```typescript
+interface EventEmptyType {}
+
 interface RecordingNotificationEvent {
   recordingNotificationPause: EventEmptyType;
   recordingNotificationResume: EventEmptyType;
   recordingNotificationStop: EventEmptyType;
 }
+
+type RecordingNotificationEventName = keyof RecordingNotificationEvent;
 ```
 </details>
 
+### `NotificationCallback`
+
+<details>
+<summary>Type definitions</summary>
+```typescript
+type NotificationCallback<Name extends RecordingNotificationEventName> = (
+  event: RecordingNotificationEvent[Name]
+) => void;
+```
+</details>

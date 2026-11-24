@@ -1,16 +1,23 @@
 ---
-sidebar_position: 3
+sidebar_position: 6
 ---
 
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
 import { Optional, ReadOnly } from '@site/src/components/Badges';
+import InteractivePlayground from '@site/src/components/InteractivePlayground';
+import { useGainPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useGainPlayground';
 
 # GainNode
 
-The `GainNode` interface represents a change in volume (amplitude) of the audio signal. It is an [`AudioNode`](/docs/core/audio-node) with a single `gain` [`AudioParam`](/docs/core/audio-param) that multiplies every sample passing through it.
+The `GainNode` interface represents a change in volume (amplitude) of the audio signal. It is an [`AudioNode`](../core/audio-node.mdx) with a single `gain` [`AudioParam`](../core/audio-param.mdx) that multiplies every sample passing through it.
+
+Press play, then click the `GainNode` box in the graph to switch it on and off while listening. The slider changes the node in real time, the waveform shows the amplitude shrinking or growing, and the code below always matches what you hear.
+
+<InteractivePlayground tag="GainNode" usePlayground={useGainPlayground} />
 
 :::tip
-Direct, immediate gain changes often cause audible clicks. Use the scheduling methods of [`AudioParam`](/docs/core/audio-param) (e.g. `linearRampToValueAtTime`, `exponentialRampToValueAtTime`) to smoothly interpolate volume transitions.
+Direct, immediate gain changes often cause audible clicks. Use the scheduling methods of [`AudioParam`](../core/audio-param.mdx) (e.g. `linearRampToValueAtTime`, `exponentialRampToValueAtTime`) to smoothly interpolate volume transitions.
 :::
 
 ## Constructor
@@ -21,28 +28,31 @@ constructor(context: BaseAudioContext, options?: GainOptions)
 
 ### `GainOptions`
 
-Inherits all properties from [`AudioNodeOptions`](/docs/core/audio-node#audionodeoptions)
+Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
 | Parameter | Type | Default | |
 | :---: | :---: | :----: | :---- |
-| `gain` <Optional /> | `number` | `1.0` | Initial value for [`gain`](/docs/effects/gain-node#properties) |
+| `gain` <Optional /> | `number` | `1.0` | Initial value for [`gain`](./gain-node.mdx#properties) |
 
-You can also create a `GainNode` via the [`BaseAudioContext.createGain()`](/docs/core/base-audio-context#creategain) factory method, which uses default values.
+You can also create a `GainNode` via the [`BaseAudioContext.createGain()`](../core/base-audio-context.mdx#creategain) factory method, which uses default values.
 
 ## Properties
 
-It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
 <AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
 
 | Name | Type | Description | |
 | :----: | :----: | :-------- | :-: |
-| `gain` | [`AudioParam`](/docs/core/audio-param) | [`a-rate`](/docs/core/audio-param#a-rate-vs-k-rate) `AudioParam` representing the gain value to apply. | <ReadOnly /> |
+| `gain` | [`AudioParam`](../core/audio-param.mdx) | [`a-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing the gain value to apply. | <ReadOnly /> |
 
 ## Methods
 
+Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
+
+<AudioNodeMethodsTable />
+
 `GainNode` does not define any additional methods.
-It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 
 ## Usage
 
@@ -71,9 +81,9 @@ gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 2);
 
 #### `gain`
 - Nominal range is -∞ to ∞.
-- Values greater than `1.0` amplify the signal; values between `0` and `1.0` attenuate it.
-- A value of `0` silences the signal. Negative values invert the signal phase.
+- Values greater than `1.0` amplify the signal; values between `0.0` and `1.0` attenuate it.
+- A value of `0.0` silences the signal. Negative values invert the signal phase.
 
 ## Advanced usage — Envelope (ADSR)
 
-`GainNode` is the key building block for implementing sound envelopes. For a practical, step-by-step walkthrough of ADSR envelopes and how to apply them in a real app, see the [Making a piano keyboard](/docs/guides/making-a-piano-keyboard#envelopes-%EF%B8%8F) guide.
+`GainNode` is the key building block for implementing sound envelopes. For a practical, step-by-step walkthrough of ADSR envelopes and how to apply them in a real app, see the [Piano keyboard](../guides/making-a-piano-keyboard.mdx#envelopes) guide.

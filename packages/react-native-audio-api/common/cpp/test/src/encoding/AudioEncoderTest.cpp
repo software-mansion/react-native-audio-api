@@ -1,4 +1,5 @@
 #include <audioapi/encoding/AudioEncoder.h>
+#include <audioapi/utils/AudioBuffer.hpp>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -26,7 +27,7 @@ class CountingEncoder : public AudioEncoder {
     return OpenEncoderResult::Ok(filePath);
   }
 
-  EncodeResult encode(const float *const * /*channels*/, int numFrames) override {
+  EncodeResult encode(const AudioBuffer & /*input*/, int numFrames) override {
     addEncodedFrames(static_cast<size_t>(numFrames));
     return EncodeResult::Ok(static_cast<size_t>(numFrames));
   }
@@ -67,9 +68,8 @@ StreamFormat monoAt(float sampleRate) {
 }
 
 void encodeFrames(AudioEncoder &encoder, int numFrames) {
-  std::vector<float> samples(static_cast<size_t>(numFrames), 0.0F);
-  const float *channels[] = {samples.data()};
-  ASSERT_TRUE(encoder.encode(channels, numFrames).is_ok());
+  const AudioBuffer input(static_cast<size_t>(numFrames), 1, 48000.0F);
+  ASSERT_TRUE(encoder.encode(input, numFrames).is_ok());
 }
 
 } // namespace

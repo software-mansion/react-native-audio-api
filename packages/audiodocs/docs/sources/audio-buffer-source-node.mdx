@@ -94,7 +94,7 @@ Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-sour
 
 ## Methods
 
-It inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
+Inherits all methods from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#methods).
 
 ### `getLatency`
 
@@ -134,7 +134,7 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 | :---: | :---: | :---- |
 | `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](../core/base-audio-context.mdx#properties) or set to `0.0`, the node starts playing immediately. <br /> Default: `0.0`. |
 | `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0.0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](./audio-buffer.mdx#properties) (or the defined [`loopEnd`](./audio-buffer-source-node.mdx#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a `10`-second buffer is still `5` seconds. |
-| `duration` <Optional /> | `number` | The playback duration, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](./audio-scheduled-source-node.mdx#stop). <br /> Equivalent to calling `start(when, offset)` followed by `stop(when + duration)`. |
+| `duration` <Optional /> | `number` | The amount of buffer content to play, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](./audio-scheduled-source-node.mdx#stop). <br /> Like `offset`, it is measured in the buffer's own time rather than at the current playback rate, so at double speed a `duration` of `4` seconds plays for `2` seconds. <br /> When [`loop`](./audio-buffer-source-node.mdx#properties) is enabled, the content played across all loop iterations counts toward it. |
 
 
 #### Errors:
@@ -151,11 +151,11 @@ Schedules the `AudioBufferSourceNode` to start playback of audio data contained 
 
 ## Events
 
-It inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
+Inherits all events from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#events).
 
 ### `onpositionchanged` <MobileOnly />
 
-Allows to set (or remove) a callback that will be fired after processing certain part of an audio.
+Sets (or removes) a callback that will be fired after processing a certain part of the audio.
 Frequency is defined by `onpositionchangedInterval`. By setting this callback you can achieve pause functionality.
 You can remove the callback by passing `null`.
 

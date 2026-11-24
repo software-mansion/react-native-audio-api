@@ -28,7 +28,7 @@ WAV and FLAC decode the segments and write them out again through the system
 encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A remuxes AAC packets
 with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
 OGG re-pages the Opus packets with the bundled libogg on both platforms, so it is
-unavailable when the package's static libraries are disabled with [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries).
+unavailable when the package's static libraries are disabled with [`disableStaticExternalLibs`](../other/build-time-flags.mdx#disablestaticexternallibs).
 
 ADTS (`.aac`) appends complete encoded frames without decoding or re-encoding.
 Inputs must use the same sample rate and channel configuration. An incomplete
@@ -91,13 +91,10 @@ async function finalizeRotatedRecording() {
   });
 
   // Start and stop the recorder as usual.
-  const result = await audioRecorder.stop();
+  const { paths } = await audioRecorder.stop();
+  const outputPath = paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
 
-  if (result.status === 'success') {
-    const outputPath = result.paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
-
-    await concatAudioFiles(result.paths, outputPath);
-  }
+  await concatAudioFiles(paths, outputPath);
 }
 ```
 

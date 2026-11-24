@@ -1,8 +1,9 @@
 import React, { FC } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { TestUI } from '../../testComponents';
-import { colors, layout } from '../../styles';
+import { Card } from '../../components';
+import * as TestUI from '../../testComponents';
+import { colors, layout, typography } from '../../styles';
 import CorrelationPlot from './CorrelationPlot';
 import { formatMs } from './helpers';
 import type { LoopbackAnalysis } from './types';
@@ -19,33 +20,32 @@ const InfoRow: FC<{ label: string; value: string }> = ({ label, value }) => (
   </View>
 );
 
-const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => {
+const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({
+  analysis,
+}) => {
   if (!analysis) {
     return (
       <TestUI.EmptyState message="Run the test to generate the reference tone, record the microphone signal, and compare both waveforms." />
     );
   }
 
-  const plotWidth = layout.screenWidth - 36;
-  const { scenario } = analysis;
+  // The screen and the plot card each pad both sides.
+  const plotWidth = layout.screenWidth - 4 * layout.screenPadding;
 
   return (
-    <View style={styles.container}>
+    <>
       <TestUI.SectionTitle title="How the comparison works" />
-      <View style={styles.methodologyCard}>
+      <Card>
         {analysis.methodology.map((step, index) => (
-          <Text key={step} style={styles.methodologyStep}>
+          <Text key={step} style={typography.hint}>
             {index + 1}. {step}
           </Text>
         ))}
-      </View>
+      </Card>
 
       <TestUI.SectionTitle title="Reported latencies" />
-      <View style={styles.metricsCard}>
-        <InfoRow
-          label="baseLatency"
-          value={formatMs(analysis.snapshot.base)}
-        />
+      <Card>
+        <InfoRow label="baseLatency" value={formatMs(analysis.snapshot.base)} />
         <InfoRow
           label="outputLatency"
           value={formatMs(analysis.snapshot.output)}
@@ -85,9 +85,7 @@ const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => 
         <InfoRow
           label="Noise floor (pre-beep)"
           value={
-            analysis.noiseFloor !== null
-              ? analysis.noiseFloor.toFixed(4)
-              : '—'
+            analysis.noiseFloor !== null ? analysis.noiseFloor.toFixed(4) : '—'
           }
         />
         <InfoRow
@@ -98,7 +96,7 @@ const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => 
               : '—'
           }
         />
-      </View>
+      </Card>
 
       <WaveformPlot
         title="Generated reference pattern"
@@ -119,7 +117,7 @@ const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => 
                 {
                   ratio: analysis.bestAlignmentMarkerRatio,
                   label: 'Best alignment',
-                  color: colors.main,
+                  color: colors.blue,
                 },
               ]
             : undefined
@@ -173,34 +171,18 @@ const LoopbackAnalysisPanel: FC<LoopbackAnalysisPanelProps> = ({ analysis }) => 
         />
       ) : null}
 
-      <TestUI.SectionTitle title="Test verdict" />
       <TestUI.ScenarioResults
-        scenarios={[
-          {
-            id: scenario.id,
-            title: scenario.title,
-            status: scenario.status,
-            durationLabel: `${(scenario.durationMs / 1000).toFixed(2)}s`,
-            steps: scenario.steps.map((step) => ({
-              id: `${scenario.id}-${step.id}`,
-              message: step.message,
-              status: step.status,
-              details: step.details,
-            })),
-          },
-        ]}
+        title="Test verdict"
+        scenarios={[analysis.scenario]}
         emptyMessage=""
       />
-    </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 14,
-  },
   infoLabel: {
-    color: colors.gray,
+    color: colors.textSecondary,
     flex: 1,
     fontSize: 13,
   },
@@ -210,28 +192,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   infoValue: {
-    color: colors.white,
+    color: colors.textPrimary,
     flex: 1,
     fontSize: 13,
     fontVariant: ['tabular-nums'],
     textAlign: 'right',
-  },
-  methodologyCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    gap: 8,
-    padding: 12,
-  },
-  methodologyStep: {
-    color: colors.gray,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  metricsCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    gap: 10,
-    padding: 12,
   },
 });
 

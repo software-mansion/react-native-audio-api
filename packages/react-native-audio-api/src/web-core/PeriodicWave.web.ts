@@ -1,4 +1,4 @@
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import { PeriodicWaveOptions } from '../types';
 import { normalizePeriodicWaveOptions } from '../utils/periodicWave';
 import { PeriodicWaveOptionsValidator } from '../utils/validation';

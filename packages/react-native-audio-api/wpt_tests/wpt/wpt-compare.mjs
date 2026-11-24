@@ -113,8 +113,18 @@ const isAssertionFailure = (message) => message.startsWith('X ');
  * for array comparisons, an `Index Actual Expected` table after the first line. A subtest
  * that fails in both runs with a different value is still the same failing subtest, so only
  * the first line without the measured value identifies it.
+ *
+ * Array assertions also embed the reference they compare against
+ * (`X 1: Channel 0 does not equal [0,0,0.91…] with an element-wise tolerance…`). Many
+ * references are rendered by another node (convolver-response-* by a DelayNode), so fixing
+ * that node rewrites the reference and, with it, the line; the record is also cut at 200
+ * characters, which can drop the rest. The subtest is the text before the array.
  */
-const subtestIdentity = (message) => message.split('\n', 1)[0].replace(/ Got .*$/, '');
+const subtestIdentity = (message) =>
+  message
+    .split('\n', 1)[0]
+    .replace(/ Got .*$/, '')
+    .replace(/ (does not equal|expected to be equal to the array) \[.*$/, ' $1 […]');
 
 /**
  * Exact per-file comparison. Category pass counts cannot see an equal-count

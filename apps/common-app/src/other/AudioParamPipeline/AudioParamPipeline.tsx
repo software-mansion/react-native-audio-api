@@ -1,20 +1,18 @@
-import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
-import type { AudioParam } from 'react-native-audio-api';
-
-import { Button, Container, Spacer } from '../../components';
-import { colors, layout } from '../../styles';
+import React, { FC, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import {
-  SectionTitle,
-  StatusPill,
-  StepRow,
-  TestUI,
-  type ScenarioStatus,
-  type StepItem,
-  type SummaryItem,
-} from '../../testComponents';
-import { NotSupportedError } from '../../../../../packages/react-native-audio-api/src/errors';
+  AudioContext,
+  NotSupportedError,
+  type AudioParam,
+  type OscillatorNode,
+} from 'react-native-audio-api';
+
+import { Button, Card } from '../../components';
+import { colors, typography } from '../../styles';
+import * as TestUI from '../../testComponents';
+import type { ScenarioStatus, StepItem } from '../../testComponents';
+import { monospace } from '../AudioIOPlayground/ui';
+import { sleep } from '../sleep';
 
 // ---------------------------------------------------------------------------
 // Data types
@@ -36,6 +34,9 @@ interface ErrorSubCase {
 }
 
 type PlayStatus = 'idle' | 'playing' | 'done';
+
+const POLL_INTERVAL_MS = 50;
+const PAUSE_BETWEEN_CASES_MS = 300;
 
 // ---------------------------------------------------------------------------
 // Frequency automation test cases
@@ -225,24 +226,46 @@ const ERROR_SUB_CASES: ErrorSubCase[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+const idleStatuses = (): Record<string, PlayStatus> =>
+  Object.fromEntries(AUDIO_TEST_CASES.map((tc) => [tc.key, 'idle']));
+
+function runErrorSubCases(ctx: AudioContext): StepItem[] {
+  const t0 = ctx.currentTime;
+  return ERROR_SUB_CASES.map(({ id, label, run }): StepItem => {
+    try {
+      run(ctx, t0);
+      return {
+        id,
+        message: label,
+        status: 'fail',
+        details: 'Expected NotSupportedError but nothing was thrown',
+      };
+    } catch (e) {
+      if (e instanceof NotSupportedError) {
+        return { id, message: label, status: 'pass' };
+      }
+      return {
+        id,
+        message: label,
+        status: 'fail',
+        details: `Unexpected error: ${e instanceof Error ? e.message : String(e)}`,
+      };
+    }
+  });
+}
 
 const AudioParamPipeline: FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const isUnmountedRef = useRef(false);
   const stopRequestedRef = useRef(false);
-  const currentOscRef = useRef<ReturnType<AudioContext['createOscillator']> | null>(null);
+  const currentOscRef = useRef<OscillatorNode | null>(null);
 
-  const [audioStatuses, setAudioStatuses] = useState<
-    Record<string, PlayStatus>
-  >(() => Object.fromEntries(AUDIO_TEST_CASES.map((tc) => [tc.key, 'idle'])));
+  const [audioStatuses, setAudioStatuses] = useState(idleStatuses);
   const [errorSteps, setErrorSteps] = useState<StepItem[] | null>(null);
-  const [errorRunning, setErrorRunning] = useState(false);
   const [isPlayingAll, setIsPlayingAll] = useState(false);
 
   useEffect(() => {
+    isUnmountedRef.current = false;
     audioContextRef.current = new AudioContext();
     return () => {
       isUnmountedRef.current = true;
@@ -250,15 +273,19 @@ const AudioParamPipeline: FC = () => {
     };
   }, []);
 
+  const isPlaying = Object.values(audioStatuses).includes('playing');
+  const isRunning = isPlayingAll || isPlaying;
+
   const setStatus = (key: string, status: PlayStatus) => {
     if (!isUnmountedRef.current) {
       setAudioStatuses((prev) => ({ ...prev, [key]: status }));
     }
   };
 
-  const playTestCase = useCallback(async (tc: AudioTestCase) => {
+  /** Plays one case until it ends or Stop is pressed; one case at a time. */
+  const playTestCase = async (tc: AudioTestCase) => {
     const ctx = audioContextRef.current;
-    if (!ctx) return;
+    if (!ctx || currentOscRef.current) return;
 
     setStatus(tc.key, 'playing');
 
@@ -274,282 +301,183 @@ const AudioParamPipeline: FC = () => {
     osc.stop(t0 + tc.duration);
     currentOscRef.current = osc;
 
-    const stepMs = 50;
     const totalMs = tc.duration * 1000 + 150;
-    for (let elapsed = 0; elapsed < totalMs; elapsed += stepMs) {
+    for (let elapsed = 0; elapsed < totalMs; elapsed += POLL_INTERVAL_MS) {
       if (stopRequestedRef.current || isUnmountedRef.current) {
         try {
           osc.stop();
         } catch {}
         break;
       }
-      await new Promise<void>((resolve) => setTimeout(resolve, stepMs));
+      await sleep(POLL_INTERVAL_MS);
     }
 
+    gainNode.disconnect();
     currentOscRef.current = null;
     setStatus(tc.key, 'done');
-  }, []);
+  };
 
-  const runErrorTest = useCallback(async () => {
+  const playOne = (tc: AudioTestCase) => {
+    stopRequestedRef.current = false;
+    playTestCase(tc);
+  };
+
+  const runErrorTest = () => {
     const ctx = audioContextRef.current;
-    if (!ctx || errorRunning) return;
-
-    setErrorRunning(true);
-    setErrorSteps(null);
-
-    const t0 = ctx.currentTime;
-    const steps: StepItem[] = ERROR_SUB_CASES.map((sc) => {
-      try {
-        sc.run(ctx, t0);
-        return {
-          id: sc.id,
-          message: sc.label,
-          status: 'fail' as const,
-          details: 'Expected NotSupportedError but nothing was thrown',
-        };
-      } catch (e) {
-        if (e instanceof NotSupportedError) {
-          return { id: sc.id, message: sc.label, status: 'pass' as const };
-        }
-        return {
-          id: sc.id,
-          message: sc.label,
-          status: 'fail' as const,
-          details: `Unexpected error: ${e instanceof Error ? e.message : String(e)}`,
-        };
-      }
-    });
-
-    if (!isUnmountedRef.current) {
-      setErrorSteps(steps);
-      setErrorRunning(false);
+    if (ctx) {
+      setErrorSteps(runErrorSubCases(ctx));
     }
-  }, [errorRunning]);
+  };
 
-  const playAll = useCallback(async () => {
-    if (isPlayingAll) return;
+  const playAll = async () => {
     stopRequestedRef.current = false;
     setIsPlayingAll(true);
-    setAudioStatuses(
-      Object.fromEntries(AUDIO_TEST_CASES.map((tc) => [tc.key, 'idle']))
-    );
+    setAudioStatuses(idleStatuses());
     setErrorSteps(null);
 
     for (const tc of AUDIO_TEST_CASES) {
-      if (stopRequestedRef.current) break;
       await playTestCase(tc);
       if (stopRequestedRef.current) break;
-      await new Promise<void>((resolve) => setTimeout(resolve, 300));
+      await sleep(PAUSE_BETWEEN_CASES_MS);
     }
 
-    if (!stopRequestedRef.current) {
-      await runErrorTest();
+    if (!stopRequestedRef.current && !isUnmountedRef.current) {
+      runErrorTest();
     }
-
     if (!isUnmountedRef.current) {
       setIsPlayingAll(false);
     }
-    stopRequestedRef.current = false;
-  }, [isPlayingAll, playTestCase, runErrorTest]);
+  };
 
-  const stopAll = useCallback(() => {
+  const stop = () => {
     stopRequestedRef.current = true;
     try {
       currentOscRef.current?.stop();
     } catch {}
-  }, []);
+  };
 
-  const reset = useCallback(() => {
-    if (isPlayingAll) return;
-    setAudioStatuses(
-      Object.fromEntries(AUDIO_TEST_CASES.map((tc) => [tc.key, 'idle']))
-    );
+  const reset = () => {
+    setAudioStatuses(idleStatuses());
     setErrorSteps(null);
-  }, [isPlayingAll]);
-
-  const controlActions = [
-    {
-      title: isPlayingAll ? 'Running…' : 'Play All',
-      onPress: playAll,
-      disabled: isPlayingAll,
-      width: 110,
-    },
-    {
-      title: 'Stop',
-      onPress: stopAll,
-      disabled: !isPlayingAll,
-      width: 80,
-    },
-    {
-      title: 'Reset',
-      onPress: reset,
-      disabled: isPlayingAll,
-      width: 90,
-    },
-  ];
+  };
 
   const errorOverallStatus: ScenarioStatus | null = errorSteps
     ? errorSteps.every((s) => s.status === 'pass')
       ? 'pass'
       : 'fail'
     : null;
-
-  const isRunning =
-    isPlayingAll ||
-    Object.values(audioStatuses).some((s) => s === 'playing') ||
-    errorRunning;
   const playedCount = Object.values(audioStatuses).filter(
     (s) => s === 'done'
   ).length;
-  const passedCount = errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
-  const failedCount = errorSteps?.filter((s) => s.status === 'fail').length ?? 0;
-
-  const totalCount = ERROR_SUB_CASES.length;
+  const passedCount =
+    errorSteps?.filter((s) => s.status === 'pass').length ?? 0;
   const hasAnyResults = playedCount > 0 || errorSteps !== null;
 
-  const summaryItems: SummaryItem[] = [
-    {
-      label: 'Status',
-      value: isRunning ? 'running' : hasAnyResults ? 'done' : 'idle',
-    },
-    {
-      label: 'Passed',
-      value: errorSteps !== null ? `${passedCount}/${totalCount}` : '—',
-    },
-    {
-      label: 'Failed',
-      value: errorSteps !== null ? String(failedCount) : '—',
-    },
-  ];
-
   return (
-    <Container disablePadding>
-      <TestUI.Header
-        title="AudioParam"
-        subtitle="Tap Play on each card to hear the automation. Pitch (oscillator frequency) is the animated parameter."
-      />
-      <TestUI.Summary items={summaryItems} />
-      <Spacer.Vertical size={12} />
-      <TestUI.ControlBar actions={controlActions} />
+    <TestUI.TestLayout
+      description="Tap Play on each card to hear the automation. Pitch (oscillator frequency) is the animated parameter."
+      summary={[
+        {
+          label: 'Status',
+          value: isRunning ? 'running' : hasAnyResults ? 'done' : 'idle',
+        },
+        {
+          label: 'Passed',
+          value: errorSteps ? `${passedCount}/${ERROR_SUB_CASES.length}` : '—',
+        },
+        {
+          label: 'Failed',
+          value: errorSteps ? String(errorSteps.length - passedCount) : '—',
+        },
+      ]}
+      actions={[
+        {
+          title: isPlayingAll ? 'Running…' : 'Play All',
+          onPress: playAll,
+          disabled: isRunning,
+          minWidth: 110,
+        },
+        { title: 'Stop', onPress: stop, disabled: !isRunning, minWidth: 80 },
+        { title: 'Reset', onPress: reset, disabled: isRunning, minWidth: 90 },
+      ]}
+    >
+      <TestUI.SectionTitle title="Automation Methods" />
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <SectionTitle title="Automation Methods" />
-
-        {AUDIO_TEST_CASES.map((tc) => {
-          const status = audioStatuses[tc.key];
-          return (
-            <View key={tc.key} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{tc.title}</Text>
-                {status === 'playing' && (
-                  <Text style={styles.playingLabel}>▶ PLAYING</Text>
-                )}
-                {status === 'done' && (
-                  <Text style={styles.doneLabel}>✓ PLAYED</Text>
-                )}
-              </View>
-              <Text style={styles.description}>{tc.description}</Text>
-              <View style={styles.eventList}>
-                {tc.events.map((line, i) => (
-                  <StepRow
-                    key={i}
-                    step={{ id: String(i), message: line, status: 'info' }}
-                  />
-                ))}
-              </View>
-              <Button
-                title={status === 'playing' ? 'Playing…' : 'Play'}
-                onPress={() => playTestCase(tc)}
-                disabled={status === 'playing' || isPlayingAll}
-                width={80}
+      {AUDIO_TEST_CASES.map((tc) => {
+        const status = audioStatuses[tc.key];
+        return (
+          <Card key={tc.key}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{tc.title}</Text>
+              {status === 'playing' && (
+                <Text style={[styles.statusLabel, styles.playingLabel]}>
+                  ▶ PLAYING
+                </Text>
+              )}
+              {status === 'done' && (
+                <Text style={styles.statusLabel}>✓ PLAYED</Text>
+              )}
+            </View>
+            <Text style={typography.hint}>{tc.description}</Text>
+            {tc.events.map((line, i) => (
+              <TestUI.StepRow
+                key={i}
+                step={{ id: String(i), message: line, status: 'info' }}
               />
-            </View>
-          );
-        })}
+            ))}
+            <Button
+              title={status === 'playing' ? 'Playing…' : 'Play'}
+              onPress={() => playOne(tc)}
+              disabled={isRunning}
+              minWidth={80}
+            />
+          </Card>
+        );
+      })}
 
-        <SectionTitle title="Error Handling" />
+      <TestUI.SectionTitle title="Error Handling" />
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>NotSupportedError</Text>
-            {errorRunning && <Text style={styles.playingLabel}>▶ RUNNING</Text>}
-            {errorOverallStatus && !errorRunning && (
-              <StatusPill status={errorOverallStatus} />
-            )}
-          </View>
-          <Text style={styles.description}>
-            Scheduling events that overlap a setValueCurveAtTime interval must
-            throw NotSupportedError. Each sub-case uses a fresh GainNode.
-          </Text>
-          {errorSteps && (
-            <View style={styles.eventList}>
-              {errorSteps.map((step) => (
-                <StepRow key={step.id} step={step} />
-              ))}
-            </View>
+      <Card>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>NotSupportedError</Text>
+          {errorOverallStatus && (
+            <TestUI.StatusPill status={errorOverallStatus} />
           )}
-          <Button
-            title={errorRunning ? 'Running…' : 'Run Test'}
-            onPress={runErrorTest}
-            disabled={errorRunning || isPlayingAll}
-            width={100}
-          />
         </View>
-      </ScrollView>
-    </Container>
+        <Text style={typography.hint}>
+          Scheduling events that overlap a setValueCurveAtTime interval must
+          throw NotSupportedError. Each sub-case uses a fresh GainNode.
+        </Text>
+        {errorSteps?.map((step) => (
+          <TestUI.StepRow key={step.id} step={step} />
+        ))}
+        <Button title="Run Test" onPress={runErrorTest} disabled={isRunning} />
+      </Card>
+    </TestUI.TestLayout>
   );
 };
 
 export default AudioParamPipeline;
 
 const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    gap: 12,
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 32,
-  },
-  card: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    gap: 10,
-    padding: 12,
-  },
   cardHeader: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 8,
   },
   cardTitle: {
-    color: colors.white,
+    color: colors.textPrimary,
     flex: 1,
     fontSize: 15,
     fontWeight: '700',
-    fontFamily: 'Courier New',
-    paddingRight: 8,
+    fontFamily: monospace,
   },
-  description: {
-    color: colors.gray,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  eventList: {
-    gap: 4,
+  statusLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
   },
   playingLabel: {
-    color: colors.main,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  doneLabel: {
-    color: colors.gray,
-    fontSize: 11,
-    fontWeight: '700',
+    color: colors.blue,
   },
 });

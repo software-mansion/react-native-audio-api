@@ -12,6 +12,7 @@ type AssistantAudio = {
 
 export class AssistantPlayback {
   private readonly queue: AudioBufferQueueSourceNode;
+  private speaking = false;
   private started = false;
   private closed = false;
   private generation = 0;
@@ -27,7 +28,8 @@ export class AssistantPlayback {
   constructor(
     private readonly context: AudioContext,
     private readonly canPlay: () => boolean,
-    private readonly onError: (message: string) => void
+    private readonly onError: (message: string) => void,
+    private readonly onSpeakingChange: (speaking: boolean) => void
   ) {
     this.queue = context.createBufferQueueSource();
     this.queue.connect(context.destination);
@@ -43,7 +45,17 @@ export class AssistantPlayback {
           queued.audio.renderedMs += queued.durationMs;
         }
       }
+      if (this.pendingBuffers === 0) {
+        this.setSpeaking(false);
+      }
     };
+  }
+
+  private setSpeaking(speaking: boolean) {
+    if (this.speaking !== speaking) {
+      this.speaking = speaking;
+      this.onSpeakingChange(speaking);
+    }
   }
 
   enqueue(
@@ -82,6 +94,7 @@ export class AssistantPlayback {
           return;
         }
         const bufferId = this.queue.enqueueBuffer(buffer);
+        this.setSpeaking(true);
         this.queued.set(bufferId, {
           audio,
           durationMs: buffer.duration * 1000,
@@ -111,6 +124,7 @@ export class AssistantPlayback {
     this.queued.clear();
     this.pendingBuffers = 0;
     this.queue.clearBuffers();
+    this.setSpeaking(false);
     return audio;
   }
 

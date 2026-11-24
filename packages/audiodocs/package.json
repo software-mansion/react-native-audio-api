@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "check": "exit 0",
+    "test": "exit 0",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
@@ -10,10 +12,8 @@
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
-    "lint": "echo lint",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "",
     "postinstall": "setup-rn-audio-api-web static"
   },
   "dependencies": {
@@ -51,7 +51,7 @@
     "react-dom": "catalog:",
     "react-draggable": "^4.4.5",
     "react-native": "catalog:",
-    "react-native-audio-api": "0.13.1",
+    "react-native-audio-api": "1.0.0",
     "react-native-canvas": "^0.1.40",
     "react-native-gesture-handler": "^2.16.0",
     "react-native-reanimated": "catalog:",

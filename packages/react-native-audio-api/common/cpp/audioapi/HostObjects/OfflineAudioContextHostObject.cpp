@@ -3,6 +3,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/types/ContextState.h>
 #include <memory>
+#include <utility>
 
 namespace audioapi {
 
@@ -30,8 +31,8 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
 
 JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, resume) {
   return createLifecyclePromise(
-      ContextState::RUNNING, [](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<OfflineAudioContext &>(context).resume(resolver);
+      ContextState::RUNNING, [](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).resume(std::move(resolver));
       });
 }
 
@@ -39,9 +40,8 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, suspend) {
   double when = args[0].getNumber();
 
   return createLifecyclePromise(
-      ContextState::SUSPENDED,
-      [when](BaseAudioContext &context, const LifecycleResolver &resolver) {
-        dynamic_cast<OfflineAudioContext &>(context).suspend(when, resolver);
+      ContextState::SUSPENDED, [when](BaseAudioContext &context, LifecycleResolver resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).suspend(when, std::move(resolver));
       });
 }
 
@@ -49,8 +49,8 @@ JSI_HOST_FUNCTION_IMPL(OfflineAudioContextHostObject, startRendering) {
   context_->setPublishedState(ContextState::RUNNING);
 
   return createLifecyclePromise<ContextRenderResolver>(
-      ContextState::CLOSED, [](BaseAudioContext &context, const RenderResolver &resolver) {
-        dynamic_cast<OfflineAudioContext &>(context).startRendering(resolver);
+      ContextState::CLOSED, [](BaseAudioContext &context, RenderResolver resolver) {
+        dynamic_cast<OfflineAudioContext &>(context).startRendering(std::move(resolver));
       });
 }
 

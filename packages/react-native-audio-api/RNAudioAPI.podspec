@@ -9,6 +9,7 @@ $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] != '0'
 $audio_api_build_options = read_audio_api_build_options()
 $RN_AUDIO_API_FFMPEG_ENABLED = $audio_api_build_options[:ffmpeg_enabled]
 $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED = $audio_api_build_options[:static_external_libs_disabled]
+$RN_AUDIO_API_AUDIO_RECORDER_DISABLED = $audio_api_build_options[:audio_recorder_disabled]
 
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
@@ -17,7 +18,13 @@ ios_min_version = '14.0'
 ffmpeg_libs = %w[libavcodec libavformat libavutil libswresample]
 ffmpeg_flag = $RN_AUDIO_API_FFMPEG_ENABLED ? '-DRN_AUDIO_API_FFMPEG_ENABLED=1' : ''
 ffmpeg_ldflags = $RN_AUDIO_API_FFMPEG_ENABLED ? ffmpeg_libs.map { |lib| "-framework \"#{lib}\"" }.join(' ') : ''
+
 static_external_libs_flag = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? '-DRN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED=1 -DMA_NO_LIBOPUS=1 -DMA_NO_LIBVORBIS=1' : ''
+
+audio_recorder_disabled_flag = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? '-DRN_AUDIO_API_AUDIO_RECORDER_DISABLED=1' : ''
+audio_recorder_common_sources = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? ["common/cpp/audioapi/HostObjects/inputs/AudioRecorderHostObject.cpp"] : []
+audio_recorder_ios_sources = $RN_AUDIO_API_AUDIO_RECORDER_DISABLED ? ["ios/audioapi/ios/core/IOSAudioRecorder.mm", "ios/audioapi/ios/core/NativeAudioRecorder.m"] : []
+
 skip_ffmpeg_argument = $RN_AUDIO_API_FFMPEG_ENABLED ? '' : 'skipffmpeg'
 download_script_env_prefix = $RN_AUDIO_API_STATIC_EXTERNAL_LIBS_DISABLED ? 'DISABLE_AUDIOAPI_STATIC_EXTERNAL_LIBS=1 ' : ''
 
@@ -34,12 +41,14 @@ Pod::Spec.new do |s|
 
   s.subspec "audioapi" do |ss|
     ss.source_files = "common/cpp/audioapi/**/*.{cpp,c,h,hpp}"
-    ss.exclude_files = $RN_AUDIO_API_FFMPEG_ENABLED ? [] : ["common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"]
+    ss.exclude_files = ($RN_AUDIO_API_FFMPEG_ENABLED ? [] : ["common/cpp/audioapi/decoding/backends/FfmpegDecoder.cpp"])
+      .concat(audio_recorder_common_sources)
     ss.header_dir = "audioapi"
     ss.header_mappings_dir = "common/cpp/audioapi"
 
     ss.subspec "ios" do |sss|
       sss.source_files = "ios/audioapi/**/*.{mm,h,m,hpp}"
+      sss.exclude_files = audio_recorder_ios_sources
       sss.header_dir = "audioapi"
       sss.header_mappings_dir = "ios/audioapi"
     end
@@ -133,7 +142,7 @@ Pod::Spec.new do |s|
     "GCC_PREPROCESSOR_DEFINITIONS" => '$(inherited) HAVE_ACCELERATE=1',
     "GCC_PREPROCESSOR_DEFINITIONS[config=Debug]" => '$(inherited) HAVE_ACCELERATE=1 DEBUG=1',
     "EXCLUDED_SOURCE_FILE_NAMES[config=Release]" => 'AudioThreadGuard.cpp',
-    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{ffmpeg_flag} #{static_external_libs_flag}",
+    'OTHER_CFLAGS' => "$(inherited) #{fabric_flags} #{version_flag} #{ffmpeg_flag} #{static_external_libs_flag} #{audio_recorder_disabled_flag}",
     # CocoaPods links a pod's own vendored dynamic frameworks into the targets that depend on it,
     # not into the pod's own target. A dynamic RNAudioAPI framework
     # (`use_frameworks! :linkage => :dynamic`) must link FFmpeg itself; the frameworks ship no

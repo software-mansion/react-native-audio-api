@@ -13,10 +13,11 @@ import type {
   IOSMode,
 } from 'react-native-audio-api';
 
-import { Button, Container } from '../../components';
-import { colors, layout } from '../../styles';
+import { Button, Card, Container } from '../../components';
+import { colors, layout, typography } from '../../styles';
 import { UnsupportedNotice } from '../../testComponents';
-import voiceSample from '../AudioFile/voice-sample-landing.mp3';
+import { activatePlaybackSession } from '../../utils/audio';
+import voiceSample from '../AudioPlayback/voice-sample-landing.mp3';
 
 interface SetupText {
   title: string;
@@ -198,10 +199,7 @@ async function recordEcho(setup: EchoSetup): Promise<EchoResult> {
       throw new Error(callback.message);
     }
 
-    const started = await recorder.start();
-    if (started.status === 'error') {
-      throw new Error(started.message);
-    }
+    await recorder.start();
 
     await wait(NOISE_FLOOR_SECONDS * 1000);
     const playbackStartFrame = chunks.reduce(
@@ -282,14 +280,7 @@ const EchoCancellation: FC = () => {
   // Replays as plain media playback so every recording is heard at the same
   // volume, without voice processing.
   const replay = async (result: EchoResult) => {
-    AudioManager.setSystemOptions({
-      ios: {
-        category: 'playback',
-        mode: 'default',
-        options: [],
-      },
-    });
-    await AudioManager.setAudioSessionActivity(true);
+    await activatePlaybackSession();
 
     replayContextRef.current?.close();
     const context = new AudioContext({ androidOutputProfile: 'media' });
@@ -328,7 +319,7 @@ const EchoCancellation: FC = () => {
           cancelled.
         </Text>
         {ECHO_SETUPS.map((setup) => (
-          <View key={setup.key} style={styles.setupRow}>
+          <Card key={setup.key} style={styles.row}>
             <View style={styles.setupText}>
               <Text style={styles.setupTitle}>{variantOf(setup).title}</Text>
               <Text style={styles.hint}>{variantOf(setup).description}</Text>
@@ -337,13 +328,12 @@ const EchoCancellation: FC = () => {
               title={runningSetup === setup.key ? 'Recording…' : 'Run'}
               onPress={() => runSetup(setup)}
               disabled={runningSetup !== null}
-              width={100}
             />
-          </View>
+          </Card>
         ))}
         {error && <Text style={styles.error}>{error}</Text>}
         {results.map((result) => (
-          <View key={result.setup.key} style={styles.resultRow}>
+          <Card key={result.setup.key} style={[styles.row, styles.result]}>
             <View style={styles.setupText}>
               <Text style={styles.setupTitle}>
                 {variantOf(result.setup).title}
@@ -361,9 +351,8 @@ const EchoCancellation: FC = () => {
               title="Replay"
               onPress={() => replay(result)}
               disabled={runningSetup !== null}
-              width={100}
             />
-          </View>
+          </Card>
         ))}
       </ScrollView>
     </Container>
@@ -373,38 +362,30 @@ const EchoCancellation: FC = () => {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 48,
-    gap: layout.spacing,
+    gap: layout.spacing * 1.5,
   },
-  hint: {
-    color: colors.gray,
-    fontSize: 12,
-  },
+  hint: typography.hint,
   error: {
-    color: colors.yellow,
+    color: colors.danger,
   },
-  setupRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: layout.spacing,
+    gap: layout.spacing * 1.5,
+  },
+  result: {
+    backgroundColor: colors.recess,
   },
   setupText: {
     flex: 1,
     gap: 2,
   },
   setupTitle: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontWeight: '600',
   },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: layout.spacing,
-    padding: layout.spacing,
-    borderRadius: layout.radius,
-    backgroundColor: colors.backgroundLight,
-  },
   resultText: {
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 12,
   },
   resultEmphasis: {

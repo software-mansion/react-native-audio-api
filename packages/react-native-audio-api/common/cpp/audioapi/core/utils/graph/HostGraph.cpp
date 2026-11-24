@@ -1,7 +1,6 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
-#include <audioapi/core/sources/MediaElementAudioSourceNode.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/graph/GraphObject.h>
@@ -27,25 +26,14 @@ namespace {
 //   downstream — away from AudioDestinationNode (toward sources); node->inputs
 //   upstream   — toward AudioDestinationNode; node->outputs
 
-/// @brief Returns the AudioNode associated with `node`, or nullptr if the
-/// node has no audio payload (e.g. the lightweight `graph->addNode()` used
-/// in tests that exercise topology only).
-inline void notifyMediaElementOutputsDisconnected(
-    audioapi::AudioNode *fromAudio,
-    const HostGraph::HostVertex *from) {
-  if (from == nullptr || !from->outputs.empty() || fromAudio == nullptr) {
-    return;
-  }
-  if (auto *media = dynamic_cast<audioapi::MediaElementAudioSourceNode *>(fromAudio)) {
-    media->onOutputsDisconnected();
-  }
-}
-
 bool canBreakCycle(const HostGraph::HostVertex *node) {
   return node->handle != nullptr && node->handle->audioNode != nullptr &&
       node->handle->audioNode->canBreakCycle();
 }
 
+/// @brief Returns the AudioNode associated with `node`, or nullptr if the
+/// node has no audio payload (e.g. the lightweight `graph->addNode()` used
+/// in tests that exercise topology only).
 inline audioapi::AudioNode *audioNodeOf(const HostGraph::HostVertex *node) {
   if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
     return nullptr;
@@ -385,10 +373,6 @@ auto HostGraph::removeEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, 
   from->outputs.erase(itOut);
   edgeCount_--;
 
-  if (auto *fromAudio = from->handle->audioNode->asAudioNode()) {
-    notifyMediaElementOutputsDisconnected(fromAudio, from);
-  }
-
   // Channel negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below. Cascade upstream
   // (toward AudioDestinationNode) so disconnects still propagate.
@@ -426,10 +410,6 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
     formerOutputs.push_back(to);
   }
   from->outputs.clear();
-
-  if (auto *fromAudio = from->handle->audioNode->asAudioNode()) {
-    notifyMediaElementOutputsDisconnected(fromAudio, from);
-  }
 
   // Channel negotiation: computed + allocated on the host thread,
   // applied on the audio thread by the AGEvent below. Cascade upstream from

@@ -175,7 +175,8 @@ AudioBufferSourceNodeHostObject::NodeBuffers AudioBufferSourceNodeHostObject::pr
 
   if (pitchCorrection_) {
     initStretch(
-        static_cast<int>(acquiredContent->getNumberOfChannels()), acquiredContent->getSampleRate());
+        static_cast<int>(acquiredContent->getNumberOfChannels()),
+        audioBufferSourceNode_->getContextSampleRate());
   }
 
   buffers.nodeBuffer = acquiredContent;
