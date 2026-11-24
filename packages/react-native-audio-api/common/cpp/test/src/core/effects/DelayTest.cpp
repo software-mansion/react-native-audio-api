@@ -1,8 +1,7 @@
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/DelayNode.h>
-#include <audioapi/core/effects/delay/DelayReader.h>
-#include <audioapi/core/effects/delay/DelayWriter.h>
+#include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/graph/Graph.h>
 #include <audioapi/types/NodeOptions.h>
@@ -11,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
 #include <memory>
+#include <vector>
 
 using namespace audioapi;
 
@@ -31,59 +31,24 @@ class DelayTest : public ::testing::Test {
   }
 };
 
-class TestableDelayWriter : public DelayWriter {
- public:
-  explicit TestableDelayWriter(
-      std::shared_ptr<BaseAudioContext> context,
-      const DelayOptions &options,
-      std::shared_ptr<DelayLine> delayLine)
-      : DelayWriter(context, options, delayLine) {}
-
-  void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
-    audioBuffer_ = input;
-  }
-};
-
-class TestableDelayReader : public DelayReader {
- public:
-  explicit TestableDelayReader(
-      std::shared_ptr<BaseAudioContext> context,
-      const DelayOptions &options,
-      std::shared_ptr<DelayLine> delayLine)
-      : DelayReader(context, options, delayLine) {}
-
-  auto getOutputBuffer() {
-    return audioBuffer_;
-  }
-};
-
 class TestableDelayNode : public DelayNode {
  public:
   explicit TestableDelayNode(std::shared_ptr<BaseAudioContext> context, const DelayOptions &options)
-      : DelayNode(context, options),
-        testableDelayReader_(context, options, delayLine_),
-        testableDelayWriter_(context, options, delayLine_) {}
+      : DelayNode(context, options) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
   }
 
   void setInputBuffer(const std::shared_ptr<DSPAudioBuffer> &input) {
-    testableDelayWriter_.setInputBuffer(input);
+    audioBuffer_ = input;
   }
 
   auto getOutputBuffer() {
-    return testableDelayReader_.getOutputBuffer();
+    return audioBuffer_;
   }
 
-  void processNode(int framesToProcess) override {
-    testableDelayWriter_.processNode(framesToProcess);
-    testableDelayReader_.processNode(framesToProcess);
-  }
-
- private:
-  TestableDelayWriter testableDelayWriter_;
-  TestableDelayReader testableDelayReader_;
+  using DelayNode::processNode;
 };
 
 TEST_F(DelayTest, DelayCanBeCreated) {
@@ -155,7 +120,7 @@ TEST_F(DelayTest, DelayHandlesTailCorrectly) {
 
   delayNode.setInputBuffer(buffer);
   delayNode.processNode(FRAMES_TO_PROCESS);
-  // Second call uses the result of the first call as input
+  // The second quantum has silent input
   delayNode.getOutputBuffer()->zero();
   delayNode.processNode(FRAMES_TO_PROCESS);
   auto resultBuffer = delayNode.getOutputBuffer();
@@ -223,10 +188,9 @@ class ConstantSignalNode : public AudioNode {
 
 } // namespace
 
-/// Renders through the real graph with the reader / writer / delayTime-bridge
-/// wiring that DelayNodeHostObject builds, so graph ordering and param
-/// routing are exercised (the processNode-level tests above call the writer
-/// before the reader by hand and cannot see either).
+/// Renders through the real graph with the delayTime-bridge wiring that
+/// DelayNodeHostObject builds, so graph ordering, feedback cycles and param
+/// routing are exercised (the processNode-level tests above cannot see them).
 class DelayGraphTest : public ::testing::Test {
  protected:
   static constexpr int kSampleRate = 16000;
@@ -237,8 +201,8 @@ class DelayGraphTest : public ::testing::Test {
   std::shared_ptr<OfflineAudioContext> context;
   std::shared_ptr<utils::graph::Graph> graph;
   utils::graph::HostGraph::HostVertex *destinationVertex = nullptr;
-  utils::graph::HostGraph::HostVertex *writerVertex = nullptr;
-  std::unique_ptr<DelayNode> delayNode;
+  utils::graph::HostGraph::HostVertex *delayVertex = nullptr;
+  DelayNode *delayNode = nullptr;
 
   void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
@@ -249,33 +213,31 @@ class DelayGraphTest : public ::testing::Test {
     destinationVertex = graph->addNode(std::move(destination));
   }
 
-  utils::graph::HostGraph::HostVertex *readerVertex = nullptr;
-
-  /// click -> writer ~ring~ reader -> destination, with reader linked to writer.
-  void buildDelay(float delayTime) {
+  utils::graph::HostGraph::HostVertex *addDelay(float delayTime) {
     DelayOptions options;
     options.channelCount = 1;
     options.maxDelayTime = kMaxDelayTime;
     options.delayTime = delayTime;
-    delayNode = std::make_unique<DelayNode>(context, options);
-
-    // Same creation order as DelayNodeHostObject: reader first, then writer.
-    readerVertex = graph->addNode(std::move(delayNode->delayReader_));
-    writerVertex = graph->addNode(std::move(delayNode->delayWriter_));
-    graph->linkNodes(readerVertex, writerVertex);
-
-    auto *clickVertex = graph->addNode(std::make_unique<ClickNode>(context));
-    ASSERT_TRUE(graph->addEdge(clickVertex, writerVertex).is_ok());
-    ASSERT_TRUE(graph->addEdge(readerVertex, destinationVertex).is_ok());
+    auto node = std::make_unique<DelayNode>(context, options);
+    delayNode = node.get();
+    return graph->addNode(std::move(node));
   }
 
-  /// signal -> bridge -> writer, the edge AudioParamHostObject adds for `signal.connect(delayTime)`.
+  /// click -> delay -> destination
+  void buildDelay(float delayTime) {
+    delayVertex = addDelay(delayTime);
+    auto *clickVertex = graph->addNode(std::make_unique<ClickNode>(context));
+    ASSERT_TRUE(graph->addEdge(clickVertex, delayVertex).is_ok());
+    ASSERT_TRUE(graph->addEdge(delayVertex, destinationVertex).is_ok());
+  }
+
+  /// signal -> bridge -> delay, the edge AudioParamHostObject adds for `signal.connect(delayTime)`.
   void connectSignalToDelayTime(float value) {
     auto *signalVertex = graph->addNode(std::make_unique<ConstantSignalNode>(context, value));
     auto *bridgeVertex = graph->addNode(
         std::make_unique<utils::graph::BridgeNode>(delayNode->getDelayTimeParam().get()));
     ASSERT_TRUE(graph->addEdge(signalVertex, bridgeVertex).is_ok());
-    ASSERT_TRUE(graph->addEdge(bridgeVertex, writerVertex).is_ok());
+    ASSERT_TRUE(graph->addEdge(bridgeVertex, delayVertex).is_ok());
   }
 
   /// @return the frame at which the click reaches the destination, or -1.
@@ -324,10 +286,58 @@ TEST_F(DelayGraphTest, SignalAndValueSumOnDelayTime) {
 
 TEST_F(DelayGraphTest, FeedbackLoopClampsDelayToOneQuantum) {
   // Spec: a DelayNode inside a cycle has its delay clamped to at least one
-  // render quantum, since the reader is processed before the writer there.
+  // render quantum.
   buildDelay(0.0f);
-  ASSERT_TRUE(graph->addEdge(readerVertex, writerVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(delayVertex, delayVertex).is_ok());
   EXPECT_EQ(renderAndFindClickFrame(2 * kSampleRate), kQuantum);
+}
+
+TEST_F(DelayGraphTest, LongerDelayInFeedbackLoopKeepsItsDelayTime) {
+  buildDelay(0.25f);
+  ASSERT_TRUE(graph->addEdge(delayVertex, delayVertex).is_ok());
+  EXPECT_EQ(renderAndFindClickFrame(2 * kSampleRate), kSampleRate / 4);
+}
+
+TEST_F(DelayGraphTest, BreakingTheFeedbackLoopRestoresZeroDelay) {
+  buildDelay(0.0f);
+  ASSERT_TRUE(graph->addEdge(delayVertex, delayVertex).is_ok());
+  ASSERT_TRUE(graph->removeEdge(delayVertex, delayVertex).is_ok());
+  EXPECT_EQ(renderAndFindClickFrame(2 * kSampleRate), 0);
+}
+
+TEST_F(DelayGraphTest, DelayFeedingAFeedbackLoopKeepsItsZeroDelay) {
+  // The zero delay only feeds the loop and is not part of it, so it must not
+  // be clamped.
+  auto *loopDelayVertex = addDelay(0.25f);
+  buildDelay(0.0f);
+  auto *mixVertex = graph->addNode(std::make_unique<GainNode>(context, GainOptions{}));
+  ASSERT_TRUE(graph->addEdge(delayVertex, mixVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(loopDelayVertex, mixVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(mixVertex, loopDelayVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(mixVertex, destinationVertex).is_ok());
+
+  EXPECT_EQ(renderAndFindClickFrame(2 * kSampleRate), 0);
+}
+
+TEST_F(DelayGraphTest, TwoDelaysFeedingEachOtherEachAddOneQuantum) {
+  // click -> first -> second -> destination, second -> first. Both delays lie
+  // on the cycle, so the click crosses two clamped delays.
+  auto *secondVertex = addDelay(0.0f);
+  auto *firstVertex = addDelay(0.0f);
+  auto *clickVertex = graph->addNode(std::make_unique<ClickNode>(context));
+  ASSERT_TRUE(graph->addEdge(clickVertex, firstVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(firstVertex, secondVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(secondVertex, firstVertex).is_ok());
+  ASSERT_TRUE(graph->addEdge(secondVertex, destinationVertex).is_ok());
+
+  EXPECT_EQ(renderAndFindClickFrame(2 * kSampleRate), 2 * kQuantum);
+}
+
+TEST_F(DelayGraphTest, CycleWithoutADelayIsRejected) {
+  auto *first = graph->addNode(std::make_unique<GainNode>(context, GainOptions{}));
+  auto *second = graph->addNode(std::make_unique<GainNode>(context, GainOptions{}));
+  ASSERT_TRUE(graph->addEdge(first, second).is_ok());
+  EXPECT_TRUE(graph->addEdge(second, first).is_err());
 }
 
 TEST_F(DelayGraphTest, MaxDelayTimeDoesNotWrapOntoCurrentReadWindow) {

@@ -60,16 +60,9 @@ class HostGraph {
   struct HostVertex {
     std::vector<HostVertex *> inputs;  // reversed edges
     std::vector<HostVertex *> outputs; // forward edges
-    /// Nodes whose processable state should follow this node's state.
-    /// Used to tie together the state of logically-linked host nodes that do
-    /// not share a graph edge (e.g. DelayReader → DelayWriter communicate via
-    /// a ring buffer, so no audio edge exists, but they must be processed
-    /// together). The actual processable propagation happens on the audio
-    /// thread in AudioGraph::settleProcessableState() via the mirrored
-    /// `link_head` entries; this host-side list only exists so links can be
-    /// scrubbed when a linked node is disposed.
-    std::vector<HostVertex *> linkedNodes;
     TraversalState traversalState;
+    /// Host-side copy of `GraphObject::breaksCycle_`, as last sent to AudioGraph.
+    bool breaksCycle = false;
     /// Visited stamp for channel-negotiation passes; `HostGraph::channelLayoutTerm_`
     /// is bumped once per structural change.
     TraversalState channelLayoutTraversal;
@@ -113,22 +106,10 @@ class HostGraph {
   /// @return AGEvent that sets `orphaned = true` on the AudioGraph side.
   Result<AGEvent, GraphError> removeNode(HostVertex *node);
 
-  /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
+  /// @brief Adds a directed edge from → to. Rejects duplicates and every cycle
+  /// that runs through no cycle breaker.
   /// @return AGEvent that adds the input on the AudioGraph side.
   Result<AGEvent, GraphError> addEdge(HostVertex *from, HostVertex *to);
-
-  /// @brief Links the processable-state of `from` to propagate into `to`.
-  ///
-  /// Records the link on `from->linkedNodes` (host-side, for cleanup) and
-  /// returns an AGEvent that mirrors it onto the audio graph as a `link_head`
-  /// entry. The actual propagation happens on the audio thread in
-  /// AudioGraph::settleProcessableState(). One-way and does NOT create a graph
-  /// edge. Intended for host nodes that share processing semantics but not an
-  /// audio edge (e.g. DelayReader → DelayWriter).
-  ///
-  /// @return AGEvent to replay on AudioGraph, or std::nullopt if the pair is
-  ///         invalid or already linked.
-  std::optional<AGEvent> linkNodes(HostVertex *from, HostVertex *to);
 
   /// @brief Removes a directed edge from → to.
   /// @return AGEvent that removes the input on the AudioGraph side.
@@ -149,9 +130,6 @@ class HostGraph {
   /// @brief Current number of live (non-ghost) edges.
   [[nodiscard]] size_t edgeCount() const;
 
-  /// @brief Current number of processable-links (backs pool slots too).
-  [[nodiscard]] size_t linkCount() const;
-
   /// @brief Current number of nodes (including ghosts).
   [[nodiscard]] size_t nodeCount() const;
 
@@ -162,12 +140,26 @@ class HostGraph {
   /// another while holding the lock, so a plain mutex is sufficient.
   mutable std::mutex nodesMutex_;
   size_t edgeCount_ = 0;
-  size_t linkCount_ = 0;
   size_t last_term = 0;          // monotonic counter for traversal freshness
   size_t channelLayoutTerm_ = 0; // monotonic counter for channel negotiation passes
 
   /// @brief DFS reachability check (traverses ghosts too).
-  bool hasPath(HostVertex *start, HostVertex *end);
+  /// @param throughCycleBreakers when false, only paths that visit no cycle
+  /// breaker count, `start` and `end` included.
+  bool hasPath(HostVertex *start, HostVertex *end, bool throughCycleBreakers);
+
+  /// Nodes whose `GraphObject::breaksCycle_` changed, with the new value.
+  using CycleBreakerUpdates = std::vector<std::pair<std::shared_ptr<NodeHandle>, bool>>;
+
+  /// @brief Recomputes which nodes break a cycle: the ones that can and that
+  /// lie on one. Call after every edge change and apply the result in that
+  /// change's event, so AudioGraph never sees new edges with old values.
+  /// @return the nodes whose value changed.
+  std::unique_ptr<CycleBreakerUpdates> markCycleBreakers();
+
+  /// @brief Writes `updates` into the graph objects.
+  /// @note Audio Thread only
+  static void applyCycleBreakerUpdates(const CycleBreakerUpdates &updates);
 
   /// @brief Scans ghost nodes and deletes those whose handle has
   /// `use_count() == 1`, meaning AudioGraph has released its reference.

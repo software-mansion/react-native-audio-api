@@ -70,6 +70,23 @@ struct MockNode : AudioNode {
   std::atomic<bool> destructible_;
 };
 
+// ── CycleBreakerMockNode ──────────────────────────────────────────────────
+// A node the graph accepts on a cycle, the way it accepts a DelayNode.
+
+struct CycleBreakerMockNode : MockNode {
+  [[nodiscard]] bool canBreakCycle() const override {
+    return true;
+  }
+
+  [[nodiscard]] bool isBreakingCycle() const {
+    return breaksCycle_;
+  }
+
+  void setBreaksCycle(bool breaksCycle) {
+    breaksCycle_ = breaksCycle;
+  }
+};
+
 // ── NonProcessableMockNode ────────────────────────────────────────────────
 // Pure GraphObject subclass that is not processable. Used to test
 // iter() filtering at the AudioGraph level without depending on BridgeNode.

@@ -41,6 +41,11 @@ inline void notifyMediaElementOutputsDisconnected(
   }
 }
 
+bool canBreakCycle(const HostGraph::HostVertex *node) {
+  return node->handle != nullptr && node->handle->audioNode != nullptr &&
+      node->handle->audioNode->canBreakCycle();
+}
+
 inline audioapi::AudioNode *audioNodeOf(const HostGraph::HostVertex *node) {
   if (node == nullptr || node->handle == nullptr || node->handle->audioNode == nullptr) {
     return nullptr;
@@ -242,11 +247,9 @@ HostGraph::~HostGraph() {
 HostGraph::HostGraph(HostGraph &&other) noexcept
     : nodes(std::move(other.nodes)),
       edgeCount_(other.edgeCount_),
-      linkCount_(other.linkCount_),
       last_term(other.last_term),
       channelLayoutTerm_(other.channelLayoutTerm_) {
   other.edgeCount_ = 0;
-  other.linkCount_ = 0;
   other.last_term = 0;
   other.channelLayoutTerm_ = 0;
 }
@@ -259,11 +262,9 @@ auto HostGraph::operator=(HostGraph &&other) noexcept -> HostGraph & {
     }
     nodes = std::move(other.nodes);
     edgeCount_ = other.edgeCount_;
-    linkCount_ = other.linkCount_;
     last_term = other.last_term;
     channelLayoutTerm_ = other.channelLayoutTerm_;
     other.edgeCount_ = 0;
-    other.linkCount_ = 0;
     other.last_term = 0;
     other.channelLayoutTerm_ = 0;
   }
@@ -318,7 +319,7 @@ auto HostGraph::addEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, Gra
     }
   }
 
-  if (hasPath(to, from)) {
+  if (hasPath(to, from, /*throughCycleBreakers=*/false)) {
     return Err(GraphError::CYCLE_DETECTED);
   }
 
@@ -342,22 +343,24 @@ auto HostGraph::addEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, Gra
   // applied on the audio thread by the AGEvent below. Cascade upstream
   // (toward AudioDestinationNode) so late downstream connects still propagate.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, to);
+  auto cycleBreakers = markCycleBreakers();
 
-  return Ok(
-      [hTo = to->handle,
-       hFrom = from->handle,
-       negotiations = std::move(negotiations),
-       reservedInputs = std::move(reservedInputs)](AudioGraph &graph, auto &disposer) mutable {
-        auto *toNode = hTo->audioNode.get();
-        applyChannelNegotiations(*negotiations, disposer);
-        disposer.dispose(std::move(negotiations));
-        // dispose the vector
-        disposer.dispose(toNode->exchangeInputScratch(std::move(*reservedInputs)));
-        // dispose the unique_ptr
-        disposer.dispose(std::move(reservedInputs));
-        graph.pool().push(graph[*hTo].input_head, graph.indexOf(*hFrom));
-        graph.markDirty();
-      });
+  return Ok([hTo = to->handle,
+             hFrom = from->handle,
+             negotiations = std::move(negotiations),
+             reservedInputs = std::move(reservedInputs),
+             cycleBreakers = std::move(cycleBreakers)](AudioGraph &graph, auto &disposer) mutable {
+    auto *toNode = hTo->audioNode.get();
+    applyChannelNegotiations(*negotiations, disposer);
+    graph.pool().push(graph[*hTo].input_head, graph.indexOf(*hFrom));
+    applyCycleBreakerUpdates(*cycleBreakers);
+
+    disposer.dispose(std::move(cycleBreakers));
+    disposer.dispose(std::move(negotiations));
+    disposer.dispose(toNode->exchangeInputScratch(std::move(*reservedInputs)));
+    disposer.dispose(std::move(reservedInputs));
+    graph.markDirty();
+  });
 }
 
 auto HostGraph::removeEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, GraphError> {
@@ -390,12 +393,17 @@ auto HostGraph::removeEdge(HostVertex *from, HostVertex *to) -> Result<AGEvent, 
   // applied on the audio thread by the AGEvent below. Cascade upstream
   // (toward AudioDestinationNode) so disconnects still propagate.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, to);
+  auto cycleBreakers = markCycleBreakers();
 
-  return Ok([hFrom = from->handle, hTo = to->handle, negotiations = std::move(negotiations)](
-                AudioGraph &graph, auto &disposer) mutable {
+  return Ok([hFrom = from->handle,
+             hTo = to->handle,
+             negotiations = std::move(negotiations),
+             cycleBreakers = std::move(cycleBreakers)](AudioGraph &graph, auto &disposer) mutable {
     applyChannelNegotiations(*negotiations, disposer);
     disposer.dispose(std::move(negotiations));
     graph.pool().remove(graph[*hTo].input_head, graph.indexOf(*hFrom));
+    applyCycleBreakerUpdates(*cycleBreakers);
+    disposer.dispose(std::move(cycleBreakers));
     graph.markDirty();
   });
 }
@@ -428,6 +436,7 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
   // each former output (toward AudioDestinationNode) so every downstream node
   // that lost this input re-derives its layout.
   auto negotiations = collectNegotiations(++channelLayoutTerm_, formerOutputs);
+  auto cycleBreakers = markCycleBreakers();
 
   auto formerOutputHandles = std::vector<std::shared_ptr<NodeHandle>>();
   formerOutputHandles.reserve(from->outputs.size());
@@ -437,12 +446,15 @@ auto HostGraph::removeAllEdges(HostVertex *from) -> Result<AGEvent, GraphError> 
 
   return Ok([hFrom = from->handle,
              formerOutputHandles = std::move(formerOutputHandles),
-             negotiations = std::move(negotiations)](AudioGraph &graph, auto &disposer) mutable {
+             negotiations = std::move(negotiations),
+             cycleBreakers = std::move(cycleBreakers)](AudioGraph &graph, auto &disposer) mutable {
     applyChannelNegotiations(*negotiations, disposer);
     disposer.dispose(std::move(negotiations));
     for (const auto &hTo : formerOutputHandles) {
       graph.pool().remove(graph[*hTo].input_head, graph.indexOf(*hFrom));
     }
+    applyCycleBreakerUpdates(*cycleBreakers);
+    disposer.dispose(std::move(cycleBreakers));
     graph.markDirty();
     // Off the audio thread, so these handle releases never run here.
     disposer.dispose(std::move(formerOutputHandles));
@@ -471,7 +483,13 @@ auto HostGraph::renegotiateNodeChannels(HostVertex *node) -> Result<AGEvent, Gra
   });
 }
 
-bool HostGraph::hasPath(HostVertex *start, HostVertex *end) {
+bool HostGraph::hasPath(HostVertex *start, HostVertex *end, bool throughCycleBreakers) {
+  auto mayVisit = [throughCycleBreakers](const HostVertex *node) {
+    return throughCycleBreakers || !canBreakCycle(node);
+  };
+  if (!mayVisit(start)) {
+    return false;
+  }
   if (start == end) {
     return true;
   }
@@ -492,7 +510,7 @@ bool HostGraph::hasPath(HostVertex *start, HostVertex *end) {
     }
 
     for (HostVertex *out : curr->outputs) {
-      if (out->traversalState.visit(term)) {
+      if (mayVisit(out) && out->traversalState.visit(term)) {
         stack.push_back(out);
       }
     }
@@ -500,34 +518,34 @@ bool HostGraph::hasPath(HostVertex *start, HostVertex *end) {
   return false;
 }
 
-std::optional<HostGraph::AGEvent> HostGraph::linkNodes(HostVertex *from, HostVertex *to) {
-  std::scoped_lock lock(nodesMutex_);
-  if (from == nullptr || to == nullptr || from == to) {
-    return std::nullopt;
+auto HostGraph::markCycleBreakers() -> std::unique_ptr<CycleBreakerUpdates> {
+  auto updates = std::make_unique<CycleBreakerUpdates>();
+  for (HostVertex *node : nodes) {
+    if (!canBreakCycle(node)) {
+      continue;
+    }
+    // basically only delay nodes here
+    const bool breaksCycle = std::ranges::any_of(node->outputs, [&](HostVertex *output) {
+      return hasPath(output, node, /*throughCycleBreakers=*/true);
+    });
+    if (breaksCycle == node->breaksCycle) {
+      continue;
+    }
+    node->breaksCycle = breaksCycle;
+    updates->emplace_back(node->handle, breaksCycle);
   }
-  if (from->ghost || to->ghost) {
-    return std::nullopt;
-  }
-  if (std::ranges::find(from->linkedNodes, to) != from->linkedNodes.end()) {
-    return std::nullopt;
-  }
-  from->linkedNodes.push_back(to);
-  linkCount_++;
+  return updates;
+}
 
-  return AGEvent([hFrom = from->handle, hTo = to->handle](AudioGraph &graph, auto &) mutable {
-    graph.pool().push(graph[*hFrom].link_head, graph.indexOf(*hTo));
-    graph.markDirty();
-  });
+void HostGraph::applyCycleBreakerUpdates(const CycleBreakerUpdates &updates) {
+  for (const auto &[handle, breaksCycle] : updates) {
+    handle->audioNode->breaksCycle_ = breaksCycle;
+  }
 }
 
 size_t HostGraph::edgeCount() const {
   std::scoped_lock lock(nodesMutex_);
   return edgeCount_;
-}
-
-size_t HostGraph::linkCount() const {
-  std::scoped_lock lock(nodesMutex_);
-  return linkCount_;
 }
 
 size_t HostGraph::nodeCount() const {
@@ -541,15 +559,6 @@ void HostGraph::collectDisposedNodes() {
     HostVertex *n = *it;
     if (n->ghost && n->handle.use_count() == 1) {
       edgeCount_ -= n->outputs.size();
-      // Outgoing links from n, plus any incoming links to n from other nodes,
-      // are all being torn down — keep linkCount_ in sync for pool sizing.
-      linkCount_ -= n->linkedNodes.size();
-      for (HostVertex *m : nodes) {
-        auto &ln = m->linkedNodes;
-        auto newEnd = std::ranges::remove(ln, n).begin();
-        linkCount_ -= static_cast<size_t>(std::distance(newEnd, ln.end()));
-        ln.erase(newEnd, ln.end());
-      }
       *it = nodes.back();
       nodes.pop_back();
       delete n;

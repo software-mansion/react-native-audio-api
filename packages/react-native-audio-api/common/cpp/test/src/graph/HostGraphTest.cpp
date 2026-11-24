@@ -351,4 +351,80 @@ TEST_F(HostGraphTest, RemoveAllEdges_SurvivesCompactionBeforeEventRuns) {
   EXPECT_EQ(TestGraphUtils::convertHostGraphToAdjacencyList(hostGraph), expected);
 }
 
+// ── Cycles through a cycle breaker ──────────────────────────────────────────
+
+class HostGraphCycleTest : public HostGraphTest {
+ protected:
+  HostGraph hostGraph;
+  AudioGraph audioGraph;
+
+  template <typename Node>
+  HostGraph::HostVertex *addNode() {
+    auto [vertex, event] =
+        hostGraph.addNode(std::make_shared<NodeHandle>(std::make_unique<Node>()));
+    event(audioGraph, disposer_);
+    return vertex;
+  }
+
+  void connect(HostGraph::HostVertex *from, HostGraph::HostVertex *to) {
+    auto result = hostGraph.addEdge(from, to);
+    ASSERT_TRUE(result.is_ok());
+    std::move(result).unwrap()(audioGraph, disposer_);
+  }
+
+  void disconnect(HostGraph::HostVertex *from, HostGraph::HostVertex *to) {
+    auto result = hostGraph.removeEdge(from, to);
+    ASSERT_TRUE(result.is_ok());
+    std::move(result).unwrap()(audioGraph, disposer_);
+  }
+
+  static bool isBreakingCycle(const HostGraph::HostVertex *vertex) {
+    return static_cast<const CycleBreakerMockNode &>(*vertex->handle->audioNode).isBreakingCycle();
+  }
+};
+
+TEST_F(HostGraphCycleTest, CycleThroughABreakerIsAcceptedAndMarkedUntilItBreaks) {
+  auto *breaker = addNode<CycleBreakerMockNode>();
+  auto *feedback = addNode<MockNode>();
+  connect(breaker, feedback);
+  EXPECT_FALSE(isBreakingCycle(breaker));
+
+  connect(feedback, breaker);
+  EXPECT_TRUE(isBreakingCycle(breaker));
+
+  disconnect(feedback, breaker);
+  EXPECT_FALSE(isBreakingCycle(breaker));
+}
+
+TEST_F(HostGraphCycleTest, CycleBesideABreakerIsRejected) {
+  // first -> breaker -> second -> first would be fine, but first -> second
+  // -> first also closes a cycle that runs through no breaker.
+  auto *first = addNode<MockNode>();
+  auto *second = addNode<MockNode>();
+  auto *breaker = addNode<CycleBreakerMockNode>();
+  connect(first, breaker);
+  connect(breaker, second);
+  connect(first, second);
+
+  auto result = hostGraph.addEdge(second, first);
+  ASSERT_TRUE(result.is_err());
+  EXPECT_EQ(result.unwrap_err(), HostGraph::GraphError::CYCLE_DETECTED);
+  EXPECT_FALSE(isBreakingCycle(breaker));
+}
+
+TEST_F(HostGraphCycleTest, BreakerFeedingACycleIsNotMarked) {
+  auto *loopBreaker = addNode<CycleBreakerMockNode>();
+  auto *feedingBreaker = addNode<CycleBreakerMockNode>();
+  auto *mix = addNode<MockNode>();
+  connect(feedingBreaker, mix);
+  connect(loopBreaker, mix);
+  connect(mix, loopBreaker);
+
+  EXPECT_TRUE(isBreakingCycle(loopBreaker));
+  EXPECT_FALSE(isBreakingCycle(feedingBreaker));
+
+  audioGraph.sortAndCompact();
+  EXPECT_LT(audioGraph.indexOf(*feedingBreaker->handle), audioGraph.indexOf(*mix->handle));
+}
+
 } // namespace audioapi::utils::graph

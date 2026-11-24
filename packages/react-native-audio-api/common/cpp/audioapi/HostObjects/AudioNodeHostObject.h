@@ -51,14 +51,14 @@ class AudioNodeHostObject : public HostObject,
   /// @brief Returns the graph host node that outgoing edges for the given
   /// output index should originate from. The default returns `this` for
   /// output 0 — nodes with a single output need no override. Composite nodes
-  /// (Delay, ChannelSplitter) route each output to a dedicated internal host
+  /// (ChannelSplitter) route each output to a dedicated internal host
   /// node.
   /// @note JS thread only.
   virtual std::shared_ptr<utils::graph::HostNode> getOutput(int outputIndex);
 
   /// @brief Returns the graph host node that incoming edges for the given
   /// input index should terminate at. The default returns `this` for input 0.
-  /// Composite nodes (Delay, ChannelMerger) route each input to a dedicated
+  /// Composite nodes (ChannelMerger) route each input to a dedicated
   /// internal host node.
   /// @note JS thread only.
   virtual std::shared_ptr<utils::graph::HostNode> getInput(int inputIndex);

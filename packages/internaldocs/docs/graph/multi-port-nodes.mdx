@@ -173,5 +173,4 @@ To be added...
 
 | Path | Why |
 |------|-----|
-| `common/cpp/audioapi/HostObjects/effects/DelayNodeHostObject.h` / `.cpp` | The only other override of `getInput`/`getOutput` (writer/reader); uses `linkNodes`, not multi-port edges. |
-| `common/cpp/audioapi/core/effects/delay/**` | Writer/reader payloads and ring buffer; may simplify once ports are first-class. |
+| `common/cpp/audioapi/core/effects/DelayNode.h` / `.cpp` | A single vertex with one input and one output, no `getInput`/`getOutput` override. Feedback loops go through `GraphObject::canBreakCycle`, not through ports. |

@@ -1,6 +1,7 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/utils/graph/AudioGraph.h>
 #include <algorithm>
+#include <cassert>
 #include <iterator>
 #include <utility>
 
@@ -64,22 +65,32 @@ void AudioGraph::markDeletions() {
     return nodes[idx].will_be_deleted;
   };
 
-  // ── Pass 1: mark deletions (cascading, left-to-right in topo order) ────
-  // A node goes when it is orphaned, every input is going too, and it agrees.
+  // A node goes when it is orphaned, it agrees, and every input is going too.
+  // The nodes of a cycle wait on each other, so assume every orphaned candidate will be deleted
+  // and keep the ones that should survive.
   for (auto &node : nodes) {
-    node.will_be_deleted = node.orphaned &&
-        std::ranges::all_of(pool_.view(node.input_head), flagged) &&
-        node.handle->audioNode->canBeDestructed();
+    node.will_be_deleted = node.orphaned;
+  }
+  bool withdrewAny = true;
+  while (withdrewAny) {
+    withdrewAny = false;
+    for (auto &node : nodes) {
+      if (!node.will_be_deleted) {
+        continue;
+      }
+      const bool goes = std::ranges::all_of(pool_.view(node.input_head), flagged) &&
+          node.handle->audioNode->canBeDestructed();
+      if (!goes) {
+        node.will_be_deleted = false;
+        withdrewAny = true;
+      }
+    }
   }
 
-  // ── Pass 2: remove inputs from surviving nodes ─
-  // can't be merged with 1, because links can sit at higher index and we
-  // need to mark everything first before we start removing from the pools.
   for (auto &node : nodes) {
-    if (node.will_be_deleted) {
-      continue;
+    if (!node.will_be_deleted) {
+      pool_.removeIf(node.input_head, flagged);
     }
-    forEachDependencyList(node, [&](std::uint32_t &head) { pool_.removeIf(head, flagged); });
   }
 }
 
@@ -87,11 +98,9 @@ void AudioGraph::remapListsToTargetIndex() {
   // Must run BEFORE nodes move: once they do, an index stored in a list no
   // longer names the node it was written for.
   for (auto &node : nodes) {
-    forEachDependencyList(node, [this](std::uint32_t head) {
-      for (auto &inputVertex : pool_.mutableView(head)) {
-        inputVertex = static_cast<std::uint32_t>(nodes[inputVertex].target_place);
-      }
-    });
+    for (auto &inputVertex : pool_.mutableView(node.input_head)) {
+      inputVertex = static_cast<std::uint32_t>(nodes[inputVertex].target_place);
+    }
   }
 }
 
@@ -114,7 +123,7 @@ void AudioGraph::sortAndCompact() {
   std::uint32_t new_pos = 0;
   for (auto &node : nodes) {
     if (node.will_be_deleted) {
-      forEachDependencyList(node, [this](std::uint32_t &head) { pool_.freeAll(head); });
+      pool_.freeAll(node.input_head);
     } else {
       node.target_place = static_cast<std::int32_t>(new_pos++);
     }
@@ -176,22 +185,21 @@ void AudioGraph::settleProcessableState() {
     top = nodes[idx].target_place;
     nodes[idx].target_place = -1;
 
-    forEachDependencyList(nodes[idx], [&](std::uint32_t head) {
-      for (const auto dep : pool_.view(head)) {
-        auto &obj = *nodes[dep].handle->audioNode;
-        if (obj.processableState_ == PS::NOT_PROCESSABLE && !obj.excludeFromProcessablePull_) {
-          obj.processableState_ = PS::CONDITIONAL_PROCESSABLE;
-          push(dep);
-        }
+    for (const auto dep : pool_.view(nodes[idx].input_head)) {
+      auto &obj = *nodes[dep].handle->audioNode;
+      if (obj.processableState_ == PS::NOT_PROCESSABLE && !obj.excludeFromProcessablePull_) {
+        obj.processableState_ = PS::CONDITIONAL_PROCESSABLE;
+        push(dep);
       }
-    });
+    }
   }
 }
 
 void AudioGraph::advanceUnpulledNodes(std::size_t currentSampleFrame) {
   for (auto &node : nodes) {
     auto &graphObject = *node.handle->audioNode;
-    if (!graphObject.isProcessable()) {
+    graphObject.rendersThisQuantum_ = graphObject.isProcessable();
+    if (!graphObject.rendersThisQuantum_) {
       graphObject.advanceWithoutRender(currentSampleFrame);
     }
   }
@@ -199,21 +207,24 @@ void AudioGraph::advanceUnpulledNodes(std::size_t currentSampleFrame) {
 
 // ── Kahn's toposort ───────────────────────────────────────────────────────
 
+bool AudioGraph::breaksCycle(const Vertex &node) {
+  const GraphObject *graphObject = node.handle->audioNode.get();
+  return graphObject != nullptr && graphObject->breaksCycle_;
+}
+
 void AudioGraph::kahn_toposort() {
   const auto n = static_cast<std::uint32_t>(nodes.size());
   if (n <= 1) {
     return;
   }
 
-  // Phase 1: out-degree = audio consumers + processable-link holders. A link
-  // holder (DelayReader) reads what its target (DelayWriter) writes in the
-  // same quantum, so the target must run first.
+  // Phase 1: compute out-degree
   for (const auto &nd : nodes) {
+    if (breaksCycle(nd)) {
+      continue;
+    }
     for (const auto inp : pool_.view(nd.input_head)) {
       nodes[inp].topo_out_degree++;
-    }
-    for (const auto lnk : pool_.view(nd.link_head)) {
-      nodes[lnk].topo_out_degree++;
     }
   }
 
@@ -224,56 +235,32 @@ void AudioGraph::kahn_toposort() {
     top = static_cast<std::int32_t>(i);
   };
 
-  // sinks are processed first, thus we start with n so they end up last
-  std::uint32_t write = n;
-  auto placeReady = [&](bool followLinks) {
-    while (top != -1) {
-      // pop
-      const auto idx = static_cast<std::uint32_t>(top);
-      top = nodes[idx].target_place;
-      nodes[idx].target_place =
-          static_cast<std::int32_t>(--write); // final: position after the sort
-
-      for (const auto inp : pool_.view(nodes[idx].input_head)) {
-        if (--nodes[inp].topo_out_degree == 0) {
-          push(inp);
-        }
-      }
-      if (!followLinks) {
-        continue;
-      }
-      for (const auto lnk : pool_.view(nodes[idx].link_head)) {
-        if (--nodes[lnk].topo_out_degree == 0) {
-          push(lnk);
-        }
-      }
-    }
-  };
-
   for (std::uint32_t i = 0; i < n; i++) {
     if (nodes[i].topo_out_degree == 0) {
       push(i);
     }
   }
-  placeReady(/*followLinks=*/true);
 
-  // Unplaced nodes left means a feedback cycle through a delay.
-  // Drop the links of the unplaced nodes and let edges alone order them.
-  if (write > 0) {
-    for (std::uint32_t i = 0; i < n; i++) {
-      if (nodes[i].target_place != -1) {
-        continue;
-      }
-      for (const auto lnk : pool_.view(nodes[i].link_head)) {
-        if (--nodes[lnk].topo_out_degree == 0) {
-          push(lnk);
-        }
+  // sinks are processed first, thus we start with n so they end up last
+  std::uint32_t write = n;
+  while (top != -1) {
+    // pop
+    const auto idx = static_cast<std::uint32_t>(top);
+    top = nodes[idx].target_place;
+    nodes[idx].target_place = static_cast<std::int32_t>(--write); // final: position after the sort
+
+    if (breaksCycle(nodes[idx])) {
+      continue;
+    }
+    for (const auto inp : pool_.view(nodes[idx].input_head)) {
+      if (--nodes[inp].topo_out_degree == 0) {
+        push(inp);
       }
     }
-    placeReady(/*followLinks=*/false);
   }
+  assert(write == 0 && "a cycle exists");
 
-  // Phase 3: remap input (and link) indices to new positions (before nodes move)
+  // Phase 3: remap input indices to new positions (before nodes move)
   remapListsToTargetIndex();
 
   // Phase 4: apply permutation in place via cycle sort

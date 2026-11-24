@@ -71,6 +71,15 @@ class GraphObject {
   ///         contribute to input mixing for other nodes.
   [[nodiscard]] virtual const DSPAudioBuffer *getOutput() const;
 
+  /// @brief Whether a cycle of audio edges may run through this node.
+  ///
+  /// The graph accepts a cycle only when it contains such a node.
+  /// While the node breaks a cycle it is rendered in two steps:
+  /// `process()` runs `processReader()` at a position that ignores its
+  /// inputs, and `processAfterGraph()` hands it those inputs once every node
+  /// has rendered. Its output is therefore built from inputs of earlier quanta.
+  [[nodiscard]] virtual bool canBreakCycle() const;
+
   /// @brief Processes this node with the given inputs.
   /// Filters inputs to only those with valid output buffers.
   /// @tparam R Range of GraphObject references (inputs from the graph)
@@ -79,20 +88,23 @@ class GraphObject {
   template <std::ranges::input_range R>
     requires std::same_as<std::ranges::range_reference_t<R>, const GraphObject &>
   void process(R &&inputs, int numFrames) {
-    // Collect valid input buffers (those with non-null getOutput)
-    inputBuffers_.clear();
-    for (const GraphObject &input : inputs) {
-      if (const DSPAudioBuffer *output = input.getOutput()) {
-        inputBuffers_.push_back(output);
-      }
+    if (breaksCycle_) {
+      processReader(numFrames);
+      return;
     }
+    collectInputBuffers(inputs);
     processInputs(inputBuffers_, numFrames);
-    // Conditional nodes are pulled for one quantum only; flip back to idle so
-    // the next settle pass re-derives the active cone from seeds (replaces a
-    // global reset at the start of settleProcessableState()).
-    if (processableState_ == PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
-      processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
-    }
+    returnToIdleAfterPull();
+  }
+
+  /// @brief Runs `processWriter()` with `inputs` (see `canBreakCycle()`).
+  /// Call after every node of the graph has rendered this quantum.
+  template <std::ranges::input_range R>
+    requires std::same_as<std::ranges::range_reference_t<R>, const GraphObject &>
+  void processAfterGraph(R &&inputs, int numFrames) {
+    collectInputBuffers(inputs);
+    processWriter(inputBuffers_, numFrames);
+    returnToIdleAfterPull();
   }
 
   /// @brief Swaps in a pre-reserved input-scratch vector and returns the
@@ -124,6 +136,20 @@ class GraphObject {
   /// @param numFrames Number of audio frames to process
   virtual void processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames);
 
+  /// @brief The reader half of a node that breaks a cycle (the spec's DelayReader):
+  /// renders this quantum's output before the node's inputs have rendered.
+  virtual void processReader(int numFrames);
+
+  /// @brief The writer half (the spec's DelayWriter): takes the inputs of the
+  /// quantum whose output `processReader()` already rendered. Must not write to
+  /// the output buffer: another node on the cycle may still read it.
+  virtual void processWriter(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames);
+
+  /// @brief Whether this node breaks a cycle right now: it lies on one and
+  /// `canBreakCycle()` is true. The other nodes of that cycle never have it set.
+  /// @note Audio Thread only
+  bool breaksCycle_ = false;
+
   PROCESSABLE_STATE processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
 
   /// @brief When set, AudioGraph::settleProcessableState() will never promote
@@ -137,8 +163,38 @@ class GraphObject {
   bool excludeFromProcessablePull_ = false;
 
  private:
+  /// @brief Fills `inputBuffers_` with the outputs of the inputs that render
+  /// this quantum and have an output buffer.
+  template <std::ranges::input_range R>
+  void collectInputBuffers(R &&inputs) {
+    inputBuffers_.clear();
+    for (const GraphObject &input : inputs) {
+      if (!input.rendersThisQuantum_) {
+        continue;
+      }
+      if (const DSPAudioBuffer *output = input.getOutput()) {
+        inputBuffers_.push_back(output);
+      }
+    }
+  }
+
+  void returnToIdleAfterPull() {
+    // Conditional nodes are pulled for one quantum only
+    if (processableState_ == PROCESSABLE_STATE::CONDITIONAL_PROCESSABLE) {
+      processableState_ = PROCESSABLE_STATE::NOT_PROCESSABLE;
+    }
+  }
+
   // Reusable buffer for collecting inputs (avoids allocation per frame)
   std::vector<const DSPAudioBuffer *> inputBuffers_;
+
+  /// @brief Whether this node is processable in the quantum being rendered, set by
+  /// AudioGraph::advanceUnpulledNodes(). A node left out keeps its last output in
+  /// its buffer, so consumers must skip it. Otherwise a node that keeps rendering
+  /// its tail after a disconnect would mix that stale output forever and its tail
+  /// would never end.
+  /// @note Audio Thread only
+  bool rendersThisQuantum_ = true;
 };
 
 } // namespace audioapi::utils::graph

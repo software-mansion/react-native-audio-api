@@ -278,7 +278,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// frame counter starts from a fresh, up-to-date value.
   ///
   /// Default 0 — overriders are tail-bearing nodes (Biquad, Convolver,
-  /// DelayWriter). The implementation may read audio-thread-owned state
+  /// Delay). The implementation may read audio-thread-owned state
   /// (filter coefficients, IR length, max delay).
   ///
   /// @note Audio Thread only.
@@ -303,9 +303,9 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   virtual void processNode(int) = 0;
 
- private:
-  /// @brief Drives `tailState_` for one render quantum. Called from
-  /// `processInputs` only when `requiresTailProcessing_` is true.
+  /// @brief Drives `tailState_` for one render quantum. Call once per quantum
+  /// with the inputs of that quantum, and only when `requiresTailProcessing_`
+  /// is true. `processInputs` does it for a node that renders in one step.
   void updateTailStateForQuantum(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames);
 };
 
