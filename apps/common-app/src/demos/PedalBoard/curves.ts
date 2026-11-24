@@ -13,7 +13,7 @@ export function makeDistortionCurve(k: number, sampleRate: number) {
 
 export function makeReverbCurve(
   duration: number,
-  context: AudioContext,
+  context: AudioContext
 ): AudioBuffer {
   const length = Math.floor(context.sampleRate * duration);
   const impulse = context.createBuffer(2, length, context.sampleRate);
@@ -24,16 +24,4 @@ export function makeReverbCurve(
     }
   }
   return impulse;
-}
-
-export function makeEchoCurve(
-  delayTime: number,
-  context: AudioContext,
-): AudioBuffer {
-  const length = Math.floor(context.sampleRate * delayTime);
-  const echoBuffer = context.createBuffer(1, length, context.sampleRate);
-  const echoData = echoBuffer.getChannelData(0);
-  echoData[length * 0.3] = 0.6;
-  echoData[length * 0.7] = 0.2;
-  return echoBuffer;
 }

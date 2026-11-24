@@ -1,0 +1,14 @@
+{
+  "iconSets": [
+    {
+      "inputDir": "../common-app/assets/icons/app",
+      "outputDir": "../common-app/assets/icons/nanoicons"
+    }
+  ],
+  "symbolSets": [
+    {
+      "inputDir": "../common-app/assets/icons/tabs",
+      "outputDir": "../common-app/assets/icons/nanoicons"
+    }
+  ]
+}

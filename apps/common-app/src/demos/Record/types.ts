@@ -1,10 +1,7 @@
 export enum RecordingState {
   Idle = 'Idle',
-  Loading = 'Loading',
+  Starting = 'Starting',
+  Saving = 'Saving',
   Recording = 'Recording',
   Paused = 'Paused',
-  ReadyToPlay = 'ReadyToPlay',
-  Playing = 'Playing',
 }
-
-export type AudioCallback = (normalized: number) => void;

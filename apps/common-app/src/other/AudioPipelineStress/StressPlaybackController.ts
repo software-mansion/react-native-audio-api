@@ -1,4 +1,8 @@
-import { AudioBuffer, AudioBufferSourceNode, AudioContext } from 'react-native-audio-api';
+import {
+  AudioBuffer,
+  AudioBufferSourceNode,
+  AudioContext,
+} from 'react-native-audio-api';
 
 export default class StressPlaybackController {
   private readonly context: AudioContext;

@@ -1,5 +1,6 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
+const { withNanoIcons } = require('react-native-nano-icons/metro');
 
 const monorepoRoot = path.resolve(__dirname, '../..');
 const appsRoot = path.resolve(monorepoRoot, 'apps');
@@ -65,4 +66,4 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(defaultConfig, config);
+module.exports = withNanoIcons(mergeConfig(defaultConfig, config));

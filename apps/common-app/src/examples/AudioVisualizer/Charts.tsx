@@ -1,15 +1,38 @@
+import {
+  Picture,
+  Skia,
+  StrokeCap,
+  StrokeJoin,
+} from '@shopify/react-native-skia';
+import { PaintStyle } from '@shopify/react-native-skia';
 import React, { useMemo } from 'react';
-import { Circle, Path, Skia, PaintStyle } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { useCanvas } from './Canvas';
 import { colors } from '../../styles';
-import { getAngle, getPointCX, getPointCY } from '../../utils/skiUtils';
-import {
-  getVisualizerLayout,
-  sampleExp,
-  weightWithIndex,
-} from './layout';
+import { useCanvas } from './Canvas';
+import { getVisualizerLayout } from './layout';
+
+/** Bars per half circle; the right half mirrors the left. */
+const barsPerSide = 36;
+/** Lowest and highest analyser bins the bars span, spaced logarithmically. */
+const lowestBin = 2;
+const highestBinShare = 0.8;
+/**
+ * Bars follow the signal level itself, as the original visualizer did: the
+ * lower half of the bars is weighted down (from `bassWeight` at the lowest bar
+ * up to 1 at the middle one), since music carries most of its energy there, and
+ * the weighted level is expanded exponentially so loud passages stand out.
+ */
+const bassWeight = 0.7;
+const levelExpansion = 2.5;
+/** Weighted level (0–1, the analyser's byte range) that draws a full bar. */
+const fullBarLevel = 0.95;
+const quietBarOpacity = 0.35;
+const loudBarOpacity = 0.95;
+
+/** Points around the time-domain ring. */
+const ringPoints = 128;
+const ringOpacity = 0.7;
 
 interface ChartProps {
   timeDataSV: SharedValue<Uint8Array>;
@@ -20,141 +43,177 @@ interface ChartProps {
   frequencyBinCount: number;
 }
 
-function buildTimePath(
-  data: Uint8Array,
-  fftSize: number,
-  layout: ReturnType<typeof getVisualizerLayout>
-) {
+function barWeight(bar: number) {
   'worklet';
 
-  const path = Skia.PathBuilder.Make().build();
-  const { cx, cy, innerRadius } = layout;
-  const span = innerRadius * 2;
-  const startX = cx - innerRadius;
-
-  for (let index = 0; index < data.length; index += 1) {
-    const x = startX + (index / fftSize) * span;
-    const y = cy - ((data[index] - 127) / 127) * innerRadius;
-
-    if (index === 0) {
-      path.moveTo(x, y);
-    } else {
-      path.lineTo(x, y);
-    }
-  }
-
-  return path;
+  const weightedBars = barsPerSide / 2;
+  return bar < weightedBars
+    ? bassWeight + ((1 - bassWeight) * bar) / weightedBars
+    : 1;
 }
 
-function buildFrequencyPath(
-  data: Uint8Array,
-  frequencyBinCount: number,
-  layout: ReturnType<typeof getVisualizerLayout>
-) {
+function expandLevel(level: number) {
   'worklet';
-
-  const path = Skia.PathBuilder.Make().build();
-  const { cx, cy, outerRadius } = layout;
-  const maxSteps = 2 * (frequencyBinCount - 64);
-
-  for (let index = 0; index < data.length; index += 1) {
-    if (index < 32 || index >= frequencyBinCount - 32) {
-      continue;
-    }
-
-    const magnitude =
-      sampleExp(weightWithIndex(data[index] / 255, index, frequencyBinCount)) *
-      40;
-    const indices = [index, 2 * frequencyBinCount - 65 - index];
-
-    for (let side = 0; side < indices.length; side += 1) {
-      const stepIndex = indices[side];
-      const angle = getAngle(stepIndex - 32, maxSteps);
-      const x1 = getPointCX(angle, outerRadius, cx);
-      const y1 = getPointCY(angle, outerRadius, cy);
-      const x2 = getPointCX(angle, outerRadius + magnitude, cx);
-      const y2 = getPointCY(angle, outerRadius + magnitude, cy);
-
-      path.moveTo(x1, y1);
-      path.lineTo(x2, y2);
-    }
-  }
-
-  return path;
-}
-
-const TimeChart: React.FC<ChartProps> = (props) => {
-  const { size } = useCanvas();
-  const { timeDataSV, timeDataTickSV, fftSize } = props;
-  const layout = useMemo(
-    () => getVisualizerLayout(size.width, size.height),
-    [size.width, size.height]
-  );
-
-  const circlePaint = useMemo(() => {
-    const paint = Skia.Paint();
-    paint.setAntiAlias(true);
-    paint.setColor(Skia.Color(colors.yellow));
-    paint.setStyle(PaintStyle.Stroke);
-    paint.setStrokeWidth(6);
-    return paint;
-  }, []);
-
-  const timePath = useDerivedValue(() => {
-    timeDataTickSV.value;
-    return buildTimePath(timeDataSV.value, fftSize, layout);
-  }, [fftSize, layout, timeDataSV, timeDataTickSV]);
 
   return (
-    <>
-      <Circle
-        cx={layout.cx}
-        cy={layout.cy}
-        r={layout.circleRadius}
-        paint={circlePaint}
-      />
-      <Path
-        path={timePath}
-        color="#B5E1F1"
-        style="stroke"
-        strokeWidth={2}
-        strokeJoin="round"
-      />
-    </>
+    (Math.exp(levelExpansion * level) - 1) /
+    (Math.exp(levelExpansion * fullBarLevel) - 1)
   );
+}
+
+/**
+ * First analyser bin of each bar, log-spaced so bass gets as many bars as
+ * treble.
+ */
+function barBandEdges(frequencyBinCount: number) {
+  const highestBin = Math.floor(frequencyBinCount * highestBinShare);
+  const edges: number[] = [];
+  for (let bar = 0; bar <= barsPerSide; bar += 1) {
+    const bin = lowestBin * (highestBin / lowestBin) ** (bar / barsPerSide);
+    edges.push(Math.round(bin));
+  }
+  return edges;
+}
+
+/**
+ * Radial frequency bars in one accent: each bar's length and opacity follow its
+ * band's loudest bin, and silence leaves a ring of dots (round caps on a
+ * zero-length bar).
+ */
+const FrequencyChart: React.FC<ChartProps> = ({
+  frequencyDataSV,
+  frequencyDataTickSV,
+  frequencyBinCount,
+}) => {
+  const { size } = useCanvas();
+  const layout = useMemo(() => getVisualizerLayout(size.width), [size.width]);
+  const edges = useMemo(
+    () => barBandEdges(frequencyBinCount),
+    [frequencyBinCount]
+  );
+
+  const paint = useMemo(() => {
+    const barPaint = Skia.Paint();
+    barPaint.setAntiAlias(true);
+    barPaint.setStyle(PaintStyle.Stroke);
+    barPaint.setStrokeCap(StrokeCap.Round);
+    barPaint.setStrokeWidth(layout.barWidth);
+    barPaint.setColor(Skia.Color(colors.blue));
+    return barPaint;
+  }, [layout.barWidth]);
+
+  const picture = useDerivedValue(() => {
+    frequencyDataTickSV.value;
+    const data = frequencyDataSV.value;
+    const { cx, cy, barRadius, barMaxLength } = layout;
+
+    const recorder = Skia.PictureRecorder();
+    const canvas = recorder.beginRecording(
+      Skia.XYWHRect(0, 0, size.width, size.height)
+    );
+
+    for (let bar = 0; bar < barsPerSide; bar += 1) {
+      let loudest = 0;
+      const lastBin = Math.max(edges[bar], edges[bar + 1] - 1);
+      for (let bin = edges[bar]; bin <= lastBin; bin += 1) {
+        loudest = Math.max(loudest, data[bin]);
+      }
+      const level = Math.min(1, expandLevel((loudest / 255) * barWeight(bar)));
+      const length = Math.max(0.01, level * barMaxLength);
+      paint.setAlphaf(
+        quietBarOpacity + (loudBarOpacity - quietBarOpacity) * level
+      );
+
+      // Bass at the top, treble meeting at the bottom, mirrored left and right.
+      const offset = ((bar + 0.5) / barsPerSide) * Math.PI;
+      for (const side of [-1, 1]) {
+        const angle = -Math.PI / 2 + side * offset;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        canvas.drawLine(
+          cx + cos * barRadius,
+          cy + sin * barRadius,
+          cx + cos * (barRadius + length),
+          cy + sin * (barRadius + length),
+          paint
+        );
+      }
+    }
+
+    return recorder.finishRecordingAsPicture();
+  });
+
+  return <Picture picture={picture} />;
 };
 
-const FrequencyChart: React.FC<ChartProps> = (props) => {
+/**
+ * The waveform wrapped into a thin closed ring inside the bars: each point
+ * moves in or out with the signal.
+ */
+const TimeChart: React.FC<ChartProps> = ({
+  timeDataSV,
+  timeDataTickSV,
+  fftSize,
+}) => {
   const { size } = useCanvas();
-  const { frequencyDataSV, frequencyDataTickSV, frequencyBinCount } = props;
-  const layout = useMemo(
-    () => getVisualizerLayout(size.width, size.height),
-    [size.width, size.height]
-  );
+  const layout = useMemo(() => getVisualizerLayout(size.width), [size.width]);
 
-  const barWidth = useMemo(
-    () => (Math.PI * layout.outerRadius) / (frequencyBinCount - 64),
-    [frequencyBinCount, layout.outerRadius]
-  );
+  const paint = useMemo(() => {
+    const ringPaint = Skia.Paint();
+    ringPaint.setAntiAlias(true);
+    ringPaint.setStyle(PaintStyle.Stroke);
+    ringPaint.setStrokeJoin(StrokeJoin.Round);
+    ringPaint.setStrokeWidth(layout.ringWidth);
+    ringPaint.setColor(Skia.Color(colors.textPrimary));
+    ringPaint.setAlphaf(ringOpacity);
+    return ringPaint;
+  }, [layout.ringWidth]);
 
-  const freqPath = useDerivedValue(() => {
-    frequencyDataTickSV.value;
-    return buildFrequencyPath(
-      frequencyDataSV.value,
-      frequencyBinCount,
-      layout
+  const picture = useDerivedValue(() => {
+    timeDataTickSV.value;
+    const data = timeDataSV.value;
+    const { cx, cy, ringRadius, ringAmplitude } = layout;
+    const samplesPerPoint = Math.max(1, Math.floor(fftSize / ringPoints));
+
+    // Each point averages its samples, which keeps the ring smooth.
+    const deviations: number[] = [];
+    for (let point = 0; point < ringPoints; point += 1) {
+      let sum = 0;
+      for (let i = 0; i < samplesPerPoint; i += 1) {
+        sum += data[point * samplesPerPoint + i] ?? 127.5;
+      }
+      deviations.push((sum / samplesPerPoint - 127.5) / 127.5);
+    }
+    // The waveform doesn't end where it starts; tilting it by the difference
+    // closes the ring without a kink at the seam.
+    const drift = deviations[ringPoints - 1] - deviations[0];
+    for (let point = 0; point < ringPoints; point += 1) {
+      deviations[point] -= (drift * point) / ringPoints;
+    }
+
+    const path = Skia.Path.Make();
+    for (let point = 0; point < ringPoints; point += 1) {
+      const angle = -Math.PI / 2 + (point / ringPoints) * 2 * Math.PI;
+      const radius = ringRadius + deviations[point] * ringAmplitude;
+      const x = cx + Math.cos(angle) * radius;
+      const y = cy + Math.sin(angle) * radius;
+      if (point === 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    const recorder = Skia.PictureRecorder();
+    const canvas = recorder.beginRecording(
+      Skia.XYWHRect(0, 0, size.width, size.height)
     );
-  }, [frequencyBinCount, frequencyDataSV, frequencyDataTickSV, layout]);
+    canvas.drawPath(path, paint);
+    return recorder.finishRecordingAsPicture();
+  });
 
-  return (
-    <Path
-      path={freqPath}
-      color="rgba(79, 195, 247, 0.85)"
-      style="stroke"
-      strokeWidth={barWidth}
-      strokeCap="round"
-    />
-  );
+  return <Picture picture={picture} />;
 };
 
 export default {

@@ -11,7 +11,7 @@ import { useRecreatable } from './useRecreatable';
 
 const SAMPLE_TRACKS = {
   'Music sample': require('../../demos/Crossfade/tracks/track1.mp3'),
-  'Voice sample': require('../../examples/AudioFile/voice-sample-landing.mp3'),
+  'Voice sample': require('../../examples/AudioPlayback/voice-sample-landing.mp3'),
 };
 
 export const LAST_TAKE = 'Last take';

@@ -1,8 +1,9 @@
 import React, { FC, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Line, Path, Rect } from 'react-native-svg';
+import Svg, { Line, Path } from 'react-native-svg';
 
-import { colors } from '../../styles';
+import { Card } from '../../components';
+import { colors, typography } from '../../styles';
 import type { WaveformSeries } from './types';
 
 interface PlotMarker {
@@ -32,13 +33,10 @@ function buildEnvelopePath(
     return '';
   }
 
-  const maxVal = Math.max(scaleMax, 0.001);
-
   return points
     .map((point, index) => {
-      const x =
-        points.length <= 1 ? 0 : (index / (points.length - 1)) * width;
-      const y = height - (Math.abs(point) / maxVal) * (height * 0.82) - 6;
+      const x = points.length <= 1 ? 0 : (index / (points.length - 1)) * width;
+      const y = height - (Math.abs(point) / scaleMax) * (height * 0.82) - 6;
       return `${index === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(' ');
@@ -54,56 +52,35 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
   xAxisLabel,
   sharedScale = false,
 }) => {
-  const scaleMax = useMemo(() => {
-    if (!sharedScale) {
-      return Math.max(
-        ...series.flatMap((entry) => entry.points.map((point) => Math.abs(point))),
-        0.001
-      );
-    }
+  const paths = useMemo(() => {
+    const peak = (points: number[]) =>
+      Math.max(...points.map((point) => Math.abs(point)), 0.001);
+    const sharedMax = Math.max(...series.map((entry) => peak(entry.points)));
 
-    return Math.max(
-      ...series.flatMap((entry) => entry.points.map((point) => Math.abs(point))),
-      0.001
-    );
-  }, [series, sharedScale]);
-
-  const paths = useMemo(
-    () =>
-      series.map((entry) => {
-        const entryMax = sharedScale
-          ? scaleMax
-          : Math.max(...entry.points.map((point) => Math.abs(point)), 0.001);
-
-        return {
-          ...entry,
-          path: buildEnvelopePath(entry.points, width, height, entryMax),
-        };
-      }),
-    [height, scaleMax, series, sharedScale, width]
-  );
+    return series.map((entry) => ({
+      ...entry,
+      path: buildEnvelopePath(
+        entry.points,
+        width,
+        height,
+        sharedScale ? sharedMax : peak(entry.points)
+      ),
+    }));
+  }, [height, series, sharedScale, width]);
 
   return (
-    <View style={styles.container}>
+    <Card>
       <Text style={styles.title}>{title}</Text>
-      {caption ? <Text style={styles.caption}>{caption}</Text> : null}
+      {caption ? <Text style={typography.hint}>{caption}</Text> : null}
 
       <View style={[styles.plotFrame, { width, height }]}>
         <Svg width={width} height={height}>
-          <Rect
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            fill={colors.backgroundDark}
-            rx={4}
-          />
           <Line
             x1={0}
             y1={height - 6}
             x2={width}
             y2={height - 6}
-            stroke={colors.separator}
+            stroke={colors.track}
             strokeWidth={1}
           />
 
@@ -135,7 +112,9 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
       <View style={styles.legendRow}>
         {series.map((entry) => (
           <View key={entry.label} style={styles.legendItem}>
-            <View style={[styles.legendSwatch, { backgroundColor: entry.color }]} />
+            <View
+              style={[styles.legendSwatch, { backgroundColor: entry.color }]}
+            />
             <Text style={styles.legendText}>{entry.label}</Text>
           </View>
         ))}
@@ -144,7 +123,10 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
       {markers.length > 0 ? (
         <View style={styles.markerRow}>
           {markers.map((marker) => (
-            <Text key={marker.label} style={[styles.markerText, { color: marker.color }]}>
+            <Text
+              key={marker.label}
+              style={[styles.markerText, { color: marker.color }]}
+            >
               {marker.label}
             </Text>
           ))}
@@ -152,27 +134,14 @@ const WaveformPlot: FC<WaveformPlotProps> = ({
       ) : null}
 
       {xAxisLabel ? <Text style={styles.axisLabel}>{xAxisLabel}</Text> : null}
-    </View>
+    </Card>
   );
 };
 
 const styles = StyleSheet.create({
   axisLabel: {
-    color: colors.gray,
+    color: colors.textMuted,
     fontSize: 11,
-    marginTop: 4,
-  },
-  caption: {
-    color: colors.gray,
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 8,
-  },
-  container: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    gap: 8,
-    padding: 12,
   },
   legendItem: {
     alignItems: 'center',
@@ -190,7 +159,7 @@ const styles = StyleSheet.create({
     width: 10,
   },
   legendText: {
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 11,
   },
   markerRow: {
@@ -203,13 +172,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   plotFrame: {
-    borderColor: colors.separator,
-    borderRadius: 4,
-    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.recess,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   title: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },

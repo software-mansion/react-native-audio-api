@@ -8,6 +8,10 @@ import type { SessionStatus, TranscriptEntry } from '../voiceSession';
 export function useVoiceChat() {
   const navigation = useNavigation();
   const [status, setStatus] = useState<SessionStatus>('idle');
+  const [assistantSpeaking, setAssistantSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+  /** When the current call connected, for the call timer. */
+  const [connectedAt, setConnectedAt] = useState<number | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
@@ -19,8 +23,12 @@ export function useVoiceChat() {
       onStatus: (nextStatus, nextDetail) => {
         setStatus(nextStatus);
         setDetail(nextDetail ?? null);
+        setConnectedAt((current) =>
+          nextStatus === 'connected' ? (current ?? Date.now()) : null
+        );
       },
       onSpeechActivity: setSpeaking,
+      onAssistantSpeaking: setAssistantSpeaking,
       onTranscript: (entry) => {
         setEntries((current) => {
           const index = current.findIndex((item) => item.id === entry.id);
@@ -92,8 +100,27 @@ export function useVoiceChat() {
     }
     setEntries([]);
     setDetail(null);
+    setMuted(false);
+    session.setMuted(false);
     session.connect().catch(() => undefined);
   }, [navigation, status]);
 
-  return { status, detail, speaking, entries, toggleConnection };
+  const toggleMuted = useCallback(() => {
+    setMuted((current) => {
+      sessionRef.current?.setMuted(!current);
+      return !current;
+    });
+  }, []);
+
+  return {
+    status,
+    detail,
+    speaking,
+    assistantSpeaking,
+    muted,
+    connectedAt,
+    entries,
+    toggleConnection,
+    toggleMuted,
+  };
 }
