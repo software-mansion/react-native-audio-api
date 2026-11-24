@@ -1,49 +1,36 @@
 import React, { FC } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
-import { colors, layout } from '../styles';
+import { Card } from '../components';
+import { colors } from '../styles';
 import EmptyState from './EmptyState';
 import SectionTitle from './SectionTitle';
 
 interface LiveLogProps {
   entries: string[];
   emptyMessage: string;
-  title?: string;
 }
 
-const LiveLog: FC<LiveLogProps> = ({
-  entries,
-  emptyMessage,
-  title = 'Live Log',
-}) => (
-  <View style={styles.sectionContent}>
-    <SectionTitle title={title} />
+const LiveLog: FC<LiveLogProps> = ({ entries, emptyMessage }) => (
+  <>
+    <SectionTitle title="Live Log" />
     {entries.length === 0 ? (
       <EmptyState message={emptyMessage} />
     ) : (
-      <View style={styles.logCard}>
+      <Card>
         {entries.map((entry, index) => (
-          <Text key={`${entry}-${index}`} style={styles.logLine}>
+          <Text key={index} style={styles.logLine}>
             {entry}
           </Text>
         ))}
-      </View>
+      </Card>
     )}
-  </View>
+  </>
 );
 
 const styles = StyleSheet.create({
-  sectionContent: {
-    gap: 12,
-  },
-  logCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    gap: 8,
-    padding: 16,
-  },
   logLine: {
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
   },

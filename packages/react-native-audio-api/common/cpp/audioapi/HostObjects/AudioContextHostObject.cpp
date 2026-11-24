@@ -1,6 +1,5 @@
 #include <audioapi/HostObjects/AudioContextHostObject.h>
 
-#include <audioapi/HostObjects/sources/AudioFileSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/MediaElementAudioSourceNodeHostObject.h>
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/types/ContextState.h>
@@ -70,11 +69,8 @@ JSI_PROPERTY_GETTER_IMPL(AudioContextHostObject, baseLatency) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioContextHostObject, createMediaElementSource) {
-  auto sourceObject = args[0].asObject(runtime);
-  auto fileSourceHostObject = sourceObject.getHostObject<AudioFileSourceNodeHostObject>(runtime);
-  auto *fileSourceRaw = fileSourceHostObject->audioFileSourceNode();
   auto mediaElementHostObject = std::make_shared<MediaElementAudioSourceNodeHostObject>(
-      std::static_pointer_cast<AudioContext>(context_), fileSourceRaw);
+      std::static_pointer_cast<AudioContext>(context_));
   auto object = jsi::Object::createFromHostObject(runtime, mediaElementHostObject);
   object.setExternalMemoryPressure(runtime, mediaElementHostObject->getMemoryPressure());
   return object;

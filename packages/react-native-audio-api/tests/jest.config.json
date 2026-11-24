@@ -1,5 +1,8 @@
 {
   "preset": "@react-native/jest-preset",
+  "transformIgnorePatterns": [
+    "node_modules/(?!(\\.pnpm|(jest-)?react-native|@react-native(-community)?)/)"
+  ],
   "rootDir": "..",
   "testMatch": ["**/tests/**/*.test.ts", "**/tests/**/*.test.tsx"],
   "collectCoverageFrom": ["src/mock/**/*.{ts,tsx}", "!src/mock/**/*.d.ts"],

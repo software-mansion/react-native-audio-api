@@ -5,11 +5,7 @@ import { colors } from '../styles';
 import { statusPillBackgroundColors } from './statusStyles';
 import type { ScenarioStatus } from './types';
 
-interface StatusPillProps {
-  status: ScenarioStatus;
-}
-
-const StatusPill: FC<StatusPillProps> = ({ status }) => (
+const StatusPill: FC<{ status: ScenarioStatus }> = ({ status }) => (
   <View
     style={[
       styles.statusPill,
@@ -27,7 +23,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   statusText: {
-    color: colors.white,
+    color: colors.onAccent,
     fontSize: 11,
     fontWeight: '700',
   },

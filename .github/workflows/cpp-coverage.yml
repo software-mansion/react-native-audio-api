@@ -1,0 +1,69 @@
+name: C++ coverage
+
+# Measures C++ coverage of the smoke suites on a pull request and reports the totals and
+# the coverage of the lines the pull request changed. Runs when the changes select the
+# smoke suite, by the same rule as the library's `test`.
+
+on:
+  workflow_call:
+    inputs:
+      test-all:
+        description: Run even when the changes don't select the smoke suite
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  affected:
+    name: Affected suites
+    runs-on: ubuntu-24.04
+    outputs:
+      smoke: ${{ steps.suites.outputs.smoke }}
+    steps:
+      # Two commits: the selection diffs the merge commit against its first parent.
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Select suites
+        id: suites
+        env:
+          TEST_ALL: ${{ inputs.test-all && '1' || '' }}
+        run: |
+          suites=$(bash -c 'source packages/react-native-audio-api/common/cpp/test/filters.sh && cpp_test_affected_suites')
+          echo "Affected C++ suites: ${suites:-none}"
+          if grep -qx smoke <<<"$suites"; then
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  coverage:
+    name: Coverage
+    needs: affected
+    if: needs.affected.outputs.smoke == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Setup
+        uses: ./.github/actions/setup-env
+        with:
+          tools: '["cmake", "llvm", "diff-cover"]'
+
+      - name: Run C++ coverage
+        working-directory: packages/react-native-audio-api
+        run: pnpm test:cpp:coverage
+
+      - name: Write the report
+        run: >
+          bash packages/react-native-audio-api/common/cpp/test/coverage-pr-report.sh
+          pr-report/coverage/report.md
+
+      - name: Upload the report
+        uses: ./.github/actions/upload-pr-report
+        with:
+          name: coverage
+          path: pr-report

@@ -52,15 +52,25 @@ CreateDecoderResult createAndOpen(const Source &source) {
 
 template <OsFallbackOpenableSource Source>
 CreateDecoderResult tryOpenWithOsFallback(const Source &source, const char *errorMessage) {
+#if defined(__ANDROID__)
+  // Android codecs are very slow compared to miniaudio, so place miniaudio first.
+  // MediaCodec stays the fallback for the rest (AAC/M4A).
+  if (auto result = createAndOpen<miniaudio::MiniAudioDecoder>(source); result.is_ok()) {
+    return result;
+  }
+  if (auto result = createAndOpen<os_decoder::Decoder>(source); result.is_ok()) {
+    return result;
+  }
+#else
 #if RN_AUDIO_API_HAS_OS_DECODER
   if (auto result = createAndOpen<os_decoder::Decoder>(source); result.is_ok()) {
     return result;
   }
 #endif
-
   if (auto result = createAndOpen<miniaudio::MiniAudioDecoder>(source); result.is_ok()) {
     return result;
   }
+#endif
   return Err(errorMessage);
 }
 

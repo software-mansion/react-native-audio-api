@@ -1,4 +1,4 @@
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import AudioNode from './AudioNode.web';
 import { ChannelSplitterOptions } from '../types';
 

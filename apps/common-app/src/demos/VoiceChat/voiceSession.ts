@@ -34,6 +34,8 @@ type SessionHandlers = {
   onStatus: (status: SessionStatus, detail?: string) => void;
   onSpeechActivity: (speaking: boolean) => void;
   onTranscript: (entry: TranscriptEntry) => void;
+  /** Whether the assistant's reply is audible right now. */
+  onAssistantSpeaking: (speaking: boolean) => void;
 };
 
 type UserTurn = {
@@ -61,6 +63,7 @@ export class VoiceSession {
   private connectionAttempt = 0;
   private tokenRequest: AbortController | null = null;
   private audioStartup: Promise<unknown> | null = null;
+  private muted = false;
 
   constructor(private readonly handlers: SessionHandlers) {}
 
@@ -110,7 +113,12 @@ export class VoiceSession {
         context,
         () =>
           this.isCurrentConnectionAttempt(attempt) && !this.systemInterrupted,
-        (message) => this.fail(message, attempt)
+        (message) => this.fail(message, attempt),
+        (speaking) => {
+          if (this.isCurrentConnectionAttempt(attempt)) {
+            this.handlers.onAssistantSpeaking(speaking);
+          }
+        }
       );
 
       const socket = new WebSocket(
@@ -167,6 +175,11 @@ export class VoiceSession {
     }
   }
 
+  /** While muted the microphone keeps running, but nothing is sent. */
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+  }
+
   async disconnect(): Promise<void> {
     this.invalidateConnectionAttempt();
     if (!this.active) {
@@ -211,7 +224,8 @@ export class VoiceSession {
         if (
           !this.isCurrentConnectionAttempt(attempt) ||
           this.systemInterrupted ||
-          this.socket?.readyState !== WebSocket.OPEN
+          this.socket?.readyState !== WebSocket.OPEN ||
+          this.muted
         ) {
           return;
         }
@@ -452,6 +466,7 @@ export class VoiceSession {
 
     this.playback?.close();
     this.playback = null;
+    this.handlers.onAssistantSpeaking(false);
     await this.audio.deactivate().catch(() => undefined);
     await this.audio.close().catch(() => undefined);
   }
@@ -490,15 +505,13 @@ export class VoiceSession {
           this.pauseForSystemEvent();
         } else if (event.shouldResume) {
           this.resumeAfterSystemEvent();
-        } else {
+        } else if (this.systemInterrupted) {
           this.fail('Audio focus was not restored after an interruption');
         }
       }),
-      AudioManager.addSystemEventListener('duck', () => {
-        if (this.isCurrentConnectionAttempt(attempt)) {
-          this.pauseForSystemEvent();
-        }
-      }),
+      // A 'duck' (Android's transient loss that lets us keep playing) is left
+      // alone: pausing the call for it would silence both voices until the
+      // other app gives focus back, for something as short as a chime.
     ];
   }
 

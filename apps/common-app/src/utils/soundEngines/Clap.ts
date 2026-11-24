@@ -72,6 +72,7 @@ class Clap implements SoundEngine {
 
     noise.start(time);
     noise.stop(time + this.decay);
+    noise.onended = () => envelope.disconnect();
   }
 }
 

@@ -1,26 +1,5 @@
 export const SAMPLE_RATE = 24_000;
 
-function encodeBase64(bytes: Uint8Array): string {
-  const alphabet =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let result = '';
-
-  for (let index = 0; index < bytes.length; index += 3) {
-    const first = bytes[index];
-    const second = bytes[index + 1];
-    const third = bytes[index + 2];
-    result += alphabet[Math.floor(first / 4)];
-    result += alphabet[(first % 4) * 16 + Math.floor((second ?? 0) / 16)];
-    result +=
-      second === undefined
-        ? '='
-        : alphabet[(second % 16) * 4 + Math.floor((third ?? 0) / 64)];
-    result += third === undefined ? '=' : alphabet[third % 64];
-  }
-
-  return result;
-}
-
 function resample(
   samples: Float32Array,
   frames: number,
@@ -48,15 +27,15 @@ export function encodeCaptureChunk(
   inputRate: number
 ): string {
   const resampled = resample(samples, frames, inputRate);
-  const pcm = new Uint8Array(resampled.length * 2);
+  // 16-bit little-endian PCM; every platform React Native runs on is little-endian.
+  const pcm = new Int16Array(resampled.length);
+  resampled.forEach((sample, index) => {
+    pcm[index] = Math.round(Math.max(-1, Math.min(1, sample)) * 32767);
+  });
 
-  for (let index = 0; index < resampled.length; index += 1) {
-    const signedValue = Math.round(
-      Math.max(-1, Math.min(1, resampled[index])) * 32767
-    );
-    const unsignedValue = signedValue < 0 ? signedValue + 65_536 : signedValue;
-    pcm[index * 2] = unsignedValue % 256;
-    pcm[index * 2 + 1] = Math.floor(unsignedValue / 256);
+  let binary = '';
+  for (const byte of new Uint8Array(pcm.buffer)) {
+    binary += String.fromCharCode(byte);
   }
-  return encodeBase64(pcm);
+  return btoa(binary);
 }

@@ -12,10 +12,6 @@ import { BUFFER_LENGTH, MIN_DECODED_DURATION_SECONDS } from './constants';
 import StressPlaybackController from './StressPlaybackController';
 import type { RecordingCapture, ReadyResources } from './types';
 
-interface RecorderHostShape {
-  isPaused?: unknown;
-}
-
 export default class StressResourceOwner {
   public context: AudioContext | null = null;
   public recorder: AudioRecorder | null = null;
@@ -23,7 +19,6 @@ export default class StressResourceOwner {
   public assetBuffer: AudioBuffer | null = null;
   public lastRecorderError: string | null = null;
   public callbackCount = 0;
-  public lastCallbackFrames = 0;
 
   private readonly asset: string | number;
 
@@ -36,16 +31,6 @@ export default class StressResourceOwner {
 
     const context = new AudioContext();
     const recorder = new AudioRecorder();
-    const recorderHost = (
-      recorder as unknown as { recorder?: RecorderHostShape }
-    ).recorder;
-
-    if (typeof recorderHost?.isPaused !== 'function') {
-      throw new Error(
-        `Recorder host object is missing isPaused(); typeof isPaused=${typeof recorderHost?.isPaused}`
-      );
-    }
-
     recorder.enableFileOutput({
       channelCount: 1,
       directory: FileDirectory.Cache,
@@ -64,7 +49,6 @@ export default class StressResourceOwner {
     this.assetBuffer = await context.decodeAudioData(this.asset);
     this.lastRecorderError = null;
     this.callbackCount = 0;
-    this.lastCallbackFrames = 0;
   }
 
   getReadyResources(): ReadyResources {
@@ -88,7 +72,6 @@ export default class StressResourceOwner {
   configureRecorderTap(): void {
     const { context, recorder } = this.getReadyResources();
     this.callbackCount = 0;
-    this.lastCallbackFrames = 0;
     this.lastRecorderError = null;
 
     const callbackResult = recorder.onAudioReady(
@@ -97,9 +80,8 @@ export default class StressResourceOwner {
         channelCount: 1,
         bufferLength: BUFFER_LENGTH,
       },
-      (event) => {
+      () => {
         this.callbackCount += 1;
-        this.lastCallbackFrames = event.numFrames;
       }
     );
 
@@ -113,11 +95,6 @@ export default class StressResourceOwner {
   async startRecording(): Promise<void> {
     const { recorder } = this.getReadyResources();
     await recorder.start();
-  }
-
-  tryStartRecording() {
-    const { recorder } = this.getReadyResources();
-    return recorder.start();
   }
 
   async stopRecordingAndDecode(): Promise<RecordingCapture> {
@@ -198,6 +175,5 @@ export default class StressResourceOwner {
     this.assetBuffer = null;
     this.lastRecorderError = null;
     this.callbackCount = 0;
-    this.lastCallbackFrames = 0;
   }
 }

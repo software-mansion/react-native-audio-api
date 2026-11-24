@@ -4,6 +4,7 @@ import type {
   IAudioFileSourceNode,
   IAudioScheduledSourceNode,
 } from '../jsi-interfaces';
+import type AudioNode from '../core/AudioNode';
 import AudioScheduledSourceNode from '../core/AudioScheduledSourceNode';
 
 type AttachFileSourceOptions = {
@@ -21,6 +22,10 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
   private attachedEndedSubscription: AudioEventSubscription | null = null;
   private positionSubscription: AudioEventSubscription | null = null;
   private bufferingSubscription: AudioEventSubscription | null = null;
+
+  /** `null` leaves this source unconnected. */
+  private output: AudioNode | null = this.context.destination;
+  private isRoutedToOutput = false;
 
   attach(options: AttachFileSourceOptions): { duration: number } {
     this.resetNodeAndSubscriptions();
@@ -43,10 +48,23 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
     this.resetNodeAndSubscriptions();
   }
 
-  play(): void {
-    if (!(this.node as IAudioFileSourceNode).routedThroughMediaElement) {
-      this.connect(this.context.destination);
+  /**
+   * Routes this source to `output`, the context destination by default.
+   *
+   * @param output - Node to send this source to, or `null` to leave it
+   *   unconnected.
+   */
+  setOutput(output: AudioNode | null): void {
+    this.output = output;
+
+    if (this.isRoutedToOutput) {
+      this.disconnectFromOutput();
+      this.connectToOutput();
     }
+  }
+
+  play(): void {
+    this.connectToOutput();
     // copied from audioscheduledsourcenode, so it can bypass requirement of being started only once
     (this.node as IAudioScheduledSourceNode).start(this.context.currentTime);
     this.context.markRunningOnSourceStart();
@@ -79,10 +97,6 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
 
   setPreservesPitch(value: boolean): void {
     (this.node as IAudioFileSourceNode).preservesPitch = value;
-  }
-
-  getFileSourceNode(): IAudioFileSourceNode {
-    return this.node as IAudioFileSourceNode;
   }
 
   getDuration(): number {
@@ -151,7 +165,22 @@ export class AudioFileSourceNode extends AudioScheduledSourceNode {
 
     if (this.node) {
       (this.node as IAudioFileSourceNode).onended = '0';
-      this.node.disconnect(undefined);
+      this.disconnectFromOutput();
     }
+  }
+
+  private connectToOutput(): void {
+    if (this.isRoutedToOutput) {
+      return;
+    }
+    if (this.output) {
+      this.connect(this.output);
+    }
+    this.isRoutedToOutput = true;
+  }
+
+  private disconnectFromOutput(): void {
+    this.node.disconnect();
+    this.isRoutedToOutput = false;
   }
 }

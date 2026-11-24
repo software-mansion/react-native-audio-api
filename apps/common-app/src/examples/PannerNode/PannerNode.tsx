@@ -1,25 +1,44 @@
-import React, { useEffect, useRef, useState, FC } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, {
+  FC,
+  memo,
+  MutableRefObject,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  AudioBuffer,
   AudioBufferSourceNode,
-  AudioContext,
+  AudioParam,
   PannerNode,
 } from 'react-native-audio-api';
 
-import { Button, Container, Slider, Spacer } from '../../components';
-import { colors, layout } from '../../styles';
+import {
+  Button,
+  Container,
+  ProgressBar,
+  SegmentedControl,
+  Slider,
+  type SegmentedControlOption,
+} from '../../components';
+import { colors, layout, typography } from '../../styles';
+import { useAudioContext, useDecodedAudio } from '../../utils/audio';
 
 const MUSIC_URL =
   'https://docs.swmansion.com/react-native-audio-api/audio/music/example-music-02.mp3';
 
-const LABEL_WIDTH = 100;
 const ORBIT_RADIUS = 2;
 const VIEW_SIZE = 220;
 const VIEW_SCALE = VIEW_SIZE / 2 / 4.5;
 const SPEAKER_SIZE = 32;
 
 type Mode = 'figureEight' | 'guided';
+
+const modeOptions: SegmentedControlOption<Mode>[] = [
+  { value: 'figureEight', label: 'Figure 8' },
+  { value: 'guided', label: 'Guided test' },
+];
 
 type Vec3 = { x: number; y: number; z: number };
 
@@ -121,7 +140,10 @@ const figureEightOutline = Array.from({ length: 48 }, (_, i) => {
 /** Degrees in the horizontal plane: 0 in front, -90 left, 90 right, ±180 behind. */
 const azimuthOf = ({ x, z }: Vec3) => (Math.atan2(x, -z) * 180) / Math.PI;
 
-/** Equal-power panning folds the back half onto the front, so behind sounds centred. */
+/**
+ * Equal-power panning folds the back half onto the front, so behind sounds
+ * centred.
+ */
 const expectedBalance = (position: Vec3) => {
   const azimuth = azimuthOf(position);
   const folded =
@@ -163,15 +185,31 @@ const describeFacing = (pose: Pose) => {
   return `Speaker turned ${Math.round(angle)}° away from you`;
 };
 
-const applyPose = (panner: PannerNode, pose: Pose) => {
+/**
+ * How quickly the panner glides to each new pose, in seconds. Assigning
+ * `.value` once per animation frame steps the gains ~60 times a second, which
+ * is heard as a buzz at the frame rate.
+ */
+const POSE_SMOOTHING_SECONDS = 0.03;
+/**
+ * How far the animation clock may run past `currentTime`. The audio clock
+ * stands still for whole output buffers and then jumps (up to ~50 ms on some
+ * Android devices), so the animation carries it forward with wall time in
+ * between; the cap freezes the motion if audio stalls instead of drifting.
+ */
+const CLOCK_LEAD_CAP_SECONDS = 0.1;
+
+const applyPose = (panner: PannerNode, pose: Pose, now: number) => {
   const { position } = pose;
   const facing = facingOf(pose);
-  panner.positionX.value = position.x;
-  panner.positionY.value = position.y;
-  panner.positionZ.value = position.z;
-  panner.orientationX.value = facing.x;
-  panner.orientationY.value = facing.y;
-  panner.orientationZ.value = facing.z;
+  const glide = (param: AudioParam, value: number) =>
+    param.setTargetAtTime(value, now, POSE_SMOOTHING_SECONDS);
+  glide(panner.positionX, position.x);
+  glide(panner.positionY, position.y);
+  glide(panner.positionZ, position.z);
+  glide(panner.orientationX, facing.x);
+  glide(panner.orientationY, facing.y);
+  glide(panner.orientationZ, facing.z);
 };
 
 const BalanceMeter: FC<{ balance: number }> = ({ balance }) => (
@@ -198,6 +236,32 @@ const toViewPoint = ({ x, z }: { x: number; z: number }) => {
   };
 };
 
+/** The figure-8 outline never moves, so it is not re-rendered every frame. */
+const FigureEightPath = memo(() => (
+  <>
+    {figureEightOutline.map((point, i) => {
+      const pathPoint = toViewPoint(point);
+      return (
+        <View
+          key={i}
+          style={[
+            styles.pathDot,
+            { left: pathPoint.left - 1, top: pathPoint.top - 1 },
+          ]}
+        />
+      );
+    })}
+  </>
+));
+
+const Head = memo(() => (
+  <View style={styles.head}>
+    <View style={styles.nose} />
+    <Text style={styles.earLeft}>L</Text>
+    <Text style={styles.earRight}>R</Text>
+  </View>
+));
+
 const TopDownView: FC<{ pose: Pose; showPath: boolean }> = ({
   pose,
   showPath,
@@ -207,24 +271,8 @@ const TopDownView: FC<{ pose: Pose; showPath: boolean }> = ({
   const { left, top } = toViewPoint(pose.position);
   return (
     <View style={styles.view}>
-      {showPath &&
-        figureEightOutline.map((point, i) => {
-          const pathPoint = toViewPoint(point);
-          return (
-            <View
-              key={i}
-              style={[
-                styles.pathDot,
-                { left: pathPoint.left - 1, top: pathPoint.top - 1 },
-              ]}
-            />
-          );
-        })}
-      <View style={styles.head}>
-        <View style={styles.nose} />
-        <Text style={styles.earLeft}>L</Text>
-        <Text style={styles.earRight}>R</Text>
-      </View>
+      {showPath && <FigureEightPath />}
+      <Head />
       <View
         style={[
           styles.speaker,
@@ -245,17 +293,99 @@ const TopDownView: FC<{ pose: Pose; showPath: boolean }> = ({
   );
 };
 
+/** What the screen shows for one moment of the animation. */
+interface Frame {
+  pose: Pose;
+  mode: Mode;
+  stepIndex: number;
+  stepProgress: number;
+}
+
+/** Receives, from the loop, the frame the listener is hearing right now. */
+type FrameSink = (frame: Frame) => void;
+
+interface LivePanelProps {
+  sinkRef: MutableRefObject<FrameSink | null>;
+  isPlaying: boolean;
+  mode: Mode;
+  stepIndex: number;
+}
+
+/**
+ * Everything that changes every animation frame. It holds the per-frame state
+ * itself, so a frame re-renders only these readouts instead of the whole
+ * screen, which kept the JS thread at ~20 fps on a mid-range Android phone.
+ */
+const LivePanel: FC<LivePanelProps> = ({
+  sinkRef,
+  isPlaying,
+  mode: selectedMode,
+  stepIndex: selectedStepIndex,
+}) => {
+  const [frame, setFrame] = useState<Frame>({
+    pose: at(0, 0, -ORBIT_RADIUS),
+    mode: selectedMode,
+    stepIndex: selectedStepIndex,
+    stepProgress: 0,
+  });
+
+  useLayoutEffect(() => {
+    sinkRef.current = setFrame;
+    return () => {
+      sinkRef.current = null;
+    };
+  }, [sinkRef]);
+
+  // While playing, the loop delivers mode and step changes once they are heard.
+  useEffect(() => {
+    if (!isPlaying) {
+      setFrame((current) => ({
+        ...current,
+        mode: selectedMode,
+        stepIndex: selectedStepIndex,
+        stepProgress: 0,
+      }));
+    }
+  }, [isPlaying, selectedMode, selectedStepIndex]);
+
+  const { pose, mode, stepIndex, stepProgress } = frame;
+  const step = GUIDED_STEPS[stepIndex];
+  const expectation =
+    mode === 'figureEight'
+      ? describeFigureEightPosition(pose.position)
+      : step.expect;
+
+  return (
+    <>
+      {mode === 'guided' && (
+        <View style={styles.stepHeader}>
+          <Text style={typography.sectionTitle}>
+            Step {stepIndex + 1}/{GUIDED_STEPS.length}: {step.title}
+          </Text>
+          <ProgressBar progress={stepProgress} />
+        </View>
+      )}
+
+      <View>
+        <Text style={typography.caption}>You should hear</Text>
+        <Text style={styles.expect}>{expectation}</Text>
+        <Text style={styles.facing}>{describeFacing(pose)}</Text>
+      </View>
+      <BalanceMeter balance={expectedBalance(pose.position)} />
+      <TopDownView pose={pose} showPath={mode === 'figureEight'} />
+    </>
+  );
+};
+
 const PannerNodeExample: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('figureEight');
   const [periodSeconds, setPeriodSeconds] = useState(8);
-  const [pose, setPose] = useState<Pose>(at(0, 0, -ORBIT_RADIUS));
   const [stepIndex, setStepIndex] = useState(0);
-  const [stepProgress, setStepProgress] = useState(0);
+  const frameSinkRef = useRef<FrameSink | null>(null);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const musicBufferRef = useRef<AudioBuffer | null>(null);
+  const audioContext = useAudioContext();
+  const musicBuffer = useDecodedAudio(audioContext, MUSIC_URL);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const pannerRef = useRef<PannerNode | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -264,50 +394,52 @@ const PannerNodeExample: FC = () => {
   settingsRef.current = { mode, periodSeconds };
   const pathAngleRef = useRef(0);
   const guidedRef = useRef({ index: 0, startTime: 0 });
+  /** Animation clock: `currentTime` carried forward between buffer jumps. */
   const lastTimeRef = useRef(0);
+  const lastWallTimeRef = useRef(0);
+  /** Recent frames by animation time, oldest first, still waiting to be heard. */
+  const pendingFramesRef = useRef<{ time: number; frame: Frame }[]>([]);
 
-  useEffect(() => {
-    const ctx = new AudioContext();
-    audioContextRef.current = ctx;
-    fetch(MUSIC_URL)
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
-      .then((buffer) => {
-        musicBufferRef.current = buffer;
-      })
-      .catch((error) => {
-        console.error('PannerNode: failed to load music', error);
-      })
-      .finally(() => setIsLoading(false));
-    return () => {
+  useEffect(
+    () => () => {
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
       }
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
-    };
-  }, []);
+      sourceRef.current?.disconnect();
+      pannerRef.current?.disconnect();
+    },
+    []
+  );
 
   const goToStep = (index: number) => {
-    const ctx = audioContextRef.current;
     const wrapped = (index + GUIDED_STEPS.length) % GUIDED_STEPS.length;
-    guidedRef.current = { index: wrapped, startTime: ctx?.currentTime ?? 0 };
+    guidedRef.current = { index: wrapped, startTime: lastTimeRef.current };
     setStepIndex(wrapped);
-    setStepProgress(0);
   };
 
   const tick = () => {
-    const ctx = audioContextRef.current;
     const panner = pannerRef.current;
-    if (!ctx || !panner) {
+    if (!panner) {
       return;
     }
-    const now = ctx.currentTime;
+    const wallTime = performance.now() / 1000;
+    const wallElapsed = wallTime - lastWallTimeRef.current;
+    lastWallTimeRef.current = wallTime;
+    const audioTime = audioContext.currentTime;
+    const now = Math.max(
+      lastTimeRef.current,
+      audioTime,
+      Math.min(
+        lastTimeRef.current + wallElapsed,
+        audioTime + CLOCK_LEAD_CAP_SECONDS
+      )
+    );
     const elapsed = now - lastTimeRef.current;
     lastTimeRef.current = now;
 
     const settings = settingsRef.current;
     let nextPose: Pose;
+    let progress = 0;
     if (settings.mode === 'figureEight') {
       pathAngleRef.current += (2 * Math.PI * elapsed) / settings.periodSeconds;
       nextPose = figureEightPose(pathAngleRef.current);
@@ -317,29 +449,46 @@ const PannerNodeExample: FC = () => {
         goToStep(guidedRef.current.index + 1);
         step = GUIDED_STEPS[guidedRef.current.index];
       }
-      const progress = Math.min(
+      progress = Math.min(
         (now - guidedRef.current.startTime) / step.durationSeconds,
         1
       );
-      setStepProgress(progress);
       nextPose = step.pose(progress);
     }
 
-    applyPose(panner, nextPose);
-    setPose(nextPose);
+    applyPose(panner, nextPose, now);
+
+    // The pose scheduled at `now` reaches the speaker `outputLatency` later
+    // (far more on Android than on iOS) and the glide trails it by
+    // about one time constant, so the screen shows the frame heard right now.
+    const pending = pendingFramesRef.current;
+    pending.push({
+      time: now,
+      frame: {
+        pose: nextPose,
+        mode: settings.mode,
+        stepIndex: guidedRef.current.index,
+        stepProgress: progress,
+      },
+    });
+    const audibleTime =
+      now - audioContext.outputLatency - POSE_SMOOTHING_SECONDS;
+    while (pending.length > 1 && pending[1].time <= audibleTime) {
+      pending.shift();
+    }
+    frameSinkRef.current?.(pending[0].frame);
     frameRef.current = requestAnimationFrame(tick);
   };
 
   const start = () => {
-    const ctx = audioContextRef.current;
-    if (!ctx || !musicBufferRef.current) {
+    if (!musicBuffer) {
       return;
     }
-    const source = ctx.createBufferSource();
-    source.buffer = musicBufferRef.current;
+    const source = audioContext.createBufferSource();
+    source.buffer = musicBuffer;
     source.loop = true;
 
-    const panner = ctx.createPanner();
+    const panner = audioContext.createPanner();
     panner.distanceModel = 'inverse';
     panner.refDistance = 1;
     panner.rolloffFactor = 1;
@@ -348,11 +497,13 @@ const PannerNodeExample: FC = () => {
     panner.coneOuterGain = 0.1;
 
     source.connect(panner);
-    panner.connect(ctx.destination);
+    panner.connect(audioContext.destination);
     sourceRef.current = source;
     pannerRef.current = panner;
 
-    lastTimeRef.current = ctx.currentTime;
+    lastTimeRef.current = audioContext.currentTime;
+    lastWallTimeRef.current = performance.now() / 1000;
+    pendingFramesRef.current = [];
     goToStep(0);
     source.start();
     frameRef.current = requestAnimationFrame(tick);
@@ -364,6 +515,8 @@ const PannerNodeExample: FC = () => {
       frameRef.current = null;
     }
     sourceRef.current?.stop();
+    sourceRef.current?.disconnect();
+    pannerRef.current?.disconnect();
     sourceRef.current = null;
     pannerRef.current = null;
   };
@@ -382,73 +535,29 @@ const PannerNodeExample: FC = () => {
     goToStep(0);
   };
 
-  const step = GUIDED_STEPS[stepIndex];
-  const expectation =
-    mode === 'figureEight'
-      ? describeFigureEightPosition(pose.position)
-      : step.expect;
-
   return (
     <Container>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>PannerNode</Text>
-        <Text style={styles.hint}>
+        <Text style={typography.hint}>
           Use headphones. Only left/right balance and loudness are rendered.
         </Text>
-        <Spacer.Vertical size={16} />
+        <SegmentedControl
+          options={modeOptions}
+          value={mode}
+          onChange={selectMode}
+        />
+        <Button
+          onPress={handlePlayPause}
+          title={!musicBuffer ? 'Loading music…' : isPlaying ? 'Stop' : 'Play'}
+          disabled={!musicBuffer}
+        />
 
-        <View style={styles.row}>
-          {(['figureEight', 'guided'] as const).map((option) => (
-            <Pressable
-              key={option}
-              style={[styles.chip, mode === option && styles.chipActive]}
-              onPress={() => selectMode(option)}
-            >
-              <Text style={styles.chipText}>
-                {option === 'figureEight' ? 'Figure 8' : 'Guided test'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Spacer.Vertical size={12} />
-
-        <View style={styles.row}>
-          <Button
-            onPress={handlePlayPause}
-            title={
-              isLoading ? 'Loading music...' : isPlaying ? 'Stop' : 'Play'
-            }
-            disabled={isLoading}
-          />
-        </View>
-        <Spacer.Vertical size={20} />
-
-        {mode === 'guided' && (
-          <>
-            <Text style={styles.section}>
-              Step {stepIndex + 1}/{GUIDED_STEPS.length}: {step.title}
-            </Text>
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${stepProgress * 100}%` },
-                ]}
-              />
-            </View>
-            <Spacer.Vertical size={8} />
-          </>
-        )}
-
-        <Text style={styles.expectLabel}>You should hear</Text>
-        <Text style={styles.expect}>{expectation}</Text>
-        <Text style={styles.facing}>{describeFacing(pose)}</Text>
-        <Spacer.Vertical size={12} />
-        <BalanceMeter balance={expectedBalance(pose.position)} />
-        <Spacer.Vertical size={16} />
-
-        <TopDownView pose={pose} showPath={mode === 'figureEight'} />
-        <Spacer.Vertical size={16} />
+        <LivePanel
+          sinkRef={frameSinkRef}
+          isPlaying={isPlaying}
+          mode={mode}
+          stepIndex={stepIndex}
+        />
 
         {mode === 'figureEight' ? (
           <Slider
@@ -458,28 +567,24 @@ const PannerNodeExample: FC = () => {
             min={4}
             max={16}
             step={0.5}
-            minLabelWidth={LABEL_WIDTH}
           />
         ) : (
           <View style={styles.row}>
-            <Pressable
-              style={styles.chip}
+            <Button
+              title="Previous"
               onPress={() => goToStep(stepIndex - 1)}
-            >
-              <Text style={styles.chipText}>Previous</Text>
-            </Pressable>
-            <Pressable
-              style={styles.chip}
+              minWidth={0}
+            />
+            <Button
+              title="Repeat"
               onPress={() => goToStep(stepIndex)}
-            >
-              <Text style={styles.chipText}>Repeat</Text>
-            </Pressable>
-            <Pressable
-              style={styles.chip}
+              minWidth={0}
+            />
+            <Button
+              title="Next"
               onPress={() => goToStep(stepIndex + 1)}
-            >
-              <Text style={styles.chipText}>Next</Text>
-            </Pressable>
+              minWidth={0}
+            />
           </View>
         )}
       </ScrollView>
@@ -489,33 +594,12 @@ const PannerNodeExample: FC = () => {
 
 const styles = StyleSheet.create({
   scrollContent: {
+    gap: 16,
     paddingVertical: layout.spacing,
     paddingBottom: 40,
   },
-  title: {
-    color: colors.white,
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  hint: {
-    color: colors.white,
-    opacity: 0.7,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  section: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    opacity: 0.85,
-  },
-  expectLabel: {
-    color: colors.white,
-    opacity: 0.6,
-    fontSize: 12,
-    textTransform: 'uppercase',
+  stepHeader: {
+    gap: 8,
   },
   expect: {
     color: colors.yellow,
@@ -525,8 +609,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   facing: {
-    color: colors.white,
-    opacity: 0.8,
+    color: colors.textSecondary,
     fontSize: 14,
     marginTop: 4,
   },
@@ -536,44 +619,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: layout.radius,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  chipActive: {
-    backgroundColor: colors.main,
-    borderColor: colors.main,
-  },
-  chipText: {
-    color: colors.white,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.backgroundLight,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.main,
-  },
   meterLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
   meterLabel: {
-    color: colors.white,
-    opacity: 0.6,
+    color: colors.textMuted,
     fontSize: 12,
   },
   meterTrack: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.track,
     justifyContent: 'center',
   },
   meterCentre: {
@@ -581,7 +639,7 @@ const styles = StyleSheet.create({
     left: '50%',
     width: 1,
     height: '100%',
-    backgroundColor: colors.border,
+    backgroundColor: colors.textMuted,
   },
   meterMarker: {
     position: 'absolute',
@@ -595,15 +653,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: VIEW_SIZE,
     height: VIEW_SIZE,
-    borderRadius: layout.radius,
-    backgroundColor: colors.backgroundLight,
+    borderRadius: layout.cardRadius,
+    backgroundColor: colors.surface,
   },
   pathDot: {
     position: 'absolute',
     width: 2,
     height: 2,
     borderRadius: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.textMuted,
   },
   head: {
     position: 'absolute',
@@ -612,7 +670,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.textSecondary,
     alignItems: 'center',
   },
   nose: {
@@ -621,20 +679,20 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.gray,
+    backgroundColor: colors.textSecondary,
   },
   earLeft: {
     position: 'absolute',
     left: -14,
     top: 6,
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 12,
   },
   earRight: {
     position: 'absolute',
     right: -14,
     top: 6,
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 12,
   },
   speaker: {
@@ -666,8 +724,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     alignSelf: 'center',
-    color: colors.white,
-    opacity: 0.5,
+    color: colors.textMuted,
     fontSize: 10,
   },
 });

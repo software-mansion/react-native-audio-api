@@ -1,4 +1,4 @@
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import { ChannelCountMode, ChannelInterpretation } from '../types';
 import AudioParam from './AudioParam.web';
 
