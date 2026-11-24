@@ -43,15 +43,22 @@ double ParamRenderQueue::effectiveEndTime(const RenderParamEvent &event) const {
   return event.isRampType() ? event.getEndTime() : snapToSampleFrameTime(event.getEndTime());
 }
 
-bool ParamRenderQueue::isSettledAt(double time) const {
+bool ParamRenderQueue::isSettledBetween(double startTime, double endTime) const {
   if (!eventQueue_.isEmpty()) {
-    return false;
+    // Without a current event the front is promoted at once, whatever its start time.
+    if (!currentEvent_ || snapToSampleFrameTime(eventQueue_.peekFront().getStartTime()) < endTime) {
+      return false;
+    }
   }
   if (!currentEvent_) {
     return true;
   }
-  return currentEvent_->getType() != ParamEventType::SET_TARGET &&
-      time >= effectiveEndTime(*currentEvent_);
+
+  const RenderParamEvent &event = *currentEvent_;
+  bool holdsStartValue = endTime <= snapToSampleFrameTime(event.getStartTime());
+  bool holdsEndValue =
+      event.getType() != ParamEventType::SET_TARGET && startTime >= effectiveEndTime(event);
+  return holdsStartValue || holdsEndValue;
 }
 
 bool ParamRenderQueue::push(RenderParamEvent &&event) {

@@ -95,7 +95,7 @@ class AudioParam : public GeneralizedAudioParam {
 
   /// @brief This quantum's clamped value, or nullopt unless it is constant across the quantum.
   /// @note Audio Thread only
-  [[nodiscard]] std::optional<float> settledValueAt(double time);
+  [[nodiscard]] std::optional<float> settledValueAt(int framesToProcess, double time);
 
   /// @note Audio Thread only
   /// @note Add BridgeNode modulation from @c inputBuffer_ on top of the automated value,

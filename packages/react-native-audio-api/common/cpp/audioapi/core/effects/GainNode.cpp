@@ -30,7 +30,7 @@ void GainNode::processNode(int framesToProcess) {
   }
   double time = context->getCurrentTime();
 
-  if (std::optional<float> gain = gainParam_->settledValueAt(time)) {
+  if (std::optional<float> gain = gainParam_->settledValueAt(framesToProcess, time)) {
     if (*gain == 1.0f) {
       return;
     }

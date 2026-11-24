@@ -737,10 +737,10 @@ TEST_F(AudioParamTest, SettledValueWaitsForRampToEnd) {
   auto param = TestableAudioParam(0.0, 0.0, 1.0, context);
   param.linearRampToValueAtTime(1.0, 0.1);
 
-  EXPECT_FALSE(param.settledValueAt(0.0).has_value());
+  EXPECT_FALSE(param.settledValueAt(128, 0.0).has_value());
   param.processARateParam(128, 0.2); // promotes the finished ramp out of the queue
-  ASSERT_TRUE(param.settledValueAt(0.3).has_value());
-  EXPECT_FLOAT_EQ(*param.settledValueAt(0.3), 1.0f);
+  ASSERT_TRUE(param.settledValueAt(128, 0.3).has_value());
+  EXPECT_FLOAT_EQ(*param.settledValueAt(128, 0.3), 1.0f);
 }
 
 TEST_F(AudioParamTest, SetTargetNeverSettles) {
@@ -748,7 +748,7 @@ TEST_F(AudioParamTest, SetTargetNeverSettles) {
   param.setTargetAtTime(1.0, 0.0, 0.01);
   param.processARateParam(128, 0.0);
 
-  EXPECT_FALSE(param.settledValueAt(10.0).has_value());
+  EXPECT_FALSE(param.settledValueAt(128, 10.0).has_value());
 }
 
 TEST_F(AudioParamTest, SettledValueIsClamped) {
@@ -756,17 +756,17 @@ TEST_F(AudioParamTest, SettledValueIsClamped) {
   param.setValueAtTime(2.0, 0.0);
   param.processARateParam(128, 0.0);
 
-  ASSERT_TRUE(param.settledValueAt(0.1).has_value());
-  EXPECT_FLOAT_EQ(*param.settledValueAt(0.1), 1.0f);
+  ASSERT_TRUE(param.settledValueAt(128, 0.1).has_value());
+  EXPECT_FLOAT_EQ(*param.settledValueAt(128, 0.1), 1.0f);
 }
 
 TEST_F(AudioParamTest, ModulationBlocksSettledValueForOneQuantum) {
   auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
   param.markModulated();
-  EXPECT_FALSE(param.settledValueAt(0.0).has_value());
+  EXPECT_FALSE(param.settledValueAt(128, 0.0).has_value());
 
   param.processARateParam(128, 0.0);
-  EXPECT_TRUE(param.settledValueAt(0.1).has_value());
+  EXPECT_TRUE(param.settledValueAt(128, 0.1).has_value());
 }
 
 TEST_F(AudioParamTest, SettledARateStillAddsModulation) {
@@ -794,8 +794,35 @@ TEST_F(AudioParamTest, SettledValueDefersToARateProcessedThisQuantum) {
   param.markModulated();
   param.processARateParam(128, 0.0);
 
-  EXPECT_FALSE(param.settledValueAt(0.0).has_value());
-  EXPECT_TRUE(param.settledValueAt(0.1).has_value());
+  EXPECT_FALSE(param.settledValueAt(128, 0.0).has_value());
+  EXPECT_TRUE(param.settledValueAt(128, 0.1).has_value());
+}
+
+TEST_F(AudioParamTest, PendingEventKeepsSettledUntilItsQuantum) {
+  auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
+  param.setValueAtTime(0.5, 0.0);
+  param.processARateParam(128, 0.0);
+  param.setValueAtTime(0.8, 1.0);
+
+  ASSERT_TRUE(param.settledValueAt(128, 0.5).has_value());
+  EXPECT_FLOAT_EQ(*param.settledValueAt(128, 0.5), 0.5f);
+
+  double straddlingQuantum = static_cast<double>(sampleRate - 64) / sampleRate;
+  EXPECT_FALSE(param.settledValueAt(128, straddlingQuantum).has_value());
+  auto out = param.processARateParam(128, straddlingQuantum)->getChannel(0)->span();
+  EXPECT_EQ(out[63], 0.5f);
+  EXPECT_EQ(out[64], 0.8f);
+}
+
+TEST_F(AudioParamTest, FutureCurrentEventSettlesOnItsStartValue) {
+  auto param = TestableAudioParam(0.5, 0.0, 1.0, context);
+  param.setValueAtTime(0.8, 1.0);
+  param.processARateParam(128, 0.0); // promotes the not-yet-started event
+
+  ASSERT_TRUE(param.settledValueAt(128, 0.5).has_value());
+  EXPECT_FLOAT_EQ(*param.settledValueAt(128, 0.5), 0.5f);
+  ASSERT_TRUE(param.settledValueAt(128, 1.5).has_value());
+  EXPECT_FLOAT_EQ(*param.settledValueAt(128, 1.5), 0.8f);
 }
 
 // NOLINTEND

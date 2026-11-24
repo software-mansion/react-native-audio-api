@@ -83,7 +83,8 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   auto outputData = outputBuffer_->getChannel(0)->span();
 
   double quantumStartTime = dsp::sampleFrameToTime(quantumStartFrame, sampleRate);
-  if (eventRenderQueue_.isSettledAt(quantumStartTime)) {
+  double quantumEndTime = dsp::sampleFrameToTime(quantumStartFrame + framesToProcess, sampleRate);
+  if (eventRenderQueue_.isSettledBetween(quantumStartTime, quantumEndTime)) {
     float value = getValueAtTimeUnmodulated(quantumStartTime);
     dsp::addScalar(inputData.data(), value, outputData.data(), framesToProcess);
   } else {
@@ -100,9 +101,10 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   return outputBuffer_;
 }
 
-std::optional<float> AudioParam::settledValueAt(double time) {
+std::optional<float> AudioParam::settledValueAt(int framesToProcess, double time) {
   // A processARateParam already run at this time consumed the modulation flag.
-  bool aRateProcessedThisQuantum = processedARateKey_.has_value() && processedARateKey_->second == time;
+  bool aRateProcessedThisQuantum =
+      processedARateKey_.has_value() && processedARateKey_->second == time;
   if (modulated_ || aRateProcessedThisQuantum) {
     return std::nullopt;
   }
@@ -115,7 +117,8 @@ std::optional<float> AudioParam::settledValueAt(double time) {
   float sampleRate = context->getSampleRate();
   auto quantumStartFrame = static_cast<int>(dsp::timeToSampleFrame(time, sampleRate));
   double quantumStartTime = dsp::sampleFrameToTime(quantumStartFrame, sampleRate);
-  if (!eventRenderQueue_.isSettledAt(quantumStartTime)) {
+  double quantumEndTime = dsp::sampleFrameToTime(quantumStartFrame + framesToProcess, sampleRate);
+  if (!eventRenderQueue_.isSettledBetween(quantumStartTime, quantumEndTime)) {
     return std::nullopt;
   }
 

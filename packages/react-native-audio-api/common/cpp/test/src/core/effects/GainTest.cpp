@@ -135,16 +135,26 @@ TEST_F(GainTest, AutomatedGainMatchesBeforeAndAfterSettling) {
   auto gainNode = TestableGainNode(context);
   gainNode.getGainParam()->setValueAtTime(0.25f, 0.0);
 
-  for (int quantum = 0; quantum < 2; ++quantum) { // first runs the full path, second the settled one
+  // The first quantum runs the full path, the second the settled one.
+  for (int quantum = 0; quantum < 2; ++quantum) {
     auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
     for (size_t i = 0; i < buffer->getSize(); ++i) {
       (*buffer->getChannel(0))[i] = i + 1;
+    }
+    if (quantum == 1) {
+      ASSERT_TRUE(gainNode.getGainParam()
+                      ->settledValueAt(FRAMES_TO_PROCESS, context->getCurrentTime())
+                      .has_value());
     }
     gainNode.setInputBuffer(buffer);
     gainNode.processNode(FRAMES_TO_PROCESS);
     for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
       EXPECT_EQ((*buffer->getChannel(0))[i], (i + 1) * 0.25f);
     }
+
+    // processNode alone does not tick the clock; processGraph does.
+    auto clockBuffer = std::make_shared<DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+    context->processGraph(clockBuffer.get(), FRAMES_TO_PROCESS);
   }
 }
 
