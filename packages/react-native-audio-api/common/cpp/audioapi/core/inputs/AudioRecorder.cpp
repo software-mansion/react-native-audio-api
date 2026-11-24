@@ -60,7 +60,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
   RecorderOutputs::Detached abandoned;
 
   while (true) {
-    // With the control mutex released: it can wait seconds for a Bluetooth link, and every other
+    // With the control mutex released, because it can wait seconds for a Bluetooth link, and every other
     // control path would wait behind it.
     auto route = input_->acquireRoute();
 
@@ -468,9 +468,8 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
     return Err("Recorder input format is unavailable: " + formatResult.unwrap_err());
   }
 
-  auto outputsResult = repointOutputsAt(formatResult.unwrap());
-  if (outputsResult.is_err()) {
-    return outputsResult;
+  if (auto repointResult = repointOutputsAt(formatResult.unwrap()); repointResult.is_err()) {
+    reportError(repointResult.unwrap_err());
   }
 
   setSessionState({.phase = Phase::Open, .isPaused = reroutingState.isPaused});

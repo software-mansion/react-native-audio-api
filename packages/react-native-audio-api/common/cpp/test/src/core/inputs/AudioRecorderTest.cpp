@@ -904,19 +904,25 @@ TEST_F(AudioRecorderTest, AReopenedInputWhoseFormatCannotBeReadEndsTheSessionAnd
   EXPECT_EQ(kept->paths.size(), 1U);
 }
 
-TEST_F(AudioRecorderTest, OutputsThatCannotFollowTheReopenedInputsFormatEndTheSession) {
+TEST_F(AudioRecorderTest, AnOutputThatCannotFollowAReopenedInputIsReportedAndTheSessionGoesOn) {
+  constexpr uint64_t errorCallbackId = 98;
+  recorder_->setOnErrorCallback(errorCallbackId);
+  EXPECT_CALL(*registry_, dispatchEvent(AudioEvent::RECORDER_ERROR, errorCallbackId, testing::_))
+      .Times(1);
   input_->format.layout.channelCount = 2;
   enableFileOutput();
   ASSERT_TRUE(recorder_->start().is_ok());
   input_->format.layout.channelCount = 1;
   log_.failNextReprepare.store(true);
 
-  EXPECT_TRUE(recorder_->rerouteInput().is_err());
+  EXPECT_TRUE(recorder_->rerouteInput().is_ok());
 
-  EXPECT_TRUE(recorder_->isIdle());
-  EXPECT_FALSE(input_->isOpen);
+  EXPECT_TRUE(recorder_->isRecording());
+  EXPECT_TRUE(input_->running.load());
+  auto stopResult = recorder_->stop();
+  ASSERT_TRUE(stopResult.is_ok());
+  EXPECT_EQ(stopResult.unwrap().paths.size(), 1U);
   EXPECT_EQ(log_.closedFiles.load(), 1);
-  EXPECT_TRUE(anotherRecorderCanStart());
 }
 
 TEST_F(AudioRecorderTest, ARecordingEndedByAFailedRerouteIsKept) {

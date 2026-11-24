@@ -51,7 +51,8 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
 
   /// @brief Reopens capture on the input the platform selects now: after a route change
   /// (Android's AudioInputRouter) or a disconnected stream. A different stream format re-points the
-  /// outputs without splitting the file.
+  /// outputs without splitting the file; an output that cannot follow it is turned off and
+  /// reported, and the session goes on. An input that cannot be reopened ends the session.
   Result<NoneType, std::string> rerouteInput(
       std::optional<uint64_t> openedGeneration = std::nullopt);
 
