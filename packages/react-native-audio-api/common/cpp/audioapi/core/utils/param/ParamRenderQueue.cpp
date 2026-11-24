@@ -30,16 +30,28 @@ std::optional<float> ParamRenderQueue::computeValueAtTime(double time) {
     return event.getStartValue();
   }
 
-  // Ramps stay active until their scheduled end so sub-frame intervals still
-  // interpolate; other finite events end on their snapped boundary. SetTarget
-  // never ends on its own.
-  double effectiveEndTime =
-      event.isRampType() ? event.getEndTime() : snapToSampleFrameTime(event.getEndTime());
-  if (event.getType() != ParamEventType::SET_TARGET && time >= effectiveEndTime) {
+  if (event.getType() != ParamEventType::SET_TARGET && time >= effectiveEndTime(event)) {
     return event.getEndValue();
   }
 
   return event.calculateValueAtTime(time);
+}
+
+double ParamRenderQueue::effectiveEndTime(const RenderParamEvent &event) const {
+  // Ramps stay active until their scheduled end so sub-frame intervals still
+  // interpolate; other finite events end on their snapped boundary.
+  return event.isRampType() ? event.getEndTime() : snapToSampleFrameTime(event.getEndTime());
+}
+
+bool ParamRenderQueue::isSettledAt(double time) const {
+  if (!eventQueue_.isEmpty()) {
+    return false;
+  }
+  if (!currentEvent_) {
+    return true;
+  }
+  return currentEvent_->getType() != ParamEventType::SET_TARGET &&
+      time >= effectiveEndTime(*currentEvent_);
 }
 
 bool ParamRenderQueue::push(RenderParamEvent &&event) {

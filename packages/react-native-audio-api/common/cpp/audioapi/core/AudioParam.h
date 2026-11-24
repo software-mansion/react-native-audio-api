@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace audioapi {
@@ -86,6 +87,16 @@ class AudioParam : public GeneralizedAudioParam {
     return inputBuffer_;
   }
 
+  /// @brief Called by BridgeNode when it mixes at least one input into @c inputBuffer_.
+  /// @note Audio Thread only
+  void markModulated() noexcept {
+    modulated_ = true;
+  }
+
+  /// @brief This quantum's clamped value, or nullopt unless it is constant across the quantum.
+  /// @note Audio Thread only
+  [[nodiscard]] std::optional<float> settledValueAt(double time);
+
   /// @note Audio Thread only
   /// @note Add BridgeNode modulation from @c inputBuffer_ on top of the automated value,
   /// clamp, cache, then zero @c inputBuffer_. Idempotent for the same args.
@@ -104,6 +115,8 @@ class AudioParam : public GeneralizedAudioParam {
 
   // Input modulation buffer - filled by BridgeNode during graph processing.
   std::shared_ptr<DSPAudioBuffer> inputBuffer_;
+  // Set by BridgeNode this quantum; cleared with inputBuffer_. While false, inputBuffer_ is all zeros.
+  bool modulated_ = false;
 
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.

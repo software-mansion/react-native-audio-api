@@ -90,4 +90,62 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
   }
 }
 
+TEST_F(GainTest, UnityGainLeavesInputUntouched) {
+  static constexpr int FRAMES_TO_PROCESS = 4;
+  auto gainNode = TestableGainNode(context);
+
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = 0.1f * static_cast<float>(i + 1);
+  }
+
+  gainNode.setInputBuffer(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_EQ((*buffer->getChannel(0))[i], 0.1f * static_cast<float>(i + 1));
+  }
+}
+
+TEST_F(GainTest, SettledGainStillAppliesModulation) {
+  static constexpr int FRAMES_TO_PROCESS = 4;
+  auto gainNode = TestableGainNode(context);
+  gainNode.setGainParam(0.0f);
+
+  auto param = gainNode.getGainParam();
+  auto modulation = param->getInputBuffer()->getChannel(0)->span();
+  for (int i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    modulation[i] = 0.5f;
+  }
+  param->markModulated();
+
+  auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < buffer->getSize(); ++i) {
+    (*buffer->getChannel(0))[i] = i + 1;
+  }
+
+  gainNode.setInputBuffer(buffer);
+  gainNode.processNode(FRAMES_TO_PROCESS);
+  for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+    EXPECT_FLOAT_EQ((*buffer->getChannel(0))[i], (i + 1) * 0.5f);
+  }
+}
+
+TEST_F(GainTest, AutomatedGainMatchesBeforeAndAfterSettling) {
+  static constexpr int FRAMES_TO_PROCESS = 4;
+  auto gainNode = TestableGainNode(context);
+  gainNode.getGainParam()->setValueAtTime(0.25f, 0.0);
+
+  for (int quantum = 0; quantum < 2; ++quantum) { // first runs the full path, second the settled one
+    auto buffer = std::make_shared<audioapi::DSPAudioBuffer>(FRAMES_TO_PROCESS, 1, sampleRate);
+    for (size_t i = 0; i < buffer->getSize(); ++i) {
+      (*buffer->getChannel(0))[i] = i + 1;
+    }
+    gainNode.setInputBuffer(buffer);
+    gainNode.processNode(FRAMES_TO_PROCESS);
+    for (size_t i = 0; i < FRAMES_TO_PROCESS; ++i) {
+      EXPECT_EQ((*buffer->getChannel(0))[i], (i + 1) * 0.25f);
+    }
+  }
+}
+
 // NOLINTEND
