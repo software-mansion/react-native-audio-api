@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/core/inputs/FileInfo.h>
+#include <audioapi/core/inputs/IRecorderInput.h>
 #include <audioapi/core/inputs/RecorderOutputs.h>
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/core/inputs/RecordingSessionManager.h>
@@ -21,7 +22,6 @@ namespace audioapi {
 
 class AudioFileProperties;
 class IAudioEventHandlerRegistry;
-class IRecorderInput;
 class RecorderInputGate;
 struct PlatformFileBackend;
 
@@ -147,6 +147,14 @@ class AudioRecorder final : public std::enable_shared_from_this<AudioRecorder> {
   /// (RecorderOutputs::reprepare()), with the gate disarmed meanwhile. Leaves the gate as the
   /// state requires: armed again only when it feeds the outputs. The caller holds controlMutex_.
   Result<NoneType, std::string> repointOutputsAt(const StreamFormat &format);
+
+  /// The step start() and reopenInput() share once the route is in and the session still waits
+  /// for it: opens the input on @p route, starts it unless the session is paused, has the outputs
+  /// follow the format it delivers and enters Open. A session's first opening prepares the
+  /// outputs, and a failure there fails the call; a later one re-points them, and an output that
+  /// cannot follow is reported while the session goes on. Leaves ending the session on failure to
+  /// the caller. The caller holds controlMutex_.
+  Result<NoneType, std::string> openInput(RouteLease route, InputOpenPurpose purpose);
 
   /// rerouteInput(), leaving a session whose input could not be reopened as it is. Sets
   /// @p reopenedGeneration to the opening it tried, which a failure belongs to.

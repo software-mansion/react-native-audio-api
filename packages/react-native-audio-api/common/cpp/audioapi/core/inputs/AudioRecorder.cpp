@@ -67,8 +67,7 @@ Result<NoneType, std::string> AudioRecorder::start() {
     std::scoped_lock controlLock(controlMutex_);
 
     // Stopped, or stopped and started again, while the route was on its way.
-    const auto startingState = getSessionState();
-    if (startingState.phase != Phase::Starting || session_.id != startingSession) {
+    if (getSessionState().phase != Phase::Starting || session_.id != startingSession) {
       return Err("Recorder was stopped before it started");
     }
 
@@ -78,29 +77,8 @@ Result<NoneType, std::string> AudioRecorder::start() {
       continue;
     }
 
-    startResult = input_->open(
-        std::move(route),
-        InputOpenPurpose::StartSession,
-        inputGate_,
-        RecorderInputEvents(weak_from_this(), session_.inputGeneration));
-
-    // Paused while the route was on its way: the input opens stopped, as after a reroute.
-    if (startResult.is_ok() && !startingState.isPaused) {
-      startResult = input_->start();
-    }
-
+    startResult = openInput(std::move(route), InputOpenPurpose::StartSession);
     if (startResult.is_ok()) {
-      auto formatResult = input_->getCurrentFormat();
-      if (formatResult.is_ok()) {
-        session_.format = formatResult.unwrap();
-        startResult = outputs_.prepare(*session_.format);
-      } else {
-        startResult = Err("Recorder input format is unavailable: " + formatResult.unwrap_err());
-      }
-    }
-
-    if (startResult.is_ok()) {
-      setSessionState({.phase = Phase::Open, .isPaused = startingState.isPaused});
       return Ok(None);
     }
 
@@ -441,21 +419,27 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
   std::scoped_lock controlLock(controlMutex_);
 
   // Stopped, or taken over by a later reroute, while the route was on its way.
-  const auto reroutingState = getSessionState();
-  if (reroutingState.phase != Phase::Rerouting || session_.inputGeneration != closedGeneration) {
+  if (getSessionState().phase != Phase::Rerouting || session_.inputGeneration != closedGeneration) {
     return Ok(None);
   }
 
+  return openInput(std::move(route), InputOpenPurpose::ContinueSession);
+}
+
+Result<NoneType, std::string> AudioRecorder::openInput(RouteLease route, InputOpenPurpose purpose) {
+  const bool isPaused = getSessionState().isPaused;
+
   auto openResult = input_->open(
       std::move(route),
-      InputOpenPurpose::ContinueSession,
+      purpose,
       inputGate_,
-      RecorderInputEvents(weak_from_this(), closedGeneration));
+      RecorderInputEvents(weak_from_this(), session_.inputGeneration));
   if (openResult.is_err()) {
     return openResult;
   }
 
-  if (!reroutingState.isPaused) {
+  // Paused while the route was on its way: the input opens stopped.
+  if (!isPaused) {
     auto startResult = input_->start();
     if (startResult.is_err()) {
       return startResult;
@@ -468,11 +452,18 @@ Result<NoneType, std::string> AudioRecorder::reopenInput(
     return Err("Recorder input format is unavailable: " + formatResult.unwrap_err());
   }
 
-  if (auto repointResult = repointOutputsAt(formatResult.unwrap()); repointResult.is_err()) {
+  // The session's first opening has no outputs prepared yet; a later one carries them over.
+  if (!session_.format.has_value()) {
+    session_.format = formatResult.unwrap();
+    auto prepareResult = outputs_.prepare(*session_.format);
+    if (prepareResult.is_err()) {
+      return prepareResult;
+    }
+  } else if (auto repointResult = repointOutputsAt(formatResult.unwrap()); repointResult.is_err()) {
     reportError(repointResult.unwrap_err());
   }
 
-  setSessionState({.phase = Phase::Open, .isPaused = reroutingState.isPaused});
+  setSessionState({.phase = Phase::Open, .isPaused = isPaused});
   return Ok(None);
 }
 
