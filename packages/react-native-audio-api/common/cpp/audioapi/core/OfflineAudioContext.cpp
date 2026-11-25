@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/events/AudioEventProducer.h>
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <audioapi/core/types/ContextState.h>
@@ -144,6 +145,10 @@ void OfflineAudioContext::renderUntilFinished() {
     waitForResume(driverLock);
   }
 
+  {
+    std::scoped_lock lock(driverMutex_);
+    getAudioEventProducer()->release();
+  }
   resultPromise_->resolve(resultBuffer_);
   // The resolver owns this context, so this may destroy it: nothing may follow.
   resultPromise_.reset();

@@ -56,7 +56,7 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   explicit BaseAudioContext(
       float sampleRate,
       const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry);
-  virtual ~BaseAudioContext() = default;
+  virtual ~BaseAudioContext();
   DELETE_COPY_AND_MOVE(BaseAudioContext);
 
   ContextState getState() const;

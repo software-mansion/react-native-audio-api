@@ -1,6 +1,7 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+#include <audioapi/events/AudioEventProducer.h>
 
 #include <memory>
 #include <thread>
@@ -75,6 +76,7 @@ void AudioContext::close(std::unique_ptr<ContextStateResolver> promise) {
   }
 
   stopDriver();
+  getAudioEventProducer()->release();
   promise->resolve();
 }
 
