@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit",
     "typecheck:voice": "tsc --project tsconfig.voice.json --noEmit"
   },
   "peerDependencies": {
@@ -39,19 +42,18 @@
     "@react-native-community/cli-platform-android": "catalog:",
     "@react-native-community/cli-platform-ios": "catalog:",
     "@react-native/babel-preset": "catalog:",
-    "@react-native/eslint-config": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
     "@types/jest": "catalog:",
     "@types/react": "catalog:",
     "@types/react-native-background-timer": "^2.0.2",
     "@types/react-test-renderer": "catalog:",
-    "eslint": "catalog:",
+    "eslint-plugin-react-native": "5.0.0",
     "jest": "catalog:",
-    "prettier": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
     "react-test-renderer": "catalog:",
+    "rn-audio-api-test-screen": "workspace:*",
     "typescript": "catalog:"
   }
 }

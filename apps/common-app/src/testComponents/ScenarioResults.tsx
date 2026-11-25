@@ -9,7 +9,7 @@ import StatusPill from './StatusPill';
 import StepRow from './StepRow';
 import type { ScenarioItem } from './types';
 
-interface ScenarioResultsProps {
+export interface ScenarioResultsProps {
   scenarios: ScenarioItem[];
   emptyMessage: string;
   title?: string;

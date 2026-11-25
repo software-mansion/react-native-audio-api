@@ -2,8 +2,8 @@
 sidebar_position: 6
 ---
 
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
+import AudioNodeMethodsTable from '@site/src/components/AudioNodeMethodsTable';
 import { ReadOnly } from '@site/src/components/Badges';
 
 # MediaElementAudioSourceNode
@@ -20,17 +20,17 @@ constructor(context: BaseAudioContext, options: MediaElementAudioSourceOptions)
 
 ### `MediaElementAudioSourceOptions`
 
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
-| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) (native) | — | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](./audio-tag.mdx#props-audioprops) before constructing this node. |
+|   Parameter    |                                                    Type                                                    | Default |                                                                                                                                                     |
+| :------------: | :--------------------------------------------------------------------------------------------------------: | :-----: | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) (native) |    —    | Media element whose audio is routed into the graph. On native, wait for [`onLoad`](./audio-tag.mdx#props-audioprops) before constructing this node. |
 
 Or by using [`AudioContext`](../core/audio-context.mdx) factory method:
 [`AudioContext.createMediaElementSource()`](../core/audio-context.mdx#createmediaelementsource)
 
 #### Errors
 
-| Error type | Description |
-| :---: | :---- |
+|     Error type      | Description                                       |
+| :-----------------: | :------------------------------------------------ |
 | `InvalidStateError` | Creating second node from the same media element. |
 
 ## Example
@@ -51,7 +51,8 @@ function WebExample() {
   }
 
   const audioElement = document.querySelector('audio')!;
-  const sourceNode = audioContextRef.current.createMediaElementSource(audioElement);
+  const sourceNode =
+    audioContextRef.current.createMediaElementSource(audioElement);
   sourceNode.connect(audioContextRef.current.destination);
 }
 
@@ -92,11 +93,17 @@ function NativeExample() {
 
 Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
-<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount="defined by associated media element" channelCountMode="max" channelInterpretation="speakers" />
+<AudioNodePropsTable
+  numberOfInputs={0}
+  numberOfOutputs={1}
+  channelCount="defined by associated media element"
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
 
-| Name | Type | Default value | Description |
-| :----: | :----: | :----: | :------- |
-| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) | — | The media element routed into the audio graph. |
+|            Name             |                                            Type                                             | Default value | Description                                    |
+| :-------------------------: | :-----------------------------------------------------------------------------------------: | :-----------: | :--------------------------------------------- |
+| `mediaElement` <ReadOnly /> | `HTMLMediaElement` \| [`AudioTagHandle`](./audio-tag.mdx#ref-handle-audiotaghandle-methods) |       —       | The media element routed into the audio graph. |
 
 ## Methods
 

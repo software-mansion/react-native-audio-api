@@ -77,7 +77,7 @@ const Record: FC = () => {
       try {
         await selectInput(input);
       } catch (error) {
-        Alert.alert('Input Device Error', `${error}`);
+        Alert.alert('Input Device Error', String(error));
       }
     };
 
@@ -202,7 +202,7 @@ const Record: FC = () => {
           : paths[0];
       addRecording(await audioContext.decodeAudioData(finalPath));
     } catch (error) {
-      Alert.alert('Error', `Failed to save the recording: ${error}`);
+      Alert.alert('Error', `Failed to save the recording: ${String(error)}`);
     } finally {
       setState(RecordingState.Idle);
     }

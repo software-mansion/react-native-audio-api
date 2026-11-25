@@ -31,7 +31,12 @@ const TestimonialItem = ({ author, company, image, link, children }: Props) => {
         <AuthorAvatar author={author} image={image} />
         <div className={styles.testimonialAuthorInfo}>
           <h5 className={styles.testimonialAuthorName}>{author}</h5>
-          <a href={link} target="_blank" rel="noopener noreferrer" className={styles.testimonialAuthorLink}>
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.testimonialAuthorLink}
+          >
             <span className={styles.testimonialCompany}>{company}</span>
           </a>
         </div>

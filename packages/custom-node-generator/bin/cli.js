@@ -6,7 +6,9 @@ const { generate } = require('../lib/generator');
 
 program
   .name('audio-api-node-generator')
-  .description('Generate template files for custom processor using react-native-audio-api.')
+  .description(
+    'Generate template files for custom processor using react-native-audio-api.'
+  )
   .version('0.0.5');
 
 program
@@ -14,9 +16,14 @@ program
   .option('-o, --output <path>', 'output directory', '.')
   .action(async (options) => {
     try {
-      const hasOutputFlag = process.argv.includes('-o') || process.argv.includes('--output');
+      const hasOutputFlag =
+        process.argv.includes('-o') || process.argv.includes('--output');
       if (!hasOutputFlag) {
-        console.log(chalk.yellow('Please specify an output directory with -o or --output:'));
+        console.log(
+          chalk.yellow(
+            'Please specify an output directory with -o or --output:'
+          )
+        );
         return;
       }
       await generate(options.output, 'basic');

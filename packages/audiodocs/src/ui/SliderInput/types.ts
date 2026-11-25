@@ -10,12 +10,20 @@ export type SliderInputProps = {
   step: number;
   unit?: string;
   /**
-   * `log` spreads the thumb travel evenly across octaves, which suits frequencies and Q factors;
-   * it requires `min > 0`. The value reported through `onChange` is still snapped to `step`.
+   * `log` spreads the thumb travel evenly across octaves, which suits
+   * frequencies and Q factors; it requires `min > 0`. The value reported
+   * through `onChange` is still snapped to `step`.
    */
   scale?: SliderScale;
   onChange: (value: number) => void;
 } & Omit<
   MuiSliderProps,
-  'children' | 'defaultValue' | 'max' | 'min' | 'onChange' | 'scale' | 'step' | 'value'
+  | 'children'
+  | 'defaultValue'
+  | 'max'
+  | 'min'
+  | 'onChange'
+  | 'scale'
+  | 'step'
+  | 'value'
 >;

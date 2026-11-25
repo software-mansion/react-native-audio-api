@@ -23,7 +23,11 @@ const createWhiteNoise = () => {
   const audioContext = new AudioContext();
   const bufferSize = 2 * audioContext.sampleRate;
 
-  const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const noiseBuffer = audioContext.createBuffer(
+    1,
+    bufferSize,
+    audioContext.sampleRate
+  );
   const channelData = noiseBuffer.getChannelData(0);
 
   for (let i = 0; i < bufferSize; i += 1) {
@@ -54,7 +58,11 @@ const createPinkNoise = () => {
   const audioContext = new AudioContext();
 
   const bufferSize = 2 * audioContext.sampleRate;
-  const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const noiseBuffer = audioContext.createBuffer(
+    1,
+    bufferSize,
+    audioContext.sampleRate
+  );
   const channelData = noiseBuffer.getChannelData(0);
 
   let b0, b1, b2, b3, b4, b5, b6;
@@ -91,7 +99,6 @@ The last noise type we would like to describe is brownian noise (also known as B
 
 Brownian noise, similarly to pink one, decreases in power by $\frac{12dB}{octave}$ and sounds similar to waterfall. The implementation is taken from an [article](https://noisehack.com/generate-noise-web-audio-api/) by Zach Denton:
 
-
 ```tsx
 import { AudioContext } from 'react-native-audio-api';
 
@@ -99,7 +106,11 @@ const createBrownianNoise = () => {
   const audioContext = new AudioContext();
 
   const bufferSize = 2 * audioContext.sampleRate;
-  const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const noiseBuffer = audioContext.createBuffer(
+    1,
+    bufferSize,
+    audioContext.sampleRate
+  );
   const channelData = noiseBuffer.getChannelData(0);
   let lastOut = 0.0;
 

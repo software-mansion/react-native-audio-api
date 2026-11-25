@@ -2,7 +2,14 @@
 sidebar_position: 1
 ---
 
-import { Optional, ReadOnly, IOS, AndroidAPI, MobileOnly, Experimental } from '@site/src/components/Badges';
+import {
+  Optional,
+  ReadOnly,
+  IOS,
+  AndroidAPI,
+  MobileOnly,
+  Experimental,
+} from '@site/src/components/Badges';
 
 # AudioManager
 
@@ -16,17 +23,17 @@ import { AudioManager } from 'react-native-audio-api';
 import { useEffect } from 'react';
 
 function App() {
-    // set AVAudioSession example options (iOS)
-    AudioManager.setSystemOptions({
-      ios: {
-        category: 'playback',
-        mode: 'default',
-        options: ['allowBluetoothHFP', 'allowAirPlay'],
-      },
-    })
-    // enabling emission of events
-    AudioManager.observeAudioInterruptions(true);
-    AudioManager.getDevicesInfo().then(console.log);
+  // set AVAudioSession example options (iOS)
+  AudioManager.setSystemOptions({
+    ios: {
+      category: 'playback',
+      mode: 'default',
+      options: ['allowBluetoothHFP', 'allowAirPlay'],
+    },
+  });
+  // enabling emission of events
+  AudioManager.observeAudioInterruptions(true);
+  AudioManager.getDevicesInfo().then(console.log);
 
   useEffect(() => {
     // callback to be invoked on 'interruption' event
@@ -48,9 +55,9 @@ function App() {
 
 ### `setSystemOptions` <MobileOnly /> {#setsystemoptions}
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| options | [`SystemOptions`](./audio-manager.mdx#systemoptions) | Platform options, grouped under `ios` ([AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) settings) and `android` (audio mode and communication route). Each group is ignored on the other platform. |
+| Parameter |                         Type                         | Description                                                                                                                                                                                                                                                                              |
+| :-------: | :--------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  options  | [`SystemOptions`](./audio-manager.mdx#systemoptions) | Platform options, grouped under `ios` ([AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) settings) and `android` (audio mode and communication route). Each group is ignored on the other platform. |
 
 #### Returns `undefined`.
 
@@ -58,9 +65,9 @@ On Android 12 (API 31) or later, set `android: { mode: 'inCommunication' }` befo
 
 ### `setAudioSessionActivity` <MobileOnly /> {#setaudiosessionactivity}
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| enabled | `boolean` | Activates or deactivates the platform audio session. On iOS this sets [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity. On Android it has an effect only with `android: { mode: 'inCommunication' }` from `setSystemOptions()`, where it acquires or releases the communication session described below. |
+| Parameter |   Type    | Description                                                                                                                                                                                                                                                                                                                                                                                           |
+| :-------: | :-------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  enabled  | `boolean` | Activates or deactivates the platform audio session. On iOS this sets [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity. On Android it has an effect only with `android: { mode: 'inCommunication' }` from `setSystemOptions()`, where it acquires or releases the communication session described below. |
 
 #### Returns `Promise<void>`, which resolves when the audio session activity was set successfully. On failure, the promise rejects with a `SessionActivationError` that carries the native error details (`nativeErrorInfo`) when available.
 
@@ -72,9 +79,9 @@ With Android `inCommunication` mode, activation requests transient focus using v
 
 Requests the Android route for voice-communication audio. It works with or without an `inCommunication` session and only affects streams with the `voiceCommunication` output profile. Without a session Android sends those streams to the earpiece by default, so request `'speaker'` for a loudspeaker route.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `device` | [`CommunicationDevice`](./audio-manager.mdx#communicationdevice) | The route to request. |
+| Parameter |                               Type                               | Description           |
+| :-------: | :--------------------------------------------------------------: | :-------------------- |
+| `device`  | [`CommunicationDevice`](./audio-manager.mdx#communicationdevice) | The route to request. |
 
 #### Returns `Promise<void>`, which rejects if the requested built-in device is unavailable or Android rejects the request.
 
@@ -109,9 +116,9 @@ Any later call to `setSystemOptions` or `setAudioSessionActivity` will re-enable
 
 ### `observeAudioInterruptions`
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `param` |  [`AudioFocusType`](audio-manager#audiofocustype) \| `boolean` \| `null` | It is used to enable/disable observing audio interruptions. Passing `false` or `null` disables the observation, otherwise it is enabled. |
+| Parameter |                                  Type                                   | Description                                                                                                                              |
+| :-------: | :---------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------- |
+|  `param`  | [`AudioFocusType`](audio-manager#audiofocustype) \| `boolean` \| `null` | It is used to enable/disable observing audio interruptions. Passing `false` or `null` disables the observation, otherwise it is enabled. |
 
 :::info
 On Android, passing an [`AudioFocusType`](audio-manager#audiofocustype) requests the matching native [audio focus](https://developer.android.com/media/optimize/audio-focus) mode (for example, `'gain'` for long-term playback).
@@ -123,8 +130,8 @@ On iOS, passing `true` or `false` only enables or disables interruption event em
 
 ### `activelyReclaimSession` <IOS /> <Experimental />
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+| Parameter |   Type    | Description                                    |
+| :-------: | :-------: | :--------------------------------------------- |
 | `enabled` | `boolean` | It is used to enable/disable session spoofing. |
 
 #### Returns `undefined`.
@@ -146,8 +153,8 @@ Reads the current system output volume as a 0..1 fraction of its maximum.
 
 ### `observeVolumeChanges`
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+| Parameter |   Type    | Description                                            |
+| :-------: | :-------: | :----------------------------------------------------- |
 | `enabled` | `boolean` | It is used to enable/disable observing volume changes. |
 
 :::info
@@ -164,9 +171,9 @@ In React components, the [`useSystemVolume`](../hooks/system-volume.mdx) hook en
 
 Adds a callback to be invoked upon hearing an event.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `name` | [`SystemEventName`](audio-manager#systemeventname) | Name of an event listener. |
+| Parameter  |                            Type                            | Description                                          |
+| :--------: | :--------------------------------------------------------: | :--------------------------------------------------- |
+|   `name`   |     [`SystemEventName`](audio-manager#systemeventname)     | Name of an event listener.                           |
 | `callback` | [`SystemEventCallback`](audio-manager#systemeventcallback) | Callback that will be invoked upon hearing an event. |
 
 #### Returns [`AudioEventSubscription`](./audio-manager.mdx#audioeventsubscription) if `enabled` is set to true, `undefined` otherwise.
@@ -211,8 +218,8 @@ On Android, `currentInputs` reports the device a recording in progress captures 
 
 Selects the device that audio is captured from, using an `id` taken from `getDevicesInfo().availableInputs`.
 
-| Name | Type | Description |
-| :----: | :----: | :---- |
+|    Name    |         Type          | Description                                                                                                             |
+| :--------: | :-------------------: | :---------------------------------------------------------------------------------------------------------------------- |
 | `deviceId` | `string \| 'default'` | Identifier of the input device to capture from. `'default'` drops the selection, so the system chooses the input again. |
 
 A recording in progress moves to the new input and keeps writing the same file.
@@ -229,7 +236,7 @@ Some USB microphones also expose a headphone output, which the platform then pre
 
 ### Resume recording after an interruption <IOS /> {#resumerecordingafteraninterruption}
 
-After the app has been interrupted by, for example a phone call, it is possible to *resume* an audio recording while the app is still backgrounded. It is impossible to start a new recording session from the background. Due to iOS policies and privacy features, the app has to be configured appropriately first:
+After the app has been interrupted by, for example a phone call, it is possible to _resume_ an audio recording while the app is still backgrounded. It is impossible to start a new recording session from the background. Due to iOS policies and privacy features, the app has to be configured appropriately first:
 
 - Ensure the session options (set via [`setSystemOptions`](#setsystemoptions)) allow recording and make the app resilient to interruptions from other apps. Refer to the [session configuration guidelines](#sessionoptionsconfigurationguidelines). The following settings are a useful starting point:
   - `ios.category` set to `record` or `playAndRecord`, so the session can record. These categories also allow background recording. An incompatible category leads to a [`cannotStartPlaying`](https://developer.apple.com/documentation/coreaudiotypes/avaudiosession/errorcode/cannotstartplaying) error.
@@ -242,15 +249,15 @@ Even if background interruption recovery is unsuccessful, the library retries wi
 ## Types
 
 ### `AudioFocusType`
+
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type AudioFocusType =
-  | 'gain'
-  | 'gainTransient'
-  | 'gainTransientExclusive'
-  | 'gainTransientMayDuck';
+  'gain' | 'gainTransient' | 'gainTransientExclusive' | 'gainTransientMayDuck';
 ```
+
 </details>
 
 ### `SystemOptions`
@@ -311,6 +318,7 @@ interface SystemOptions {
   android?: AndroidSystemOptions; // ignored on iOS
 }
 ```
+
 </details>
 
 #### Configuration guidelines {#sessionoptionsconfigurationguidelines}
@@ -331,9 +339,11 @@ Always verify valid category and option combinations in [Apple's AVAudioSession 
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type CommunicationDevice = 'speaker' | 'earpiece' | 'systemDefault';
 ```
+
 </details>
 
 ### `SystemEventName`
@@ -374,23 +384,27 @@ type SystemEvents = {
 
 type SystemEventName = keyof SystemEvents;
 ```
+
 </details>
 
 ### `SystemEventCallback`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 type SystemEventCallback<Name extends SystemEventName> = (
   event: SystemEvents[Name]
 ) => void;
 ```
+
 </details>
 
 ### `AudioEventSubscription`
 
 <details>
 <summary>Type definitions</summary>
+
 ```typescript
 interface AudioEventSubscription {
   /** @internal */
@@ -399,6 +413,7 @@ interface AudioEventSubscription {
   public remove(): void; // used to remove the subscription
 }
 ```
+
 </details>
 
 ### `PermissionStatus`

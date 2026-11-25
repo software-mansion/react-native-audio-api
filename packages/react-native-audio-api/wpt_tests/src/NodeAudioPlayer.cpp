@@ -113,8 +113,8 @@ double NodeAudioPlayer::getBaseLatency() const {
 
 void NodeAudioPlayer::run() {
   const auto sampleRate = std::max(sampleRate_, 1.0f);
-  const auto quantumDuration = std::chrono::microseconds(static_cast<int64_t>(
-      (static_cast<double>(RENDER_QUANTUM_SIZE) * 1'000'000.0) / sampleRate));
+  const auto quantumDuration = std::chrono::microseconds(
+      static_cast<int64_t>((static_cast<double>(RENDER_QUANTUM_SIZE) * 1'000'000.0) / sampleRate));
 
   while (!shouldStop_.load(std::memory_order_acquire)) {
     if (isPaused_.load(std::memory_order_acquire)) {

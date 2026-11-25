@@ -65,6 +65,7 @@ float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 `AudioArray` subclass acting as a circular queue for streaming audio. **Not thread-safe** — use only from one thread.
 
 Key operations:
+
 - `push_back(AudioArray&, size)` / `push_back(float*, size)` — write frames
 - `pop_front(AudioArray&, size)` / `pop_front(float*, size)` — read oldest frames
 - `pop_back(AudioArray&, size, offset)` — read newest frames
@@ -292,10 +293,10 @@ call `analyze()`/`setFFTSize()` from a single thread.
 ```ts
 import { clamp, toFloat32Array, assertFiniteSequence } from './utils';
 
-clamp(value, min, max)                         // clamp a number to [min, max]
-toFloat32Array(values)                         // number[] → Float32Array (passthrough if already)
-toFloat32Array(undefined)                      // → undefined (overload)
-assertFiniteSequence(values, errorMessage)     // throws TypeError if any value is non-finite
+clamp(value, min, max); // clamp a number to [min, max]
+toFloat32Array(values); // number[] → Float32Array (passthrough if already)
+toFloat32Array(undefined); // → undefined (overload)
+assertFiniteSequence(values, errorMessage); // throws TypeError if any value is non-finite
 ```
 
 Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `assertFiniteSequence` in options validators (e.g. PeriodicWave `real`/`imag`).
@@ -303,11 +304,15 @@ Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `asse
 ### `paths.ts`
 
 ```ts
-import { isRemoteSource, isBase64Source, isDataBlobString } from './utils/paths';
+import {
+  isRemoteSource,
+  isBase64Source,
+  isDataBlobString,
+} from './utils/paths';
 
-isRemoteSource(url)      // true if starts with http:// or https://
-isBase64Source(data)     // true if 'data:audio/...;base64,...'
-isDataBlobString(data)   // true if starts with 'blob:'
+isRemoteSource(url); // true if starts with http:// or https://
+isBase64Source(data); // true if 'data:audio/...;base64,...'
+isDataBlobString(data); // true if starts with 'blob:'
 ```
 
 Use before passing a URL/path to decoder or streaming APIs to determine the source type.
@@ -319,14 +324,14 @@ Use before passing a URL/path to decoder or streaming APIs to determine the sour
 ```ts
 import FilePreset from './utils/filePresets';
 
-FilePreset.Low        // 22050 Hz, 48kbps,  16-bit
-FilePreset.Medium     // 44100 Hz, 128kbps, 16-bit
-FilePreset.High       // 48000 Hz, 192kbps, 24-bit
-FilePreset.Lossless   // 48000 Hz, 320kbps, 24-bit, FLAC L8
+FilePreset.Low; // 22050 Hz, 48kbps,  16-bit
+FilePreset.Medium; // 44100 Hz, 128kbps, 16-bit
+FilePreset.High; // 48000 Hz, 192kbps, 24-bit
+FilePreset.Lossless; // 48000 Hz, 320kbps, 24-bit, FLAC L8
 ```
 
 Use when configuring `AudioRecorder` file output instead of building `FilePresetType` objects manually.
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

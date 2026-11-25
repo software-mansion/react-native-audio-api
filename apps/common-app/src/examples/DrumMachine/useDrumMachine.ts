@@ -44,7 +44,7 @@ export function useDrumMachine() {
       togglePlayback: () =>
         setState((s) => ({ ...s, isPlaying: !s.isPlaying })),
 
-      selectPreset(name: string) {
+      selectPreset: (name: string) => {
         const preset = presets[name];
         if (!preset) {
           return;
@@ -58,7 +58,7 @@ export function useDrumMachine() {
         }));
       },
 
-      toggleStep(patternIndex: number, stepIndex: number) {
+      toggleStep: (patternIndex: number, stepIndex: number) => {
         setState((s) => {
           const patterns = clonePatterns(s.patterns);
           const steps = patterns[patternIndex].steps;

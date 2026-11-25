@@ -64,8 +64,6 @@ const AudioVisualizer: React.FC = () => {
   const frequencyDataSV = useSharedValue(
     new Uint8Array(FREQUENCY_BIN_COUNT).fill(0)
   );
-  const timeDataTickSV = useSharedValue(0);
-  const frequencyDataTickSV = useSharedValue(0);
 
   const handlePlayPause = async () => {
     if (isPlaying) {
@@ -128,14 +126,14 @@ const AudioVisualizer: React.FC = () => {
       (audioData) => {
         'worklet';
 
-        const snapshot = timeDataSV.value;
-
-        for (let i = 0; i < audioData.length; i++) {
-          const sample = Math.max(-1, Math.min(1, audioData[i]!));
-          snapshot[i] = Math.round((sample + 1) * 127.5);
-        }
-
-        timeDataTickSV.value += 1;
+        timeDataSV.modify((snapshot) => {
+          'worklet';
+          for (let i = 0; i < audioData.length; i++) {
+            const sample = Math.max(-1, Math.min(1, audioData[i]!));
+            snapshot[i] = Math.round((sample + 1) * 127.5);
+          }
+          return snapshot;
+        });
       },
       { domain: 'time-domain', bufferLength: FFT_SIZE }
     );
@@ -145,13 +143,13 @@ const AudioVisualizer: React.FC = () => {
       (audioData) => {
         'worklet';
 
-        const snapshot = frequencyDataSV.value;
-
-        for (let i = 0; i < audioData.length; i++) {
-          snapshot[i] = linearMagnitudeToByte(audioData[i]!);
-        }
-
-        frequencyDataTickSV.value += 1;
+        frequencyDataSV.modify((snapshot) => {
+          'worklet';
+          for (let i = 0; i < audioData.length; i++) {
+            snapshot[i] = linearMagnitudeToByte(audioData[i]!);
+          }
+          return snapshot;
+        });
       },
       {
         domain: 'frequency-domain',
@@ -170,13 +168,7 @@ const AudioVisualizer: React.FC = () => {
       timeWorkletRef.current = null;
       frequencyWorkletRef.current = null;
     };
-  }, [
-    audioContext,
-    frequencyDataSV,
-    frequencyDataTickSV,
-    timeDataSV,
-    timeDataTickSV,
-  ]);
+  }, [audioContext, frequencyDataSV, timeDataSV]);
 
   const duration = audioBuffer?.duration ?? 0;
   const progress = duration > 0 ? position / duration : 0;
@@ -186,9 +178,7 @@ const AudioVisualizer: React.FC = () => {
       <View style={[styles.chartArea, { paddingBottom: sheetHeight }]}>
         <FreqTimeChart
           timeDataSV={timeDataSV}
-          timeDataTickSV={timeDataTickSV}
           frequencyDataSV={frequencyDataSV}
-          frequencyDataTickSV={frequencyDataTickSV}
           fftSize={FFT_SIZE}
           frequencyBinCount={FREQUENCY_BIN_COUNT}
         />

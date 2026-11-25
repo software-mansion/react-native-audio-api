@@ -34,14 +34,14 @@ Equivalent: `./scripts/validate.sh --fast` (etc.)
 
 ### Which tier to run
 
-| Changed paths | Minimum validation |
-|---|---|
-| `src/`, types only | `--fast` |
-| `common/cpp/core/`, `dsp/`, `utils/` | `--fast` |
-| `common/cpp/HostObjects/` | `--fast` + `--android` + `--ios` |
-| `android/src/main/cpp/` or `java/` | `--fast` + `--android` |
-| `ios/audioapi/` | `--fast` + `--ios` |
-| `CMakeLists.txt`, `build.gradle`, `podspec` | `--full` |
+| Changed paths                               | Minimum validation               |
+| ------------------------------------------- | -------------------------------- |
+| `src/`, types only                          | `--fast`                         |
+| `common/cpp/core/`, `dsp/`, `utils/`        | `--fast`                         |
+| `common/cpp/HostObjects/`                   | `--fast` + `--android` + `--ios` |
+| `android/src/main/cpp/` or `java/`          | `--fast` + `--android`           |
+| `ios/audioapi/`                             | `--fast` + `--ios`               |
+| `CMakeLists.txt`, `build.gradle`, `podspec` | `--full`                         |
 
 Graph changes under `common/cpp/audioapi/core/utils/graph/` → also run `pnpm validate:cpp-extended` or `pnpm --filter react-native-audio-api test:cpp:extended -- graph`.
 
@@ -66,12 +66,12 @@ Hooks run when lefthook is installed (`lefthook install`).
 
 ### Pre-commit (every `git commit`)
 
-| Hook | Command |
-|---|---|
-| Format check | `pnpm format:check` (JS via Prettier, C++ via clang-format, Kotlin via ktlint) |
-| Lint | `pnpm lint` (JS/TS + C++ + Kotlin) |
-| Type check | `pnpm typecheck` (only when staged files match `*.{js,ts,jsx,tsx}`) |
-| Commit message | `commitlint` |
+| Hook           | Command                                                                        |
+| -------------- | ------------------------------------------------------------------------------ |
+| Format check   | `pnpm format:check` (JS/TS via oxfmt, C++ via clang-format, Kotlin via ktlint) |
+| Lint           | `pnpm lint` (JS/TS via oxlint with type-aware rules, C++, Kotlin)              |
+| Type check     | `pnpm typecheck` (only when staged files match `*.{js,ts,jsx,tsx}`)            |
+| Commit message | `commitlint`                                                                   |
 
 **If a hook fails, the commit is aborted.** Fix the issue and re-commit — do NOT use `--no-verify`.
 
@@ -133,7 +133,7 @@ pnpm --filter react-native-audio-api check:enums
 Runs `packages/react-native-audio-api/scripts/check-enum-sync.sh`, which compares every
 enum mirrored from C++: into Kotlin (`AudioEvent`, `RecorderState`, crossing JNI) and into
 TypeScript (`FileFormat`, `FileDirectory`, `BitDepth`, `IOSAudioQuality` from
-`AudioFileProperties.h`, crossing JSI). Both cross as plain ints, so entry *order* and
+`AudioFileProperties.h`, crossing JSI). Both cross as plain ints, so entry _order_ and
 values are the contract: an entry without an initializer counts as previous + 1, which is
 also how a Kotlin ordinal counts. Names are compared ignoring case and underscores, since
 the languages name entries differently by convention. An enum the script finds no entries
@@ -182,4 +182,4 @@ Later steps may surface issues caused by earlier ones — run in this order:
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

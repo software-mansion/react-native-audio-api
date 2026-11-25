@@ -217,7 +217,7 @@ export const audioTagFormatsTest = async (
       if (isTestRunInterrupted()) {
         throw error;
       }
-      setInfo(`AudioTag formats: error playing ${format} - ${error}`);
+      setInfo(`AudioTag formats: error playing ${format} - ${String(error)}`);
       await sleep(1500);
     }
   }

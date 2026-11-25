@@ -130,8 +130,7 @@ const config = {
           position: 'right',
         },
         {
-          'href':
-            'https://github.com/software-mansion/react-native-audio-api',
+          'href': 'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
           'position': 'right',
           'aria-label': 'GitHub repository',
@@ -161,7 +160,7 @@ const config = {
       },
     },
   },
-    clientModules: [
+  clientModules: [
     require.resolve('./src/polyfills/audioListenerParams.ts'),
     require.resolve('./src/wasm-loader.js'),
   ],
@@ -247,7 +246,9 @@ const config = {
                     options: {
                       presets: [
                         '@babel/preset-react',
-                        { plugins: ['@babel/plugin-proposal-class-properties'] },
+                        {
+                          plugins: ['@babel/plugin-proposal-class-properties'],
+                        },
                       ],
                     },
                   },

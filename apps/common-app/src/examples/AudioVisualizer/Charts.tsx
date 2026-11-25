@@ -35,10 +35,8 @@ const ringPoints = 128;
 const ringOpacity = 0.7;
 
 interface ChartProps {
-  timeDataSV: SharedValue<Uint8Array>;
-  timeDataTickSV: SharedValue<number>;
-  frequencyDataSV: SharedValue<Uint8Array>;
-  frequencyDataTickSV: SharedValue<number>;
+  timeDataSV: SharedValue<Uint8Array<ArrayBuffer>>;
+  frequencyDataSV: SharedValue<Uint8Array<ArrayBuffer>>;
   fftSize: number;
   frequencyBinCount: number;
 }
@@ -82,7 +80,6 @@ function barBandEdges(frequencyBinCount: number) {
  */
 const FrequencyChart: React.FC<ChartProps> = ({
   frequencyDataSV,
-  frequencyDataTickSV,
   frequencyBinCount,
 }) => {
   const { size } = useCanvas();
@@ -103,7 +100,6 @@ const FrequencyChart: React.FC<ChartProps> = ({
   }, [layout.barWidth]);
 
   const picture = useDerivedValue(() => {
-    frequencyDataTickSV.value;
     const data = frequencyDataSV.value;
     const { cx, cy, barRadius, barMaxLength } = layout;
 
@@ -150,11 +146,7 @@ const FrequencyChart: React.FC<ChartProps> = ({
  * The waveform wrapped into a thin closed ring inside the bars: each point
  * moves in or out with the signal.
  */
-const TimeChart: React.FC<ChartProps> = ({
-  timeDataSV,
-  timeDataTickSV,
-  fftSize,
-}) => {
+const TimeChart: React.FC<ChartProps> = ({ timeDataSV, fftSize }) => {
   const { size } = useCanvas();
   const layout = useMemo(() => getVisualizerLayout(size.width), [size.width]);
 
@@ -170,7 +162,6 @@ const TimeChart: React.FC<ChartProps> = ({
   }, [layout.ringWidth]);
 
   const picture = useDerivedValue(() => {
-    timeDataTickSV.value;
     const data = timeDataSV.value;
     const { cx, cy, ringRadius, ringAmplitude } = layout;
     const samplesPerPoint = Math.max(1, Math.floor(fftSize / ringPoints));

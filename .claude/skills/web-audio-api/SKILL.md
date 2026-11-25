@@ -20,6 +20,7 @@ Everything that has a counterpart in the Web Audio API specification must match 
 - **MDN reference**: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 
 Key spec sections to check when implementing or reviewing a node:
+
 - Processing model and render quantum (128 frames)
 - `AudioNode` channel count rules and `channelCountMode` / `channelInterpretation`
 - `AudioParam` automation methods, value clamping, and timing
@@ -42,6 +43,7 @@ On **React Native**: classes in `src/core/` hold a reference to a C++ JSI HostOb
 On **Web (browser)**: classes in `src/web-core/` wrap the corresponding `globalThis.*` (browser Web Audio API) object. All method calls delegate directly to the browser engine.
 
 Both sides share:
+
 - The same TypeScript interfaces (`src/interfaces.ts`)
 - The same types (`src/types.ts`)
 - The same error classes (`src/errors/`)
@@ -108,17 +110,20 @@ When adding a new RN-specific feature that should also work on web, implement th
 Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`):
 
 ### Fully implemented ✅
+
 `AnalyserNode`, `AudioBuffer`, `AudioBufferSourceNode`, `AudioDestinationNode`, `AudioNode`, `AudioParam`, `AudioScheduledSourceNode`, `BiquadFilterNode`, `ChannelMergerNode`, `ChannelSplitterNode`, `ConstantSourceNode`, `ConvolverNode`, `DelayNode`, `GainNode`, `IIRFilterNode`, `OfflineAudioContext`, `OscillatorNode`, `PeriodicWave`, `StereoPannerNode`, `WaveShaperNode`, `MediaElementAudioSourceNode`
 
 ### Partially implemented 🚧
-| Interface | What's available |
-|---|---|
-| `AudioContext` | `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state` |
-| `BaseAudioContext` | `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes |
-| `AudioListener` | All nine AudioParams; used by `PannerNode` for 3D spatialization; deprecated `setPosition` / `setOrientation` provided in JS (set AudioParam values) |
-| `PannerNode` | Equal-power spatialization, distance models, cone gain; `panningModel` is `'equalpower'` only |
+
+| Interface          | What's available                                                                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AudioContext`     | `close`, `suspend`, `resume`, `currentTime`, `destination`, `sampleRate`, `state`                                                                    |
+| `BaseAudioContext` | `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all `create*` for available nodes                                |
+| `AudioListener`    | All nine AudioParams; used by `PannerNode` for 3D spatialization; deprecated `setPosition` / `setOrientation` provided in JS (set AudioParam values) |
+| `PannerNode`       | Equal-power spatialization, distance models, cone gain; `panningModel` is `'equalpower'` only                                                        |
 
 ### Not yet implemented ❌
+
 `AudioSinkInfo`, `AudioWorklet`, `AudioWorkletGlobalScope`, `AudioWorkletNode`, `AudioWorkletProcessor`, `DynamicsCompressorNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`
 
 **Goal**: everything in the Web Audio API spec should eventually be in this library. If you implement a node from the ❌ list, update the coverage table in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`.
@@ -129,15 +134,15 @@ Current status (from `packages/audiodocs/docs/other/web-audio-api-coverage.mdx`)
 
 These are exported from `api.ts` but **not** from `api.web.ts` (or have a stub/custom web implementation):
 
-| Class | Purpose |
-|---|---|
-| `AudioBufferQueueSourceNode` | Queue of audio buffers, plays them sequentially — no Web Audio spec equivalent |
-| `AudioRecorder` | Microphone input recording — no Web Audio spec equivalent |
-| `RecorderAdapterNode` | Connects recorder to the audio graph |
+| Class                                                         | Purpose                                                                                  |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `AudioBufferQueueSourceNode`                                  | Queue of audio buffers, plays them sequentially — no Web Audio spec equivalent           |
+| `AudioRecorder`                                               | Microphone input recording — no Web Audio spec equivalent                                |
+| `RecorderAdapterNode`                                         | Connects recorder to the audio graph                                                     |
 | `WorkletNode` / `WorkletSourceNode` / `WorkletProcessingNode` | JS-on-audio-thread via React Native Worklets — different from browser `AudioWorkletNode` |
-| `AudioManager` | iOS/Android audio session management (permissions, routing, interruption handling) |
-| `decodeAudioData` (standalone) | Standalone decode utility (not on context) |
-| `decodePCMInBase64` | Decode raw PCM from base64 |
+| `AudioManager`                                                | iOS/Android audio session management (permissions, routing, interruption handling)       |
+| `decodeAudioData` (standalone)                                | Standalone decode utility (not on context)                                               |
+| `decodePCMInBase64`                                           | Decode raw PCM from base64                                                               |
 
 When implementing these on the RN side, a web stub or polyfill in `src/web-core/custom/` should be considered if the feature can be reasonably approximated in a browser.
 
@@ -155,6 +160,7 @@ When adding a new Web Audio API node that is in the spec:
    - Add any validation that matches the RN side's error behaviour
 
 2. **Export from `src/api.web.ts`**
+
    ```ts
    export { default as MyNode } from './web-core/MyNode';
    ```
@@ -164,6 +170,7 @@ When adding a new Web Audio API node that is in the spec:
 4. **Update the coverage table** in `packages/audiodocs/docs/other/web-audio-api-coverage.mdx` — move the node from ❌ to ✅.
 
 If the node **does not exist in the browser** (e.g. `AudioBufferQueueSourceNode`):
+
 - Add a stub or alternative implementation in `src/web-core/custom/`
 - Export it from `src/web-core/custom/index.ts`
 - It will be picked up automatically by the `export * from './web-core/custom'` line in `api.web.ts`
@@ -184,4 +191,4 @@ When in doubt, cross-check the spec. Key invariants that are easy to get wrong:
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

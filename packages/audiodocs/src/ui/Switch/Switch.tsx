@@ -25,7 +25,11 @@ const Switch: React.FC<SwitchProps> = ({
   }, [checked, onChange]);
 
   return (
-    <div className={className ? `${styles.container} ${className}` : styles.container}>
+    <div
+      className={
+        className ? `${styles.container} ${className}` : styles.container
+      }
+    >
       {!!leftLabel && <span className={styles.labelText}>{leftLabel}</span>}
       <button
         type="button"
@@ -34,9 +38,15 @@ const Switch: React.FC<SwitchProps> = ({
         aria-checked={checked}
         onClick={handleClick}
         disabled={disabled}
-        className={checked ? `${styles.track} ${styles.trackChecked}` : styles.track}
+        className={
+          checked ? `${styles.track} ${styles.trackChecked}` : styles.track
+        }
       >
-        <span className={checked ? `${styles.thumb} ${styles.thumbChecked}` : styles.thumb} />
+        <span
+          className={
+            checked ? `${styles.thumb} ${styles.thumbChecked}` : styles.thumb
+          }
+        />
       </button>
       {!!rightLabel && <span className={styles.labelText}>{rightLabel}</span>}
     </div>

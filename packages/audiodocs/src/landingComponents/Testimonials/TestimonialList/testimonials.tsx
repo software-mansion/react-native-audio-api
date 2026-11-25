@@ -1,4 +1,4 @@
-import type { Testimonial } from "./types";
+import type { Testimonial } from './types';
 
 const testimonials: Testimonial[] = [
   {
@@ -28,7 +28,7 @@ const testimonials: Testimonial[] = [
       alt: 'Daniel Zohar',
       src: '/react-native-audio-api/img/daniel-zohar.jpeg',
     },
-  }
+  },
 ];
 
 export default testimonials;

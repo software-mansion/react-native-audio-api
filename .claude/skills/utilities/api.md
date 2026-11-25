@@ -25,10 +25,12 @@ T val = receiver.receive();                       // blocks until data available
 ```
 
 **OverflowStrategy:**
+
 - `WAIT_ON_FULL` (default) — `try_send` returns `CHANNEL_FULL` when full
 - `OVERWRITE_ON_FULL` — overwrites oldest element (use with `BUSY_LOOP`)
 
 **WaitStrategy** (affects blocking `send`/`receive`):
+
 - `BUSY_LOOP` (default) — spin loop; lowest latency, highest CPU
 - `YIELD` — `std::this_thread::yield()`; lower CPU, higher latency
 - `ATOMIC_WAIT` — `std::atomic::wait()`; good for long waits (destructor threads)
@@ -264,4 +266,3 @@ float v = linearInterpolate(span, firstIndex, secondIndex, factor);
 float db     = linearToDecibels(linearValue);    // 20 * log10(v)
 float linear = decibelsToLinear(dbValue);        // 10^(db/20)
 ```
-

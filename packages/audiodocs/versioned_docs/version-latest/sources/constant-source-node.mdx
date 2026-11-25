@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
 import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # ConstantSourceNode
@@ -20,9 +20,9 @@ constructor(context: BaseAudioContext, options?: ConstantSourceOptions)
 
 ### `ConstantSourceOptions`
 
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
-| `offset` <Optional /> | `number` | `1.0` | Initial value for [`offset`](./constant-source-node.mdx#properties) |
+|       Parameter       |   Type   | Default |                                                                     |
+| :-------------------: | :------: | :-----: | :------------------------------------------------------------------ |
+| `offset` <Optional /> | `number` |  `1.0`  | Initial value for [`offset`](./constant-source-node.mdx#properties) |
 
 :::info
 You can also create a `ConstantSourceNode` via [`BaseAudioContext.createConstantSource()`](../core/base-audio-context.mdx#createconstantsource), that creates node with default values.
@@ -37,7 +37,7 @@ import {
   AudioContext,
   OscillatorNode,
   GainNode,
-  ConstantSourceNode
+  ConstantSourceNode,
 } from 'react-native-audio-api';
 
 function App() {
@@ -78,11 +78,17 @@ function App() {
 
 Inherits all properties from [`AudioScheduledSourceNode`](./audio-scheduled-source-node.mdx#properties).
 
-<AudioNodePropsTable numberOfInputs={0} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+<AudioNodePropsTable
+  numberOfInputs={0}
+  numberOfOutputs={1}
+  channelCount={2}
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
 
-| Name | Type | Default value | Description |
-| :----: | :----: | :----: | :------- |
-| `offset` <ReadOnly /> | [`AudioParam`](../core/audio-param.mdx) | `1.0` |[`a-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
+|         Name          |                  Type                   | Default value | Description                                                                                                                 |
+| :-------------------: | :-------------------------------------: | :-----------: | :-------------------------------------------------------------------------------------------------------------------------- |
+| `offset` <ReadOnly /> | [`AudioParam`](../core/audio-param.mdx) |     `1.0`     | [`a-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing the value which the node constantly outputs. |
 
 ## Methods
 

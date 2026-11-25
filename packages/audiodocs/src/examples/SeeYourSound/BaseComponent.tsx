@@ -1,9 +1,4 @@
-import React, {
-  createContext,
-  useEffect,
-  useRef,
-  useState
-} from 'react';
+import React, { createContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Button, View } from 'react-native';
 import {
   AudioBuffer,
@@ -47,7 +42,10 @@ const Canvas: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const contextValue = { initialized: true, size };
 
   return (
-    <canvas ref={ref} style={{ backgroundColor: 'white', width: '100%', height: '100%' }}>
+    <canvas
+      ref={ref}
+      style={{ backgroundColor: 'white', width: '100%', height: '100%' }}
+    >
       <CanvasContext.Provider value={contextValue}>
         {children}
       </CanvasContext.Provider>
@@ -63,15 +61,15 @@ const AudioVisualizer: React.FC = () => {
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     if (isPlaying) {
       bufferSourceRef.current?.stop();
     } else {
       if (!audioContextRef.current) {
-        return
+        return;
       }
 
-      bufferSourceRef.current = await audioContextRef.current.createBufferSource();
+      bufferSourceRef.current = audioContextRef.current.createBufferSource();
       bufferSourceRef.current.buffer = audioBufferRef.current;
       bufferSourceRef.current.connect(audioContextRef.current.destination);
 
@@ -88,11 +86,13 @@ const AudioVisualizer: React.FC = () => {
 
     const fetchBuffer = async () => {
       setIsLoading(true);
-      audioBufferRef.current = await fetch('/react-native-audio-api/audio/music/example-music-02.mp3')
+      audioBufferRef.current = await fetch(
+        '/react-native-audio-api/audio/music/example-music-02.mp3'
+      )
         .then((response) => response.arrayBuffer())
         .then((arrayBuffer) =>
           audioContextRef.current!.decodeAudioData(arrayBuffer)
-        )
+        );
 
       setIsLoading(false);
     };
@@ -107,18 +107,19 @@ const AudioVisualizer: React.FC = () => {
   return (
     <View>
       <View style={{ flex: 0.2 }} />
-      <Canvas>
-
-      </Canvas>
+      <Canvas></Canvas>
       <View
-        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+        style={{ flex: 0.5, justifyContent: 'center', alignItems: 'center' }}
+      >
         {isLoading && <ActivityIndicator color="#FFFFFF" />}
-        <View style={{
+        <View
+          style={{
             justifyContent: 'center',
             flexDirection: 'row',
             marginTop: 16,
-          }}>
-        <Button
+          }}
+        >
+          <Button
             onPress={handlePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             disabled={!audioBufferRef.current}
@@ -131,4 +132,3 @@ const AudioVisualizer: React.FC = () => {
 };
 
 export default AudioVisualizer;
-

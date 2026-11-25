@@ -1,17 +1,20 @@
-import FilterList from "@site/src/ui/FilterList";
-import SliderInput from "@site/src/ui/SliderInput";
-import Switch from "@site/src/ui/Switch";
-import React, { useState } from "react";
+import FilterList from '@site/src/ui/FilterList';
+import SliderInput from '@site/src/ui/SliderInput';
+import Switch from '@site/src/ui/Switch';
+import React, { useState } from 'react';
 
-import styles from "../styles.module.css";
-import PeriodicWaveExample from "./PeriodicWaveExample";
+import styles from '../styles.module.css';
+import PeriodicWaveExample from './PeriodicWaveExample';
 
 const HARMONIC_COUNT = 6;
 
-type PresetId = "custom" | "sine" | "square" | "sawtooth" | "organ";
+type PresetId = 'custom' | 'sine' | 'square' | 'sawtooth' | 'organ';
 
-/** Harmonic amplitudes truncated to the first few partials of each classic shape. */
-const PRESETS: Record<Exclude<PresetId, "custom">, number[]> = {
+/**
+ * Harmonic amplitudes truncated to the first few partials of each classic
+ * shape.
+ */
+const PRESETS: Record<Exclude<PresetId, 'custom'>, number[]> = {
   sine: [1, 0, 0, 0, 0, 0],
   square: [1, 0, 1 / 3, 0, 1 / 5, 0],
   sawtooth: [1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 6],
@@ -19,22 +22,24 @@ const PRESETS: Record<Exclude<PresetId, "custom">, number[]> = {
 };
 
 const presetOptions: Array<{ value: PresetId; label: string }> = [
-  { value: "organ", label: "Organ" },
-  { value: "square", label: "Square" },
-  { value: "sawtooth", label: "Sawtooth" },
-  { value: "sine", label: "Sine" },
-  { value: "custom", label: "Custom" },
+  { value: 'organ', label: 'Organ' },
+  { value: 'square', label: 'Square' },
+  { value: 'sawtooth', label: 'Sawtooth' },
+  { value: 'sine', label: 'Sine' },
+  { value: 'custom', label: 'Custom' },
 ];
 
 const initialState = {
-  preset: "organ" as PresetId,
+  preset: 'organ' as PresetId,
   disableNormalization: false,
   frequency: 220,
   volume: 0.3,
 };
 
 function formatCoefficients(values: number[]): string {
-  return values.map((value) => (value === 0 ? "0" : value.toFixed(2))).join(", ");
+  return values
+    .map((value) => (value === 0 ? '0' : value.toFixed(2)))
+    .join(', ');
 }
 
 export function usePeriodicWavePlayground() {
@@ -48,13 +53,13 @@ export function usePeriodicWavePlayground() {
 
   const selectPreset = (next: PresetId) => {
     setPreset(next);
-    if (next !== "custom") {
+    if (next !== 'custom') {
       setHarmonics(PRESETS[next]);
     }
   };
 
   const setHarmonic = (index: number, amplitude: number) => {
-    setPreset("custom");
+    setPreset('custom');
     setHarmonics((current) =>
       current.map((value, i) => (i === index ? amplitude : value))
     );
@@ -94,7 +99,9 @@ oscillator.start();`;
       {harmonics.map((amplitude, index) => (
         <SliderInput
           key={index}
-          label={index === 0 ? "Harmonic 1 (fundamental)" : `Harmonic ${index + 1}`}
+          label={
+            index === 0 ? 'Harmonic 1 (fundamental)' : `Harmonic ${index + 1}`
+          }
           value={amplitude}
           min={0}
           max={1}

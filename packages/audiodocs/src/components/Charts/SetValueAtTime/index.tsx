@@ -19,28 +19,43 @@ const setValueAtTimeData = [
 ];
 
 const SetValueAtTimeChart: FC = () => (
-<AudioParamChartBase data={setValueAtTimeData}>
-    <ReferenceLine x={0.3} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-        <Label value="startTime" position="bottom" className={styles.label} />
+  <AudioParamChartBase data={setValueAtTimeData}>
+    <ReferenceLine
+      x={0.3}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5"
+    >
+      <Label value="startTime" position="bottom" className={styles.label} />
     </ReferenceLine>
-    <ReferenceLine y={0.2} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-        <Label value="previousValue" position="left" className={styles.label}/>
+    <ReferenceLine
+      y={0.2}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5"
+    >
+      <Label value="previousValue" position="left" className={styles.label} />
     </ReferenceLine>
-    <ReferenceLine y={0.8} stroke='currentColor' className={styles.referenceLine} strokeDasharray="5 5">
-        <Label value="value" position="left" className={styles.label} />
+    <ReferenceLine
+      y={0.8}
+      stroke="currentColor"
+      className={styles.referenceLine}
+      strokeDasharray="5 5"
+    >
+      <Label value="value" position="left" className={styles.label} />
     </ReferenceLine>
-    <Line 
-        type="stepAfter" 
-        dataKey="value"
-        stroke='currentColor' 
-        className={styles.leadingLine}
-        strokeWidth={2}
-        dot={false}
-        activeDot={false}
-        isAnimationActive={true}
+    <Line
+      type="stepAfter"
+      dataKey="value"
+      stroke="currentColor"
+      className={styles.leadingLine}
+      strokeWidth={2}
+      dot={false}
+      activeDot={false}
+      isAnimationActive={true}
     />
     <Tooltip active={false} />
-</AudioParamChartBase>
+  </AudioParamChartBase>
 );
 
-export default  SetValueAtTimeChart;
+export default SetValueAtTimeChart;
