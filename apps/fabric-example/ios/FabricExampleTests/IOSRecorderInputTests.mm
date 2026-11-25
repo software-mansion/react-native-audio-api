@@ -3,6 +3,7 @@
 #import <objc/runtime.h>
 
 #import <audioapi/core/OfflineAudioContext.h>
+#import <audioapi/core/inputs/ActiveRecorderHandle.h>
 #import <audioapi/core/inputs/AudioRecorder.h>
 #import <audioapi/core/sources/RecorderAdapterNode.h>
 #import <audioapi/core/utils/graph/NodeHandle.h>
@@ -22,17 +23,16 @@
 
 using namespace audioapi;
 
-static NSString *NSStringFromStdString(const std::string &value)
-{
+static NSString *NSStringFromStdString(const std::string &value) {
   return [NSString stringWithUTF8String:value.c_str()];
 }
 
 namespace audioapi {
 
-/// Contexts take an event producer from their registry on construction, so tests need a
-/// registry even when no event is ever dispatched.
+/// Contexts take an event producer from their registry on construction, so
+/// tests need a registry even when no event is ever dispatched.
 class NullAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
- public:
+public:
   uint64_t registerHandler(
       AudioEvent eventName,
       const std::shared_ptr<facebook::jsi::Function> &handler) override {
@@ -41,18 +41,15 @@ class NullAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
 
   void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
 
-  bool dispatchEvent(
-      AudioEvent eventName,
-      uint64_t listenerId,
-      AudioEventPayload &&payload) noexcept override {
+  bool dispatchEvent(AudioEvent eventName, uint64_t listenerId,
+                     AudioEventPayload &&payload) noexcept override {
     return false;
   }
 
-  bool dispatchEventFromAudioThread(
-      AudioEventProducer &producer,
-      AudioEvent eventName,
-      uint64_t listenerId,
-      AudioEventPayload &&payload) noexcept override {
+  bool
+  dispatchEventFromAudioThread(AudioEventProducer &producer,
+                               AudioEvent eventName, uint64_t listenerId,
+                               AudioEventPayload &&payload) noexcept override {
     return false;
   }
 
@@ -60,8 +57,9 @@ class NullAudioEventHandlerRegistry : public IAudioEventHandlerRegistry {
     return std::make_shared<AudioEventProducer>(producerQueue_);
   }
 
- private:
-  /// Only ever a binding target for the producers handed out above; nothing is enqueued.
+private:
+  /// Only ever a binding target for the producers handed out above; nothing is
+  /// enqueued.
   moodycamel::ConcurrentQueue<int> producerQueue_;
 };
 
@@ -103,10 +101,8 @@ public:
 
   void unregisterHandler(AudioEvent eventName, uint64_t listenerId) override {}
 
-  bool dispatchEvent(
-      AudioEvent eventName,
-      uint64_t listenerId,
-      AudioEventPayload &&payload) noexcept override {
+  bool dispatchEvent(AudioEvent eventName, uint64_t listenerId,
+                     AudioEventPayload &&payload) noexcept override {
     std::string reason;
     if (auto *stringPayload = std::get_if<StringPayload>(&payload)) {
       reason = stringPayload->reason;
@@ -119,11 +115,10 @@ public:
     return nullptr;
   }
 
-  bool dispatchEventFromAudioThread(
-      AudioEventProducer &producer,
-      AudioEvent eventName,
-      uint64_t listenerId,
-      AudioEventPayload &&payload) noexcept override {
+  bool
+  dispatchEventFromAudioThread(AudioEventProducer &producer,
+                               AudioEvent eventName, uint64_t listenerId,
+                               AudioEventPayload &&payload) noexcept override {
     return dispatchEvent(eventName, listenerId, std::move(payload));
   }
 };
@@ -153,13 +148,11 @@ public:
 
 @implementation FakeRecorderInputNode
 
-- (AVAudioFormat *)inputFormatForBus:(AVAudioNodeBus)bus
-{
+- (AVAudioFormat *)inputFormatForBus:(AVAudioNodeBus)bus {
   return (AVAudioFormat *)self.inputFormat;
 }
 
-- (AVAudioFormat *)outputFormatForBus:(AVAudioNodeBus)bus
-{
+- (AVAudioFormat *)outputFormatForBus:(AVAudioNodeBus)bus {
   return (AVAudioFormat *)self.outputFormat;
 }
 
@@ -173,8 +166,7 @@ public:
 
 @implementation FakeRecorderAVAudioEngine
 
-- (AVAudioInputNode *)inputNode
-{
+- (AVAudioInputNode *)inputNode {
   return (AVAudioInputNode *)self.fakeInputNode;
 }
 
@@ -199,8 +191,7 @@ public:
 
 @implementation FakeRecorderAudioSessionManager
 
-- (instancetype)init
-{
+- (instancetype)init {
   if (self = [super init]) {
     self.recordingPermissions = @"Granted";
     self.routeReady = YES;
@@ -208,16 +199,15 @@ public:
   return self;
 }
 
-- (NSString *)checkRecordingPermissions
-{
+- (NSString *)checkRecordingPermissions {
   return self.recordingPermissions;
 }
 
-- (NSString *)inputDiagnosticsSnapshot
-{
-  return [NSString stringWithFormat:@"session={active=%@}; route={routeReady=%@}",
-                                    self.isActive ? @"true" : @"false",
-                                    self.routeReady ? @"true" : @"false"];
+- (NSString *)inputDiagnosticsSnapshot {
+  return
+      [NSString stringWithFormat:@"session={active=%@}; route={routeReady=%@}",
+                                 self.isActive ? @"true" : @"false",
+                                 self.routeReady ? @"true" : @"false"];
 }
 
 @end
@@ -237,20 +227,22 @@ public:
 @property(nonatomic, assign) NSInteger resumeInputCallCount;
 @property(nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
 @property(nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
-@property(nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
-@property (nonatomic, assign) BOOL lastAttachedVoiceProcessingEnabled;
-@property(nonatomic, copy) AudioEngineInputNotificationBlock lastInputNotification;
+@property(nonatomic, copy)
+    AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
+@property(nonatomic, assign) BOOL lastAttachedVoiceProcessingEnabled;
+@property(nonatomic, copy)
+    AudioEngineInputNotificationBlock lastInputNotification;
 @property(nonatomic, strong) NSException *attachException;
-/// Makes startIfNecessary: report HardwareChanged and RecoveryFailed before it returns. The real
-/// engine reports the first from there when it has to rebuild its graph.
+/// Makes startIfNecessary: report HardwareChanged and RecoveryFailed before it
+/// returns. The real engine reports the first from there when it has to rebuild
+/// its graph.
 @property(nonatomic, assign) BOOL reportsNotificationsFromStart;
 
 @end
 
 @implementation FakeRecorderAudioEngine
 
-- (void)createAudioEngineIfNeeded
-{
+- (void)createAudioEngineIfNeeded {
   if (self.audioEngine != nil) {
     return;
   }
@@ -261,17 +253,18 @@ public:
   self.startIfNecessaryResult = YES;
 }
 
-- (void)stopIfNecessary
-{
+- (void)stopIfNecessary {
   self.stopIfNecessaryCallCount += 1;
 }
 
-- (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
-                  voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-                     onInputNotification:(AudioEngineInputNotificationBlock)onInputNotification
-{
+- (void)
+    attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
+              voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
+                 onInputNotification:
+                     (AudioEngineInputNotificationBlock)onInputNotification {
   self.attachInputNodeCallCount += 1;
-  self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
+  self.inputNode =
+      [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
   self.lastAttachedInputNode = self.inputNode;
   self.lastAttachedReceiverBlock = receiverBlock;
   self.lastAttachedVoiceProcessingEnabled = voiceProcessingEnabled;
@@ -282,8 +275,7 @@ public:
   }
 }
 
-- (bool)startIfNecessary:(NSError **)error
-{
+- (bool)startIfNecessary:(NSError **)error {
   self.startIfNecessaryCallCount += 1;
   BOOL observedSessionDeactivation = self.sessionDeactivationInvalidatedGraph;
 
@@ -292,9 +284,10 @@ public:
   }
 
   if (self.reportsNotificationsFromStart && self.lastInputNotification != nil) {
-    self.lastInputNotification(AudioEngineInputNotificationHardwareChanged, nil);
-    self.lastInputNotification(
-        AudioEngineInputNotificationRecoveryFailed, [AudioAPIError engineStartFailed:nil]);
+    self.lastInputNotification(AudioEngineInputNotificationHardwareChanged,
+                               nil);
+    self.lastInputNotification(AudioEngineInputNotificationRecoveryFailed,
+                               [AudioAPIError engineStartFailed:nil]);
   }
 
   if (self.startIfNecessaryResult) {
@@ -302,35 +295,31 @@ public:
     self.sessionDeactivationInvalidatedGraph = NO;
   } else if (error != nil) {
     // The real engine always sets the error when it fails to start.
-    *error = self.startIfNecessaryError ?: [AudioAPIError engineStartFailed:nil];
+    *error =
+        self.startIfNecessaryError ?: [AudioAPIError engineStartFailed:nil];
   }
 
   return self.startIfNecessaryResult;
 }
 
-- (void)detachInputNode
-{
+- (void)detachInputNode {
   self.detachInputNodeCallCount += 1;
   self.inputNode = nil;
 }
 
-- (void)stopIfPossible
-{
+- (void)stopIfPossible {
   self.stopIfPossibleCallCount += 1;
 }
 
-- (void)restartAudioEngine
-{
+- (void)restartAudioEngine {
   self.restartAudioEngineCallCount += 1;
 }
 
-- (void)suspendInput
-{
+- (void)suspendInput {
   self.suspendInputCallCount += 1;
 }
 
-- (bool)resumeInput:(NSError **)error
-{
+- (bool)resumeInput:(NSError **)error {
   self.resumeInputCallCount += 1;
   return [self startIfNecessary:error];
 }
@@ -339,21 +328,21 @@ public:
 
 struct TestAudioInput {
   explicit TestAudioInput(UInt32 channelCount, AVAudioFrameCount frameCount)
-      : storage(offsetof(AudioBufferList, mBuffers) + channelCount * sizeof(::AudioBuffer)),
-        channels(channelCount, std::vector<float>(frameCount, 0.25f))
-  {
+      : storage(offsetof(AudioBufferList, mBuffers) +
+                channelCount * sizeof(::AudioBuffer)),
+        channels(channelCount, std::vector<float>(frameCount, 0.25f)) {
     AudioBufferList *audioBufferList = bufferList();
     audioBufferList->mNumberBuffers = channelCount;
 
     for (UInt32 channel = 0; channel < channelCount; channel += 1) {
       audioBufferList->mBuffers[channel].mNumberChannels = 1;
-      audioBufferList->mBuffers[channel].mDataByteSize = frameCount * sizeof(float);
+      audioBufferList->mBuffers[channel].mDataByteSize =
+          frameCount * sizeof(float);
       audioBufferList->mBuffers[channel].mData = channels[channel].data();
     }
   }
 
-  AudioBufferList *bufferList()
-  {
+  AudioBufferList *bufferList() {
     return reinterpret_cast<AudioBufferList *>(storage.data());
   }
 
@@ -372,8 +361,7 @@ static BOOL gRecorderSharedSessionSwizzled = NO;
 
 @implementation AVAudioSession (IOSRecorderInputTests)
 
-+ (id)rna_test_sharedInstance
-{
++ (id)rna_test_sharedInstance {
   if (gFakeSharedRecorderSession != nil) {
     return gFakeSharedRecorderSession;
   }
@@ -383,11 +371,11 @@ static BOOL gRecorderSharedSessionSwizzled = NO;
 
 @end
 
-static void SetFakeRecorderSharedAudioSession(id fakeSharedAudioSession)
-{
-  Method originalMethod = class_getClassMethod([AVAudioSession class], @selector(sharedInstance));
-  Method swizzledMethod =
-      class_getClassMethod([AVAudioSession class], @selector(rna_test_sharedInstance));
+static void SetFakeRecorderSharedAudioSession(id fakeSharedAudioSession) {
+  Method originalMethod =
+      class_getClassMethod([AVAudioSession class], @selector(sharedInstance));
+  Method swizzledMethod = class_getClassMethod(
+      [AVAudioSession class], @selector(rna_test_sharedInstance));
 
   if (!gRecorderSharedSessionSwizzled) {
     method_exchangeImplementations(originalMethod, swizzledMethod);
@@ -397,12 +385,12 @@ static void SetFakeRecorderSharedAudioSession(id fakeSharedAudioSession)
   gFakeSharedRecorderSession = fakeSharedAudioSession;
 }
 
-static void ClearFakeRecorderSharedAudioSession(void)
-{
+static void ClearFakeRecorderSharedAudioSession(void) {
   if (gRecorderSharedSessionSwizzled) {
-    Method originalMethod = class_getClassMethod([AVAudioSession class], @selector(sharedInstance));
-    Method swizzledMethod =
-        class_getClassMethod([AVAudioSession class], @selector(rna_test_sharedInstance));
+    Method originalMethod =
+        class_getClassMethod([AVAudioSession class], @selector(sharedInstance));
+    Method swizzledMethod = class_getClassMethod(
+        [AVAudioSession class], @selector(rna_test_sharedInstance));
     method_exchangeImplementations(originalMethod, swizzledMethod);
     gRecorderSharedSessionSwizzled = NO;
   }
@@ -410,10 +398,11 @@ static void ClearFakeRecorderSharedAudioSession(void)
   gFakeSharedRecorderSession = nil;
 }
 
-/// IOSRecorderInput against a fake AudioEngine, driven the way the app drives it: through an
-/// AudioRecorder. The session state machine itself is covered by the C++ AudioRecorderTest.
+/// IOSRecorderInput against a fake AudioEngine, driven the way the app drives
+/// it: through an AudioRecorder. The session state machine itself is covered by
+/// the C++ AudioRecorderTest.
 @interface IOSRecorderInputTests : XCTestCase {
- @private
+@private
   std::shared_ptr<RecordingEventRegistry> _registry;
   std::shared_ptr<AudioRecorder> _recorder;
 }
@@ -426,8 +415,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
 @implementation IOSRecorderInputTests
 
-- (void)setUp
-{
+- (void)setUp {
   [super setUp];
 
   self.sessionManager = [[FakeRecorderAudioSessionManager alloc] init];
@@ -438,15 +426,16 @@ static void ClearFakeRecorderSharedAudioSession(void)
   self.sharedSession.sampleRate = 48000;
   SetFakeRecorderSharedAudioSession(self.sharedSession);
 
-  self.audioEngine.fakeAVAudioEngine.fakeInputNode.inputFormat = [self invalidFormat];
-  self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = [self validFormat];
+  self.audioEngine.fakeAVAudioEngine.fakeInputNode.inputFormat =
+      [self invalidFormat];
+  self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat =
+      [self validFormat];
 
   _registry = std::make_shared<RecordingEventRegistry>();
   _recorder = [self makeRecorderWithVoiceProcessing:NO];
 }
 
-- (void)tearDown
-{
+- (void)tearDown {
   _recorder.reset();
   _registry.reset();
 
@@ -461,23 +450,23 @@ static void ClearFakeRecorderSharedAudioSession(void)
   [super tearDown];
 }
 
-- (std::shared_ptr<AudioRecorder>)makeRecorderWithVoiceProcessing:(BOOL)voiceProcessing
-{
+- (std::shared_ptr<AudioRecorder>)makeRecorderWithVoiceProcessing:
+    (BOOL)voiceProcessing {
   AudioRecorderOptions options;
   options.iosVoiceProcessing = voiceProcessing;
-  auto recorder =
-      std::make_shared<AudioRecorder>(_registry, std::make_shared<IOSRecorderInput>(options));
+  auto recorder = std::make_shared<AudioRecorder>(
+      _registry, std::make_shared<IOSRecorderInput>(options),
+      std::make_shared<ActiveRecorderHandle>());
   recorder->setOnErrorCallback(42);
   return recorder;
 }
 
-- (AVAudioFormat *)validFormat
-{
-  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
+- (AVAudioFormat *)validFormat {
+  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100
+                                                        channels:2];
 }
 
-- (id)invalidFormat
-{
+- (id)invalidFormat {
   FakeRecorderFormat *format = [[FakeRecorderFormat alloc] init];
   format.sampleRate = 0;
   format.channelCount = 0;
@@ -485,8 +474,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   return format;
 }
 
-- (std::shared_ptr<AudioFileProperties>)validFileProperties
-{
+- (std::shared_ptr<AudioFileProperties>)validFileProperties {
   return std::make_shared<AudioFileProperties>(
       AudioFileProperties::PathConfig{
           .directory = AudioFileProperties::FileDirectory::Cache,
@@ -507,21 +495,20 @@ static void ClearFakeRecorderSharedAudioSession(void)
       });
 }
 
-- (void)testStartStopsEngineAttachesSinkNodeAndStartsEngine
-{
+- (void)testStartStopsEngineAttachesSinkNodeAndStartsEngine {
   XCTAssertTrue(_recorder->start().is_ok());
 
   XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
-  // Once around the attach in open(), once more in start(), where the engine already runs.
+  // Once around the attach in open(), once more in start(), where the engine
+  // already runs.
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 2);
   XCTAssertNotNil(self.audioEngine.lastAttachedReceiverBlock);
   XCTAssertFalse(self.audioEngine.lastAttachedVoiceProcessingEnabled);
   XCTAssertTrue(_recorder->isRecording());
 }
 
-- (void)testStartForwardsVoiceProcessingPreferenceToAudioEngine
-{
+- (void)testStartForwardsVoiceProcessingPreferenceToAudioEngine {
   auto recorder = [self makeRecorderWithVoiceProcessing:YES];
 
   XCTAssertTrue(recorder->start().is_ok());
@@ -530,21 +517,19 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertTrue(self.audioEngine.lastAttachedVoiceProcessingEnabled);
 }
 
-- (void)testStartFailsWhenRecordingPermissionIsDenied
-{
+- (void)testStartFailsWhenRecordingPermissionIsDenied {
   self.sessionManager.recordingPermissions = @"Denied";
 
   auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
-  XCTAssertEqualObjects(
-      NSStringFromStdString(result.unwrap_err()), @"Microphone permissions are not granted");
+  XCTAssertEqualObjects(NSStringFromStdString(result.unwrap_err()),
+                        @"Microphone permissions are not granted");
   XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 0);
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testStartFailsAndDetachesInputWhenEngineFailsToStart
-{
+- (void)testStartFailsAndDetachesInputWhenEngineFailsToStart {
   self.audioEngine.startIfNecessaryResult = NO;
   self.audioEngine.startIfNecessaryError =
       [NSError errorWithDomain:@"RecorderTests"
@@ -555,15 +540,15 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
-  XCTAssertTrue([message containsString:@"Failed to start native recorder"], @"%@", message);
+  XCTAssertTrue([message containsString:@"Failed to start native recorder"],
+                @"%@", message);
   XCTAssertTrue([message containsString:@"RecorderTests"], @"%@", message);
   XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testFailedStartRestartsTheEngineForPlaybackThatWasRunning
-{
+- (void)testFailedStartRestartsTheEngineForPlaybackThatWasRunning {
   self.audioEngine.state = AudioEngineStateRunning;
   self.audioEngine.startIfNecessaryResult = NO;
 
@@ -575,8 +560,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertNil(self.audioEngine.inputNode);
 }
 
-- (void)testFailedStartLeavesAnEngineThatWasNotRunningStopped
-{
+- (void)testFailedStartLeavesAnEngineThatWasNotRunningStopped {
   self.audioEngine.startIfNecessaryResult = NO;
 
   XCTAssertTrue(_recorder->start().is_err());
@@ -584,8 +568,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
 }
 
-- (void)testStartFailsAndDetachesInputWhenEngineThrows
-{
+- (void)testStartFailsAndDetachesInputWhenEngineThrows {
   self.audioEngine.attachException =
       [NSException exceptionWithName:@"WrongCategory"
                               reason:@"attempt-wrong-category-record"
@@ -595,31 +578,33 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
-  XCTAssertTrue([message containsString:@"Failed to start native recorder"], @"%@", message);
+  XCTAssertTrue([message containsString:@"Failed to start native recorder"],
+                @"%@", message);
   XCTAssertTrue([message containsString:@"WrongCategory"], @"%@", message);
-  XCTAssertTrue([message containsString:@"attempt-wrong-category-record"], @"%@", message);
+  XCTAssertTrue([message containsString:@"attempt-wrong-category-record"],
+                @"%@", message);
   XCTAssertTrue([message containsString:@"session={"], @"%@", message);
   XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testStartFailsAndDetachesInputWhenEngineInputFormatIsUnavailable
-{
-  self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = [self invalidFormat];
+- (void)testStartFailsAndDetachesInputWhenEngineInputFormatIsUnavailable {
+  self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat =
+      [self invalidFormat];
   self.sessionManager.routeReady = NO;
 
   auto result = _recorder->start();
 
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
-  XCTAssertTrue([message containsString:@"Audio input format is unavailable"], @"%@", message);
+  XCTAssertTrue([message containsString:@"Audio input format is unavailable"],
+                @"%@", message);
   XCTAssertTrue([message containsString:@"routeReady=false"], @"%@", message);
   XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testStartFailsAndDetachesInputWhenTheInputIsInterleavedMultichannel
-{
+- (void)testStartFailsAndDetachesInputWhenTheInputIsInterleavedMultichannel {
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat =
       [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                        sampleRate:44100
@@ -631,13 +616,14 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertTrue(result.is_err());
   NSString *message = NSStringFromStdString(result.unwrap_err());
   XCTAssertTrue(
-      [message containsString:@"Interleaved multi-channel input is not supported"], @"%@", message);
+      [message
+          containsString:@"Interleaved multi-channel input is not supported"],
+      @"%@", message);
   XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, 1);
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testStopDetachesInputAndRestartsEngine
-{
+- (void)testStopDetachesInputAndRestartsEngine {
   XCTAssertTrue(_recorder->start().is_ok());
 
   XCTAssertTrue(_recorder->stop().is_ok());
@@ -648,8 +634,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testPauseAndResumeDelegateToAudioEngine
-{
+- (void)testPauseAndResumeDelegateToAudioEngine {
   XCTAssertTrue(_recorder->start().is_ok());
 
   _recorder->pause();
@@ -663,11 +648,11 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertTrue(_recorder->isRecording());
 }
 
-- (void)testResumeReturnsTheEngineErrorWithoutReportingIt
-{
+- (void)testResumeReturnsTheEngineErrorWithoutReportingIt {
   XCTAssertTrue(_recorder->start().is_ok());
   _recorder->pause();
-  // The code iOS returns when a non-mixable session may not go active in the background.
+  // The code iOS returns when a non-mixable session may not go active in the
+  // background.
   self.audioEngine.startIfNecessaryResult = NO;
   self.audioEngine.startIfNecessaryError = [AudioAPIError
       sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
@@ -684,8 +669,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(_registry->dispatched.size(), 0UL);
 }
 
-- (void)testAnEngineThatIsNotRunningReadsAsPaused
-{
+- (void)testAnEngineThatIsNotRunningReadsAsPaused {
   XCTAssertTrue(_recorder->start().is_ok());
 
   self.audioEngine.state = AudioEngineStateInterrupted;
@@ -694,8 +678,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertFalse(_recorder->isRecording());
 }
 
-- (void)testRecoveryFailedNotificationReportsThroughRecorderError
-{
+- (void)testRecoveryFailedNotificationReportsThroughRecorderError {
   XCTAssertTrue(_recorder->start().is_ok());
   NSError *activationRefused = [AudioAPIError
       sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
@@ -709,25 +692,26 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(_registry->dispatched[0].event, AudioEvent::RECORDER_ERROR);
   XCTAssertEqual(_registry->dispatched[0].listenerId, 42ULL);
   NSString *reason = NSStringFromStdString(_registry->dispatched[0].reason);
-  XCTAssertTrue([reason containsString:@"could not be recovered"], @"%@", reason);
+  XCTAssertTrue([reason containsString:@"could not be recovered"], @"%@",
+                reason);
   XCTAssertTrue([reason containsString:@"560557684"], @"%@", reason);
 }
 
-- (void)testNotificationsOfAStoppedSessionAreDropped
-{
+- (void)testNotificationsOfAStoppedSessionAreDropped {
   XCTAssertTrue(_recorder->start().is_ok());
-  AudioEngineInputNotificationBlock staleNotification = self.audioEngine.lastInputNotification;
+  AudioEngineInputNotificationBlock staleNotification =
+      self.audioEngine.lastInputNotification;
   XCTAssertTrue(_recorder->stop().is_ok());
 
   staleNotification(AudioEngineInputNotificationHardwareChanged, nil);
-  staleNotification(AudioEngineInputNotificationRecoveryFailed, [AudioAPIError engineStartFailed:nil]);
+  staleNotification(AudioEngineInputNotificationRecoveryFailed,
+                    [AudioAPIError engineStartFailed:nil]);
 
   XCTAssertEqual(_registry->dispatched.size(), 0UL);
   XCTAssertTrue(_recorder->isIdle());
 }
 
-- (void)testHardwareChangeNotificationRepreparesOutputsForTheNewInputFormat
-{
+- (void)testHardwareChangeNotificationRepreparesOutputsForTheNewInputFormat {
   auto adapterFixture = makeRecorderAdapterFixture();
   _recorder->connect(adapterFixture.handle);
   XCTAssertTrue(_recorder->start().is_ok());
@@ -735,34 +719,37 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat =
       [[AVAudioFormat alloc] initStandardFormatWithSampleRate:32000 channels:1];
-  self.audioEngine.lastInputNotification(AudioEngineInputNotificationHardwareChanged, nil);
+  self.audioEngine.lastInputNotification(
+      AudioEngineInputNotificationHardwareChanged, nil);
 
   XCTAssertEqual(adapterFixture.adapter()->buff_.size(), 1U);
   XCTAssertTrue(_recorder->isRecording());
   XCTAssertEqual(_registry->dispatched.size(), 0UL);
 }
 
-/// The engine reports from inside the input's own startIfNecessary:, where the recorder already
-/// holds its control mutex. Forwarding a notification from there would deadlock, so the session
-/// runs off the test thread and is given a deadline.
-- (void)testNotificationsReportedFromInsideAnOwnEngineCallAreNotForwarded
-{
+/// The engine reports from inside the input's own startIfNecessary:, where the
+/// recorder already holds its control mutex. Forwarding a notification from
+/// there would deadlock, so the session runs off the test thread and is given a
+/// deadline.
+- (void)testNotificationsReportedFromInsideAnOwnEngineCallAreNotForwarded {
   auto adapterFixture = makeRecorderAdapterFixture();
   _recorder->connect(adapterFixture.handle);
   self.audioEngine.reportsNotificationsFromStart = YES;
 
   XCTestExpectation *sessionReturned =
       [self expectationWithDescription:@"start, pause and resume return"];
-  // Captured by value: after a deadlock the stuck thread keeps the recorder alive, so tearDown
-  // does not block on the same mutex.
+  // Captured by value: after a deadlock the stuck thread keeps the recorder
+  // alive, so tearDown does not block on the same mutex.
   auto recorder = _recorder;
-  FakeRecorderInputNode *inputNode = self.audioEngine.fakeAVAudioEngine.fakeInputNode;
+  FakeRecorderInputNode *inputNode =
+      self.audioEngine.fakeAVAudioEngine.fakeInputNode;
   __block BOOL didResume = NO;
   dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
     if (recorder->start().is_ok()) {
       recorder->pause();
-      inputNode.outputFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:32000
-                                                                              channels:1];
+      inputNode.outputFormat =
+          [[AVAudioFormat alloc] initStandardFormatWithSampleRate:32000
+                                                         channels:1];
       didResume = recorder->resume().is_ok();
     }
     [sessionReturned fulfill];
@@ -770,13 +757,13 @@ static void ClearFakeRecorderSharedAudioSession(void)
   [self waitForExpectations:@[ sessionReturned ] timeout:5];
 
   XCTAssertTrue(didResume);
-  // The format HardwareChanged announced is read once the engine call has returned.
+  // The format HardwareChanged announced is read once the engine call has
+  // returned.
   XCTAssertEqual(adapterFixture.adapter()->buff_.size(), 1U);
   XCTAssertEqual(_registry->dispatched.size(), 0UL);
 }
 
-- (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath
-{
+- (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath {
   XCTAssertTrue(_recorder->start().is_ok());
 
   [self.audioEngine onSessionDeactivated];
@@ -789,8 +776,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertFalse(self.audioEngine.sessionDeactivationInvalidatedGraph);
 }
 
-- (void)testConnectWhileRecordingInitializesAdapterAndDisconnectClearsIt
-{
+- (void)testConnectWhileRecordingInitializesAdapterAndDisconnectClearsIt {
   auto adapterFixture = makeRecorderAdapterFixture();
   XCTAssertTrue(_recorder->start().is_ok());
   XCTAssertEqual(adapterFixture.adapter()->buff_.size(), 0U);
@@ -804,8 +790,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   XCTAssertEqual(adapterFixture.adapter()->buff_.size(), 0U);
 }
 
-- (void)testReceiverBlockFeedsTheRecordedFile
-{
+- (void)testReceiverBlockFeedsTheRecordedFile {
   NSString *uuid = [[NSUUID UUID] UUIDString];
   auto properties = [self validFileProperties];
   properties->path.fileName =
@@ -816,7 +801,8 @@ static void ClearFakeRecorderSharedAudioSession(void)
   TestAudioInput input(2, 512);
   AudioTimeStamp timestamp = {};
   for (int block = 0; block < 8; ++block) {
-    OSStatus status = self.audioEngine.lastAttachedReceiverBlock(&timestamp, 512, input.bufferList());
+    OSStatus status = self.audioEngine.lastAttachedReceiverBlock(
+        &timestamp, 512, input.bufferList());
     XCTAssertEqual(status, (OSStatus)kAudioServicesNoError);
   }
 

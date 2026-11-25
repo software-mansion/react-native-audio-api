@@ -29,7 +29,7 @@ class AndroidRecorderInput final : public IRecorderInput,
 
   /// Asks AudioInputRouter which device to capture from, which can wait seconds for a Bluetooth
   /// headset's SCO link.
-  RouteLease acquireRoute() override;
+  RouteLease acquireRoute() noexcept override;
   Result<NoneType, std::string> open(
       RouteLease route,
       InputOpenPurpose purpose,
