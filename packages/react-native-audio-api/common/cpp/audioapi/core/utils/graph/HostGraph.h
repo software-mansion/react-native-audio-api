@@ -146,6 +146,7 @@ class HostGraph {
   /// @brief DFS reachability check (traverses ghosts too).
   /// @param throughCycleBreakers when false, only paths that visit no cycle
   /// breaker count, `start` and `end` included.
+  /// @note JS Thread only
   bool hasPath(HostVertex *start, HostVertex *end, bool throughCycleBreakers);
 
   /// Nodes whose `GraphObject::breaksCycle_` changed, with the new value.
@@ -155,6 +156,7 @@ class HostGraph {
   /// lie on one. Call after every edge change and apply the result in that
   /// change's event, so AudioGraph never sees new edges with old values.
   /// @return the nodes whose value changed.
+  /// @note JS Thread only
   std::unique_ptr<CycleBreakerUpdates> markCycleBreakers();
 
   /// @brief Writes `updates` into the graph objects.

@@ -157,13 +157,21 @@ class SettleLinkTest : public ::testing::Test {
     graph = std::make_shared<Graph>(4096, &disposer_);
   }
 
+  /// Mirrors BaseAudioContext::processGraph.
   void processAll() {
     graph->processEvents();
     graph->process();
+    graph->advanceUnpulledNodes(currentSampleFrame_);
     for (auto &&[node, inputs] : graph->iter()) {
       node.process(inputs, audioapi::RENDER_QUANTUM_SIZE);
     }
+    for (auto &&[node, inputs] : graph->iterCycleBreaking()) {
+      node.processAfterGraph(inputs, audioapi::RENDER_QUANTUM_SIZE);
+    }
+    currentSampleFrame_ += audioapi::RENDER_QUANTUM_SIZE;
   }
+
+  std::size_t currentSampleFrame_ = 0;
 
   size_t iterCount() {
     size_t count = 0;

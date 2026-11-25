@@ -98,36 +98,45 @@ size_t computeNumberOfChannels(const HostGraph::HostVertex *node) {
   return maxInputChannels;
 }
 
-/// @brief If `node` needs a newly negotiated channel layout, allocates a
-/// replacement `DSPAudioBuffer` on the host thread, records its width as
-/// pending, and returns it. Returns `nullptr` when no swap is needed (no audio
-/// payload, a source, or the pending buffer already has
-/// `computedNumberOfChannels`).
-std::shared_ptr<audioapi::DSPAudioBuffer> buildNegotiatedBufferIfNeeded(
-    HostGraph::HostVertex *node,
-    size_t computedNumberOfChannels) {
-  auto *audio = audioNodeOf(node);
-  if (audio == nullptr || ownsOutputBuffer(node)) {
-    return nullptr;
-  }
+/// @brief Whether `node` mixes its inputs into a negotiated buffer. Sources own
+/// their output buffer and nodes without an audio payload have none.
+bool isNegotiated(const HostGraph::HostVertex *node) {
+  return audioNodeOf(node) != nullptr && !ownsOutputBuffer(node);
+}
 
+/// @brief Records `computedNumberOfChannels` as `node`'s pending width.
+/// @return whether the pending width changed.
+bool updatePendingChannelCount(HostGraph::HostVertex *node, size_t computedNumberOfChannels) {
   if (computedNumberOfChannels == 0 || node->pendingChannelCount == computedNumberOfChannels) {
-    return nullptr;
+    return false;
   }
   node->pendingChannelCount = computedNumberOfChannels;
-
-  return std::make_shared<audioapi::DSPAudioBuffer>(
-      audioapi::RENDER_QUANTUM_SIZE,
-      static_cast<int>(computedNumberOfChannels),
-      audio->getContextSampleRate());
+  return true;
 }
 
 struct ChannelNegotiation {
   HostGraph::HostVertex *node = nullptr;
   std::shared_ptr<audioapi::DSPAudioBuffer> buffer;
+  /// What `AudioNode::buildNegotiatedStorage` returned, null for most nodes.
+  std::shared_ptr<audioapi::AudioBuffer> storage;
 };
 
 using NegotiationBatch = std::vector<ChannelNegotiation>;
+
+/// @brief Allocates, on the host thread, everything `node` needs to work at its
+/// pending width.
+ChannelNegotiation buildNegotiation(HostGraph::HostVertex *node) {
+  auto *audio = audioNodeOf(node);
+  const size_t numberOfChannels = node->pendingChannelCount;
+  return {
+      .node = node,
+      .buffer = std::make_shared<audioapi::DSPAudioBuffer>(
+          audioapi::RENDER_QUANTUM_SIZE,
+          static_cast<int>(numberOfChannels),
+          audio->getContextSampleRate()),
+      .storage = audio->buildNegotiatedStorage(numberOfChannels),
+  };
+}
 
 /// @brief Appends `node` (one whose inputs or channel attributes changed, f.e.
 /// the connect `to` node) and every node further upstream (toward
@@ -154,13 +163,16 @@ void applyChannelNegotiations(
     Disposer<audioapi::DISPOSER_PAYLOAD_SIZE> &disposer) {
   for (const ChannelNegotiation &negotiation : negotiations) {
     auto *audio = audioNodeOf(negotiation.node);
-    if (audio == nullptr || negotiation.buffer == nullptr) {
+    if (audio == nullptr) {
       continue;
     }
     auto oldBuffer = audio->getNegotiatedBuffer();
     audio->setNegotiatedBuffer(negotiation.buffer);
     if (oldBuffer) {
       disposer.dispose(std::move(oldBuffer));
+    }
+    if (negotiation.storage) {
+      disposer.dispose(audio->exchangeNegotiatedStorage(negotiation.storage));
     }
   }
 }
@@ -177,14 +189,35 @@ std::unique_ptr<NegotiationBatch> collectNegotiations(
     collectAffectedPostOrder(changedNode, term, postOrder);
   }
 
+  std::vector<size_t> widthsBefore;
+  widthsBefore.reserve(postOrder.size());
+  for (const HostGraph::HostVertex *node : postOrder) {
+    widthsBefore.push_back(node->pendingChannelCount);
+  }
+
   // Reversed post-order is topological: a node reads its inputs' pending
   // widths only after every input this pass renegotiates has been updated,
-  // whichever order the cascade reached them in (f.e. a triangle).
+  // whichever order the cascade reached them in (f.e. a triangle). A feedback
+  // loop has no topological order, so one of its nodes reads an input before
+  // this pass updates it; repeat until the loop's widths stop changing. The
+  // cap of one pass per node only guards against a loop that never settles.
+  const bool hasFeedbackLoop = std::ranges::any_of(postOrder, canBreakCycle);
+  for (size_t pass = 0; pass < postOrder.size(); ++pass) {
+    bool changed = false;
+    for (HostGraph::HostVertex *node : std::views::reverse(postOrder)) {
+      if (isNegotiated(node)) {
+        changed |= updatePendingChannelCount(node, computeNumberOfChannels(node));
+      }
+    }
+    if (!changed || !hasFeedbackLoop) {
+      break;
+    }
+  }
+
   auto negotiations = std::make_unique<NegotiationBatch>();
-  for (HostGraph::HostVertex *node : std::views::reverse(postOrder)) {
-    if (auto negotiatedBuffer =
-            buildNegotiatedBufferIfNeeded(node, computeNumberOfChannels(node))) {
-      negotiations->push_back({.node = node, .buffer = std::move(negotiatedBuffer)});
+  for (size_t i = 0; i < postOrder.size(); ++i) {
+    if (postOrder[i]->pendingChannelCount != widthsBefore[i]) {
+      negotiations->push_back(buildNegotiation(postOrder[i]));
     }
   }
   return negotiations;

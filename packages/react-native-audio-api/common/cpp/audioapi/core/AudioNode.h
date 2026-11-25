@@ -132,6 +132,23 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     setOutputBuffer(buffer);
   }
 
+  /// @brief Storage besides the negotiated buffer that must be as wide as it (f.e. DelayNode's
+  /// delay ring), resized for `numberOfChannels`. The graph builds it next to the negotiated
+  /// buffer and installs both in the same event. Default: the node keeps no such storage.
+  /// @note JS Thread only
+  [[nodiscard]] virtual std::shared_ptr<AudioBuffer> buildNegotiatedStorage(
+      size_t /*numberOfChannels*/) {
+    return nullptr;
+  }
+
+  /// @brief Installs storage from buildNegotiatedStorage().
+  /// @return the replaced storage, to be disposed off the audio thread.
+  /// @note Audio Thread only
+  virtual std::shared_ptr<AudioBuffer> exchangeNegotiatedStorage(
+      std::shared_ptr<AudioBuffer> storage) {
+    return storage;
+  }
+
   /// @brief Number of channels this node emits toward AudioDestinationNode.
   /// Default: nullopt, the output is as wide as the inputs are mixed to. Sources
   /// present `outputChannelNumber_`; StereoPanner always outputs stereo.

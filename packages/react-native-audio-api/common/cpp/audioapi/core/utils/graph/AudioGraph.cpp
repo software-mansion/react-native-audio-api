@@ -71,9 +71,9 @@ void AudioGraph::markDeletions() {
   for (auto &node : nodes) {
     node.will_be_deleted = node.orphaned;
   }
-  bool withdrewAny = true;
-  while (withdrewAny) {
-    withdrewAny = false;
+  bool changed = true;
+  while (changed) {
+    changed = false;
     for (auto &node : nodes) {
       if (!node.will_be_deleted) {
         continue;
@@ -82,7 +82,7 @@ void AudioGraph::markDeletions() {
           node.handle->audioNode->canBeDestructed();
       if (!goes) {
         node.will_be_deleted = false;
-        withdrewAny = true;
+        changed = true;
       }
     }
   }
