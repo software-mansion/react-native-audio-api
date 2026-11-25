@@ -23,4 +23,7 @@ namespace audioapi::path {
 /// Converts a local path or file:// URL into a decoded filesystem path.
 [[nodiscard]] std::string normalizeFilePath(const std::string &path);
 
+/// The file:// URL JS receives for the filesystem @p path, which is passed through unescaped.
+[[nodiscard]] std::string toFileUrl(const std::string &path);
+
 } // namespace audioapi::path

@@ -48,9 +48,7 @@ JSI_HOST_FUNCTION_IMPL(AudioEncoderHostObject, encode) {
         auto result = audioencoding::encodeAudioData(buffers, properties);
 
         if (result.is_err()) {
-          return [message = std::move(result).unwrap_err()](jsi::Runtime &) {
-            return message;
-          };
+          return rejectWith(std::move(result).unwrap_err());
         }
 
         return [info = std::move(result).unwrap()](

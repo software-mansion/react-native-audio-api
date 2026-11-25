@@ -1,6 +1,7 @@
 #include <audioapi/core/utils/RecordingFileName.h>
 #include <audioapi/encoding/AudioEncoding.h>
 #include <audioapi/utils/FileSystem.hpp>
+#include <audioapi/utils/Path.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -112,7 +113,8 @@ EncodeAudioDataResult encodeAudioData(
 
   const auto &[sizeMB, durationSeconds] = closeResult.unwrap();
   return Ok(
-      EncodedFileInfo{.path = "file://" + filePath, .size = sizeMB, .duration = durationSeconds});
+      EncodedFileInfo{
+          .path = path::toFileUrl(filePath), .size = sizeMB, .duration = durationSeconds});
 }
 
 } // namespace audioapi::audioencoding

@@ -80,4 +80,8 @@ std::string normalizeFilePath(const std::string &path) {
   return percentDecode(path);
 }
 
+std::string toFileUrl(const std::string &path) {
+  return FILE_URL_PREFIX + path;
+}
+
 } // namespace audioapi::path

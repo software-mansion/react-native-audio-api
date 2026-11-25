@@ -61,6 +61,12 @@ class Promise {
 
 using PromiseResolver = std::function<std::variant<jsi::Value, std::string>(jsi::Runtime &)>;
 
+inline PromiseResolver rejectWith(std::string message) {
+  return [message = std::move(message)](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
+    return message;
+  };
+}
+
 class PromiseVendor {
  public:
   /// @brief Vendor whose `createAsyncPromise` bodies run on a multi-worker pool.

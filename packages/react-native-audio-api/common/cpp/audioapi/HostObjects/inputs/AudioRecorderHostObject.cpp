@@ -62,12 +62,6 @@ PromiseResolver resolveWithUndefined() {
   };
 }
 
-PromiseResolver rejectWith(std::string message) {
-  return [message = std::move(message)](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
-    return message;
-  };
-}
-
 } // namespace
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {

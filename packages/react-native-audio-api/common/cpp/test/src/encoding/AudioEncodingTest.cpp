@@ -1,12 +1,12 @@
 #include <audioapi/encoding/AudioEncoding.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
+#include <audioapi/utils/Path.h>
 #include <gtest/gtest.h>
 
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using namespace audioapi;
@@ -125,10 +125,8 @@ makeBuffer(size_t frames, float firstSample, float rate = sampleRate, int channe
   return buffer;
 }
 
-/// The filesystem path of the file @p info names, without its file:// prefix.
 std::string writtenPath(const EncodedFileInfo &info) {
-  EXPECT_EQ(info.path.rfind("file://", 0), 0U);
-  return info.path.substr(std::string_view("file://").size());
+  return path::normalizeFilePath(info.path);
 }
 
 std::vector<float> readFloats(const std::string &path) {
