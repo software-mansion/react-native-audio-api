@@ -1,12 +1,7 @@
 import { AudioApiError } from '../errors';
 import { IAudioEncoder } from '../jsi-interfaces';
-import {
-  AudioEncoderOptions,
-  FileDirectory,
-  FileFormat,
-  EncodedFileInfo,
-} from '../types';
-import FilePreset from '../utils/filePresets';
+import { AudioEncoderOptions, EncodedFileInfo } from '../types';
+import FilePreset, { withDefaultEncoderOptions } from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 
 class AudioEncoder {
@@ -39,14 +34,11 @@ class AudioEncoder {
 
     const promise = this.encoder.encode(
       buffers.map((buffer) => buffer.buffer),
-      {
-        format: options.format ?? FileFormat.M4A,
-        channelCount: options.channelCount ?? 0,
-        preset: options.preset ?? { ...FilePreset.High, sampleRate: 0 },
-        directory: options.directory ?? FileDirectory.Cache,
-        subDirectory: options.subDirectory ?? 'AudioAPI',
-        fileName: options.fileName ?? '',
-      }
+      withDefaultEncoderOptions({
+        channelCount: 0,
+        preset: { ...FilePreset.High, sampleRate: 0 },
+        ...options,
+      })
     );
 
     // Native snapshotted the samples, cutting off the views handed out so far.
