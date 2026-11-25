@@ -22,12 +22,12 @@ using namespace audioapi;
 // NOLINTBEGIN
 
 namespace {
-void appendU16LE(std::vector<uint8_t> &bytes, uint16_t value) {
+void appendU16LE(decoding::EncodedBytes &bytes, uint16_t value) {
   bytes.push_back(static_cast<uint8_t>(value & 0xFF));
   bytes.push_back(static_cast<uint8_t>((value >> 8) & 0xFF));
 }
 
-void appendU32LE(std::vector<uint8_t> &bytes, uint32_t value) {
+void appendU32LE(decoding::EncodedBytes &bytes, uint32_t value) {
   bytes.push_back(static_cast<uint8_t>(value & 0xFF));
   bytes.push_back(static_cast<uint8_t>((value >> 8) & 0xFF));
   bytes.push_back(static_cast<uint8_t>((value >> 16) & 0xFF));
@@ -35,7 +35,7 @@ void appendU32LE(std::vector<uint8_t> &bytes, uint32_t value) {
 }
 
 /// A mono 16-bit WAV holding `frameCount` frames of a constant half-scale sample.
-std::vector<uint8_t> makeTestWavPcm16Mono(size_t frameCount) {
+decoding::EncodedBytes makeTestWavPcm16Mono(size_t frameCount) {
   constexpr uint16_t channels = 1;
   constexpr uint32_t sampleRate = 44100;
   constexpr uint16_t bitsPerSample = 16;
@@ -47,7 +47,7 @@ std::vector<uint8_t> makeTestWavPcm16Mono(size_t frameCount) {
   const uint32_t dataChunkSize = static_cast<uint32_t>(samples.size() * sizeof(int16_t));
   const uint32_t riffChunkSize = 36 + dataChunkSize;
 
-  std::vector<uint8_t> wav;
+  decoding::EncodedBytes wav;
   wav.reserve(44 + dataChunkSize);
 
   wav.insert(wav.end(), {'R', 'I', 'F', 'F'});

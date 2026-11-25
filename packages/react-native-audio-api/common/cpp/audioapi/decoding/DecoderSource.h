@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/utils/AlignedAllocator.hpp>
+
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -11,13 +13,17 @@
 
 namespace audioapi::decoding {
 
+/// Bytes of a whole encoded file or raw PCM block. A decode holds them only until it
+/// finishes, and `AlignedAllocator` returns a large block to the system as soon as it is freed.
+using EncodedBytes = std::vector<uint8_t, AlignedAllocator<uint8_t>>;
+
 struct LocalFileSource {
   std::string path;
   int sampleRate = 0;
 };
 
 struct EncodedMemorySource {
-  std::vector<uint8_t> data;
+  EncodedBytes data;
   int sampleRate = 0;
 };
 
@@ -28,7 +34,7 @@ struct RemoteUrlSource {
 };
 
 struct RawPcmSource {
-  std::vector<uint8_t> data;
+  EncodedBytes data;
   int channelCount = 0;
   bool interleaved = true;
   int sampleRate = 0;

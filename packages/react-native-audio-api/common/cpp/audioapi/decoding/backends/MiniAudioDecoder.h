@@ -6,9 +6,7 @@
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
-#include <vector>
 
 namespace audioapi::decoding::miniaudio {
 
@@ -37,7 +35,7 @@ class MiniAudioDecoder : public AudioDecoderBackend {
   void discardFailedDecoder();
 
   std::unique_ptr<ma_decoder> decoder_;
-  std::vector<uint8_t> memoryCopy_;
+  EncodedBytes memoryCopy_;
 };
 
 } // namespace audioapi::decoding::miniaudio
