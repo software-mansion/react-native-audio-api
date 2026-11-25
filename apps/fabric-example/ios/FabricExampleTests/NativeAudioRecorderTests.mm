@@ -3,6 +3,7 @@
 #import <objc/runtime.h>
 
 #import <audioapi/ios/core/NativeAudioRecorder.h>
+#import <audioapi/ios/system/AudioAPIError.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
@@ -10,9 +11,9 @@
 
 @interface FakeRecorderFormat : NSObject
 
-@property(nonatomic, assign) double sampleRate;
-@property(nonatomic, assign) AVAudioChannelCount channelCount;
-@property(nonatomic, assign, getter=isInterleaved) BOOL interleaved;
+@property (nonatomic, assign) double sampleRate;
+@property (nonatomic, assign) AVAudioChannelCount channelCount;
+@property (nonatomic, assign, getter=isInterleaved) BOOL interleaved;
 
 @end
 
@@ -21,8 +22,8 @@
 
 @interface FakeRecorderInputNode : NSObject
 
-@property(nonatomic, strong) id inputFormat;
-@property(nonatomic, strong) id outputFormat;
+@property (nonatomic, strong) id inputFormat;
+@property (nonatomic, strong) id outputFormat;
 
 - (AVAudioFormat *)inputFormatForBus:(AVAudioNodeBus)bus;
 - (AVAudioFormat *)outputFormatForBus:(AVAudioNodeBus)bus;
@@ -45,7 +46,7 @@
 
 @interface FakeRecorderAVAudioEngine : AVAudioEngine
 
-@property(nonatomic, strong) FakeRecorderInputNode *fakeInputNode;
+@property (nonatomic, strong) FakeRecorderInputNode *fakeInputNode;
 
 @end
 
@@ -60,8 +61,8 @@
 
 @interface FakeRecorderSharedAVAudioSession : NSObject
 
-@property(nonatomic, assign) NSTimeInterval IOBufferDuration;
-@property(nonatomic, assign) double sampleRate;
+@property (nonatomic, assign) NSTimeInterval IOBufferDuration;
+@property (nonatomic, assign) double sampleRate;
 
 @end
 
@@ -78,19 +79,20 @@
 
 @interface FakeRecorderAudioEngine : AudioEngine
 
-@property(nonatomic, strong) FakeRecorderAVAudioEngine *fakeAVAudioEngine;
-@property(nonatomic, assign) BOOL startIfNecessaryResult;
-@property(nonatomic, assign) NSInteger stopIfNecessaryCallCount;
-@property(nonatomic, assign) NSInteger attachInputNodeCallCount;
-@property(nonatomic, assign) NSInteger startIfNecessaryCallCount;
-@property(nonatomic, assign) NSInteger detachInputNodeCallCount;
-@property(nonatomic, assign) NSInteger stopIfPossibleCallCount;
-@property(nonatomic, assign) NSInteger restartAudioEngineCallCount;
-@property(nonatomic, assign) NSInteger suspendInputCallCount;
-@property(nonatomic, assign) NSInteger resumeInputCallCount;
-@property(nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
-@property(nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
-@property(nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
+@property (nonatomic, strong) FakeRecorderAVAudioEngine *fakeAVAudioEngine;
+@property (nonatomic, assign) BOOL startIfNecessaryResult;
+@property (nonatomic, strong) NSError *startIfNecessaryError;
+@property (nonatomic, assign) NSInteger stopIfNecessaryCallCount;
+@property (nonatomic, assign) NSInteger attachInputNodeCallCount;
+@property (nonatomic, assign) NSInteger startIfNecessaryCallCount;
+@property (nonatomic, assign) NSInteger detachInputNodeCallCount;
+@property (nonatomic, assign) NSInteger stopIfPossibleCallCount;
+@property (nonatomic, assign) NSInteger restartAudioEngineCallCount;
+@property (nonatomic, assign) NSInteger suspendInputCallCount;
+@property (nonatomic, assign) NSInteger resumeInputCallCount;
+@property (nonatomic, assign) NSInteger rebuildAfterDeactivationCallCount;
+@property (nonatomic, strong) AVAudioSinkNode *lastAttachedInputNode;
+@property (nonatomic, copy) AVAudioSinkNodeReceiverBlock lastAttachedReceiverBlock;
 @property (nonatomic, assign) BOOL lastAttachedVoiceProcessingEnabled;
 
 @end
@@ -116,8 +118,7 @@
 
 - (void)attachInputNodeWithReceiverBlock:(AVAudioSinkNodeReceiverBlock)receiverBlock
                   voiceProcessingEnabled:(BOOL)voiceProcessingEnabled
-                     onInputNotification:
-                         (void (^)(AudioEngineInputNotification))onInputNotification
+                     onInputNotification:(AudioEngineInputNotificationBlock)onInputNotification
 {
   self.attachInputNodeCallCount += 1;
   self.inputNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:receiverBlock];
@@ -127,7 +128,7 @@
   (void)onInputNotification;
 }
 
-- (bool)startIfNecessary
+- (bool)startIfNecessary:(NSError **)error
 {
   self.startIfNecessaryCallCount += 1;
   BOOL observedSessionDeactivation = self.sessionDeactivationInvalidatedGraph;
@@ -139,6 +140,9 @@
   if (self.startIfNecessaryResult) {
     self.state = AudioEngineStateRunning;
     self.sessionDeactivationInvalidatedGraph = NO;
+  } else if (error != nil) {
+    // The real engine always sets the error when it fails to start.
+    *error = self.startIfNecessaryError ?: [AudioAPIError engineStartFailed:nil];
   }
 
   return self.startIfNecessaryResult;
@@ -165,10 +169,10 @@
   self.suspendInputCallCount += 1;
 }
 
-- (bool)resumeInput
+- (bool)resumeInput:(NSError **)error
 {
   self.resumeInputCallCount += 1;
-  return [self startIfNecessary];
+  return [self startIfNecessary:error];
 }
 
 @end
@@ -248,9 +252,9 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
 @interface NativeAudioRecorderTests : XCTestCase
 
-@property(nonatomic, strong) FakeRecorderAudioEngine *audioEngine;
-@property(nonatomic, strong) FakeRecorderAudioSessionManager *sessionManager;
-@property(nonatomic, strong) FakeRecorderSharedAVAudioSession *sharedSession;
+@property (nonatomic, strong) FakeRecorderAudioEngine *audioEngine;
+@property (nonatomic, strong) FakeRecorderAudioSessionManager *sessionManager;
+@property (nonatomic, strong) FakeRecorderSharedAVAudioSession *sharedSession;
 
 @end
 
@@ -424,7 +428,8 @@ static void ClearFakeRecorderSharedAudioSession(void)
 
     XCTAssertEqual(self.audioEngine.detachInputNodeCallCount, previousDetachCount + 1);
     XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, previousStopIfPossibleCount + 1);
-    XCTAssertEqual(self.audioEngine.restartAudioEngineCallCount, previousRestartAudioEngineCallCount + 1);
+    XCTAssertEqual(
+        self.audioEngine.restartAudioEngineCallCount, previousRestartAudioEngineCallCount + 1);
     XCTAssertNil([recorder getResolvedInputFormat]);
     XCTAssertEqual([recorder getResolvedBufferSize], 0);
   };
@@ -442,7 +447,7 @@ static void ClearFakeRecorderSharedAudioSession(void)
   self.audioEngine.startIfNecessaryResult = YES;
 
   [recorder pause];
-  XCTAssertTrue([recorder resume]);
+  XCTAssertTrue([recorder resume:nil]);
 
   XCTAssertEqual(self.audioEngine.suspendInputCallCount, 1);
   XCTAssertEqual(self.audioEngine.resumeInputCallCount, 1);
@@ -458,16 +463,36 @@ static void ClearFakeRecorderSharedAudioSession(void)
       voiceProcessingEnabled:NO];
 
   [recorder pause];
-  XCTAssertFalse([recorder resume]);
+  XCTAssertFalse([recorder resume:nil]);
 
   XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
+}
+
+- (void)testResumeRelaysTheEngineErrorWhenEngineStartFails
+{
+  // The code iOS returns when a non-mixable session may not go active in the background.
+  NSError *activationRefused =
+      [AudioAPIError sessionActivationFailed:[NSError errorWithDomain:NSOSStatusErrorDomain
+                                                                 code:560557684
+                                                             userInfo:nil]];
+  self.audioEngine.startIfNecessaryResult = NO;
+  self.audioEngine.startIfNecessaryError = activationRefused;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  [recorder pause];
+  NSError *error = nil;
+  XCTAssertFalse([recorder resume:&error]);
+
+  XCTAssertEqualObjects(error, activationRefused);
 }
 
 - (void)testStartAfterSessionDeactivationUsesRecoveryRebuildPath
 {
   AVAudioFormat *initialFormat = [self validFormat];
   AVAudioFormat *recoveredFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:32000
-                                                                                   channels:1];
+                                                                                  channels:1];
   self.audioEngine.fakeAVAudioEngine.fakeInputNode.outputFormat = initialFormat;
 
   NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]

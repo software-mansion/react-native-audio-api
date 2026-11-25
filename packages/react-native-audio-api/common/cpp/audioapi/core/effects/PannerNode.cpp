@@ -87,13 +87,13 @@ void PannerNode::processNode(int framesToProcess) {
   const auto listenerUpY = listener_->upYValues();
   const auto listenerUpZ = listener_->upZValues();
 
-  auto outputLeft = outputBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
-  auto outputRight = outputBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+  auto outputLeft = outputBuffer_->getChannelByType(ChannelType::LEFT)->span();
+  auto outputRight = outputBuffer_->getChannelByType(ChannelType::RIGHT)->span();
 
-  auto inputLeftSpan = monoInput ? audioBuffer_->getChannelByType(AudioBuffer::ChannelMono)->span()
-                                 : audioBuffer_->getChannelByType(AudioBuffer::ChannelLeft)->span();
+  auto inputLeftSpan = monoInput ? audioBuffer_->getChannelByType(ChannelType::MONO)->span()
+                                 : audioBuffer_->getChannelByType(ChannelType::LEFT)->span();
   auto inputRightSpan =
-      monoInput ? inputLeftSpan : audioBuffer_->getChannelByType(AudioBuffer::ChannelRight)->span();
+      monoInput ? inputLeftSpan : audioBuffer_->getChannelByType(ChannelType::RIGHT)->span();
 
   // Equal-power is the only supported panning model.
   (void)panningModel_;

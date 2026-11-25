@@ -31,8 +31,16 @@ const HORIZONTAL_GRID_LINES = [1.0, 0.0, -1.0];
 const WAVES: WaveConfig[] = [
   { type: 'sine', label: 'Sine', colorVar: 'var(--swm-oscillator-sine)' },
   { type: 'square', label: 'Square', colorVar: 'var(--swm-oscillator-square)' },
-  { type: 'sawtooth', label: 'Sawtooth', colorVar: 'var(--swm-oscillator-sawtooth)' },
-  { type: 'triangle', label: 'Triangle', colorVar: 'var(--swm-oscillator-triangle)' },
+  {
+    type: 'sawtooth',
+    label: 'Sawtooth',
+    colorVar: 'var(--swm-oscillator-sawtooth)',
+  },
+  {
+    type: 'triangle',
+    label: 'Triangle',
+    colorVar: 'var(--swm-oscillator-triangle)',
+  },
 ];
 
 function generateWave(type: WaveType): WavePoint[] {
@@ -94,7 +102,8 @@ const WaveChart: FC<WaveChartProps> = ({ config, data }) => (
       className={styles.chart}
       responsive
       data={data}
-      margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+      margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+    >
       {HORIZONTAL_GRID_LINES.map((y) => (
         <ReferenceLine key={`h-${y}`} y={y} strokeDasharray="4 4" />
       ))}

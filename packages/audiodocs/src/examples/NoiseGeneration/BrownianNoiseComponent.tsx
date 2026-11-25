@@ -1,6 +1,11 @@
 import React, { FC, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AudioBuffer, AudioBufferSourceNode, AudioContext, GainNode } from 'react-native-audio-api';
+import {
+  AudioBuffer,
+  AudioBufferSourceNode,
+  AudioContext,
+  GainNode,
+} from 'react-native-audio-api';
 
 const BrownianNoise: FC = () => {
   const aCtxRef = useRef<AudioContext | null>(null);
@@ -12,7 +17,7 @@ const BrownianNoise: FC = () => {
     const aCtx = aCtxRef.current;
 
     if (!aCtx) {
-      return undefined;
+      return null;
     }
 
     const bufferSize = 2 * aCtx.sampleRate;
@@ -26,29 +31,28 @@ const BrownianNoise: FC = () => {
       output[i] *= 3.5;
     }
 
-
     const noiseBuffer = aCtx.createBuffer(1, bufferSize, aCtx.sampleRate);
     noiseBuffer.copyToChannel(output, 0, 0);
     return noiseBuffer;
-  }
+  };
 
-  const onPressIn = async () => {
-    if (!bufferNodeRef.current) {
-      bufferNodeRef.current = await aCtxRef.current.createBufferSource();
+  const onPressIn = () => {
+    if (!bufferNodeRef.current && aCtxRef.current && gainRef.current) {
+      bufferNodeRef.current = aCtxRef.current.createBufferSource();
       bufferNodeRef.current.buffer = bufferRef.current;
       bufferNodeRef.current.loop = true;
       bufferNodeRef.current.connect(gainRef.current);
 
       bufferNodeRef.current.start();
     }
-  }
+  };
 
   const onPressOut = () => {
     if (bufferNodeRef.current) {
       bufferNodeRef.current.stop();
       bufferNodeRef.current = null;
     }
-  }
+  };
 
   useEffect(() => {
     if (!aCtxRef.current) {
@@ -74,7 +78,7 @@ const BrownianNoise: FC = () => {
       </Pressable>
     </View>
   );
-}
+};
 
 export default BrownianNoise;
 

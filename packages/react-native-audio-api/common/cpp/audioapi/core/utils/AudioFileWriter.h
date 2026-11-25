@@ -77,10 +77,12 @@ class AudioFileWriter final {
   DELETE_COPY_AND_MOVE(AudioFileWriter);
 
   /// JS thread. @p streamFormat's maxFramesPerBuffer bounds a single writeAudioData() call.
-  /// Returns the opened file's path.
+  /// Fails while a session is open, until closeFile() ends it. Returns the opened file's path.
   OpenFileResult openFile(const StreamFormat &streamFormat);
 
-  /// JS thread. Sizes and durations are summed over every file of the session.
+  /// JS thread. Sizes and durations are summed over every file of the session. A session whose
+  /// current file a failed format change or rotation already finished is still reported, with
+  /// the files it got to; fails only when no session is open.
   CloseFileResult closeFile();
 
   /// JS thread. Keeps the open file and re-points its encoder at @p streamFormat. Drains the
@@ -123,7 +125,8 @@ class AudioFileWriter final {
 
   /// JS thread, with no worker running: also sizes the buffer pool and starts the worker.
   OpenFileResult startNextFile(const StreamFormat &streamFormat);
-  /// JS thread. Joins the worker, then adds the file to the session totals.
+  /// JS thread. Joins the worker, then closes the current file into the session totals. Ok,
+  /// adding nothing, when no file is left to close.
   CloseEncoderResult finishCurrentFile();
 
   /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not has a
@@ -172,6 +175,9 @@ class AudioFileWriter final {
   mutable std::mutex fileMutex_;
   /// Open on the current file; nullptr between files, and after a rotation fails.
   std::unique_ptr<AudioEncoder> currentEncoder_;
+  /// From a successful openFile() until closeFile(): there is a session to report, even after a
+  /// failed format change or rotation finished its current file.
+  bool isSessionOpen_{false};
   std::string sessionStem_;
   std::vector<std::string> sessionFilePaths_;
   size_t openedFileCount_{0};

@@ -21,6 +21,10 @@ class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
   /// @return The computed value at the given time, or std::nullopt if no events are active at that time.
   [[nodiscard]] std::optional<float> computeValueAtTime(double time);
 
+  /// @brief Whether the value is constant over [@p startTime, @p endTime); a running SetTarget never is.
+  /// @note Audio Thread only
+  [[nodiscard]] bool isSettledBetween(double startTime, double endTime) const;
+
   /// @brief Push a new event into the queue, resolving its startValue and startTime based on neighboring events.
   /// @param event The new event to add to the queue.
   /// @return True if the event was successfully added, false if the queue is full.
@@ -42,6 +46,10 @@ class ParamRenderQueue : public ParamQueueBase<RenderParamEvent> {
 
   /// @brief Snap a time to the exact time of its nearest sample frame
   [[nodiscard]] double snapToSampleFrameTime(double time) const;
+
+  /// @brief Time from which @p event holds its end value; meaningless for SetTarget.
+  /// @note Audio Thread only
+  [[nodiscard]] double effectiveEndTime(const RenderParamEvent &event) const;
 
   /// @brief Truncate @c currentEvent_ at @p holdTime, freezing it at its value there.
   void truncateCurrentEventAt(double holdTime);

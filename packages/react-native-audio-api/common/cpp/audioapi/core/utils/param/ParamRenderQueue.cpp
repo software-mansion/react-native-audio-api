@@ -30,16 +30,35 @@ std::optional<float> ParamRenderQueue::computeValueAtTime(double time) {
     return event.getStartValue();
   }
 
-  // Ramps stay active until their scheduled end so sub-frame intervals still
-  // interpolate; other finite events end on their snapped boundary. SetTarget
-  // never ends on its own.
-  double effectiveEndTime =
-      event.isRampType() ? event.getEndTime() : snapToSampleFrameTime(event.getEndTime());
-  if (event.getType() != ParamEventType::SET_TARGET && time >= effectiveEndTime) {
+  if (event.getType() != ParamEventType::SET_TARGET && time >= effectiveEndTime(event)) {
     return event.getEndValue();
   }
 
   return event.calculateValueAtTime(time);
+}
+
+double ParamRenderQueue::effectiveEndTime(const RenderParamEvent &event) const {
+  // Ramps stay active until their scheduled end so sub-frame intervals still
+  // interpolate; other finite events end on their snapped boundary.
+  return event.isRampType() ? event.getEndTime() : snapToSampleFrameTime(event.getEndTime());
+}
+
+bool ParamRenderQueue::isSettledBetween(double startTime, double endTime) const {
+  if (!eventQueue_.isEmpty()) {
+    // Without a current event the front is promoted at once, whatever its start time.
+    if (!currentEvent_ || snapToSampleFrameTime(eventQueue_.peekFront().getStartTime()) < endTime) {
+      return false;
+    }
+  }
+  if (!currentEvent_) {
+    return true;
+  }
+
+  const RenderParamEvent &event = *currentEvent_;
+  bool holdsStartValue = endTime <= snapToSampleFrameTime(event.getStartTime());
+  bool holdsEndValue =
+      event.getType() != ParamEventType::SET_TARGET && startTime >= effectiveEndTime(event);
+  return holdsStartValue || holdsEndValue;
 }
 
 bool ParamRenderQueue::push(RenderParamEvent &&event) {

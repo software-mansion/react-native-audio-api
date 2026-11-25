@@ -59,7 +59,9 @@ const AudioNodePropsTable = ({
           <td style={{ textAlign: 'center' }}>
             <code>number</code>
           </td>
-          <td style={{ textAlign: 'center' }}>{renderValue(numberOfOutputs)}</td>
+          <td style={{ textAlign: 'center' }}>
+            {renderValue(numberOfOutputs)}
+          </td>
           <td style={{ textAlign: 'left' }}>
             Number of output connections for the node.
           </td>

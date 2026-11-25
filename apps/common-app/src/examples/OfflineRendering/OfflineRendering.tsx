@@ -1,81 +1,91 @@
-import React, { useCallback, useState, FC } from 'react';
-import {
-  AudioBuffer,
-  AudioContext,
-  OfflineAudioContext,
-} from 'react-native-audio-api';
+import React, { FC, useEffect, useRef, useState } from 'react';
+import { AudioBuffer, OfflineAudioContext } from 'react-native-audio-api';
 
-import { Container, Button } from '../../components';
+import { Button, Container } from '../../components';
+import { useAudioContext } from '../../utils/audio';
 
 const URL = 'https://download.samplelib.com/mp3/sample-12s.mp3';
 
+const RENDER_DURATION_S = 5;
+const RENDER_SAMPLE_RATE = 48_000;
+/** The render pauses here to exercise `suspend` / `resume`. */
+const SUSPEND_AT_S = 1;
+const SUSPEND_FOR_MS = 3000;
+
 const OfflineRendering: FC = () => {
-  const [rendering, setRendering] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
   const [renderedBuffer, setRenderedBuffer] = useState<AudioBuffer | null>(
     null
   );
+  const audioContext = useAudioContext();
+  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleStartRendering = useCallback(() => {
-    if (rendering) {
-      return;
-    }
+  useEffect(
+    () => () => {
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
+    },
+    []
+  );
 
-    setRendering(true);
-    (async () => {
-      const duration = 5;
-      const sampleRate = 48_000;
-      const length = duration * sampleRate;
+  const render = async () => {
+    setIsRendering(true);
+
+    try {
       const offlineAudioContext = new OfflineAudioContext(
         2,
-        length,
-        sampleRate
+        RENDER_DURATION_S * RENDER_SAMPLE_RATE,
+        RENDER_SAMPLE_RATE
       );
 
-      // Suspend at 1 second
       offlineAudioContext
-        .suspend(1)
+        .suspend(SUSPEND_AT_S)
         .then(() => {
-          setTimeout(() => {
+          resumeTimeoutRef.current = setTimeout(() => {
             offlineAudioContext.resume().catch((e) => console.error(e));
-          }, 3000);
+          }, SUSPEND_FOR_MS);
         })
         .catch((e) => console.error(e));
 
-      const buffer = await fetch(URL)
-        .then((response) => response.arrayBuffer())
-        .then((arrayBuffer) =>
-          offlineAudioContext.decodeAudioData(arrayBuffer)
-        );
-      const audioBufferSourceNode = offlineAudioContext.createBufferSource();
-      audioBufferSourceNode.buffer = buffer;
+      const arrayBuffer = await fetch(URL).then((response) =>
+        response.arrayBuffer()
+      );
+      const source = offlineAudioContext.createBufferSource();
+      source.buffer = await offlineAudioContext.decodeAudioData(arrayBuffer);
+      source.connect(offlineAudioContext.destination);
+      source.start();
 
-      audioBufferSourceNode.start();
-      audioBufferSourceNode.connect(offlineAudioContext.destination);
-      const result = await offlineAudioContext.startRendering();
-      setRenderedBuffer(result);
-    })();
-  }, [rendering]);
+      setRenderedBuffer(await offlineAudioContext.startRendering());
+    } catch (error) {
+      console.error('Offline rendering failed:', error);
+    } finally {
+      setIsRendering(false);
+    }
+  };
 
-  const handleStartPlay = useCallback(() => {
-    if (!renderedBuffer) return;
-    const audioContext = new AudioContext();
-    const audioBufferSourceNode = audioContext.createBufferSource();
-    audioBufferSourceNode.buffer = renderedBuffer;
-    audioBufferSourceNode.connect(audioContext.destination);
-    audioBufferSourceNode.start();
-  }, [renderedBuffer]);
-
-  let buttonTitle = '';
-  if (renderedBuffer) buttonTitle = 'Play';
-  else if (rendering) buttonTitle = 'Rendering..';
-  else buttonTitle = 'Start Rendering';
-
-  const disabled = rendering && !renderedBuffer;
-  const handler = !rendering ? handleStartRendering : handleStartPlay;
+  const play = () => {
+    if (!renderedBuffer) {
+      return;
+    }
+    const source = audioContext.createBufferSource();
+    source.buffer = renderedBuffer;
+    source.connect(audioContext.destination);
+    source.onended = () => source.disconnect();
+    source.start();
+  };
 
   return (
     <Container centered>
-      <Button title={buttonTitle} onPress={handler} disabled={disabled} />
+      {renderedBuffer ? (
+        <Button title="Play" onPress={play} />
+      ) : (
+        <Button
+          title={isRendering ? 'Rendering…' : 'Start Rendering'}
+          onPress={render}
+          disabled={isRendering}
+        />
+      )}
     </Container>
   );
 };

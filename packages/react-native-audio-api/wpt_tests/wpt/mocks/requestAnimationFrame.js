@@ -7,7 +7,10 @@ function createRequestAnimationFrame(window) {
   const handles = new Map();
 
   function now() {
-    if (window.performance != null && typeof window.performance.now === 'function') {
+    if (
+      window.performance != null &&
+      typeof window.performance.now === 'function'
+    ) {
       return window.performance.now();
     }
     return Date.now();

@@ -32,12 +32,7 @@ void SyncCallInvoker::initialize(napi_env env) {
 
   napi_value noopCallback;
   napi_create_function(
-      env,
-      "syncCallInvokerDispatch",
-      NAPI_AUTO_LENGTH,
-      noopDispatch,
-      nullptr,
-      &noopCallback);
+      env, "syncCallInvokerDispatch", NAPI_AUTO_LENGTH, noopDispatch, nullptr, &noopCallback);
 
   napi_create_threadsafe_function(
       env,

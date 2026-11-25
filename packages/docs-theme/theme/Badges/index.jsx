@@ -2,23 +2,43 @@ import React from 'react';
 import styles from './styles.module.css';
 
 export function Optional({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>Optional{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.basic}`}>
+      Optional{footnote ? '*' : ''}
+    </div>
+  );
 }
 
 export function ReadOnly({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>Read only{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.basic}`}>
+      Read only{footnote ? '*' : ''}
+    </div>
+  );
 }
 
 export function Overridden({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>Overridden{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.basic}`}>
+      Overridden{footnote ? '*' : ''}
+    </div>
+  );
 }
 
 export function IOS({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>iOS{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.basic}`}>
+      iOS{footnote ? '*' : ''}
+    </div>
+  );
 }
 
 export function Android({ footnote }) {
-  return <div className={`${styles.badge} ${styles.basic}`}>Android{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.basic}`}>
+      Android{footnote ? '*' : ''}
+    </div>
+  );
 }
 
 const ANDROID_VERSION_BY_API_LEVEL = {
@@ -35,14 +55,24 @@ const ANDROID_VERSION_BY_API_LEVEL = {
 
 export function AndroidAPI({ level }) {
   const version = ANDROID_VERSION_BY_API_LEVEL[level];
-  const label = version ? `Android ${version}+ (API ${level})` : `Android API ${level}+`;
+  const label = version
+    ? `Android ${version}+ (API ${level})`
+    : `Android API ${level}+`;
   return <div className={`${styles.badge} ${styles.basic}`}>{label}</div>;
 }
 
 export function Experimental({ footnote }) {
-  return <div className={`${styles.badge} ${styles.experimental}`}>Experimental{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.experimental}`}>
+      Experimental{footnote ? '*' : ''}
+    </div>
+  );
 }
 
 export function MobileOnly({ footnote }) {
-  return <div className={`${styles.badge} ${styles.experimental}`}>Mobile only{footnote ? '*' : ''}</div>;
+  return (
+    <div className={`${styles.badge} ${styles.experimental}`}>
+      Mobile only{footnote ? '*' : ''}
+    </div>
+  );
 }

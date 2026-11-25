@@ -10,7 +10,7 @@
 [![NPM nightly](https://img.shields.io/npm/v/react-native-audio-api/audio-api-nightly)](https://www.npmjs.com/package/react-native-audio-api?activeTab=versions)
 <br />
 [![github ci](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml)
-[![Audio Api tests](https://github.com/software-mansion/react-native-audio-api/actions/workflows/tests.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/tests.yml)
+[![CI](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml/badge.svg)](https://github.com/software-mansion/react-native-audio-api/actions/workflows/ci.yml)
 
 `react-native-audio-api` provides system for controlling audio in React Native environment compatible with Web Audio API specification,
 allowing developers to generate and modify audio in exact same way it is possible in browsers.
@@ -81,7 +81,7 @@ check out the [Getting Started](https://docs.swmansion.com/react-native-audio-ap
   Decode m4a/mp4/aac/ogg/opus audio files, allowing for playback of these formats in the audio graph.
 
 - **HLS streaming support** 🌊 <br />
-  Stream audio from HLS sources, allowing for playback of live audio streams or pre-recorded audio files. Requires the optional FFmpeg build flag — see the [Prebuilt libraries support](https://docs.swmansion.com/react-native-audio-api/docs/other/prebuilt-libraries-support) docs.
+  Stream audio from HLS sources, allowing for playback of live audio streams or pre-recorded audio files. Requires the optional FFmpeg build flag — see the [Build-time flags](https://docs.swmansion.com/react-native-audio-api/docs/other/build-time-flags#enableffmpeg) docs.
 
 ### <a href="https://github.com/software-mansion/react-native-audio-api/releases/tag/0.7.0"><img src="https://img.shields.io/badge/Released_in-0.7.0-green" /></a>
 

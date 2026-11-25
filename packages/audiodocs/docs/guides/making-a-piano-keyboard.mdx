@@ -3,7 +3,7 @@ sidebar_position: 2
 ---
 
 import InteractiveExample from '@site/src/components/InteractiveExample';
-
+import PianoFrequenciesDiagram from '@site/src/components/PianoFrequenciesDiagram';
 
 # Piano keyboard
 
@@ -100,7 +100,8 @@ export default function SimplePiano() {
     }
 
     Object.entries(sourceList).forEach(async ([key, url]) => {
-      bufferListRef.current[key as KeyName] = await audioContextRef.current!.decodeAudioData(url);
+      bufferListRef.current[key as KeyName] =
+        await audioContextRef.current!.decodeAudioData(url);
     });
   }, []);
 }
@@ -201,6 +202,7 @@ We will start from the end this time, and finally, we will use new type of audio
 
 An `AudioParam` is an interface that controls various aspects of most audio nodes, like volume (in the `GainNode` described above), pan or frequency. It allows us to control these aspects over time, enabling smooth transitions and complex audio effects.
 For our use case, we are interested in two methods of an AudioParam:
+
 - [`setValueAtTime`](../core/audio-param.mdx#setvalueattime)
 - [`exponentialRampToValueAtTime`](../core/audio-param.mdx#exponentialramptovalueattime).
 
@@ -213,11 +215,13 @@ An envelope describes how a sound's amplitude changes over time. The most widely
 - **Sustain** — volume level held while the note is active.
 - **Release** — time to fade out after the note ends.
 
-
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
 import { useGainAdsrPlayground } from '@site/src/components/InteractivePlayground/GainAdsrExample/useGainAdsrPlayground';
 
-<InteractivePlayground usePlayground={useGainAdsrPlayground} tag="ADSR Envelope" />
+<InteractivePlayground
+  usePlayground={useGainAdsrPlayground}
+  tag="ADSR Envelope"
+/>
 
 You can read more about envelopes and ADSR on [Wikipedia](<https://en.wikipedia.org/wiki/Envelope_(music)>).
 
@@ -315,7 +319,7 @@ When we change the speed of a sound, it will also change its pitch (frequency). 
 
 Each piano key has its own dominant frequency (e.g., the frequency of the `A4` key is `440Hz`). We can check the frequency of each key, calculate the ratio between them, and use that ratio to adjust the playback rate of the buffers we have.
 
-![Piano keys frequencies](/img/frequencies-on-piano.jpg)
+<PianoFrequenciesDiagram />
 
 Our five keys span the notes from `A3` up to `E4`, so these are the frequencies we will base our calculations on:
 

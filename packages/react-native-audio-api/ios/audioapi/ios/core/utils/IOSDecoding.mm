@@ -43,7 +43,7 @@ struct IosDecoderState {
   // wraps AudioFile for openMemory(), so extFile must be destroyed first, and
   // both may read through memoryReadProc while closing — so the buffer that
   // callback serves has to outlive them and must be declared first.
-  std::vector<uint8_t> memory;
+  decoding::EncodedBytes memory;
   AudioFilePtr audioFile;
   ExtAudioFilePtr extFile;
   // File-native sample rate, used to translate seek time into file frames

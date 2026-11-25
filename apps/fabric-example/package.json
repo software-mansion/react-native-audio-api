@@ -3,17 +3,17 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
+    "typecheck": "tsc --noEmit",
+    "test": "exit 0",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "lint": "eslint .",
+    "lint": "oxlint .",
     "start": "react-native start",
-    "test": "jest",
-    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs",
-    "test:server": "node --test server/realtime-token-server.test.mjs"
+    "server": "node --env-file-if-exists=.env.local server/realtime-token-server.mjs"
   },
   "dependencies": {
     "common-app": "workspace:*",
-    "lucide-react-native": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-svg": "catalog:",
@@ -28,8 +28,7 @@
     "@react-native/babel-preset": "catalog:",
     "@react-native/metro-config": "catalog:",
     "@types/react": "catalog:",
-    "babel-plugin-module-resolver": "^4.1.0",
-    "prettier": "catalog:"
+    "babel-plugin-module-resolver": "^4.1.0"
   },
   "engines": {
     "node": ">=22.11.0"

@@ -13,6 +13,8 @@ import java.util.concurrent.Executors
 
 class RecordingNotificationReceiver(
   private val module: AudioAPIModule,
+  /** Whether the pause and resume actions act on the recorder, or only notify JS and leave it to the app. */
+  private val nativePauseControl: () -> Boolean,
 ) : BroadcastReceiver() {
   companion object {
     const val ACTION_PAUSE = "com.swmansion.audioapi.RECORDING_NOTIFICATION_PAUSE"
@@ -37,19 +39,27 @@ class RecordingNotificationReceiver(
     }
     when (intent.action) {
       ACTION_PAUSE -> {
-        applyToRecorder(
-          action = NativeRecorderControl::pause,
-          intendedState = RecorderState.PAUSED,
-          event = AudioEvent.RECORDING_NOTIFICATION_PAUSE,
-        )
+        if (nativePauseControl()) {
+          applyToRecorder(
+            action = NativeRecorderControl::pause,
+            intendedState = RecorderState.PAUSED,
+            event = AudioEvent.RECORDING_NOTIFICATION_PAUSE,
+          )
+        } else {
+          dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_PAUSE)
+        }
       }
 
       ACTION_RESUME -> {
-        applyToRecorder(
-          action = NativeRecorderControl::resume,
-          intendedState = RecorderState.RECORDING,
-          event = AudioEvent.RECORDING_NOTIFICATION_RESUME,
-        )
+        if (nativePauseControl()) {
+          applyToRecorder(
+            action = NativeRecorderControl::resume,
+            intendedState = RecorderState.RECORDING,
+            event = AudioEvent.RECORDING_NOTIFICATION_RESUME,
+          )
+        } else {
+          dispatchEventToJs(AudioEvent.RECORDING_NOTIFICATION_RESUME)
+        }
       }
 
       ACTION_STOP -> {
@@ -99,8 +109,9 @@ class RecordingNotificationReceiver(
   }
 
   /**
-   * Every action acts on the recorder natively so the notification keeps working after
-   * the app task was removed, when no JS listener is reachable.
+   * Unless native pause control is off, every action acts on the recorder natively so
+   * the notification keeps working after the app task was removed, when no JS listener is
+   * reachable.
    *
    * Runs on an executor because [onReceive] is called on the main thread and the native
    * calls take the recorder's locks
@@ -136,13 +147,13 @@ class RecordingNotificationReceiver(
     }
   }
 
-  /** Syncing a live JS runtime is best-effort — in the task-removed scenario the JNI
-   * dispatch can throw, and that must not undo the native work that already completed. */
+  /** Notifying a live JS runtime is best-effort — in the task-removed scenario the JNI
+   * dispatch can throw, and that must not undo native work that already completed. */
   private fun dispatchEventToJs(event: AudioEvent) {
     try {
       module.invokeHandlerWithEventNameAndEventBody(event.ordinal, mapOf())
     } catch (e: Exception) {
-      Log.e(TAG, "Recording notification action completed natively, but notifying JS failed: ${e.message}", e)
+      Log.e(TAG, "Notifying JS of ${event.name} failed: ${e.message}", e)
     }
   }
 }

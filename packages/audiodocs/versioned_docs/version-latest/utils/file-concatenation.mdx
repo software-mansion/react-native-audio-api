@@ -11,7 +11,7 @@ You can concatenate existing audio files without creating an `AudioContext` usin
 the exported [`concatAudioFiles`](#concataudiofiles) function.
 
 This is useful when recording with the
-[`rotateIntervalBytes`](/docs/inputs/audio-recorder#audiorecorderfileoptions)
+[`rotateIntervalBytes`](../inputs/audio-recorder.mdx#audiorecorderfileoptions)
 option. Rotation keeps long recordings split into smaller files while recording,
 and `concatAudioFiles` can join those files back into one file after the
 recording is finished.
@@ -21,10 +21,27 @@ recording is finished.
 :::
 
 :::caution
-**M4A and WAV concatenation is only supported.**
+**Only WAV, M4A, FLAC, ADTS, and OGG (Opus) concatenation is supported** — the recording formats
+available on both iOS and Android.
 
-M4A format requires FFmpeg to be available in the native build. WAV
-concatenation uses miniaudio and does not require FFmpeg. See [Runtime flags](/docs/flags/runtime-flags#where-ffmpeg-is-used) for details.
+WAV and FLAC decode the segments and write them out again through the system
+encoder — WAV as 32-bit float PCM, FLAC losslessly. M4A remuxes AAC packets
+with system APIs — iOS AVFoundation and Android MediaExtractor/MediaMuxer.
+OGG re-pages the Opus packets with the bundled libogg on both platforms, so it is
+unavailable when the package's static libraries are disabled with [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries).
+
+ADTS (`.aac`) appends complete encoded frames without decoding or re-encoding.
+Inputs must use the same sample rate and channel configuration. An incomplete
+trailing frame, such as one left by an app crash, is discarded before the next
+file's frames are appended.
+:::
+
+:::tip Segment size and quality
+Each rotated chunk is a separate encode, so very small
+[`rotateIntervalBytes`](../inputs/audio-recorder#audiorecorderfileoptions)
+values can still produce clicks, muffled joins, or timing gaps after concatenation.
+
+If playback quality is poor after joining rotated files, increase `rotateIntervalBytes` (for example **≥ 200 KB**) or record without rotation.
 :::
 
 ### `concatAudioFiles`
@@ -53,21 +70,27 @@ come from the same recorder configuration:
 - compatible codec parameters.
 
 Use an output path with an extension that matches the input files, for example
-joining `.m4a` segments into an `.m4a` output file or `.wav` segments into a
-`.wav` output file.
+joining `.m4a` segments into an `.m4a` output file, `.wav` segments into a
+`.wav` output file, `.flac` segments into a `.flac` output file, ADTS `.aac`
+segments into an `.aac` output file, or `.ogg` segments into an `.ogg` output file.
 
 <details>
 <summary>Example usage with rotated recordings</summary>
 
 ```tsx
-import { AudioRecorder, FileDirectory, FileFormat, concatAudioFiles } from 'react-native-audio-api';
+import {
+  AudioRecorder,
+  FileDirectory,
+  FileFormat,
+  concatAudioFiles,
+} from 'react-native-audio-api';
 
 async function finalizeRotatedRecording() {
   const audioRecorder = new AudioRecorder();
 
   audioRecorder.enableFileOutput({
     directory: FileDirectory.Cache,
-    fileNamePrefix: 'meeting',
+    fileName: 'meeting',
     format: FileFormat.M4A,
     rotateIntervalBytes: 8 * 1024 * 1024,
   });
@@ -76,7 +99,10 @@ async function finalizeRotatedRecording() {
   const result = await audioRecorder.stop();
 
   if (result.status === 'success') {
-    const outputPath = result.paths[0].replace(/[^/]+$/, 'meeting-complete.m4a');
+    const outputPath = result.paths[0].replace(
+      /[^/]+$/,
+      'meeting-complete.m4a'
+    );
 
     await concatAudioFiles(result.paths, outputPath);
   }
@@ -94,7 +120,11 @@ import { concatAudioFiles } from 'react-native-audio-api';
 const outputPath = '/path/to/session.m4a';
 
 await concatAudioFiles(
-  ['/path/to/session-001.m4a', '/path/to/session-002.m4a', '/path/to/session-003.m4a'],
+  [
+    '/path/to/session-001.m4a',
+    '/path/to/session-002.m4a',
+    '/path/to/session-003.m4a',
+  ],
   outputPath
 );
 ```

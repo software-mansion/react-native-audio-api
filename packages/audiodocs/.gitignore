@@ -6,6 +6,8 @@
 
 # Generated files
 .docusaurus
+# copied from react-native-audio-api by postinstall (setup-rn-audio-api-web)
+/static/signalsmithStretch.mjs
 .cache-loader
 
 # Misc

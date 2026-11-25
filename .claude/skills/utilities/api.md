@@ -25,10 +25,12 @@ T val = receiver.receive();                       // blocks until data available
 ```
 
 **OverflowStrategy:**
+
 - `WAIT_ON_FULL` (default) — `try_send` returns `CHANNEL_FULL` when full
 - `OVERWRITE_ON_FULL` — overwrites oldest element (use with `BUSY_LOOP`)
 
 **WaitStrategy** (affects blocking `send`/`receive`):
+
 - `BUSY_LOOP` (default) — spin loop; lowest latency, highest CPU
 - `YIELD` — `std::this_thread::yield()`; lower CPU, higher latency
 - `ATOMIC_WAIT` — `std::atomic::wait()`; good for long waits (destructor threads)
@@ -76,6 +78,10 @@ std::vector<float, AlignedAllocator<float, 64>> buf(1024);
 ```
 
 Use when creating buffers that will be processed by SIMD code in `VectorMath`.
+
+On Apple platforms, blocks of 4 MiB or more bypass malloc and are mapped with `mmap` / `munmap`. Apple's malloc keeps freed large blocks in the process footprint (measured on an iPhone 15 Pro: 453 MB still charged after a 440 MB decoded buffer was freed, and 1382 MB while a buffer grown by x1.5 held 440 MB), `munmap` returns them at once. Android returns them on `free` already, so it keeps the plain path. Consequences: `deallocate` must receive the same element count as `allocate` (true for `std::vector`), and `Align` cannot exceed 4096. Mappings carry the `VM_MEMORY_APPLICATION_SPECIFIC_1` tag so vmmap / memgraph report decoded audio apart from `VM_ALLOCATE`. Under AddressSanitizer (`RN_AUDIO_API_DIRECT_MAPPING` is 0) every block stays on malloc, because ASan cannot see overflows of a kernel mapping — `AlignedAllocatorDeathTest` in `tests_asan` guards that.
+
+Whole-file byte blocks in the decode path use the same allocator through `decoding::EncodedBytes` (`decoding/DecoderSource.h`): `EncodedMemorySource::data`, `RawPcmSource::data`, `AudioFileSourceOptions::data`, and each backend's owned copy. Use that alias, not `std::vector<uint8_t>`, for any new buffer that holds an encoded file — the two vector types do not convert into each other.
 
 ---
 
@@ -264,4 +270,3 @@ float v = linearInterpolate(span, firstIndex, secondIndex, factor);
 float db     = linearToDecibels(linearValue);    // 20 * log10(v)
 float linear = decibelsToLinear(dbValue);        // 10^(db/20)
 ```
-

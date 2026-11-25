@@ -9,7 +9,7 @@ const MockAudioContext = {
     connect: () => {},
   }),
   createBiquadFilter: () => ({
-    type: "lowpass",
+    type: 'lowpass',
     frequency: { value: 1000, setValueAtTime: () => {} },
     Q: { value: 1, setValueAtTime: () => {} },
     gain: { value: 0, setValueAtTime: () => {} },
@@ -23,9 +23,10 @@ const MockAudioContext = {
     onended: null,
   }),
   currentTime: 0,
-  decodeAudioData: (data: ArrayBuffer) => Promise.resolve({
-    duration: 0,
-  } as AudioBuffer),
+  decodeAudioData: (_data: ArrayBuffer) =>
+    Promise.resolve({
+      duration: 0,
+    } as AudioBuffer),
 } as unknown as AudioContext;
 
 export default MockAudioContext;

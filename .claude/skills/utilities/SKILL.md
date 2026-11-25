@@ -31,9 +31,13 @@ Constructors copy data — `AudioArray` always owns its buffer.
 
 Holds N channels of `AudioArrayBuffer`. Handles up/down-mixing automatically on `sum()` and `copy()`.
 
+`sum()` and `copy()` between different channel counts apply the speaker mixing gains (4 → 2 halves, 4 → 1 quarters). When the extra channels are a node's own intermediate results and not a speaker layout (`ConvolverNode` true stereo), sum channel by channel with `getChannel(i)->sum(...)`.
+
 Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
 
-Channel layout constants: `ChannelMono=0`, `ChannelLeft=0`, `ChannelRight=1`, `ChannelCenter=2`, `ChannelLFE=3`, `ChannelSurroundLeft=4`, `ChannelSurroundRight=5`.
+Channel layout constants: `ChannelType` (namespace scope, shared by every alignment): `MONO=0`, `LEFT=0`, `RIGHT=1`, `CENTER=2`, `LFE=3`, `SURROUND_LEFT=4`, `SURROUND_RIGHT=5`.
+
+Pass `const AudioBuffer &` between pipeline stages (encoders, remixers, recorder callback) instead of unpacking it into a `std::array<const float *, MAX_CHANNEL_COUNT>`: the data already lives in a pooled buffer by the time a worker sees it, and a pointer array only re-creates what `getChannel()` gives. Raw pointer arrays belong only at third-party boundaries (r8brain, AVFoundation, Opus, Oboe). `r8b::MultiChannelResampler::process(input, inputStart, length, output)` reads a slice of a buffer, so chunked resampling needs no pointer arithmetic either.
 
 `getChannel()` returns a non-owning `AudioArray*`. `getSharedChannel()` returns `shared_ptr<AudioArrayBuffer>` (use for JSI transfer).
 
@@ -61,6 +65,7 @@ float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 `AudioArray` subclass acting as a circular queue for streaming audio. **Not thread-safe** — use only from one thread.
 
 Key operations:
+
 - `push_back(AudioArray&, size)` / `push_back(float*, size)` — write frames
 - `pop_front(AudioArray&, size)` / `pop_front(float*, size)` — read oldest frames
 - `pop_back(AudioArray&, size, offset)` — read newest frames
@@ -177,6 +182,10 @@ audioapi::GB_IN_BYTES   // 1024^3.0
 
 ---
 
+### `encoding/ChannelRemixer.h` — encoder input → file channel count
+
+Every encoder (iOS `IOSEncoder`, Android `AndroidEncoder`, common `OggOpusEncoder`) brings its input to the file's channel count through this, before any resampling: `ChannelRemixer(inputChannels, fileChannels, maxFrames, sampleRate)`, then `remix(channels, frames)` returns the file's channel pointers (the caller's own when the counts match). It applies `AudioBuffer::copy` speaker rules (quad and 5.1 mixed, LFE dropped, other counts discrete in order), so all file formats on both platforms get the same channels. Don't hand channel mapping to a platform converter (`AVAudioConverter.channelMap`, discrete layouts): it differs per platform and dropped the right channel on stereo → mono.
+
 ## `common/cpp/audioapi/core/utils/` — Node and context utilities
 
 ### `Constants.h` — global audio constants
@@ -284,10 +293,10 @@ call `analyze()`/`setFFTSize()` from a single thread.
 ```ts
 import { clamp, toFloat32Array, assertFiniteSequence } from './utils';
 
-clamp(value, min, max)                         // clamp a number to [min, max]
-toFloat32Array(values)                         // number[] → Float32Array (passthrough if already)
-toFloat32Array(undefined)                      // → undefined (overload)
-assertFiniteSequence(values, errorMessage)     // throws TypeError if any value is non-finite
+clamp(value, min, max); // clamp a number to [min, max]
+toFloat32Array(values); // number[] → Float32Array (passthrough if already)
+toFloat32Array(undefined); // → undefined (overload)
+assertFiniteSequence(values, errorMessage); // throws TypeError if any value is non-finite
 ```
 
 Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `assertFiniteSequence` in options validators (e.g. PeriodicWave `real`/`imag`).
@@ -295,11 +304,15 @@ Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `asse
 ### `paths.ts`
 
 ```ts
-import { isRemoteSource, isBase64Source, isDataBlobString } from './utils/paths';
+import {
+  isRemoteSource,
+  isBase64Source,
+  isDataBlobString,
+} from './utils/paths';
 
-isRemoteSource(url)      // true if starts with http:// or https://
-isBase64Source(data)     // true if 'data:audio/...;base64,...'
-isDataBlobString(data)   // true if starts with 'blob:'
+isRemoteSource(url); // true if starts with http:// or https://
+isBase64Source(data); // true if 'data:audio/...;base64,...'
+isDataBlobString(data); // true if starts with 'blob:'
 ```
 
 Use before passing a URL/path to decoder or streaming APIs to determine the source type.
@@ -311,14 +324,14 @@ Use before passing a URL/path to decoder or streaming APIs to determine the sour
 ```ts
 import FilePreset from './utils/filePresets';
 
-FilePreset.Low        // 22050 Hz, 48kbps,  16-bit
-FilePreset.Medium     // 44100 Hz, 128kbps, 16-bit
-FilePreset.High       // 48000 Hz, 192kbps, 24-bit
-FilePreset.Lossless   // 48000 Hz, 320kbps, 24-bit, FLAC L8
+FilePreset.Low; // 22050 Hz, 48kbps,  16-bit
+FilePreset.Medium; // 44100 Hz, 128kbps, 16-bit
+FilePreset.High; // 48000 Hz, 192kbps, 24-bit
+FilePreset.Lossless; // 48000 Hz, 320kbps, 24-bit, FLAC L8
 ```
 
 Use when configuring `AudioRecorder` file output instead of building `FilePresetType` objects manually.
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

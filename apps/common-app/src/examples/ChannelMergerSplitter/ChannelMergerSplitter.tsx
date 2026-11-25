@@ -1,16 +1,19 @@
-import React, { useCallback, useEffect, useRef, useState, FC } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import {
-  AudioBuffer,
   AudioBufferSourceNode,
-  AudioContext,
   AudioManager,
   AudioNode,
   GainNode,
 } from 'react-native-audio-api';
 
-import { Button, Container, Slider, Spacer } from '../../components';
-import { colors } from '../../styles';
+import { Button, Card, Container, Slider } from '../../components';
+import { colors, typography } from '../../styles';
+import {
+  activatePlaybackSession,
+  useAudioContext,
+  useDecodedAudio,
+} from '../../utils/audio';
 
 const SURROUND_5_1 =
   'https://www2.iis.fraunhofer.de/AAC/ChID-BLITS-EBU-Narration.mp4';
@@ -20,8 +23,6 @@ const CHANNEL_LABELS = ['L', 'R', 'C', 'LFE', 'Ls', 'Rs'] as const;
 
 const INITIAL_GAINS = [0.3, 0.6, 0.1, 1.0, 0.7, 0.7];
 
-const labelWidth = 56;
-
 /**
  * Graph: AudioBufferSourceNode (5.1) → ChannelSplitter(6) → per-channel
  * GainNodes → ChannelMerger(2) stereo fold-down → destination
@@ -30,62 +31,49 @@ const labelWidth = 56;
  */
 const ChannelMergerSplitter: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [channelCount, setChannelCount] = useState(0);
   const [gains, setGains] = useState<number[]>([...INITIAL_GAINS]);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const bufferRef = useRef<AudioBuffer | null>(null);
+  const audioContext = useAudioContext();
+  const buffer = useDecodedAudio(audioContext, SURROUND_5_1);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const channelGainsRef = useRef<GainNode[]>([]);
   const outputNodeRef = useRef<AudioNode | null>(null);
 
   const teardown = useCallback(() => {
-    try {
-      sourceRef.current?.stop(0);
-    } catch {
-      // already stopped
+    if (sourceRef.current) {
+      sourceRef.current.onended = null;
+      sourceRef.current.stop(0);
+      sourceRef.current.disconnect();
     }
-
     outputNodeRef.current?.disconnect();
-    sourceRef.current?.disconnect();
 
     sourceRef.current = null;
     channelGainsRef.current = [];
     outputNodeRef.current = null;
   }, []);
 
-  const setup = useCallback(async () => {
-    const ctx = audioContextRef.current;
-    const buffer = bufferRef.current;
-    if (!ctx || !buffer) {
+  const setup = async () => {
+    if (!buffer) {
       return;
     }
 
-    AudioManager.setSystemOptions({
-      ios: {
-        category: 'playback',
-        mode: 'default',
-        options: [],
-      },
-    });
-    await AudioManager.setAudioSessionActivity(true);
+    await activatePlaybackSession();
 
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
     }
 
     const numberOfChannels = Math.min(buffer.numberOfChannels, CHANNEL_COUNT);
-    const splitter = ctx.createChannelSplitter(numberOfChannels);
-    const stereoMerger = ctx.createChannelMerger(2);
+    const splitter = audioContext.createChannelSplitter(numberOfChannels);
+    const stereoMerger = audioContext.createChannelMerger(2);
 
-    const source = ctx.createBufferSource();
+    const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.connect(splitter);
 
     const channelGains: GainNode[] = [];
     for (let i = 0; i < numberOfChannels; i++) {
-      const gain = ctx.createGain();
+      const gain = audioContext.createGain();
       gain.gain.value = gains[i] ?? 0.7;
       splitter.connect(gain, i, 0);
       channelGains.push(gain);
@@ -108,7 +96,7 @@ const ChannelMergerSplitter: FC = () => {
     connectLeft(4); // Ls
     connectRight(5); // Rs
 
-    stereoMerger.connect(ctx.destination);
+    stereoMerger.connect(audioContext.destination);
 
     sourceRef.current = source;
     channelGainsRef.current = channelGains;
@@ -120,7 +108,7 @@ const ChannelMergerSplitter: FC = () => {
     };
 
     source.start(0);
-  }, [gains, teardown]);
+  };
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -150,29 +138,13 @@ const ChannelMergerSplitter: FC = () => {
     }
   };
 
-  useEffect(() => {
-    const ctx = new AudioContext();
-    audioContextRef.current = ctx;
-
-    ctx
-      .decodeAudioData(SURROUND_5_1)
-      .then((buffer) => {
-        bufferRef.current = buffer;
-        setChannelCount(buffer.numberOfChannels);
-        setIsReady(true);
-      })
-      .catch(() => {
-        setIsReady(false);
-      });
-
-    return () => {
+  useEffect(
+    () => () => {
       teardown();
-      bufferRef.current = null;
-      ctx.close().catch(() => {});
-      audioContextRef.current = null;
       AudioManager.setAudioSessionActivity(false).catch(() => {});
-    };
-  }, [teardown]);
+    },
+    [teardown]
+  );
 
   return (
     <Container>
@@ -180,44 +152,35 @@ const ChannelMergerSplitter: FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.description}>
+        <Text style={typography.hint}>
           Plays a 5.1 surround test (L R C LFE Ls Rs) through
           AudioBufferSourceNode → ChannelSplitter → per-channel gains →
           ChannelMerger stereo fold-down. Solo a channel with its gain slider.
         </Text>
-
-        <Spacer.Vertical size={8} />
         <Text style={styles.meta}>
-          {isReady
-            ? `Loaded ${channelCount}-channel buffer`
+          {buffer
+            ? `Loaded ${buffer.numberOfChannels}-channel buffer`
             : 'Loading 5.1 sample…'}
         </Text>
-
-        <Spacer.Vertical size={16} />
         <Button
           onPress={handlePlayPause}
           title={isPlaying ? 'Stop' : 'Play'}
-          disabled={!isReady}
+          disabled={!buffer}
         />
-        <Spacer.Vertical size={24} />
-
-        <Text style={styles.sectionTitle}>Channel gains</Text>
-        <Spacer.Vertical size={8} />
-        {CHANNEL_LABELS.map((label, index) => (
-          <View key={label}>
+        <Card style={styles.gains}>
+          <Text style={typography.sectionTitle}>Channel gains</Text>
+          {CHANNEL_LABELS.map((label, index) => (
             <Slider
+              key={label}
               label={label}
               value={gains[index]}
               onValueChange={(value) => handleGainChange(index, value)}
               min={0}
               max={1}
               step={0.01}
-              minLabelWidth={labelWidth}
             />
-            <Spacer.Vertical size={12} />
-          </View>
-        ))}
-        <Spacer.Vertical size={32} />
+          ))}
+        </Card>
       </ScrollView>
     </Container>
   );
@@ -225,21 +188,15 @@ const ChannelMergerSplitter: FC = () => {
 
 const styles = StyleSheet.create({
   content: {
+    gap: 16,
     paddingBottom: 24,
   },
-  description: {
-    color: colors.gray,
-    fontSize: 14,
-    lineHeight: 20,
-  },
   meta: {
-    color: colors.main,
+    color: colors.blue,
     fontSize: 13,
   },
-  sectionTitle: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+  gains: {
+    gap: 12,
   },
 });
 

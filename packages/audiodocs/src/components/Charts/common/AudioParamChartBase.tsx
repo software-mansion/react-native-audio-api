@@ -1,10 +1,4 @@
-import {
-    CartesianGrid,
-    Line,
-    LineChart,
-    XAxis,
-    YAxis
-} from 'recharts';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 import { FC, ReactNode } from 'react';
 import styles from '../styles.module.css';
@@ -27,7 +21,8 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
     className={styles.chart}
     responsive
     data={data}
-    margin={{ left: 50, bottom: 20, top: 10 }}>
+    margin={{ left: 50, right: 56, bottom: 20, top: 30 }}
+  >
     <defs>
       <marker
         id="arrow-x"
@@ -36,7 +31,8 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
         refX="8"
         refY="3"
         orient="auto"
-        markerUnits="strokeWidth">
+        markerUnits="strokeWidth"
+      >
         <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
       </marker>
       <marker
@@ -46,21 +42,27 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
         refX="8"
         refY="3"
         orient="270"
-        markerUnits="strokeWidth">
+        markerUnits="strokeWidth"
+      >
         <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
       </marker>
     </defs>
-    <CartesianGrid strokeDasharray="3 3" className={styles.leadingLine} stroke='currentColor'/>
+    <CartesianGrid
+      strokeDasharray="3 3"
+      className={styles.leadingLine}
+      stroke="currentColor"
+    />
     <XAxis
       dataKey="time"
-      domain={[0, 0.9]}      
+      domain={[0, 0.9]}
       ticks={[]}
       tick={false}
       tickLine={true}
       type="number"
       label={{
         value: 'Time',
-        position: 'insideBottomRight',
+        position: 'right',
+        offset: 5,
         className: styles.label,
       }}
       strokeWidth={2}
@@ -74,8 +76,9 @@ const AudioParamChartBase: FC<AudioParamChartBaseProps> = ({
       domain={[0, 1]}
       label={{
         value: 'Value',
-        position: 'insideTopRight',
-        offset: 10,
+        position: 'top',
+        offset: 12,
+        dx: 30,
         className: styles.label,
       }}
       strokeWidth={2}

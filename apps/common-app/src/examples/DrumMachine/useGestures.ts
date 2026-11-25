@@ -7,14 +7,9 @@ import {
   TapGestureEvent,
 } from 'react-native-gesture-handler';
 
-import {
-  getAngle,
-  getPointCX,
-  getPointCY,
-  isPointInCircle,
-} from '../../utils/skiUtils';
+import { getAngle, getPointCX, getPointCY, isPointInCircle } from './skiUtils';
 import { numBeats, buttonRadius, cPoint } from './constants';
-import type { Touché, XYWHRect } from '../../types';
+import type { Touché, XYWHRect } from './types';
 import Instruments from './instruments';
 import { useMemo } from 'react';
 

@@ -11,7 +11,9 @@ This page describes how the engine keeps the render path [alloc-free](#alloc-fre
 [dealloc-free](#dealloc-free).
 
 ## Threads
+
 Mainly there are three threads involved in the whole pipeline:
+
 - JS thread (creates objects and sets up audio graph connections)
 - Audio thread (renders audio)
 - JS garbage collector thread (deallocates unused object)
@@ -132,7 +134,7 @@ A few properties follow from this:
 - **Nodes never change in the middle of a quantum.** Every change lands between two quanta, which is why rendering code does not have to be
   defensive about its own fields.
 - **Order is preserved.** The queue is first-in, first-out, so the audio thread sees changes in the order JS made them. `source.buffer = buffer`
-  followed by `source.start()` works because the buffer is always applied first. This only holds if *every* change to a node goes through
+  followed by `source.start()` works because the buffer is always applied first. This only holds if _every_ change to a node goes through
   the queue. A setter that wrote directly to the node "because it is safe in this case" would overtake the messages sent before it.
 - **Getters do not ask the audio thread.** They return the [shadow state](#shadow-state), which may be ahead of the audio thread by one quantum.
 
@@ -189,7 +191,7 @@ A node is the largest thing the audio thread ever stops needing, and it is not d
 - On the **JS side**, whenever another node is released, the host side of the graph looks for handles that only it still holds. Those are the
   nodes the audio thread has let go, and this is where they are deleted.
 
-So the audio thread decides *when* a node dies, and the JS thread does the deleting. This is why a node can be garbage-collected by JS while it is
+So the audio thread decides _when_ a node dies, and the JS thread does the deleting. This is why a node can be garbage-collected by JS while it is
 still playing: the C++ node stays alive until the audio thread is done with it.
 
 ### Objects destroyed by the garbage collector

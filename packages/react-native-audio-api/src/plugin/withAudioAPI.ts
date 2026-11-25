@@ -5,6 +5,7 @@ import {
   withAndroidManifest,
   withDangerousMod,
   withInfoPlist,
+  WarningAggregator,
 } from '@expo/config-plugins';
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +22,9 @@ interface Options {
   disableStaticExternalLibs?: boolean;
 }
 
+// Deprecated: build options belong in the "react-native-audio-api" section of
+// the app's package.json. The plugin still writes these two there; it will stop
+// accepting them in 2.0.0.
 const BUILD_OPTION_KEYS = [
   'enableFFmpeg',
   'disableStaticExternalLibs',
@@ -42,11 +46,9 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
 
 const withBackgroundAudio: ConfigPlugin = (config) => {
   return withInfoPlist(config, (iosConfig) => {
-    iosConfig.modResults.UIBackgroundModes = [
-      ...Array.from(
-        new Set([...(iosConfig.modResults.UIBackgroundModes ?? []), 'audio'])
-      ),
-    ];
+    iosConfig.modResults.UIBackgroundModes = Array.from(
+      new Set([...(iosConfig.modResults.UIBackgroundModes ?? []), 'audio'])
+    );
 
     return iosConfig;
   });
@@ -121,7 +123,7 @@ const writeBuildOptionsToPackageJson = (
   const source: string = fs.readFileSync(packageJsonPath, 'utf8');
   const packageJson = JSON.parse(source);
 
-  const section = { ...(packageJson[pkg.name] ?? {}) };
+  const section = { ...packageJson[pkg.name] };
   for (const key of BUILD_OPTION_KEYS) {
     const value = options[key];
     if (value === undefined) {
@@ -159,6 +161,13 @@ const withBuildOptions: ConfigPlugin<Options> = (config, options) => {
       platform,
       (mod) => {
         writeBuildOptionsToPackageJson(mod.modRequest.projectRoot, options);
+        WarningAggregator.addWarningForPlatform(
+          platform,
+          'react-native-audio-api',
+          'The enableFFmpeg and disableStaticExternalLibs plugin options are deprecated and will be removed in the next major version. ' +
+            'Set them in the "react-native-audio-api" section of package.json instead.',
+          'https://docs.swmansion.com/react-native-audio-api/docs/other/build-time-flags#setting-the-flags'
+        );
         return mod;
       },
     ]);

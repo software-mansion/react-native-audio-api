@@ -22,30 +22,23 @@ jobs:
     environment: github-pages
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup
+        uses: ./.github/actions/setup-env
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter audiodocs...
+          install-args: --filter audiodocs...
 
       - name: Build the docs
         run: pnpm --filter audiodocs build
 
       - name: Upload build files
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: packages/audiodocs/build
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Recrawl search index
         run: |
@@ -54,4 +47,4 @@ jobs:
           -u ${{ secrets.CRAWLER_USER_ID }}:${{ secrets.CRAWLER_API_KEY }}
 
       - name: Deploy to Github Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "quoteProps": "consistent",
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "useTabs": false,
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "**/lib/**",
+    "packages/react-native-audio-api/src/web-core/custom/wasm-audio-bufffer-source-node-stretcher/signalsmithStretch/**",
+    "packages/react-native-audio-api/wpt_tests/webaudio/**",
+    "pnpm-lock.yaml"
+  ],
+  "jsdoc": true
+}

@@ -1,25 +1,30 @@
-import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, {
+  FC,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
-  AudioBuffer,
-  AudioBufferSourceNode,
   AudioManager,
   AudioRecorder,
   concatAudioFiles,
   FileFormat,
+  type FileInfo,
   RecordingNotificationManager,
   useAudioInput,
 } from 'react-native-audio-api';
 
-import { Alert, StyleSheet, View } from 'react-native';
-import { Container, Select } from '../../components';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
 
-import { Easing, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Container } from '../../components';
 import { audioRecorder as Recorder, audioContext } from '../../singletons';
-import ControlPanel from './ControlPanel';
-import PlaybackVisualization from './PlaybackVisualization';
-import RecordingTime from './RecordingTime';
-import RecordingVisualization from './RecordingVisualization';
-import Status from './Status';
+import { layout } from '../../styles';
+import RecordingsList from './RecordingsList';
+import { addRecording } from './recordingsStore';
+import RecorderSheet from './RecorderSheet';
 import { RecordingState } from './types';
 
 // concatAudioFiles supports WAV, M4A, FLAC, ADTS, and OGG (Opus) — the formats
@@ -35,7 +40,23 @@ const RECORDING_EXTENSION_NAME_MAP = {
   [FileFormat.Adts]: 'aac',
 };
 
+/** Shows the recording notification, or re-renders it for a pause / resume. */
+function setupNotification(paused: boolean) {
+  RecordingNotificationManager.show({
+    title: 'Recording Demo',
+    contentText: paused ? 'Paused recording' : 'Recording...',
+    paused,
+    smallIconResourceName: 'logo',
+    color: 0xff6200,
+    showStopAction: true,
+    deepLinkUri: 'audioapi-example://record',
+    usesChronometer: true,
+  });
+}
+
 const Record: FC = () => {
+  const navigation = useNavigation('RecordDemo');
+
   // Recover from "app disabled" state - recording can survive the app kill (android)
   const [state, setState] = useState<RecordingState>(() => {
     if (!AudioRecorder.isRecordingOngoing()) {
@@ -47,76 +68,68 @@ const Record: FC = () => {
   });
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
   const [isInterrupted, setIsInterrupted] = useState(false);
-  const [recordedBuffer, setRecordedBuffer] = useState<AudioBuffer | null>(
-    null
-  );
-  const currentPositionSV = useSharedValue(0);
-  const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const stateRef = useRef(state);
   const { availableInputs, currentInput, selectInput } = useAudioInput();
+  const [sheetHeight, setSheetHeight] = useState(0);
 
-  const inputLabels = availableInputs.map(
-    (device) => `${device.name} · ${device.category} #${device.id}`
-  );
-  const currentInputLabel = currentInput
-    ? inputLabels[availableInputs.indexOf(currentInput)]
-    : 'System default';
+  useLayoutEffect(() => {
+    const onSelectInput = async (input: (typeof availableInputs)[number]) => {
+      try {
+        await selectInput(input);
+      } catch (error) {
+        Alert.alert('Input Device Error', String(error));
+      }
+    };
 
-  const onSelectInputLabel = async (label: string) => {
-    const input = availableInputs[inputLabels.indexOf(label)];
-
-    if (!input) {
-      return;
-    }
-
-    try {
-      await selectInput(input);
-    } catch (error) {
-      Alert.alert('Input Device Error', `${error}`);
-    }
-  };
-
-  const stopPlayback = useCallback(() => {
-    const source = playbackSourceRef.current;
-    if (source) {
-      source.onended = null;
-      source.disconnect();
-      playbackSourceRef.current = null;
-    }
-    currentPositionSV.value = 0;
-  }, [currentPositionSV]);
-
-  const updateNotification = (paused: boolean) => {
-    RecordingNotificationManager.show({
-      paused,
+    navigation.setOptions({
+      unstable_headerRightItems: () => [
+        {
+          type: 'menu',
+          label: 'Input',
+          icon: { type: 'sfSymbol', name: 'mic' },
+          accessibilityLabel: `Input: ${currentInput?.name ?? 'System default'}`,
+          menu: {
+            title: 'Input',
+            items:
+              availableInputs.length > 0
+                ? availableInputs.map((device) => ({
+                    type: 'action' as const,
+                    label: device.name,
+                    description: device.category,
+                    state:
+                      device.id === currentInput?.id
+                        ? ('on' as const)
+                        : ('off' as const),
+                    onPress: () => onSelectInput(device),
+                  }))
+                : [
+                    {
+                      type: 'action' as const,
+                      label: 'System default',
+                      state: 'on' as const,
+                      disabled: true,
+                      onPress: () => {},
+                    },
+                  ],
+          },
+        },
+      ],
     });
-  };
-
-  const setupNotification = (paused: boolean) => {
-    RecordingNotificationManager.show({
-      title: 'Recording Demo',
-      contentText: paused ? 'Paused recording' : 'Recording...',
-      paused,
-      smallIconResourceName: 'logo',
-      color: 0xff6200,
-      showStopAction: true,
-      deepLinkUri: 'audioapi-example://record',
-      usesChronometer: true,
-    });
-  };
+  }, [navigation, availableInputs, currentInput, selectInput]);
 
   const onStartRecording = useCallback(async () => {
     if (state !== RecordingState.Idle) {
       return;
     }
 
-    setState(RecordingState.Loading);
+    setState(RecordingState.Starting);
 
     if (!hasPermissions) {
       const permissionStatus = await AudioManager.requestRecordingPermissions();
 
       if (permissionStatus !== 'Granted') {
-        Alert.alert('Error', "Recording permissions are no't granted");
+        Alert.alert('Error', "Recording permissions aren't granted");
+        setState(RecordingState.Idle);
         return;
       }
 
@@ -145,39 +158,41 @@ const Record: FC = () => {
       return;
     }
 
-    const result = await Recorder.start();
-
-    setupNotification(false);
-
-    if (result.status === 'success') {
-      setIsInterrupted(false);
-      setState(RecordingState.Recording);
+    try {
+      await Recorder.start();
+    } catch (error) {
+      console.log('Recording start error:', error);
+      Alert.alert(
+        'Error',
+        `Failed to start recording: ${(error as Error).message}`
+      );
+      setState(RecordingState.Idle);
       return;
     }
 
-    console.log('Recording start error:', result);
-    Alert.alert('Error', `Failed to start recording: ${result.message}`);
-    setState(RecordingState.Idle);
+    setupNotification(false);
+    setIsInterrupted(false);
+    setState(RecordingState.Recording);
   }, [state, hasPermissions]);
 
   const onPauseRecording = useCallback(() => {
     Recorder.pause();
-    updateNotification(true);
+    setupNotification(true);
     setIsInterrupted(false);
     setState(RecordingState.Paused);
   }, []);
 
   const onResumeRecording = useCallback(() => {
     Recorder.resume();
-    updateNotification(false);
+    setupNotification(false);
     setState(RecordingState.Recording);
   }, []);
 
-  const loadRecordedAudio = useCallback(
-    async (paths: string[]) => {
-      setState(RecordingState.Loading);
+  const loadRecordedAudio = useCallback(async (paths: string[]) => {
+    setState(RecordingState.Saving);
 
-      const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
+    const extension = RECORDING_EXTENSION_NAME_MAP[RECORDING_EXTENSION];
+    try {
       const finalPath =
         paths.length > 1
           ? await concatAudioFiles(
@@ -185,26 +200,30 @@ const Record: FC = () => {
               paths[0].replace(/[^/]+$/, `recording.${extension}`)
             )
           : paths[0];
-
-      const audioBuffer = await audioContext.decodeAudioData(finalPath);
-      setRecordedBuffer(audioBuffer);
-
-      setState(RecordingState.ReadyToPlay);
-      currentPositionSV.value = 0;
-    },
-    [currentPositionSV]
-  );
+      addRecording(await audioContext.decodeAudioData(finalPath));
+    } catch (error) {
+      Alert.alert('Error', `Failed to save the recording: ${String(error)}`);
+    } finally {
+      setState(RecordingState.Idle);
+    }
+  }, []);
 
   const onStopRecording = useCallback(async () => {
-    const info = await Recorder.stop();
+    let info: FileInfo | null = null;
+    try {
+      info = await Recorder.stop();
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        `Failed to stop recording: ${(error as Error).message}`
+      );
+    }
     AudioRecorder.consumeLastRecordingResult();
     RecordingNotificationManager.hide();
     setIsInterrupted(false);
-    setState(RecordingState.Loading);
+    setState(RecordingState.Saving);
 
-    if (info.status !== 'success') {
-      Alert.alert('Error', `Failed to stop recording: ${info.message}`);
-      setRecordedBuffer(null);
+    if (!info) {
       setState(RecordingState.Idle);
       return;
     }
@@ -216,7 +235,6 @@ const Record: FC = () => {
     const info = AudioRecorder.consumeLastRecordingResult();
 
     if (!info || info.paths.length === 0) {
-      setRecordedBuffer(null);
       setState(RecordingState.Idle);
       return;
     }
@@ -224,92 +242,24 @@ const Record: FC = () => {
     await loadRecordedAudio(info.paths);
   }, [loadRecordedAudio]);
 
-  const onPlayRecording = useCallback(() => {
-    if (state !== RecordingState.ReadyToPlay) {
-      return;
+  const onRecordPress = useCallback(() => {
+    if (state === RecordingState.Idle) {
+      onStartRecording();
+    } else if (
+      state === RecordingState.Recording ||
+      state === RecordingState.Paused
+    ) {
+      onStopRecording();
     }
+  }, [state, onStartRecording, onStopRecording]);
 
-    if (!recordedBuffer) {
-      Alert.alert('Error', 'No recorded audio to play.');
-      return;
+  const onPausePress = useCallback(() => {
+    if (state === RecordingState.Recording) {
+      onPauseRecording();
+    } else if (state === RecordingState.Paused) {
+      onResumeRecording();
     }
-
-    stopPlayback();
-
-    const source = audioContext.createBufferSource();
-    source.buffer = recordedBuffer;
-    source.connect(audioContext.destination);
-
-    // Keep the source alive until playback ends. Without a ref, release builds can
-    // GC the HostObject before onended fires; its destructor clears the native
-    // callback id and the UI never leaves the Playing state.
-    playbackSourceRef.current = source;
-
-    source.onended = () => {
-      stopPlayback();
-      setState(RecordingState.Idle);
-    };
-
-    source.start(audioContext.currentTime);
-
-    setTimeout(() => {
-      currentPositionSV.value = withTiming(recordedBuffer.duration, {
-        duration: recordedBuffer.duration * 1000,
-        easing: Easing.linear,
-      });
-    }, 100);
-
-    setState(RecordingState.Playing);
-  }, [state, recordedBuffer, currentPositionSV, stopPlayback]);
-
-  const onToggleState = useCallback(
-    (action: RecordingState) => {
-      if (state === RecordingState.Paused) {
-        if (action === RecordingState.Recording) {
-          onResumeRecording();
-          return;
-        }
-      }
-
-      if (action === RecordingState.Recording) {
-        onStartRecording();
-        return;
-      }
-
-      if (action === RecordingState.Paused) {
-        onPauseRecording();
-        return;
-      }
-
-      if (action === RecordingState.Idle) {
-        if (state === RecordingState.Recording) {
-          onStopRecording();
-        } else if (state === RecordingState.Playing) {
-          stopPlayback();
-          setState(RecordingState.Idle);
-        }
-        return;
-      }
-
-      if (action === RecordingState.ReadyToPlay) {
-        onStopRecording();
-        return;
-      }
-
-      if (action === RecordingState.Playing) {
-        onPlayRecording();
-      }
-    },
-    [
-      state,
-      onStartRecording,
-      onPauseRecording,
-      onStopRecording,
-      onResumeRecording,
-      onPlayRecording,
-      stopPlayback,
-    ]
-  );
+  }, [state, onPauseRecording, onResumeRecording]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -424,42 +374,32 @@ const Record: FC = () => {
     }
 
     return () => {
-      stopPlayback();
-
       if (!AudioRecorder.isRecordingOngoing()) {
         AudioManager.setAudioSessionActivity(false);
       }
     };
-  }, [stopPlayback]);
+  }, []);
+
+  const isTakeRunning =
+    state === RecordingState.Recording || state === RecordingState.Paused;
 
   return (
     <Container disablePadding>
-      <View style={styles.inputPicker}>
-        <Select
-          value={currentInputLabel}
-          options={inputLabels}
-          onChange={onSelectInputLabel}
-        />
-      </View>
-      <Status state={state} />
-      <View style={styles.spacerM} />
-      {[RecordingState.Playing, RecordingState.ReadyToPlay].includes(state) ? (
-        <>
-          <PlaybackVisualization
-            buffer={recordedBuffer}
-            currentPositionSeconds={currentPositionSV}
-            durationSeconds={recordedBuffer?.duration || 0}
-          />
-        </>
-      ) : (
-        <>
-          <RecordingTime state={state} />
-          <View style={styles.spacerS} />
-          <RecordingVisualization state={state} isInterrupted={isInterrupted} />
-        </>
-      )}
-      <View style={styles.spacerM} />
-      <ControlPanel state={state} onToggleState={onToggleState} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: sheetHeight + layout.screenPadding },
+        ]}
+      >
+        <RecordingsList disabled={isTakeRunning} />
+      </ScrollView>
+      <RecorderSheet
+        state={state}
+        isInterrupted={isInterrupted}
+        onRecordPress={onRecordPress}
+        onPausePress={onPausePress}
+        onCoveredHeightChange={setSheetHeight}
+      />
     </Container>
   );
 };
@@ -467,7 +407,8 @@ const Record: FC = () => {
 export default Record;
 
 const styles = StyleSheet.create({
-  spacerM: { height: 24 },
-  spacerS: { height: 12 },
-  inputPicker: { paddingHorizontal: 16, paddingTop: 12 },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: layout.screenPadding,
+  },
 });

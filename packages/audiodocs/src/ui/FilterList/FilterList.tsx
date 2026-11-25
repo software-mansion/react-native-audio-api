@@ -15,6 +15,8 @@ interface FilterListProps<T extends string = string> {
   value: T;
   onChange: (value: T) => void;
   ariaLabel?: string;
+  /** Caption of the drop-down that replaces the button list on narrow screens. */
+  label?: string;
   className?: string;
 }
 
@@ -23,23 +25,39 @@ const FilterList = <T extends string>({
   value,
   onChange,
   ariaLabel = 'Filter type',
+  label = 'Filter type',
   className,
 }: FilterListProps<T>) => {
   const labelId = useId();
 
-  const handleSelectChange = useCallback((event: SelectChangeEvent<string>) => {
-    onChange(event.target.value as T);
-  }, [onChange]);
+  const handleSelectChange = useCallback(
+    (event: SelectChangeEvent<string>) => {
+      onChange(event.target.value as T);
+    },
+    [onChange]
+  );
 
   return (
-    <div className={className ? `${styles.container} ${className}` : styles.container}>
-      <div className={styles.buttonList} role="radiogroup" aria-label={ariaLabel}>
+    <div
+      className={
+        className ? `${styles.container} ${className}` : styles.container
+      }
+    >
+      <div
+        className={styles.buttonList}
+        role="radiogroup"
+        aria-label={ariaLabel}
+      >
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={option.value === value ? `${styles.button} ${styles.buttonActive}` : styles.button}
+            className={
+              option.value === value
+                ? `${styles.button} ${styles.buttonActive}`
+                : styles.button
+            }
             aria-pressed={option.value === value}
           >
             {option.label}
@@ -50,13 +68,13 @@ const FilterList = <T extends string>({
       <div className={styles.mobileSelectContainer}>
         <FormControl fullWidth size="small" className={styles.formControl}>
           <InputLabel id={labelId} className={styles.inputLabel}>
-            Filter type
+            {label}
           </InputLabel>
           <Select
             labelId={labelId}
             className={styles.select}
             value={value}
-            label="Filter type"
+            label={label}
             onChange={handleSelectChange}
             inputProps={{ 'aria-label': ariaLabel }}
             MenuProps={{
@@ -64,7 +82,11 @@ const FilterList = <T extends string>({
             }}
           >
             {options.map((option) => (
-              <MenuItem key={option.value} value={option.value} className={styles.menuItem}>
+              <MenuItem
+                key={option.value}
+                value={option.value}
+                className={styles.menuItem}
+              >
                 {option.label}
               </MenuItem>
             ))}

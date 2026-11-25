@@ -1,4 +1,4 @@
-import AudioManager from "./AudioManager";
+import AudioManager from './AudioManager';
 
 export function createGainEffect(gain: number = 1.0): GainNode {
   const audioContext = AudioManager.aCtx;
@@ -8,22 +8,22 @@ export function createGainEffect(gain: number = 1.0): GainNode {
 }
 
 export function createLowPassFilter(
-  frequency: number = 1000,
+  frequency: number = 1000
 ): BiquadFilterNode {
   const audioContext = AudioManager.aCtx;
   const filter = audioContext.createBiquadFilter();
-  filter.type = "lowpass";
+  filter.type = 'lowpass';
   filter.frequency.setValueAtTime(frequency, audioContext.currentTime);
   filter.Q.setValueAtTime(1, audioContext.currentTime);
   return filter;
 }
 
 export function createHighPassFilter(
-  frequency: number = 300,
+  frequency: number = 300
 ): BiquadFilterNode {
   const audioContext = AudioManager.aCtx;
   const filter = audioContext.createBiquadFilter();
-  filter.type = "highpass";
+  filter.type = 'highpass';
   filter.frequency.setValueAtTime(frequency, audioContext.currentTime);
   filter.Q.setValueAtTime(1, audioContext.currentTime);
   return filter;
@@ -31,7 +31,7 @@ export function createHighPassFilter(
 
 export function createSimpleReverb(
   roomSize: number = 0.5,
-  decayTime: number = 2,
+  decayTime: number = 2
 ): ConvolverNode {
   const audioContext = AudioManager.aCtx;
   const convolver = audioContext.createConvolver();
@@ -52,11 +52,7 @@ export function createSimpleReverb(
   return convolver;
 }
 
-export function createDelay(
-  delayTime: number = 0.3,
-  feedback: number = 0.3,
-  wet: number = 0.5,
-): AudioNode {
+export function createDelay(delayTime: number = 0.3): AudioNode {
   const audioContext = AudioManager.aCtx;
 
   const delay = audioContext.createDelay(1.0);
@@ -92,18 +88,18 @@ export function createOverdrive(amount: number = 0.5): WaveShaperNode {
   }
 
   waveShaper.curve = curve;
-  waveShaper.oversample = "4x";
+  waveShaper.oversample = '4x';
 
   return waveShaper;
 }
 
 export function createBandPassFilter(
   lowFreq: number = 800,
-  highFreq: number = 3000,
+  highFreq: number = 3000
 ): BiquadFilterNode {
   const audioContext = AudioManager.aCtx;
   const filter = audioContext.createBiquadFilter();
-  filter.type = "bandpass";
+  filter.type = 'bandpass';
 
   const centerFreq = Math.sqrt(lowFreq * highFreq);
   filter.frequency.setValueAtTime(centerFreq, audioContext.currentTime);
@@ -115,7 +111,7 @@ export function createBandPassFilter(
 }
 
 export function createEffectsMap(
-  effects: { name: string; node: AudioNode }[],
+  effects: { name: string; node: AudioNode }[]
 ): Map<string, AudioNode> {
   const effectsMap = new Map<string, AudioNode>();
 
@@ -129,29 +125,28 @@ export function createEffectsMap(
 export const presetEffects = {
   ambient: () =>
     createEffectsMap([
-      { name: "reverb", node: createSimpleReverb(0.3, 1.5) },
-      { name: "lowpass", node: createLowPassFilter(8000) },
+      { name: 'reverb', node: createSimpleReverb(0.3, 1.5) },
+      { name: 'lowpass', node: createLowPassFilter(8000) },
     ]),
 
   warm: () =>
     createEffectsMap([
-      { name: "lowpass", node: createLowPassFilter(3000) },
-      { name: "gain", node: createGainEffect(1.2) },
+      { name: 'lowpass', node: createLowPassFilter(3000) },
+      { name: 'gain', node: createGainEffect(1.2) },
     ]),
 
   distorted: () =>
     createEffectsMap([
-      { name: "overdrive", node: createOverdrive(0.85) },
-      { name: "midpass", node: createBandPassFilter(800, 3000) },
-      { name: "lowpass", node: createLowPassFilter(6000) },
-      { name: "gain", node: createGainEffect(0.2) },
+      { name: 'overdrive', node: createOverdrive(0.85) },
+      { name: 'midpass', node: createBandPassFilter(800, 3000) },
+      { name: 'lowpass', node: createLowPassFilter(6000) },
+      { name: 'gain', node: createGainEffect(0.2) },
     ]),
 
-  echo: () =>
-    createEffectsMap([{ name: "delay", node: createDelay(0.25, 0.4, 0.3) }]),
+  echo: () => createEffectsMap([{ name: 'delay', node: createDelay(0.25) }]),
 
-  test: () => createEffectsMap([{ name: "gain", node: createGainEffect(0.3) }]),
+  test: () => createEffectsMap([{ name: 'gain', node: createGainEffect(0.3) }]),
 
   overdrive_only: () =>
-    createEffectsMap([{ name: "overdrive", node: createOverdrive(0.9) }]),
+    createEffectsMap([{ name: 'overdrive', node: createOverdrive(0.9) }]),
 };

@@ -15,5 +15,10 @@
     "react": "*",
     "react-native": "*",
     "react-native-audio-api": "*"
+  },
+  "scripts": {
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit"
   }
 }

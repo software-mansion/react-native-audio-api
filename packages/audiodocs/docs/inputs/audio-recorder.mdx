@@ -150,6 +150,12 @@ if (AudioRecorder.isRecordingOngoing()) {
 }
 ```
 
+### Building without the recorder {#building-without-the-recorder}
+
+Apps that only play audio can leave the recorder and every microphone API out of the native build
+with the [`disableAudioRecorder`](../other/build-time-flags.mdx#disableaudiorecorder) build-time
+flag. iOS apps then need no `NSMicrophoneUsageDescription` entry, and `new AudioRecorder()` throws.
+
 ## Examples
 
 <Tabs group="usage">
@@ -197,9 +203,10 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -212,8 +219,8 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.stop();
-    console.log(result);
+    const fileInfo = await audioRecorder.stop();
+    console.log(fileInfo);
     setIsRecording(false);
     await AudioManager.setAudioSessionActivity(false);
   };
@@ -290,10 +297,10 @@ const MyRecorder: React.FC = () => {
       return;
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -328,7 +335,11 @@ export default MyRecorder;
 ```tsx
 import React, { useState } from 'react';
 import { View, Pressable, Text } from 'react-native';
-import { AudioRecorder, AudioContext, AudioManager } from 'react-native-audio-api';
+import {
+  AudioRecorder,
+  AudioContext,
+  AudioManager,
+} from 'react-native-audio-api';
 
 AudioManager.setSystemOptions({
   ios: {
@@ -371,10 +382,10 @@ const MyRecorder: React.FC = () => {
       await audioContext.resume();
     }
 
-    const result = await audioRecorder.start();
-
-    if (result.status === 'error') {
-      console.warn(result.message);
+    try {
+      await audioRecorder.start();
+    } catch (error) {
+      console.warn('Could not start recording', error);
       return;
     }
 
@@ -422,6 +433,7 @@ export default MyRecorder;
         <div class="text-content">
           Creates a new `AudioRecorder` instance, optionally configuring the platform capture chain - see [AudioRecorderOptions](#audiorecorderoptions). It is preferred to create only a single instance of `AudioRecorder` for the best performance, memory, and battery consumption. While an idle recorder has minimal impact, switching between separate recorder instances might have a noticeable impact on the device.
         </div>
+
         ```tsx
         import { AudioRecorder } from 'react-native-audio-api';
 
@@ -430,6 +442,7 @@ export default MyRecorder;
         <div class="text-content">
           Full-duplex voice apps (playing audio while recording) need platform echo cancellation on both platforms, otherwise the speaker output leaks back into the microphone:
         </div>
+
         ```tsx
         const audioRecorder = new AudioRecorder({
           androidInputPreset: 'voiceCommunication',
@@ -452,12 +465,15 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from the system audio input device. Returns a `Promise<Result<{}>>` that resolves when recording has started.
+          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it.
         </div>
-        ```tsx
-        const result = await audioRecorder.start();
 
-        console.log(result.status);
+        ```tsx
+        try {
+          await audioRecorder.start();
+        } catch (error) {
+          console.error(error);
+        }
         ```
       </td>
     </tr>
@@ -472,17 +488,16 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Stops the input stream and cleans up each input access method. Returns a `Promise<Result<FileInfo>>` that resolves when recording has stopped.
+          Stops the input stream and cleans up each input access method. Returns a `Promise<FileInfo>` that resolves when recording has stopped, and rejects when the recorder was not started or the output files could not be finalized.
 
           For details on the returned file information, see [FileInfo](#fileinfo).
         </div>
-        ```tsx
-        const result = await audioRecorder.stop();
 
-        if (result.status === 'success') {
-          const { paths, duration, size } = result;
-        } else if (result.status === 'error') {
-          console.error(result.message);
+        ```tsx
+        try {
+          const { paths, duration, size } = await audioRecorder.stop();
+        } catch (error) {
+          console.error(error);
         }
         ```
       </td>
@@ -500,6 +515,7 @@ export default MyRecorder;
         <div class="text-content">
           Pauses the recording. This is useful when recording to file is active, but you do not want to finalize the file. Returns a `Promise<void>` that resolves when the input stream has paused.
         </div>
+
         ```tsx
         await audioRecorder.pause();
 
@@ -518,12 +534,15 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Resumes the recording if it was previously paused; otherwise does nothing. Returns a `Promise<void>` that resolves when the input stream is running again.
+          Resumes a paused recording. Returns a `Promise<void>` that resolves when the input stream is running again. Resuming a recording that is already running succeeds without changing anything. The promise rejects when the recorder was not started, or when the system refused to resume, in which case the recording stays paused.
         </div>
-        ```tsx
-        await audioRecorder.resume();
 
-        console.log(audioRecorder.isRecording());
+        ```tsx
+        try {
+          await audioRecorder.resume();
+        } catch (error) {
+          console.warn(error);
+        }
         ```
       </td>
     </tr>
@@ -538,6 +557,7 @@ export default MyRecorder;
         <div class="text-content">
           Returns `true` if the recorder is in an active recording state.
         </div>
+
         ```tsx
           const isRecording = audioRecorder.isRecording();
         ```
@@ -554,6 +574,7 @@ export default MyRecorder;
         <div class="text-content">
           Returns `true` if the recorder is in a paused state.
         </div>
+
         ```tsx
           const isPaused = audioRecorder.isPaused();
         ```
@@ -572,6 +593,7 @@ export default MyRecorder;
         <div class="text-content">
           Returns `true` while a recording session is ongoing (recording or paused). Native source of truth that needs no reference to the recorder instance, so use it from a remounted screen — e.g. after reopening an app whose recording [outlived the app UI](#keeping-the-recording-alive-when-the-app-is-closed) — to seed the UI state. It reflects the recorder that acquired the active session on a successful [start](#start); a second `start()` does not displace it.
         </div>
+
         ```tsx
           if (AudioRecorder.isRecordingOngoing()) {
             // re-attach the UI to the still-running recording
@@ -594,6 +616,7 @@ export default MyRecorder;
 
           If the recording was already finalized natively, calling [stop](#stop) on an `AudioRecorder` instance does not return those files — it reports that the recorder is not recording. Read the stashed [FileInfo](#fileinfo) from this method instead.
         </div>
+
         ```tsx
           const info = AudioRecorder.consumeLastRecordingResult();
           if (info) {
@@ -615,6 +638,7 @@ export default MyRecorder;
 
           For details, see [OnRecorderErrorEventType](#onrecordererroreventtype).
         </div>
+
         ```tsx
           audioRecorder.onError((error: OnRecorderErrorEventType) => {
             console.log(error);
@@ -633,6 +657,7 @@ export default MyRecorder;
         <div class="text-content">
           Removes the error callback.
         </div>
+
         ```tsx
           audioRecorder.clearOnError();
         ```
@@ -658,6 +683,7 @@ export default MyRecorder;
         <div class="text-content">
           `AudioRecorderFileOptions | null` - the active file-output configuration after [enableFileOutput()](#enablefileoutput), or `null` when file output is disabled. See [AudioRecorderFileOptions](#audiorecorderfileoptions).
         </div>
+
         ```tsx
           const fileOptions = audioRecorder.options;
         ```
@@ -672,11 +698,13 @@ export default MyRecorder;
         <div class="text-content">
           `number` - the estimated **full** input latency in seconds (from analog input to app delivery). Mirrors [AudioContext.outputLatency](../core/audio-context.mdx#properties) semantics. Calculated using underlying platform properties (`AVAudioSession` on iOS; Oboe timestamps/burst sizes on Android). Value may change when the audio route changes. Returns `0` when idle.
         </div>
+
         ```tsx
           const latency = audioRecorder.inputLatency;
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -704,6 +732,7 @@ export default MyRecorder;
 
           For further information, see [AudioRecorderFileOptions](#audiorecorderfileoptions) and the per-platform format table in [FileFormat](#fileformat).
         </div>
+
         ```tsx
         try {
           audioRecorder.enableFileOutput({ format: FileFormat.FLAC });
@@ -725,6 +754,7 @@ export default MyRecorder;
         <div class="text-content">
           Disables file output and finalizes the currently recorded file if the recorder is active. Returns a `Promise<void>` that resolves when the file has been closed.
         </div>
+
         ```tsx
         await audioRecorder.disableFileOutput();
         ```
@@ -739,6 +769,7 @@ export default MyRecorder;
         <div class="text-content">
           Returns the current recording duration (`number`) when file output is enabled.
         </div>
+
         ```tsx
           const duration = audioRecorder.getCurrentDuration();
         ```
@@ -768,6 +799,7 @@ export default MyRecorder;
 
           For further information, see [AudioRecorderCallbackOptions](#audiorecordercallbackoptions) and [OnAudioReadyEventType](#onaudioreadyeventtype).
         </div>
+
         ```tsx
           const sampleRate = 16000;
 
@@ -793,11 +825,13 @@ export default MyRecorder;
         <div class="text-content">
           Removes the audio data callback and flushes any remaining buffered data through `onAudioReady`.
         </div>
+
         ```tsx
           audioRecorder.clearOnAudioReady();
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -815,8 +849,9 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Routes captured audio into an audio graph by creating a recorder adapter with [BaseAudioContext.createRecorderAdapter()](../core/base-audio-context.mdx#createrecorderadapter), connecting the recorder to it, and wiring it to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) used to create the recorder adapter and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
+          Routes captured audio into an audio graph through an internal adapter node created in `context`, wired to `destination`. Takes the [BaseAudioContext](../core/base-audio-context.mdx) the audio graph belongs to and the destination [AudioNode](../core/audio-node.mdx) in the audio graph. Returns [AudioNode](../core/audio-node.mdx).
         </div>
+
         ```tsx
           audioRecorder.connect(audioContext, audioContext.destination);
         ```
@@ -831,11 +866,13 @@ export default MyRecorder;
         <div class="text-content">
           Disconnects `AudioRecorder` from the audio graph.
         </div>
+
         ```tsx
           audioRecorder.disconnect();
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -850,10 +887,10 @@ interface AudioRecorderOptions {
 }
 ```
 
-| Parameter | Type | Default | Description |
-| :---: | :---: | :---: | :---- |
+|                   Parameter                   |                    Type                     |       Default        | Description                                                                                                                                                                                            |
+| :-------------------------------------------: | :-----------------------------------------: | :------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `androidInputPreset` <Optional /> <Android /> | [`AndroidInputPreset`](#androidinputpreset) | `'voiceRecognition'` | Preprocessing chain applied to the capture stream. The platform default, `voiceRecognition`, applies **no** acoustic echo cancellation - use `voiceCommunication` to engage the platform AEC/NS chain. |
-| `iosVoiceProcessing` <Optional /> <IOS /> | `boolean` | `false` | Runs the capture chain through Apple's voice-processing I/O: acoustic echo cancellation, noise suppression and automatic gain control. |
+|   `iosVoiceProcessing` <Optional /> <IOS />   |                  `boolean`                  |       `false`        | Runs the capture chain through Apple's voice-processing I/O: acoustic echo cancellation, noise suppression and automatic gain control.                                                                 |
 
 Both options are applied when the capture stream is created and cannot be changed afterwards - create a new recorder to switch configuration. Each option is ignored on the other platform.
 
@@ -961,12 +998,12 @@ interface AudioRecorderFileOptions {
 start time, and keeps it clear of existing files. Rotation appends a segment index either way,
 because one recording then spans several files.
 
-| `fileName` | `rotateIntervalBytes` | Resulting file(s) |
-| :--- | :--- | :--- |
-| — | `0` | `recording_20260909_101500.wav` |
-| `session-42` | `0` | `session-42.wav` |
-| — | `> 0` | `recording_20260909_101500_001.wav`, `_002`, … |
-| `session-42` | `> 0` | `session-42_001.wav`, `session-42_002.wav`, … |
+| `fileName`   | `rotateIntervalBytes` | Resulting file(s)                              |
+| :----------- | :-------------------- | :--------------------------------------------- |
+| —            | `0`                   | `recording_20260909_101500.wav`                |
+| `session-42` | `0`                   | `session-42.wav`                               |
+| —            | `> 0`                 | `recording_20260909_101500_001.wav`, `_002`, … |
+| `session-42` | `> 0`                 | `session-42_001.wav`, `session-42_002.wav`, …  |
 
 The generated timestamp is taken once per recording, in local time, so every segment of one
 rotated recording shares it and only the index differs.
@@ -1016,20 +1053,20 @@ enum FileFormat {
 
 Each platform exposes a different set of encoders, making format support platform-specific. The table below lists which formats each platform can encode:
 
-| `FileFormat` | Container / codec | iOS | Android |
-| :--- | :--- | :---: | :---: |
-| `Wav` | WAV / PCM | ✅ | ✅ |
-| `M4A` | M4A / AAC-LC | ✅ | ✅ |
-| `Flac` | FLAC / FLAC | ✅ | ✅ |
-| `OpusOgg` | OGG / Opus | ✅ | ✅ |
-| `Adts` | ADTS / AAC-LC | ✅ | ✅ |
-| `Caf` | CAF / PCM | ✅ | ❌ |
-| `Aiff` | AIFF / PCM | ✅ | ❌ |
-| `Alac` | M4A / Apple Lossless | ✅ | ❌ |
-| `Ulaw` | WAV / µ-law | ✅ | ❌ |
-| `Alaw` | WAV / a-law | ✅ | ❌ |
-| `OpusWebm` | WebM / Opus | ❌ | ✅ |
-| `VorbisWebm` | WebM / Vorbis | ❌ | ✅ |
+| `FileFormat` | Container / codec    | iOS | Android |
+| :----------- | :------------------- | :-: | :-----: |
+| `Wav`        | WAV / PCM            | ✅  |   ✅    |
+| `M4A`        | M4A / AAC-LC         | ✅  |   ✅    |
+| `Flac`       | FLAC / FLAC          | ✅  |   ✅    |
+| `OpusOgg`    | OGG / Opus           | ✅  |   ✅    |
+| `Adts`       | ADTS / AAC-LC        | ✅  |   ✅    |
+| `Caf`        | CAF / PCM            | ✅  |   ❌    |
+| `Aiff`       | AIFF / PCM           | ✅  |   ❌    |
+| `Alac`       | M4A / Apple Lossless | ✅  |   ❌    |
+| `Ulaw`       | WAV / µ-law          | ✅  |   ❌    |
+| `Alaw`       | WAV / a-law          | ✅  |   ❌    |
+| `OpusWebm`   | WebM / Opus          | ❌  |   ✅    |
+| `VorbisWebm` | WebM / Vorbis        | ❌  |   ✅    |
 
 :::tip
 Both `Adts` and `Flac` files stay decodable after an app crash, but only the former is lossy.
@@ -1045,7 +1082,7 @@ Selecting a format the current platform cannot encode (for example `Caf` on Andr
 :::
 
 :::note Opus
-Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/prebuilt-libraries-support.mdx#disabling-other-external-libraries), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
+Opus always codes at 48 kHz, so `OpusOgg` files are 48 kHz on both platforms whatever `sampleRate` the preset asks for; the recorder resamples. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not. This format is encoded by the package's bundled static libraries. With them disabled through [`disableStaticExternalLibs`](../other/build-time-flags.mdx#disablestaticexternallibs), it is unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android 14 and later.
 :::
 
 #### FileInfo
@@ -1097,6 +1134,7 @@ audioRecorder.enableFileOutput({
         <div class="text-content">
           Writes audio data directly to file without encoding, preserving the maximum audio quality supported by the device. This results in large file sizes, particularly for longer recordings. Available only when using WAV or CAF file formats.
         </div>
+
         ```tsx
         audioRecorder.enableFileOutput({
           format: FileFormat.Caf,
@@ -1114,6 +1152,7 @@ audioRecorder.enableFileOutput({
         <div class="text-content">
           Uses high-fidelity audio parameters with efficient encoding to deliver near-lossless perceptual quality while producing smaller files than fully uncompressed recordings. Suitable for music and high-quality voice capture.
         </div>
+
         ```tsx
         audioRecorder.enableFileOutput({
           format: FileFormat.Flac,
@@ -1130,6 +1169,7 @@ audioRecorder.enableFileOutput({
         <div class="text-content">
           Uses balanced audio parameters that provide good perceptual quality while keeping file sizes moderate. Intended for everyday recording scenarios such as voice notes, podcasts, and general in-app audio, where efficiency and compatibility outweigh maximum fidelity.
         </div>
+
         ```tsx
         audioRecorder.enableFileOutput({
           format: FileFormat.M4A,
@@ -1146,6 +1186,7 @@ audioRecorder.enableFileOutput({
         <div class="text-content">
           Uses reduced audio parameters to minimize file size and processing overhead. Designed for cases where speech intelligibility is sufficient and audio fidelity is not critical, such as quick voice notes, background recording, or diagnostic capture.
         </div>
+
         ```tsx
         audioRecorder.enableFileOutput({
           format: FileFormat.M4A,
@@ -1154,6 +1195,7 @@ audioRecorder.enableFileOutput({
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -1226,6 +1268,7 @@ export interface FilePresetType {
         <div class="text-content">
           Maps the preset to the closest matching quality level provided by iOS native audio APIs, ensuring consistent behavior across Apple devices.
         </div>
+
         ```tsx
         enum IOSAudioQuality {
           Min,
@@ -1245,6 +1288,7 @@ export interface FilePresetType {
         <div class="text-content">
           Determines the compression level used when encoding FLAC files. Higher levels reduce file size at the cost of increased CPU usage, without affecting audio quality.
         </div>
+
         ```tsx
         enum FlacCompressionLevel {
           L0,
@@ -1260,6 +1304,7 @@ export interface FilePresetType {
         ```
       </td>
     </tr>
+
   </tbody>
 </table>
 
@@ -1275,6 +1320,6 @@ audioRecorder.pause();
 await audioRecorder.resume(); // start and pause have already completed here
 ```
 
-Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`.
+Await a call only when you need its result or want to observe the state it leaves behind, e.g. `isPaused()` after `pause`, or the [FileInfo](#fileinfo) returned by `stop`. `start`, `stop` and `resume` reject when they fail, so catch the promises you do not await.
 
 [`AudioContext`](../core/audio-context.mdx#remarks) and [`OfflineAudioContext`](../core/offline-audio-context.mdx) order their `suspend`, `resume`, `close` and `startRendering` promises the same way.

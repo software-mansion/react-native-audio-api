@@ -1,5 +1,4 @@
-
-import { Point } from "./types";
+import { Point } from './types';
 
 function drawSmoothCurve(ctx: CanvasRenderingContext2D, points: Point[]): void {
   ctx.moveTo(points[0].x, points[0].y);
@@ -17,7 +16,13 @@ function drawSmoothCurve(ctx: CanvasRenderingContext2D, points: Point[]): void {
   }
 }
 
-function drawFilledArea(ctx: CanvasRenderingContext2D, points: Point[], y: number, maxHeight: number, gradient: CanvasGradient): void {
+function drawFilledArea(
+  ctx: CanvasRenderingContext2D,
+  points: Point[],
+  y: number,
+  maxHeight: number,
+  gradient: CanvasGradient
+): void {
   ctx.beginPath();
   ctx.moveTo(points[0].x, y + maxHeight);
   ctx.lineTo(points[0].x, points[0].y);

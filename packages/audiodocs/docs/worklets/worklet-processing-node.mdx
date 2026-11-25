@@ -2,8 +2,8 @@
 sidebar_position: 5
 ---
 
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
+import AudioNodeMethodsTable from '@site/src/components/AudioNodeMethodsTable';
 import { ReadOnly } from '@site/src/components/Badges';
 
 # WorkletProcessingNode
@@ -29,10 +29,10 @@ const node = new WorkletProcessingNode(context, callback);
 
 ### Parameters
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
-| `context` | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node. |
-| `callback` | `WorkletProcessingNodeCallback` | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
+| Parameter  |                         Type                         | Description                                                                                       |
+| :--------: | :--------------------------------------------------: | :------------------------------------------------------------------------------------------------ |
+| `context`  | [`BaseAudioContext`](../core/base-audio-context.mdx) | The audio context that owns this node.                                                            |
+| `callback` |           `WorkletProcessingNodeCallback`            | Worklet invoked on the audio runtime each render quantum. Must include the `'worklet'` directive. |
 
 ### `WorkletProcessingNodeCallback`
 
@@ -47,14 +47,14 @@ type WorkletProcessingNodeCallback = (
 ) => void;
 ```
 
-| Argument | Description |
-| :--- | :---- |
-| `inputData` | Stable per-channel `Float32Array` views over the input pool (read-only for your callback). Each view spans the full render quantum (128 frames). |
-| `outputData` | Stable per-channel `Float32Array` views over the output pool. Write processed samples into indices `0 .. framesToProcess - 1`. |
-| `inputChannelCount` | Active input channel count (`inputData.length`). |
-| `outputChannelCount` | Active output channel count (`outputData.length`). |
-| `framesToProcess` | Number of frames in this quantum (at most 128). |
-| `currentTime` | Audio context time in seconds at the start of this quantum. |
+| Argument             | Description                                                                                                                                      |
+| :------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inputData`          | Stable per-channel `Float32Array` views over the input pool (read-only for your callback). Each view spans the full render quantum (128 frames). |
+| `outputData`         | Stable per-channel `Float32Array` views over the output pool. Write processed samples into indices `0 .. framesToProcess - 1`.                   |
+| `inputChannelCount`  | Active input channel count (`inputData.length`).                                                                                                 |
+| `outputChannelCount` | Active output channel count (`outputData.length`).                                                                                               |
+| `framesToProcess`    | Number of frames in this quantum (at most 128).                                                                                                  |
+| `currentTime`        | Audio context time in seconds at the start of this quantum.                                                                                      |
 
 :::note
 Input and output use **separate** buffer pools. You must write every output sample you want to hear — unwritten frames are not automatically copied from input.
@@ -62,10 +62,10 @@ Input and output use **separate** buffer pools. You must write every output samp
 
 ### Errors
 
-| Error type | Condition |
-| :---: | :---- |
+|     Error type      | Condition                                                                                                                      |
+| :-----------------: | :----------------------------------------------------------------------------------------------------------------------------- |
 | `NotSupportedError` | `react-native-audio-worklets` native module not installed, worklet extensions are not linked, or New Architecture is disabled. |
-| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`). |
+| `NotSupportedError` | `react-native-worklets` is missing or below the supported version (`>= 0.10.0`).                                               |
 
 ## Example
 
@@ -81,12 +81,22 @@ function GainEffect() {
 
     const gainNode = new WorkletProcessingNode(
       ctx,
-      (inputData, outputData, inputChannelCount, outputChannelCount, framesToProcess) => {
+      (
+        inputData,
+        outputData,
+        inputChannelCount,
+        outputChannelCount,
+        framesToProcess
+      ) => {
         'worklet';
 
         const gain = 0.5;
 
-        for (let ch = 0; ch < Math.min(inputChannelCount, outputChannelCount); ch++) {
+        for (
+          let ch = 0;
+          ch < Math.min(inputChannelCount, outputChannelCount);
+          ch++
+        ) {
           const input = inputData[ch]!;
           const output = outputData[ch]!;
 
@@ -108,7 +118,7 @@ function GainEffect() {
 }
 ```
 
-## Audio Processing Pattern
+## Audio processing pattern
 
 A typical WorkletProcessingNode worklet follows this pattern:
 
@@ -138,7 +148,13 @@ const processor = (
 
 Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
-<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+<AudioNodePropsTable
+  numberOfInputs={1}
+  numberOfOutputs={1}
+  channelCount={2}
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
 
 `WorkletProcessingNode` does not define any additional properties.
 

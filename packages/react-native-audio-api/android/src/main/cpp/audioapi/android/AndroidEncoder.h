@@ -23,7 +23,7 @@ class AndroidEncoder : public AudioEncoder {
       const EncoderOutputSpec &outputSpec,
       const std::string &filePath) override;
 
-  EncodeResult encode(const float *const *channels, int numFrames) override;
+  EncodeResult encode(const AudioBuffer &input, int numFrames) override;
 
   CloseEncoderResult close() override;
 
@@ -44,7 +44,7 @@ class AndroidEncoder : public AudioEncoder {
 
   /// Input that differs from the backend's effective format: channel mapping and resampling
   /// stay planar, and the backend interleaves while it quantizes.
-  std::string encodeConverted(const float *const *channels, int numFrames);
+  std::string encodeConverted(const AudioBuffer &input, int numFrames);
 
   std::unique_ptr<IEncoderBackend> backend_;
 

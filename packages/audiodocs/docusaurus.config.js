@@ -3,6 +3,7 @@
 
 const lightCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-light.js');
 const darkCodeTheme = require('docs-theme/theme/CodeBlock/highlighting-dark.js');
+const prismMagicComments = require('docs-theme/theme/CodeBlock/magicComments.js');
 
 import { topbarBannerReservationScript } from '@swmansion/t-rex-ui/topbar-banner'; // eslint-disable-line import/first, import/no-unresolved
 // @ts-expect-error -- .ts extension is intentional; not type-checked by tsc here.
@@ -129,8 +130,7 @@ const config = {
           position: 'right',
         },
         {
-          'href':
-            'https://github.com/software-mansion/react-native-audio-api',
+          'href': 'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
           'position': 'right',
           'aria-label': 'GitHub repository',
@@ -146,6 +146,7 @@ const config = {
       additionalLanguages: ['bash', 'cmake'],
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
+      magicComments: prismMagicComments,
     },
     algolia: {
       appId: '7OKARNAQRP',
@@ -159,7 +160,8 @@ const config = {
       },
     },
   },
-    clientModules: [
+  clientModules: [
+    require.resolve('./src/polyfills/audioListenerParams.ts'),
     require.resolve('./src/wasm-loader.js'),
   ],
 
@@ -211,6 +213,13 @@ const config = {
                   resolve: { fullySpecified: false },
                 },
                 {
+                  // The 1.0 web entry re-exports `BaseAudioContext`, which is a type-only
+                  // interface and compiles to an empty module.
+                  test: /\.js$/,
+                  include: /node_modules[\\/]react-native-audio-api[\\/]/,
+                  parser: { reexportExportsPresence: false },
+                },
+                {
                   test: /\.txt$/,
                   type: 'asset/source',
                 },
@@ -237,7 +246,9 @@ const config = {
                     options: {
                       presets: [
                         '@babel/preset-react',
-                        { plugins: ['@babel/plugin-proposal-class-properties'] },
+                        {
+                          plugins: ['@babel/plugin-proposal-class-properties'],
+                        },
                       ],
                     },
                   },

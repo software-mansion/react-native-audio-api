@@ -69,18 +69,19 @@ RecorderState ActiveRecorderHandle::pause(const std::shared_ptr<AudioRecorder> &
 RecorderState ActiveRecorderHandle::resume() {
   std::scoped_lock lock(mutex_);
   const std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
-  if (recorder && recorder->isPaused()) {
+  if (recorder) {
     recorder->resume();
   }
   return stateOf(recorder);
 }
 
-RecorderState ActiveRecorderHandle::resume(const std::shared_ptr<AudioRecorder> &expected) {
+Result<NoneType, std::string> ActiveRecorderHandle::resume(
+    const std::shared_ptr<AudioRecorder> &expected) {
   std::scoped_lock lock(mutex_);
   if (recorder_.lock() != expected) {
-    return RecorderState::Idle;
+    return Result<NoneType, std::string>::Err("Recorder is not in recording state.");
   }
-  return resume();
+  return expected->resume();
 }
 
 Result<NoneType, std::string> ActiveRecorderHandle::rerouteInput() {

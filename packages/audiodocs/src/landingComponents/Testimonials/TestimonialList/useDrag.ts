@@ -38,7 +38,8 @@ export default function useDrag(
     }
 
     const isSwipe =
-      slideWidth > 0 && Math.abs(dragOffset) >= SWIPE_DISTANCE_RATIO * slideWidth;
+      slideWidth > 0 &&
+      Math.abs(dragOffset) >= SWIPE_DISTANCE_RATIO * slideWidth;
 
     if (isSwipe) {
       onSwipe(dragOffset < 0 ? 1 : -1);

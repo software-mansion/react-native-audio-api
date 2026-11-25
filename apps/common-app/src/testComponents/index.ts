@@ -1,16 +1,12 @@
-import ControlBar from './ControlBar';
-import CurrentStepCard from './CurrentStepCard';
-import EmptyState from './EmptyState';
-import Header from './Header';
-import LiveLog from './LiveLog';
-import ScenarioCard from './ScenarioCard';
-import ScenarioResults from './ScenarioResults';
-import SectionTitle from './SectionTitle';
-import StatusPill from './StatusPill';
-import StepRow from './StepRow';
-import Summary from './Summary';
-import SummaryBadge from './SummaryBadge';
-import UnsupportedNotice from './UnsupportedNotice';
+export { default as EmptyState } from './EmptyState';
+export { default as LiveLog } from './LiveLog';
+export { default as ScenarioResults } from './ScenarioResults';
+export { default as SectionTitle } from './SectionTitle';
+export { default as StatusPill } from './StatusPill';
+export { default as StepRow } from './StepRow';
+export { default as TestLayout } from './TestLayout';
+export { default as UnsupportedNotice } from './UnsupportedNotice';
+export { useRunLog } from './useRunLog';
 
 export type {
   ControlAction,
@@ -20,37 +16,3 @@ export type {
   SummaryItem,
   TestStatus,
 } from './types';
-
-export {
-  ControlBar,
-  CurrentStepCard,
-  EmptyState,
-  Header,
-  LiveLog,
-  ScenarioCard,
-  ScenarioResults,
-  SectionTitle,
-  StatusPill,
-  StepRow,
-  Summary,
-  SummaryBadge,
-  UnsupportedNotice,
-};
-
-export const TestUI = {
-  Header,
-  Summary,
-  SummaryBadge,
-  CurrentStepCard,
-  ControlBar,
-  SectionTitle,
-  EmptyState,
-  StatusPill,
-  StepRow,
-  ScenarioCard,
-  ScenarioResults,
-  LiveLog,
-  UnsupportedNotice,
-};
-
-export default TestUI;

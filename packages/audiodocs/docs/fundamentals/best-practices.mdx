@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 # Best practices
@@ -87,7 +87,10 @@ Logging a node enumerates its properties and may warm internal caches. In develo
 Prefer logging plain values instead:
 
 ```tsx
-console.log({ channelCount: node.channelCount, numberOfInputs: node.numberOfInputs });
+console.log({
+  channelCount: node.channelCount,
+  numberOfInputs: node.numberOfInputs,
+});
 ```
 
 :::

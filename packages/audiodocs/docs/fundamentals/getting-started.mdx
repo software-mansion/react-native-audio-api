@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import Tabs from '@theme/Tabs';
@@ -18,19 +18,25 @@ Install the `react-native-audio-api` package from npm:
 
 <Tabs groupId="package-managers">
   <TabItem value="expo" label="EXPO" default>
+
     ```sh
     npx expo install react-native-audio-api
     ```
+
   </TabItem>
   <TabItem value="npm" label="NPM">
+
     ```sh
     npm install react-native-audio-api
     ```
+
   </TabItem>
   <TabItem value="yarn" label="YARN">
+
     ```sh
     yarn add react-native-audio-api
     ```
+
   </TabItem>
 </Tabs>
 
@@ -39,11 +45,12 @@ Install the `react-native-audio-api` package from npm:
 Add `react-native-audio-api` expo plugin to your `app.json` or `app.config.js`. Read more about the plugin [here](../other/audio-api-plugin.mdx)!
 
 :::tip Streaming remote audio?
-FFmpeg, which powers remote URL streaming and HLS playback, is not linked by default. If your app needs it, enable it as described in [Prebuilt libraries support](../other/prebuilt-libraries-support.mdx#enabling-ffmpeg).
+FFmpeg, which powers remote URL streaming and HLS playback, is not linked by default. If your app needs it, enable it as described in [Build-time flags](../other/build-time-flags.mdx#enableffmpeg).
 :::
 
 <details>
 <summary>app.json</summary>
+
 ```javascript
 {
   "plugins": [
@@ -66,12 +73,14 @@ FFmpeg, which powers remote URL streaming and HLS playback, is not linked by def
   ]
 }
 ```
+
 </details>
 
 <br />
 
 <details>
 <summary>app.config.js</summary>
+
 ```javascript
 export default {
   ...
@@ -95,6 +104,7 @@ export default {
   ]
 };
 ```
+
 </details>
 
 #### Special permissions
@@ -108,11 +118,14 @@ If your app is not managed by expo, see [non-expo-permissions page](../other/non
 ### Step 3: Install system-wide bash (only Windows OS)
 
 There are many ways to do that, for example, using git bash. To make sure just test if any unix command works.
+
 ```bash
 bash -c 'echo Hello World!'
 ```
 
-<Heading as="h3" id="additional-dependencies">Step 4: Additional dependencies (optional)</Heading>
+<Heading as="h3" id="additional-dependencies">
+  Step 4: Additional dependencies (optional)
+</Heading>
 
 If you plan to use any of [`WorkletNode`](../worklets/worklet-node.mdx), [`WorkletSourceNode`](../worklets/worklet-source-node.mdx), or [`WorkletProcessingNode`](../worklets/worklet-processing-node.mdx), install [`react-native-audio-worklets`](https://github.com/software-mansion/react-native-audio-api/tree/main/packages/react-native-audio-worklets) and [`react-native-worklets`](https://www.npmjs.com/package/react-native-worklets) `>= 0.10.0`. Follow the [react-native-worklets setup guide](https://docs.swmansion.com/react-native-worklets/docs/fundamentals/getting-started) for Babel and native configuration, then see the [Worklets](../worklets/introduction.mdx) section for usage.
 
@@ -126,14 +139,18 @@ If you are not planning to use worklet nodes, `react-native-worklets` and `react
 
 <Tabs groupId="expoStart">
   <TabItem value="ios" label="iOS" default>
+
     ```sh
     npx expo run:ios
     ```
+
   </TabItem>
   <TabItem value="android" label="Android">
+
     ```sh
     npx expo run:android
     ```
+
   </TabItem>
 </Tabs>
 
@@ -165,19 +182,25 @@ No further steps are necessary.
 
 <Tabs groupId="package-managers">
   <TabItem value="expo" label="EXPO" default>
+
     ```sh
     npx expo start -c
     ```
+
   </TabItem>
   <TabItem value="npm" label="NPM">
+
     ```sh
     npm start -- --reset-cache
     ```
+
   </TabItem>
   <TabItem value="yarn" label="YARN">
+
     ```sh
     yarn start --reset-cache
     ```
+
   </TabItem>
 </Tabs>
 

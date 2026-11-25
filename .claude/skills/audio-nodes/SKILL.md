@@ -59,6 +59,7 @@ common/cpp/audioapi/core/
 `processNode()` runs on the **audio thread** — the real-time rendering thread driven by the native audio driver (Oboe on Android, CoreAudio on iOS). This thread has strict requirements:
 
 **MUST NOT in `processNode()`:**
+
 - Allocate or free memory (`new`, `delete`, `malloc`, `free`, `std::vector::push_back` that grows, etc.)
 - Acquire any mutex or lock (`std::mutex`, `std::lock_guard`, etc.)
 - Make any blocking syscall (file I/O, socket, `sleep`, `wait`)
@@ -66,6 +67,7 @@ common/cpp/audioapi/core/
 - Throw exceptions (or rely on exception unwinding paths that allocate)
 
 **Preallocate everything in the constructor:**
+
 ```cpp
 // Constructor — JS thread, allocations OK
 GainNode::GainNode(const std::shared_ptr<BaseAudioContext> &context, const GainOptions &options)
@@ -98,15 +100,18 @@ std::shared_ptr<AudioBuffer> GainNode::processNode(
 Which nodes run each render quantum is decided by `AudioGraph::settleProcessableState()`, run inside `Graph::process()` after toposort/compaction and before the forward `iter()` pass. It is an **audio-thread-only** concern — never derived from HostGraph adjacency (that mutates on the JS thread under `nodesMutex_`).
 
 `GraphObject::PROCESSABLE_STATE`:
+
 - `ALWAYS_PROCESSABLE` — seed / pull root. Set in ctors of `AudioDestinationNode` and `AnalyserNode`. Never reset by settle.
 - `CONDITIONAL_PROCESSABLE` — on this quantum because something processable downstream pulls it. Recomputed from scratch every quantum.
 - `NOT_PROCESSABLE` — idle / disconnected / default.
 
 Settle algorithm (allocation-free):
+
 1. **Dependency pull**: depth-first from every `ALWAYS_`/`CONDITIONAL_PROCESSABLE` seed, mark each dependency (audio inputs and processable-links alike) `CONDITIONAL_PROCESSABLE` and continue from it. Uses `target_place` as an embedded stack and the state as the visited marker, so it is a single O(V+E) pass independent of array order.
 2. **End-of-quantum demotion**: after `processInputs()`, each node that was `CONDITIONAL_PROCESSABLE` flips back to `NOT_PROCESSABLE` in `GraphObject::process()`. That replaces a global reset at the start of settle — nodes that ran last quantum are already idle when the next pull begins.
 
 Key invariants:
+
 - **Pull from `processableState_`, never `AudioNode::isProcessable()`.** A tail-bearing node (Delay/Convolver/Biquad) overrides `isProcessable()` to stay `true` while its tail drains after a disconnect; using that for the pull would wrongly re-activate its whole upstream cone. The tail node stays scheduled via that override; its `processableState_` is `NOT_PROCESSABLE`, so it correctly does not pull upstream.
 - **`disable()` is sticky.** `AudioNode::disable()` sets `NOT_PROCESSABLE` **and** `alwaysNotProcessable_ = true`, so a finished source still wired to a live consumer is not re-activated by the every-quantum pull. Sources call `disable()` from the audio thread when playback finishes.
 - **DelayReader → DelayWriter** have no audio edge (they share a ring buffer). `Graph::linkNodes(reader, writer)` records a processable-link, mirrored onto `AudioGraph::Vertex::link_head`. Settle follows links so pulling the reader also pulls the writer and the writer's inputs. Links are NOT part of the topological sort (that would create a cycle for feedback delays). Consequently a link target can sit at a HIGHER index than its holder (the writer is an audio sink, so it sorts last), and settle must be order-independent: a seed-driven DFS on an embedded stack, never a single right-to-left sweep. A sweep marks the writer but never revisits it to pull its inputs, so the source feeding a DelayNode stops rendering (`SettleLinkTest.LinkTargetSortedAfterHolderStillPullsItsInputs` guards this).
@@ -158,8 +163,15 @@ feeds the graph through a `RecorderAdapterNode` instead of being processed by it
 
 The split between it and `IOSAudioRecorder` / `AndroidAudioRecorder` is: the base owns everything
 that happens to recorded frames (file writer, JS callback, adapter node — `enableFileOutput`,
-`setupFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
-subclasses own only the platform input stream. The one thing the base needs from the platform is
+`prepareFileWriter`, `setOnAudioReadyCallback`, `connect`, `detachSideEffects`/`finalizeSideEffects`), the
+subclasses own only the platform input stream. Each output is one `OutputSlot` (`file_`, `callback_`,
+`adapter_`: state, mutex, target); a subclass locks the slot mutexes and calls the base, and never
+reads or writes a slot's state or target itself. A platform `start()` prepares the outputs only
+through `prepareOutputs()`, and when anything fails after that it ends like `stop()`: detach under
+the slot mutexes, finalize without them, so no file stays open. `detachSideEffects()` moves the file
+writer out (a new one each session) but copies the callback and the adapter handle, which stay
+registered: JS `connect()` creates its adapter once, so moving the handle out made every later
+`start()` fail with "Recorder adapter node is unavailable.". The one thing the base needs from the platform is
 `resolveStreamFormat()`, returning sample rate, channel count and max frames per buffer; iOS reads
 it from `NativeAudioRecorder` on every call (a route change invalidates it), Android returns values
 cached when the Oboe stream opened. Add shared recorder behavior to the base, not to one platform;
@@ -168,7 +180,7 @@ that subclass. State a consumer already owns stays with the consumer: the adapte
 layout (`RecorderAdapterNode::writeFrames`) and the session's file paths (returned by
 `AudioFileWriter::closeFile()`) are not mirrored in the recorder.
 
-Pitfall: never redeclare a base member (`streamSampleRate_`, `fileWriter_`,
+Pitfall: never redeclare a base member (`streamSampleRate_`, `file_`,
 `lastCallbackFrameCount_`) in a platform recorder. The shadowing copy compiles fine, but the base's
 audio-thread fan-out reads its own member and silently drops that output.
 
@@ -191,10 +203,12 @@ enum class PlaybackState {
 ```
 
 Pausing is a state, not a stop. `pause()` / `resume(when)` move a node into and out of `PAUSED`. Only the HostObjects of sources that offer pausing call them: `AudioBufferQueueSourceNodeHostObject` maps its JS `pause` / `resume` straight onto them, with no forwarding methods on the node. Never fake a pause with `stop(0)`, `UNSCHEDULED`, or a side flag: `stop()` on a started node takes the stop-before-start branch, whose `AudioNode::disable()` excludes the node from the pull for good, so a later resume renders silence (the 1.0.0 queue-source bug). The rules `PAUSED` carries:
+
 - `stopTime_` is an absolute context time and survives a pause. `updatePlaybackInfo` finishes a paused node in the quantum holding its stop time; `resume(when)` keeps the node paused when the stop time is not after `when`.
 - `stop(when)` while paused only records `stopTime_` (there is no start to compare against).
 - `canBeDestructed()` is true while paused: only the JS handle can resume the node.
-- `AudioFileSourceNode` resumes through `start()` (its JS `play()`), not `resume()`: the base `start()` keeps `stopTime_`, and a stop time already passed ends the node a quantum later without audio. Its `pause()` overrides the base one (which is virtual for that reason) and also moves a never-started source to `PAUSED`, because `MediaElementAudioSourceNode::canBeDestructed()` is "my file source is paused" and the media node holds a raw pointer to it: a source waiting for its first `start()` must keep its media node, a paused one may lose it.
+- `AudioFileSourceNode` resumes through `start()` (its JS `play()`), not `resume()`: the base `start()` keeps `stopTime_`, and a stop time already passed ends the node a quantum later without audio.
+- `MediaElementAudioSourceNode` is a plain one-input pass-through: an `<Audio>` tag's file source reaches it through an ordinary graph edge, so lifetime and silence follow the normal graph rules (a node is removed only when its inputs go too). Do not give it a pointer to the file source or a side channel to pull from: the earlier design did (raw `AudioFileSourceNode *`, a binding id, a `canBeDestructed()` override tied to the source's pause state), and it crashed on the audio thread once the graph freed the file source first, left the media node in the graph forever after a play-to-end, and lost the route on the replacement source `<Audio>` spawns after every playthrough. The route lives in JS: `useAudioSourceLoader` keeps the tag's output (`mediaElementSourceRef`) and hands it to every file source it spawns (`AudioFileSourceNode.setOutput`); the TS `MediaElementAudioSourceNode` takes the tag over in its constructor for good. That matches the spec ("the rendered audio will no longer be heard directly", from creation, not from `connect()`) and Chrome, which also throws `InvalidStateError` for a second node on the same element, even after the first is disconnected or its context closed — the spec itself does not require that error.
 - A paused source must still reach `updatePlaybackInfo` each quantum. An early return for "paused" ahead of it (the old `filePaused_` check in `renderPreflight`) hides a stop time from the render path while the node stays connected.
 
 `hasEnded()` is the one piece of this state readable off the audio thread (an atomic set before `ENDED` is dispatched, exposed as the `hasEnded` HostObject getter). JS wrappers that guard calls by state keep the transitions they request themselves, because native applies `start`/`pause`/`resume` a quantum after the call, and read only the ending from native.
@@ -206,6 +220,7 @@ When the node finishes, `AudioScheduledSourceNode::disable()` fires `ENDED` thro
 A source only advances its state machine while it is being pulled. Once disconnected (no processable consumer) it is skipped by `iter()`, so a stop frame that has not rendered yet would never be observed and the node would stay PLAYING, never fire `ended` and never satisfy `canBeDestructed()` — the graph then keeps it forever (stretcher queues, params, scratch buffers). `GraphObject::advanceWithoutRender(currentSampleFrame)` closes that gap: `Graph::advanceUnpulledNodes` calls it each quantum for every node left out of the processable set, and `AudioScheduledSourceNode` overrides it to finish once the stop frame is strictly before the quantum (same transition as the render path's "first silent quantum" branch; Chromium does the same in `AudioScheduledSourceHandler::HandleStoppableSourceNode`). Keep the render path authoritative: the graph never calls this hook on a pulled node. The one caller besides the graph is `AudioBufferBaseSourceNode::processNode`, for a pulled source with nothing to render (empty queue): it returns before `updatePlaybackInfo`, so without the call a stop time would never be reached. A disconnected source that was never stopped still has no stop frame and stays alive until `stop()` or the JS wrapper dies.
 
 Pitfalls:
+
 - `start(double)` in this base class is a separate overload from `AudioBufferSourceNode::start(when, offset, duration)`. Calling `node->start(when)` on an ABSN skips the derived logic; the HostObject always passes three arguments, and so must tests.
 - `stop()` on a `FINISHED` node is ignored. JS does not guard a repeated `stop()`, and honouring it would take the stop-before-start branch again and fire a second `ended`.
 - `AudioBufferBaseSourceNode::processNode` is `final` and returns early on `isEmpty()`. Whether a started-but-empty source ends there (`ended` fires) is `endsWhenStartedEmpty()`: the base default is true (spec: a null buffer forces `stop = currentTime`); `AudioBufferQueueSourceNode` overrides it to false because an empty queue is waiting for the next enqueue. The check runs per quantum on the audio thread on purpose, because the buffer setter legitimately acquires content assigned after `start()` but before the first render.
@@ -248,6 +263,7 @@ class MyNode : public AudioNode {
 ```
 
 In `AudioParam.h` the pattern is:
+
 ```cpp
 /// @note JS Thread only
 [[nodiscard]] inline float getValue() const noexcept { ... }
@@ -277,6 +293,7 @@ gainParam_ = std::make_shared<AudioParam>(
 ### A-rate vs K-rate
 
 - **A-rate (audio-rate)**: one value per sample — use when the parameter can change significantly within a render quantum (e.g. frequency modulation)
+
   ```cpp
   // Call processARateParam() for per-sample values — returns AudioBuffer, no allocation
   auto gainValues = gainParam_->processARateParam(framesToProcess, time);
@@ -336,7 +353,7 @@ lands boundaries one frame late.
 Automation times are unvalidated user input: nothing in `AudioParam` or its host object rejects
 negative or absurd values, and WPT schedules ramps at `1e300` (`audioparam-large-endtime.html`).
 A `double → size_t → int` round trip on that is undefined behaviour, and in practice produced a
-small *negative* time that sorted the event ahead of everything legitimately scheduled. The same
+small _negative_ time that sorted the event ahead of everything legitimately scheduled. The same
 unguarded cast is still reachable from `AudioScheduledSourceNode`'s `startTime_`/`stopTime_`
 conversions.
 
@@ -369,9 +386,11 @@ eventScheduler_.processAllEvents(*this);  // drain all pending events
 ## Cross-Thread Communication Patterns
 
 ### JS → Audio (parameter/graph updates)
+
 Use `CrossThreadEventScheduler` (lock-free SPSC queue). See `utils/CrossThreadEventScheduler.hpp`.
 
 ### Audio → JS (events like `ended`, `loopEnded`, `positionChanged`)
+
 Use `IAudioEventHandlerRegistry::invokeHandlerWithEventBody()` which internally calls `callInvoker_->invokeAsync()` — this safely schedules the JS callback on the JS thread from the audio thread.
 
 ```cpp
@@ -383,21 +402,26 @@ audioEventHandlerRegistry_->invokeHandlerWithEventBody(
 Callback IDs are stored as `std::atomic<uint64_t>` on the node. `0` means no listener registered.
 
 ### JS → Audio (graph mutations: connect/disconnect)
+
 All graph mutations are queued via `AudioGraphManager` using its own SPSC channel (`addPendingNodeConnection`, `addPendingParamConnection`). The audio thread calls `graphManager_->preProcessGraph()` before each render pass to apply pending changes.
 
 ### Settable channel attributes (channelCount / channelCountMode / channelInterpretation)
+
 These are mutable after construction. `AudioNode` (core) exposes virtual `setChannelCount` / `setChannelCountMode` / `setChannelInterpretation`. `channelCount` and `channelCountMode` are read only on the host thread during negotiation, so the JSI setter updates the core field directly then calls `HostNode::renegotiate()` → `Graph::renegotiateNodeChannels()` → `HostGraph::renegotiateNodeChannels()` (reuses `collectNegotiations` + an `AGEvent` buffer swap, self-drain aware when there is no audio/render consumer — offline construction/suspend and realtime suspended/stopped windows). When `AudioBufferSourceNode` `setBuffer` changes channel width, update `outputChannelNumber_` together with the buffer then `renegotiate()` so MAX/CLAMPED_MAX downstream nodes update; the audio event still installs the prebuilt buffer (no audio-thread alloc). `channelInterpretation` is read on the audio thread in `processInputs` (`getInputBuffer()->sum(*input, channelInterpretation_)`), so it MUST be applied via `scheduleAudioEvent`, not mutated directly.
 
 Negotiation decides whether to queue a buffer swap by comparing against `HostVertex::pendingChannelCount` (the width of the last swap queued, seeded in `HostGraph::addNode`), never against the live `getNegotiatedBuffer()`. On a running context every event queued in one JS task lands in the same render quantum, so the live buffer has not seen earlier swaps from the batch yet: a node going 2 → 1 → 2 would see the live 2, skip the second swap, and keep the queued 1 (issue #1332, e.g. `source.connect(gain); source.buffer = stereo;`). The width a node presents to its consumers is derived on demand as `getOutputChannelNumber().value_or(pendingChannelCount)`; it is not cached per pass, so a negotiation pass only walks upstream (`outputs`) from the changed nodes — inputs outside that walk are already current. Inputs inside it are not: in a triangle (`A → C`, `A → B → C`) the walk can reach C before B, so `collectNegotiations` first collects the walked nodes in post-order (`collectAffectedPostOrder`) and computes them in reverse, which is topological — every node after each input the same pass renegotiates (`GraphTest.RenegotiateNode_TriangleReadsSiblingAfterItNarrows`). Never compute a node while walking. A source (`getNumberOfInputs() == 0`, `ownsOutputBuffer`) is never given a buffer by the graph: it swaps `audioBuffer_` itself, in the same audio event as the content that defines its width, so the two can never disagree on the audio thread. A pass never reaches a source: `connect()` rejects it as a destination (`HostGraph::addEdge` asserts this — it has no guard of its own, so C++ tests calling it raw must respect it too) and `renegotiateNodeChannels(source)` starts the pass at the source's outputs. The same rule applies to any new host-side "is a swap needed?" check.
 
 ### Output channel number vs `channelCount` (sources)
+
 `channelCount` is the spec's input-mixing attribute and never decides how many channels a node emits. `AudioNode` keeps a separate atomic `outputChannelNumber_` (`getOutputChannelNumber()`), initialised from `AudioNodeOptions::outputChannelNumber` and falling back to `channelCount` for nodes whose output follows their negotiated input layout. `HostGraph` negotiation reads each input's `getOutputChannelNumber()` and falls back to its pending negotiated width only when that is `nullopt` (`pendingOutputChannelNumber` in `HostGraph.cpp`), so a spec-default `channelCount = 2` oscillator still negotiates a mono downstream buffer. Rules:
+
 - A node that always emits one channel (Oscillator, ConstantSource) derives its options from `MonoSourceNodeOptions`; do not lower `channelCount` or override `setChannelCount` to fake it.
 - A source that learns its width later (AudioBufferSource, AudioFileSource, AudioBufferQueueSource, RecorderAdapter) writes `outputChannelNumber_` in the same step it swaps `audioBuffer_`, never `channelCount_`.
 - When the host object schedules that swap (AudioBufferSourceNode `setBuffer`), it must first call `setOutputChannelNumber()` on the host thread and `renegotiate()`, otherwise downstream MAX / CLAMPED_MAX nodes negotiate against the stale width until the audio event lands (this broke the StereoPanner WPT `stereopannernode-panning` test when it lived on `updateChannelCount`). Never route this through `updateChannelCount`: that changes the JS-visible `channelCount` attribute.
 - Read the emitted width from `getOutputChannelNumber()` on any thread; the buffer pointer itself is audio-thread only.
 
 ### Idle-node stale-buffer zeroing (settleProcessableState)
+
 `AudioGraph::iter()` filters to `isProcessable()` nodes, so a node that has gone idle (e.g. a finished source) is skipped and its output buffer is NOT refreshed — it keeps the samples from an earlier quantum. Downstream consumers still read that buffer via `getOutput()` when collecting inputs, which would re-sum ghost echoes every quantum (this broke the `audionode-channel-rules` ~170-node WPT test).
 
 Fix: after the dependency pull in `AudioGraph::settleProcessableState()`, zero the output buffer of every node that is still `!isProcessable()`. Active CONDITIONAL nodes have already been pulled, so they are left intact; tail-bearing nodes remain `isProcessable()` while draining and are also left intact.
@@ -459,9 +483,11 @@ See [full GainNode example](gainnode-example.md) for a complete header + .cpp re
 ## Web Audio API Spec Reference
 
 All node behavior (parameter names, default values, valid ranges, processing semantics) must match the spec:
+
 - https://webaudio.github.io/web-audio-api/
 
 Key spec-defined constraints already encoded in the codebase:
+
 - `AudioParam` min/max values come from spec tables
 - `GainNode.gain` default = 1.0, no clamping
 - `BiquadFilterNode.frequency` default = 350 Hz, range [Nyquist - epsilon, Nyquist]
@@ -470,4 +496,4 @@ Key spec-defined constraints already encoded in the codebase:
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

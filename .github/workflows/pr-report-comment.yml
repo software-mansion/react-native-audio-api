@@ -1,0 +1,116 @@
+name: PR report comments
+
+# Posts the reports a CI run uploads for its pull request, one comment per report, edited
+# on every push. Jobs upload reports with the upload-pr-report action: artifacts named
+# pr-report-<name>, each holding one <kind>/report.md per report.
+#
+# This is a separate workflow because a pull_request run from a fork gets a read-only
+# GITHUB_TOKEN and can't comment. A workflow_run job runs in the base repository, so it can
+# comment on fork and same-repo pull requests.
+#
+# workflow_run always uses this file from the default branch, so changes to it take effect
+# after they merge, not on the pull request that makes them.
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+jobs:
+  comment:
+    name: Post PR reports
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-24.04
+    # Queued, not cancelled: two runs commenting at once could both find no comment and
+    # both create one.
+    concurrency:
+      group: pr-report-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      # Jobs that didn't run upload nothing, so their existing comments stay as they are.
+      - name: Download reports
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          pattern: pr-report-*
+          path: pr-reports
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post or update the report comments
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const run = context.payload.workflow_run;
+            const reportsDir = 'pr-reports';
+
+            // A hidden marker per report finds the comment to edit, so each push updates the
+            // same comment.
+            const markerFor = (kind) => `<!-- pr-report:${kind} -->`;
+
+            const listDirs = (dir) => fs.existsSync(dir)
+              ? fs.readdirSync(dir, { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => entry.name)
+              : [];
+
+            const reports = listDirs(reportsDir)
+              .flatMap((artifact) => listDirs(path.join(reportsDir, artifact))
+                .map((kind) => ({ kind, file: path.join(reportsDir, artifact, kind, 'report.md') })))
+              .filter((report) => fs.existsSync(report.file))
+              .map((report) => ({ ...report, body: fs.readFileSync(report.file, 'utf8').trim() }));
+
+            if (reports.length === 0) {
+              core.info('No reports in this CI run; nothing to post.');
+              return;
+            }
+
+            // workflow_run.pull_requests is empty for fork pull requests, so find the pull
+            // request by the run's head repository owner and branch.
+            const { data: pulls } = await github.rest.pulls.list({
+              ...context.repo,
+              state: 'open',
+              head: `${run.head_repository.owner.login}:${run.head_branch}`,
+            });
+            const pull = pulls.find((candidate) => candidate.head.sha === run.head_sha) ?? pulls[0];
+            if (!pull) {
+              core.info(`No open pull request for ${run.head_repository.full_name}:${run.head_branch}; nothing to post.`);
+              return;
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo,
+              issue_number: pull.number,
+              per_page: 100,
+            });
+
+            for (const report of reports) {
+              const marker = markerFor(report.kind);
+              const existing = comments.find((comment) => comment.body?.includes(marker));
+              const body = [
+                marker,
+                report.body,
+                '',
+                `<sub>[Workflow run](${run.html_url}) · this comment is updated on every push.</sub>`,
+              ].join('\n');
+
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  ...context.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: pull.number,
+                  body,
+                });
+              }
+              core.info(`Posted the ${report.kind} report on #${pull.number}.`);
+            }

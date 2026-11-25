@@ -170,12 +170,12 @@ ReactAndroid/src/main/jni/...     — TurboModule JNI headers
 
 ### Subspecs split compilation
 
-| Subspec | Sources | Special |
-|---|---|---|
-| `audioapi` | `common/cpp/audioapi/**/*.{cpp,h,hpp}` | Excludes FFmpeg sources if disabled |
-| `audioapi/ios` | `ios/audioapi/**/*.{mm,h}` | ObjC++ platform layer |
-| `audioapi/audioapi_dsp` | `common/cpp/audioapi/dsp/**/*.cpp` | Compiled with `-O3` |
-| `audioapi/miniaudio_impl` | `utils/MiniaudioImplementation.cpp` | Compiled as `-x objective-c++` (required by miniaudio) |
+| Subspec                   | Sources                                | Special                                                |
+| ------------------------- | -------------------------------------- | ------------------------------------------------------ |
+| `audioapi`                | `common/cpp/audioapi/**/*.{cpp,h,hpp}` | Excludes FFmpeg sources if disabled                    |
+| `audioapi/ios`            | `ios/audioapi/**/*.{mm,h}`             | ObjC++ platform layer                                  |
+| `audioapi/audioapi_dsp`   | `common/cpp/audioapi/dsp/**/*.cpp`     | Compiled with `-O3`                                    |
+| `audioapi/miniaudio_impl` | `utils/MiniaudioImplementation.cpp`    | Compiled as `-x objective-c++` (required by miniaudio) |
 
 ### `miniaudio_impl` workaround
 
@@ -351,4 +351,3 @@ class TestableGainNode : public GainNode {
 1. Create `test/src/core/<category>/MyNodeTest.cpp`
 2. `GLOB_RECURSE test_src "src/*.cpp"` picks it up automatically — no CMakeLists edit needed.
 3. Verify `context->initialize()` is called in `SetUp()` if your node needs the context to be running.
-

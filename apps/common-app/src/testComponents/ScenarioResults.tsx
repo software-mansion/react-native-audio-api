@@ -1,12 +1,15 @@
 import React, { FC } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { Card } from '../components';
+import { colors, typography } from '../styles';
 import EmptyState from './EmptyState';
-import ScenarioCard from './ScenarioCard';
 import SectionTitle from './SectionTitle';
+import StatusPill from './StatusPill';
+import StepRow from './StepRow';
 import type { ScenarioItem } from './types';
 
-interface ScenarioResultsProps {
+export interface ScenarioResultsProps {
   scenarios: ScenarioItem[];
   emptyMessage: string;
   title?: string;
@@ -17,21 +20,38 @@ const ScenarioResults: FC<ScenarioResultsProps> = ({
   emptyMessage,
   title = 'Scenario Results',
 }) => (
-  <View style={styles.sectionContent}>
+  <>
     <SectionTitle title={title} />
     {scenarios.length === 0 ? (
       <EmptyState message={emptyMessage} />
     ) : (
       scenarios.map((scenario) => (
-        <ScenarioCard key={scenario.id} scenario={scenario} />
+        <Card key={scenario.id}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{scenario.title}</Text>
+            <StatusPill status={scenario.status} />
+          </View>
+          <Text style={typography.hint}>{scenario.durationLabel}</Text>
+          {scenario.steps.map((step) => (
+            <StepRow key={step.id} step={step} />
+          ))}
+        </Card>
       ))
     )}
-  </View>
+  </>
 );
 
 const styles = StyleSheet.create({
-  sectionContent: {
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
     gap: 12,
+  },
+  title: {
+    color: colors.textPrimary,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

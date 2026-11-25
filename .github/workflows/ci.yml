@@ -1,52 +1,192 @@
 name: CI
+
 on:
   pull_request:
     branches:
       - main
-      - 'release/**'
     types: [opened, synchronize, reopened, ready_for_review]
-  merge_group:
-    types:
-      - checks_requested
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  format-check:
-    uses: ./.github/workflows/ci-check.yml
-    with:
-      name: Format check
-      run: pnpm format:check
+  changes:
+    name: Detect changes
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' }}
+      audio-api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audio-api == 'true' }}
+      worklets: ${{ github.event_name != 'pull_request' || steps.filter.outputs.worklets == 'true' }}
+      audiodocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.audiodocs == 'true' }}
+      internaldocs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.internaldocs == 'true' }}
+      fabric-example: ${{ github.event_name != 'pull_request' || steps.filter.outputs.fabric-example == 'true' }}
+      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.native == 'true' || steps.filter.outputs.android == 'true' }}
+      ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.native == 'true' || steps.filter.outputs.ios == 'true' }}
+      wpt: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.wpt == 'true' }}
+    steps:
+      - name: Path filter
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            toolchain: &toolchain
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.nvmrc'
+              - '.github/actions/setup-env/**'
+            shared: &shared
+              - *toolchain
+              - 'package.json'
+              - 'tsconfig.json'
+              - '.oxlintrc.json'
+              - '.oxfmtrc.json'
+              - 'scripts/run-steps.sh'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/check-package.yml'
+            audio-api: &audio-api
+              - *shared
+              - 'packages/react-native-audio-api/**'
+            worklets: &worklets
+              - *audio-api
+              - 'packages/react-native-audio-worklets/**'
+            docs-theme: &docs-theme
+              - 'packages/docs-theme/**'
+            audiodocs:
+              - *shared
+              - *docs-theme
+              - 'packages/audiodocs/**'
+            internaldocs:
+              - *shared
+              - *docs-theme
+              - 'packages/internaldocs/**'
+            fabric-example:
+              - *worklets
+              - 'apps/common-app/**'
+              - 'apps/fabric-example/**'
+            native:
+              - *toolchain
+              - 'packages/react-native-audio-api/common/**'
+              - 'packages/react-native-audio-api/src/specs/**'
+              - 'packages/react-native-audio-api/scripts/**'
+              - 'packages/react-native-audio-api/package.json'
+              - 'packages/react-native-audio-worklets/common/**'
+              - 'packages/react-native-audio-worklets/src/specs/**'
+              - 'packages/react-native-audio-worklets/package.json'
+              - 'apps/common-app/package.json'
+              - 'apps/fabric-example/package.json'
+              - '.github/workflows/native-build.yml'
+            android:
+              - 'packages/react-native-audio-api/android/**'
+              - 'packages/react-native-audio-worklets/android/**'
+              - 'packages/react-native-audio-worklets/CMakeLists.txt'
+              - 'apps/fabric-example/android/**'
+            ios:
+              - 'packages/react-native-audio-api/ios/**'
+              - 'packages/react-native-audio-api/RNAudioAPI.podspec'
+              - 'packages/react-native-audio-worklets/ios/**'
+              - 'packages/react-native-audio-worklets/RNAudioWorklets.podspec'
+              - 'apps/fabric-example/ios/**'
+              - 'apps/fabric-example/Gemfile'
+              - 'apps/fabric-example/Gemfile.lock'
+            wpt:
+              - *toolchain
+              - 'package.json'
+              - 'packages/react-native-audio-api/common/**'
+              - 'packages/react-native-audio-api/src/**'
+              - 'packages/react-native-audio-api/wpt_tests/**'
+              - 'packages/react-native-audio-api/scripts/build.sh'
+              - 'packages/react-native-audio-api/package.json'
+              - '.github/workflows/wpt-tests.yml'
 
-  lint-audio-api:
-    uses: ./.github/workflows/ci-check.yml
+  react-native-audio-api:
+    needs: changes
+    if: needs.changes.outputs.audio-api == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Lint and typecheck (react-native-audio-api)
-      run: |
-        pnpm --filter react-native-audio-api lint
-        pnpm --filter react-native-audio-api typecheck
+      directory: packages/react-native-audio-api
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
-  lint-worklets:
-    uses: ./.github/workflows/ci-check.yml
+  react-native-audio-worklets:
+    needs: changes
+    if: needs.changes.outputs.worklets == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Lint and typecheck (react-native-audio-worklets)
-      run: |
-        pnpm --filter react-native-audio-api build
-        pnpm --filter react-native-audio-worklets lint
-        pnpm --filter react-native-audio-worklets typecheck
+      directory: packages/react-native-audio-worklets
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
-  check-audio-enum-sync:
-    uses: ./.github/workflows/ci-check.yml
+  audiodocs:
+    needs: changes
+    if: needs.changes.outputs.audiodocs == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Check enum sync
-      run: pnpm check-audio-enum-sync
+      directory: packages/audiodocs
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
-  build-audio-api:
-    uses: ./.github/workflows/ci-check.yml
+  internaldocs:
+    needs: changes
+    if: needs.changes.outputs.internaldocs == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Build (react-native-audio-api)
-      run: pnpm --filter react-native-audio-api build
+      directory: packages/internaldocs
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
 
-  build-worklets:
-    uses: ./.github/workflows/ci-check.yml
+  fabric-example:
+    needs: changes
+    if: needs.changes.outputs.fabric-example == 'true'
+    uses: ./.github/workflows/check-package.yml
     with:
-      name: Build (react-native-audio-worklets)
-      run: pnpm --filter react-native-audio-worklets build
+      directory: apps/fabric-example
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
+
+  native-build:
+    name: Example app
+    needs: changes
+    if: needs.changes.outputs.android == 'true' || needs.changes.outputs.ios == 'true'
+    uses: ./.github/workflows/native-build.yml
+    with:
+      android: ${{ needs.changes.outputs.android == 'true' }}
+      ios: ${{ needs.changes.outputs.ios == 'true' }}
+
+  wpt:
+    name: WPT
+    needs: changes
+    if: needs.changes.outputs.wpt == 'true'
+    uses: ./.github/workflows/wpt-tests.yml
+
+  # Coverage only reports to pull requests.
+  cpp-coverage:
+    name: C++ coverage
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.audio-api == 'true'
+    uses: ./.github/workflows/cpp-coverage.yml
+    with:
+      test-all: ${{ needs.changes.outputs.shared == 'true' }}
+
+  gate:
+    name: Gate
+    if: always()
+    needs:
+      - changes
+      - react-native-audio-api
+      - react-native-audio-worklets
+      - audiodocs
+      - internaldocs
+      - fabric-example
+      - native-build
+      - wpt
+      - cpp-coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if a job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

@@ -1,8 +1,9 @@
 import React, { FC, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 
-import { colors } from '../../styles';
+import { Card } from '../../components';
+import { colors, typography } from '../../styles';
 import type { CorrelationPoint } from './types';
 
 interface CorrelationPlotProps {
@@ -32,7 +33,10 @@ const CorrelationPlot: FC<CorrelationPlotProps> = ({
     const minLag = points[0].lagMs;
     const maxLag = points[points.length - 1].lagMs;
     const lagSpan = Math.max(maxLag - minLag, 1);
-    const maxScoreValue = Math.max(...points.map((point) => point.score), 0.001);
+    const maxScoreValue = Math.max(
+      ...points.map((point) => point.score),
+      0.001
+    );
 
     const builtPath = points
       .map((point, index) => {
@@ -45,30 +49,19 @@ const CorrelationPlot: FC<CorrelationPlotProps> = ({
     return {
       path: builtPath,
       bestX:
-        bestLagMs !== null
-          ? ((bestLagMs - minLag) / lagSpan) * width
-          : null,
+        bestLagMs !== null ? ((bestLagMs - minLag) / lagSpan) * width : null,
       expectedX: ((expectedLagMs - minLag) / lagSpan) * width,
       maxScore: maxScoreValue,
     };
   }, [bestLagMs, expectedLagMs, height, points, width]);
 
   return (
-    <View style={styles.container}>
+    <Card>
       <Text style={styles.title}>{title}</Text>
-      {caption ? <Text style={styles.caption}>{caption}</Text> : null}
+      {caption ? <Text style={typography.hint}>{caption}</Text> : null}
 
       <View style={[styles.plotFrame, { width, height }]}>
         <Svg width={width} height={height}>
-          <Rect
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            fill={colors.backgroundDark}
-            rx={4}
-          />
-
           {expectedX !== null ? (
             <Line
               x1={expectedX}
@@ -87,60 +80,49 @@ const CorrelationPlot: FC<CorrelationPlotProps> = ({
               y1={0}
               x2={bestX}
               y2={height}
-              stroke={colors.main}
+              stroke={colors.blue}
               strokeWidth={1.5}
             />
           ) : null}
 
-          <Path d={path} stroke={colors.main} strokeWidth={2} fill="none" />
+          <Path d={path} stroke={colors.blue} strokeWidth={2} fill="none" />
 
           {bestX !== null ? (
-            <Circle cx={bestX} cy={12} r={4} fill={colors.main} />
+            <Circle cx={bestX} cy={12} r={4} fill={colors.blue} />
           ) : null}
         </Svg>
       </View>
 
       <View style={styles.legendRow}>
-        <Text style={styles.legendText}>Peak score max={maxScore.toFixed(3)}</Text>
-        <Text style={[styles.legendText, { color: colors.main }]}>
+        <Text style={styles.legendText}>
+          Peak score max={maxScore.toFixed(3)}
+        </Text>
+        <Text style={[styles.legendText, { color: colors.blue }]}>
           Best lag {bestLagMs !== null ? `${bestLagMs.toFixed(1)} ms` : '—'}
         </Text>
         <Text style={[styles.legendText, { color: colors.yellow }]}>
           Expected {expectedLagMs.toFixed(1)} ms
         </Text>
       </View>
-    </View>
+    </Card>
   );
 };
 
 const styles = StyleSheet.create({
-  caption: {
-    color: colors.gray,
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 8,
-  },
-  container: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: 8,
-    gap: 8,
-    padding: 12,
-  },
   legendRow: {
     gap: 4,
   },
   legendText: {
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 11,
   },
   plotFrame: {
-    borderColor: colors.separator,
-    borderRadius: 4,
-    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.recess,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   title: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },

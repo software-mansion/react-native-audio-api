@@ -1,17 +1,7 @@
-export async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import type { CorrelationPoint } from './types';
 
 export function formatMs(seconds: number): string {
   return `${(seconds * 1000).toFixed(2)} ms`;
-}
-
-export function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
 }
 
 export interface BeepPattern {
@@ -119,7 +109,10 @@ export function appendChannelSamples(
   }
 }
 
-export function estimateNoiseFloor(samples: number[], windowLength: number): number {
+export function estimateNoiseFloor(
+  samples: number[],
+  windowLength: number
+): number {
   const end = Math.min(samples.length, windowLength);
   if (end === 0) {
     return 0;
@@ -158,8 +151,7 @@ export function prepareRecordedSamples(
 
   for (let index = 0; index < samples.length; index += 1) {
     const centered = samples[index] - mean;
-    processed[index] =
-      Math.abs(centered) < gateThreshold ? 0 : centered;
+    processed[index] = Math.abs(centered) < gateThreshold ? 0 : centered;
   }
 
   return {
@@ -262,11 +254,6 @@ function normalizedCorrelation(
   return norm > 0 ? dot / norm : -1;
 }
 
-export interface CorrelationPoint {
-  lagMs: number;
-  score: number;
-}
-
 export interface AlignmentResult {
   lagSamples: number;
   correlation: number;
@@ -321,7 +308,11 @@ export function findPatternAlignment(
   let bestBlockScore = -1;
   const correlationProfile: CorrelationPoint[] = [];
 
-  for (let blockLag = minBlockLag; blockLag <= maxBlockLagSearch; blockLag += 1) {
+  for (
+    let blockLag = minBlockLag;
+    blockLag <= maxBlockLagSearch;
+    blockLag += 1
+  ) {
     const score = normalizedCorrelation(refEnvelope, recEnvelope, blockLag);
     correlationProfile.push({
       lagMs: ((blockLag * blockSize) / sampleRate) * 1000,
@@ -398,6 +389,9 @@ export function buildRecordedWindow(
   sampleRate: number
 ): Float32Array {
   const windowSamples = Math.round(windowSeconds * sampleRate);
-  const startSample = Math.max(0, centerLagSamples - Math.floor(windowSamples / 2));
+  const startSample = Math.max(
+    0,
+    centerLagSamples - Math.floor(windowSamples / 2)
+  );
   return sliceSamples(recordedSamples, startSample, windowSamples);
 }

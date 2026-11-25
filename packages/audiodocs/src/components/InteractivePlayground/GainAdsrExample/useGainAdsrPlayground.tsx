@@ -1,7 +1,7 @@
-import SliderInput from "@site/src/ui/SliderInput";
-import React, { useState } from "react";
-import styles from "../styles.module.css";
-import GainAdsrExample from "./GainAdsrExample";
+import SliderInput from '@site/src/ui/SliderInput';
+import React, { useState } from 'react';
+import styles from '../styles.module.css';
+import GainAdsrExample from './GainAdsrExample';
 
 const initialState = {
   attack: 1,
@@ -28,9 +28,11 @@ envelope.gain.exponentialRampToValueAtTime(${(sustain + 0.00001).toFixed(
 envelope.gain.setValueAtTime(${sustain.toFixed(2)}, now + ${(
     attack + decay
   ).toFixed(2)});
-envelope.gain.linearRampToValueAtTime(0, now + ${(attack + decay + release).toFixed(
-    2
-  )});`;
+envelope.gain.linearRampToValueAtTime(0, now + ${(
+    attack +
+    decay +
+    release
+  ).toFixed(2)});`;
 
   const controls = (
     <div className={styles.controlsPanel}>
@@ -79,7 +81,7 @@ envelope.gain.linearRampToValueAtTime(0, now + ${(attack + decay + release).toFi
     code,
     controls,
     example: GainAdsrExample,
-    title: "ADSR Envelope Example",
+    title: 'ADSR Envelope Example',
     props: {
       attack,
       decay,
