@@ -4,7 +4,9 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <cassert>
 #include <memory>
+#include <optional>
 
 namespace audioapi {
 
@@ -27,6 +29,19 @@ void GainNode::processNode(int framesToProcess) {
     return;
   }
   double time = context->getCurrentTime();
+
+  if (std::optional<float> gain = gainParam_->settledValueAt(framesToProcess, time)) {
+    if (*gain == 1.0f) {
+      return;
+    }
+    for (size_t i = 0; i < audioBuffer_->getNumberOfChannels(); i++) {
+      auto *channel = audioBuffer_->getChannel(i);
+      assert(static_cast<size_t>(framesToProcess) <= channel->getSize());
+      dsp::multiplyByScalar(channel->begin(), *gain, channel->begin(), framesToProcess);
+    }
+    return;
+  }
+
   auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
   auto *gainValues = gainParamValues->getChannel(0);
 
