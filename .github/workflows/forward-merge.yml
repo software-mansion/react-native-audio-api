@@ -46,6 +46,22 @@ jobs:
             exit 0
           fi
 
+          # Closing keywords act only on PRs merged into the default branch, so the
+          # issues closed by release PRs are carried into the forward-merge PR. A release
+          # PR has no closingIssuesReferences from its body (only sidebar links), so its
+          # body is scanned for closing keywords too.
+          release_prs=$(git rev-list "origin/main..origin/$RELEASE_BRANCH" \
+            | xargs -I{} gh api "repos/$GITHUB_REPOSITORY/commits/{}/pulls" --jq '.[] | select(.merged_at) | .number' \
+            | sort -un)
+          closes=$(for pr in $release_prs; do
+              gh api graphql -F number="$pr" -F owner="${GITHUB_REPOSITORY%/*}" -F name="${GITHUB_REPOSITORY#*/}" \
+                -f query='query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { closingIssuesReferences(first: 50) { nodes { number repository { nameWithOwner } } } } } }' \
+                --jq '.data.repository.pullRequest.closingIssuesReferences.nodes[] | "\(.repository.nameWithOwner)#\(.number)"'
+              gh pr view "$pr" --json body --jq .body \
+                | grep -oiE '\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+([[:alnum:]_.-]+/[[:alnum:]_.-]+)?#[0-9]+' \
+                | sed -E "s/^[^[:space:]]+[[:space:]]+//; s|^#|$GITHUB_REPOSITORY#|"
+            done | sort -fu | sed 's/^/Closes /')
+
           open_pr=$(gh pr list --base main --head "$FORWARD_BRANCH" --state open --json number --jq '.[0].number // empty')
 
           if [ -n "$open_pr" ]; then
@@ -57,6 +73,13 @@ jobs:
               exit 1
             fi
             git push origin "HEAD:refs/heads/$FORWARD_BRANCH"
+
+            # Prepend only the missing lines so manual edits to the body survive.
+            body=$(gh pr view "$open_pr" --json body --jq .body)
+            missing=$(grep -vxFf <(printf '%s\n' "$body") <<<"$closes" || true)
+            if [ -n "$missing" ]; then
+              printf '%s\n\n%s\n' "$missing" "$body" | gh pr edit "$open_pr" --body-file -
+            fi
             echo "Updated PR #$open_pr."
             exit 0
           fi
@@ -64,6 +87,8 @@ jobs:
           git push --force origin "origin/$RELEASE_BRANCH:refs/heads/$FORWARD_BRANCH"
 
           cat > "$RUNNER_TEMP/pr-body.md" <<EOF
+          $closes
+
           Forward merge of the fixes merged to \`$RELEASE_BRANCH\` ($unmerged commit(s) not yet on main).
 
           > [!IMPORTANT]
