@@ -42,7 +42,15 @@ export default class BaseAudioContext {
 
     this.stateChangeSubscription = this.audioEventEmitter.addAudioEventListener(
       'stateChange',
-      () => this.onstatechange?.()
+      (event) => {
+        try {
+          this.onstatechange?.();
+        } finally {
+          if (event?.state === 'closed') {
+            this.releaseStateChangeSubscription();
+          }
+        }
+      }
     );
     this.context.onstatechange = this.stateChangeSubscription.subscriptionId;
   }
@@ -60,7 +68,24 @@ export default class BaseAudioContext {
 
   private stateChangeSubscription: ReturnType<
     AudioEventEmitter['addAudioEventListener']
-  >;
+  > | null;
+
+  /**
+   * The native event registry is process-global and keeps this listener (and,
+   * through its closure, the whole context) alive until it is removed, so the
+   * subscription is released once the terminal `closed` statechange has been
+   * delivered. Removing it right after `close()` resolves would drop that
+   * event: the native side resolves the promise before dispatching it.
+   */
+  private releaseStateChangeSubscription(): void {
+    const subscription = this.stateChangeSubscription;
+    if (subscription == null) {
+      return;
+    }
+    this.stateChangeSubscription = null;
+    this.context.onstatechange = '0';
+    subscription.remove();
+  }
 
   public onstatechange: (() => void) | null = null;
 
