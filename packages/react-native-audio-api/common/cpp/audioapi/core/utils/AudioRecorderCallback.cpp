@@ -154,8 +154,7 @@ void AudioRecorderCallback::receiveAudioData(const float *const *channels, int n
   // send() cannot block here: we hold a slot from a pool of POOL_SIZE,
   // and the channel is sized one larger, so the ring always has room while
   // any slot is in flight.
-  offloader_->getSender()->send(
-      PendingCallbackFrames{.buffer = std::move(slot), .numFrames = numFrames});
+  offloader_->send(PendingCallbackFrames{.buffer = std::move(slot), .numFrames = numFrames});
 }
 
 void AudioRecorderCallback::pushChannels(const AudioBuffer &frames, size_t start, int numFrames) {
@@ -172,11 +171,6 @@ void AudioRecorderCallback::pushChannels(const AudioBuffer &frames, size_t start
 /// @brief Worker-thread handler: resamples/remixes if needed, pushes into the circular
 /// buffer and emits to JS once a full callback buffer has accumulated.
 void AudioRecorderCallback::runCallbackTask(PendingCallbackFrames pending) {
-  // The TaskOffloader destructor sends a default-constructed PendingCallbackFrames (no
-  // buffer) to unblock the receiver; ignore it here.
-  if (pending.buffer == nullptr) {
-    return;
-  }
   const int numFrames = pending.numFrames;
   const AudioBuffer &slotFrames = *pending.buffer;
 

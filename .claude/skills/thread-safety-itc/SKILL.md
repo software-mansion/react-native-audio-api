@@ -158,7 +158,7 @@ offloader.scheduleTask(std::move(workItem));
 
 See the `utilities` skill for full API.
 
-**Pitfall — file writer / recorder shutdown:** `TaskOffloader::shutdown()` drains the SPSC queue before joining the worker, and it drains by _running the task_ for each pending item. So drain **while the file still counts as open**. `runWriterTask()` gates its encode on `isFileOpen_`, so clearing that flag first makes every drained buffer take the false branch and be dropped, costing a rotated or closed M4A segment seconds of buffered audio. `finishCurrentFile()` therefore destroys the offloader first and clears the flag after, not the other way round. Types with a `.slot` member use `slot == size_t max` as the shutdown sentinel.
+**Pitfall — file writer / recorder shutdown:** `TaskOffloader::shutdown()` drains the SPSC queue before joining the worker, and it drains by _running the task_ for each pending item. So drain **while the file still counts as open**. `runWriterTask()` gates its encode on `isFileOpen_`, so clearing that flag first makes every drained buffer take the false branch and be dropped, costing a rotated or closed M4A segment seconds of buffered audio. `finishCurrentFile()` therefore destroys the offloader first and clears the flag after, not the other way round.
 
 That flag is **not** what keeps the audio thread out of the pool being freed, and it cannot be: `writeAudioData()` reads it and then dereferences the pool pointers, so no ordering of those two lines closes the window between the two steps. The caller closes it. The audio thread only enters the writer under the recorder's `file_.mutex`, and every close path either moves the writer out of `file_.target` under that mutex first (`disableFileOutput`, `detachSideEffects`) or holds it across the call (the iOS format-change path). That includes the destructors: each platform recorder calls `stop()` first, which detaches under the mutexes, and only then closes the native stream; `~AudioRecorder` then detaches and closes whatever is still prepared. A writer driven without that discipline would need a guard of its own.
 
@@ -178,7 +178,7 @@ Prefer this shape over `protected virtual` hooks for a class the production code
 
 Tests stay deterministic by writing at most a pool's worth of buffers (32) per open and asserting only after `closeFile()`, which drains and joins the worker.
 
-**Pitfall — the task type cannot be a nested struct.** `TaskOffloader<T>` constrains `T` with `std::default_initializable`. A task struct carrying default member initializers (which the `.slot` sentinel requires) does _not_ satisfy that constraint while its enclosing class is still incomplete, so `using Offloader = TaskOffloader<NestedTask, …>;` inside the class fails to compile with "constraints not satisfied". Making the struct `public` does not help — it is not an access problem. Declare the task type at **namespace scope** instead (`PendingFileWrite`, `PendingCallbackFrames`). Dropping the initializers to satisfy the constraint is worse: `T{}` would then produce `slot == 0`, a valid slot index, making the shutdown sentinel indistinguishable from real work.
+**Stopping a `TaskOffloader`:** the channel carries `std::optional<T>` and an empty one asks the worker to stop, so `T` needs no default value, no `operator==` and no reserved field value. Senders go through `TaskOffloader::send`; the raw channel sender is not exposed. `shutdown()` sends the stop message last, so every task queued before it runs first.
 
 ---
 

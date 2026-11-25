@@ -257,7 +257,7 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ### `AudioBufferPool.hpp` — preallocated planar buffers by pointer
 
-`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, dropping it anywhere returns the buffer, and a null lease is the shutdown message, so the message struct needs a defaulted `operator==`. Not `shared_ptr`: its control block would allocate on the audio thread.
+`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, and dropping it anywhere returns the buffer. Not `shared_ptr`: its control block would allocate on the audio thread.
 
 ---
 
