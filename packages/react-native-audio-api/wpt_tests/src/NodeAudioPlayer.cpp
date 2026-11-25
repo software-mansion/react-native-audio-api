@@ -35,6 +35,7 @@ bool NodeAudioPlayer::start() {
   }
 
   shouldStop_.store(false, std::memory_order_release);
+  markStarted();
   isPaused_.store(false, std::memory_order_release);
   isRunning_.store(true, std::memory_order_release);
   isInitialized_.store(true, std::memory_order_release);
@@ -76,6 +77,7 @@ bool NodeAudioPlayer::resume() {
     return true;
   }
 
+  markStarted();
   isPaused_.store(false, std::memory_order_release);
   isRunning_.store(true, std::memory_order_release);
   return true;

@@ -57,12 +57,12 @@ Creates [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-no
 
 Returns the context time of the sample leaving the output device now, together with now on the `performance.now()` clock. Use it to line audio up with anything else timed by `performance.now()`: animations, network messages, other devices.
 
-The pair is measured on the audio thread from the platform's own presentation timestamps, so output latency is already included and it is not limited to the render-quantum steps `currentTime` moves in. Both values are `0` until the context has rendered its first block. While the context is suspended the values stop advancing.
+The pair is measured on the audio thread from the platform's own presentation timestamps, so output latency is already included and it is not limited to the render-quantum steps `currentTime` moves in. Both values are `0` until the context has rendered its first block, and again after each `resume()` until it renders the first block of the resumed run. While the context is suspended the values stop advancing.
 
 ```tsx
 await audioContext.resume();
 
-// Before the first rendered block both values are 0, which would map onto the wrong time.
+// Until the resumed context renders its first block both values are 0, which would map onto the wrong time.
 let timestamp = audioContext.getOutputTimestamp();
 while (timestamp.performanceTime === 0) {
   await new Promise(requestAnimationFrame);

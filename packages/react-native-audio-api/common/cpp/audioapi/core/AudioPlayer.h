@@ -68,19 +68,33 @@ class AudioPlayer {
     std::int64_t hostTimeNs = 0;
     /// Index of that sample in the device stream, counted by platform.
     std::int64_t streamFrame = 0;
+    /// Set by `publishOutputAnchor`: the `markStarted` count the anchor was published under.
+    std::uint64_t startCount = 0;
     bool isValid = false;
   };
 
   /// @note Audio Thread only.
   void publishOutputAnchor(const OutputAnchor &anchor) {
-    *outputAnchors_.getForWriter() = anchor;
+    auto *slot = outputAnchors_.getForWriter();
+    *slot = anchor;
+    slot->startCount = startCount_.load(std::memory_order_acquire);
     outputAnchors_.publish();
   }
 
-  /// @note JS Thread only.
+  /// @brief Call before every stream start/resume. Anchors published before it become stale:
+  /// extrapolating one would span the pause, and after a rebuild its positions belong to a
+  /// stream the new one does not continue.
+  void markStarted() {
+    startCount_.fetch_add(1, std::memory_order_release);
+  }
+
+  /// @note JS Thread only. `std::nullopt` until the current start publishes an anchor.
   [[nodiscard]] std::optional<OutputAnchor> latestOutputAnchor() {
     const OutputAnchor anchor = *outputAnchors_.getForReader();
-    return anchor.isValid ? std::optional(anchor) : std::nullopt;
+    if (!anchor.isValid || anchor.startCount != startCount_.load(std::memory_order_acquire)) {
+      return std::nullopt;
+    }
+    return anchor;
   }
 
   /// @brief Pulls `framesToProcess` frames from the graph into `renderBuffer_` and peak-normalizes
@@ -110,6 +124,7 @@ class AudioPlayer {
 
  private:
   TripleBuffer<OutputAnchor> outputAnchors_;
+  std::atomic<std::uint64_t> startCount_{0};
 };
 
 /// Builds the platform's AudioPlayer.

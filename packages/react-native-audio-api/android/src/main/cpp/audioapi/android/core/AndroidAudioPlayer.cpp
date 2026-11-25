@@ -109,6 +109,7 @@ bool AndroidAudioPlayer::rebuildStreamLocked() {
 
 bool AndroidAudioPlayer::startStreamLocked() {
   streamStartedAtNs_ = steadyClockNowNs();
+  markStarted();
   const bool started = mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK;
   isRunning_.store(started, std::memory_order_release);
   return started;
@@ -368,11 +369,6 @@ std::optional<OutputPresentation> AndroidAudioPlayer::getOutputPresentation() {
 
   {
     std::scoped_lock lock(streamMutex_);
-    // An anchor from before the last start may belong to a stream a rebuild replaced, whose
-    // positions the current stream does not continue, and extrapolating it would span the pause.
-    if (anchor->hostTimeNs < streamStartedAtNs_) {
-      return std::nullopt;
-    }
     // A device timestamp from before the start is AAudio's stale pre-pause report.
     if (isRunningLocked()) {
       const auto presented = mStream_->getTimestamp(CLOCK_MONOTONIC);

@@ -203,6 +203,7 @@ bool IOSAudioPlayer::start()
     return true;
   }
 
+  markStarted();
   bool success = [audioPlayer_ start];
   if (success) {
     flushOverflowNextPull_.store(true, std::memory_order_release);
@@ -223,6 +224,7 @@ bool IOSAudioPlayer::resume()
     return true;
   }
 
+  markStarted();
   bool success = [audioPlayer_ resume];
   if (success) {
     flushOverflowNextPull_.store(true, std::memory_order_release);
