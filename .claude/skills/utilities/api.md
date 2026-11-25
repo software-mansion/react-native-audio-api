@@ -177,7 +177,6 @@ Used by `ParamQueueBase` (parameter automation event storage on the audio thread
 Spawns a dedicated worker thread that processes items from a SPSC channel. Use when you need to offload a recurring task (e.g. file writing, decoding) to a dedicated thread.
 
 ```cpp
-// T must be default_initializable
 TaskOffloader<AudioData,
     OverflowStrategy::WAIT_ON_FULL,
     WaitStrategy::ATOMIC_WAIT> offloader{
@@ -187,12 +186,11 @@ TaskOffloader<AudioData,
     }
 };
 
-// Push work from any thread
-auto *sender = offloader.getSender();
-sender->send(audioData);
+// Push work from one thread at a time (single producer)
+offloader.send(std::move(audioData));
 ```
 
-Not copyable or movable. Destructor sends a dummy value to unblock the worker and joins the thread.
+Not copyable or movable. The destructor (or `shutdown()`) runs every task already queued, then joins the thread. Internally the channel carries `std::optional<T>` and an empty one is the stop request, so `T` has no requirements beyond being movable.
 
 ---
 
