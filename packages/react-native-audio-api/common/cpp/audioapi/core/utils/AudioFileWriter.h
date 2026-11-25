@@ -2,6 +2,7 @@
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/encoding/AudioEncoder.h>
+#include <audioapi/encoding/PlatformFileBackend.h>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/utils/AudioBufferPool.hpp>
 #include <audioapi/utils/Macros.h>
@@ -11,7 +12,6 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -42,25 +42,6 @@ struct PendingFileWrite {
 
   bool operator==(const PendingFileWrite &) const = default;
 };
-
-struct PlatformFileBackend {
-  /// Maps the requested file format to the container, codec and file extension this platform
-  /// writes it as. Fails when the platform cannot encode that format, before any file exists.
-  std::function<Result<EncoderOutputSpec, std::string>(AudioFileProperties::FileFormat)>
-      resolveOutputSpec;
-  /// Turns a bare file name (stem and extension, no directory) into the absolute path inside
-  /// the directory the properties select, creating that directory if it is missing.
-  std::function<Result<std::string, std::string>(
-      const std::shared_ptr<AudioFileProperties> &,
-      const std::string &fileName)>
-      resolvePath;
-  /// Builds an encoder that is not open yet; the writer opens it on the resolved path. Called
-  /// once per file, so a rotating session creates one encoder per segment.
-  EncoderFactory createEncoder;
-};
-
-/// The iOS and Android backend, built once and shared by every writer.
-[[nodiscard]] const PlatformFileBackend &osFileBackend();
 
 class AudioFileWriter final {
  public:
@@ -132,13 +113,6 @@ class AudioFileWriter final {
   /// @p fileNumber is 1-based. A rotated session numbers every file; one that is not has a
   /// single file under the plain stem.
   [[nodiscard]] std::string fileStem(size_t fileNumber) const;
-  [[nodiscard]] Result<std::string, std::string> resolveNextFilePath(
-      const std::string &stem,
-      const std::string &extension) const;
-  /// Appends _1, _2, ... to @p stem until the resolved path names no existing file, so a
-  /// generated name never overwrites an earlier recording. @p path is the unsuffixed one.
-  [[nodiscard]] Result<std::string, std::string>
-  firstUnusedPath(const std::string &stem, const std::string &extension, std::string path) const;
   /// The caller must hold fileMutex_.
   OpenFileResult openNextFile();
   /// The caller must hold fileMutex_.

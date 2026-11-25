@@ -95,13 +95,17 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
 
   int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
 
+  // Recording-only fields: encodeAudioData leaves them out.
+  auto rotateIntervalValue = options.getProperty(runtime, "rotateIntervalBytes");
   size_t rotateIntervalBytes =
-      static_cast<size_t>(options.getProperty(runtime, "rotateIntervalBytes").getNumber());
+      rotateIntervalValue.isNumber() ? static_cast<size_t>(rotateIntervalValue.getNumber()) : 0;
 
   FileFormat format = static_cast<FileFormat>(options.getProperty(runtime, "format").getNumber());
 
-  int androidFlushIntervalMs =
-      static_cast<int>(options.getProperty(runtime, "androidFlushIntervalMs").getNumber());
+  auto androidFlushIntervalValue = options.getProperty(runtime, "androidFlushIntervalMs");
+  int androidFlushIntervalMs = androidFlushIntervalValue.isNumber()
+      ? static_cast<int>(androidFlushIntervalValue.getNumber())
+      : 0;
 
   auto presetOptions = options.getProperty(runtime, "preset").getObject(runtime);
 

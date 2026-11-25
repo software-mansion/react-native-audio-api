@@ -28,6 +28,8 @@ import type {
   DistanceModelType,
   WaveShaperOptions,
   AudioFileSourceOptions,
+  AudioEncoderOptions,
+  EncodedFileInfo,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -397,6 +399,13 @@ export interface IAudioDecoder {
     inputChannelCount: number,
     interleaved?: boolean
   ) => Promise<IAudioBuffer>;
+}
+
+export interface IAudioEncoder {
+  encode: (
+    buffers: IAudioBuffer[],
+    options: Required<AudioEncoderOptions>
+  ) => Promise<EncodedFileInfo>;
 }
 
 export interface IAudioFileUtils {

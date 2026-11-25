@@ -1,20 +1,12 @@
 #include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/RecordingFileName.h>
-#include <audioapi/encoding/EncoderCapabilities.h>
-#include <audioapi/encoding/EncoderFactory.h>
-#include <audioapi/encoding/OSFilePath.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/events/AudioEventPayload.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
 
-#ifdef ANDROID
-#include <android/log.h>
-#endif
-
 #include <array>
-#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -24,15 +16,6 @@
 #include <vector>
 
 namespace audioapi {
-
-const PlatformFileBackend &osFileBackend() {
-  static const PlatformFileBackend backend{
-      .resolveOutputSpec = &encoder_capabilities::resolveOutputSpec,
-      .resolvePath = &resolveOsFilePath,
-      .createEncoder = &encoding::createEncoder,
-  };
-  return backend;
-}
 
 AudioFileWriter::AudioFileWriter(
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -185,86 +168,18 @@ std::string AudioFileWriter::fileStem(size_t fileNumber) const {
   if (rotatesFiles()) {
     return recording_file_name::segmentStem(sessionStem_, fileNumber);
   }
+
   return sessionStem_;
 }
 
-static void warnAboutOverwrite(const std::string &path) {
-#ifdef ANDROID
-  __android_log_print(
-      ANDROID_LOG_WARN, "RN_AUDIOAPI", "recording overwrites an existing file: %s", path.c_str());
-#else
-  printf("[RN_AUDIOAPI WARN] recording overwrites an existing file: %s\n", path.c_str());
-#endif
-}
-
-Result<std::string, std::string> AudioFileWriter::resolveNextFilePath(
-    const std::string &stem,
-    const std::string &extension) const {
-  auto pathResult = backend_.resolvePath(fileProperties_, stem + "." + extension);
-  if (pathResult.is_err()) {
-    return pathResult;
-  }
-
-  const bool userNamed = !fileProperties_->path.fileName.empty();
-  if (userNamed) {
-    if (file_system::fileExists(pathResult.unwrap())) {
-      warnAboutOverwrite(pathResult.unwrap());
-    }
-    return pathResult;
-  }
-
-  return firstUnusedPath(stem, extension, std::move(pathResult).unwrap());
-}
-
-Result<std::string, std::string> AudioFileWriter::firstUnusedPath(
-    const std::string &stem,
-    const std::string &extension,
-    std::string path) const {
-  for (size_t suffix = 1; file_system::fileExists(path); ++suffix) {
-    auto suffixedPath = backend_.resolvePath(
-        fileProperties_, stem + "_" + std::to_string(suffix) + "." + extension);
-    if (suffixedPath.is_err()) {
-      return suffixedPath;
-    }
-    path = std::move(suffixedPath).unwrap();
-  }
-  return Ok(std::move(path));
-}
-
 OpenFileResult AudioFileWriter::openNextFile() {
-  // Calling an empty std::function throws, which on the worker thread would terminate.
-  if (!backend_.resolveOutputSpec || !backend_.resolvePath || !backend_.createEncoder) {
-    return OpenFileResult::Err("File writer was constructed without a platform backend");
-  }
-
-  auto specResult = backend_.resolveOutputSpec(fileProperties_->encoding.format);
-  if (specResult.is_err()) {
-    return OpenFileResult::Err(specResult.unwrap_err());
-  }
-  const auto &outputSpec = specResult.unwrap();
-
-  auto filePathResult =
-      resolveNextFilePath(fileStem(openedFileCount_ + 1), std::string(outputSpec.extension));
-  if (filePathResult.is_err()) {
-    return OpenFileResult::Err(filePathResult.unwrap_err());
-  }
-  const std::string &filePath = filePathResult.unwrap();
-
-  auto encoderResult = backend_.createEncoder(
-      EncoderSettings{
-          .fileLayout = fileProperties_->fileLayout,
-          .encoding = fileProperties_->encoding,
-      });
+  auto encoderResult =
+      openFileEncoder(backend_, fileProperties_, fileStem(openedFileCount_ + 1), streamFormat_);
   if (encoderResult.is_err()) {
-    return OpenFileResult::Err(encoderResult.unwrap_err());
-  }
-  auto encoder = std::move(encoderResult).unwrap();
-  auto openResult = encoder->open(streamFormat_, outputSpec, filePath);
-  if (openResult.is_err()) {
-    return openResult;
+    return OpenFileResult::Err(std::move(encoderResult).unwrap_err());
   }
 
-  currentEncoder_ = std::move(encoder);
+  currentEncoder_ = std::move(encoderResult).unwrap();
   ++openedFileCount_;
   writesSinceLastSizeCheck_ = 0;
   return OpenFileResult::Ok(currentEncoder_->getFilePath());
