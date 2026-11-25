@@ -3,6 +3,7 @@ import type {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
+  AudioRecorderStartOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -1020,7 +1021,7 @@ class AudioRecorderMock {
     return Promise.resolve();
   }
 
-  start(): Promise<void> {
+  start(_options?: AudioRecorderStartOptions): Promise<void> {
     this._isRecording = true;
     this._isPaused = false;
     return Promise.resolve();
@@ -1133,6 +1134,10 @@ class AudioRecorderMock {
       this.onErrorSubscription = null;
     }
   }
+
+  onMaxDurationReached(_callback: (stopped: Promise<FileInfo>) => void): void {}
+
+  clearOnMaxDurationReached(): void {}
 }
 
 const decodeAudioData = (_audioData: ArrayBuffer): Promise<AudioBufferMock> => {

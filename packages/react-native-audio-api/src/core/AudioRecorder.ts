@@ -9,6 +9,7 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
+  AudioRecorderStartOptions,
   FileDirectory,
   FileFormat,
   FileInfo,
@@ -44,6 +45,15 @@ function withDefaultFileOptions(
 
 export default class AudioRecorder {
   protected onErrorSubscription: AudioEventSubscription | null = null;
+  /**
+   * From a start with `maxDuration` until the next stop: the subscription that
+   * stops the recording once the native recorder reports the limit.
+   */
+  private maxDurationSubscription: AudioEventSubscription | null = null;
+  private onMaxDurationReachedCallback:
+    | ((stopped: Promise<FileInfo>) => void)
+    | null = null;
+
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
   /**
@@ -143,10 +153,12 @@ export default class AudioRecorder {
   /**
    * Starts the audio recording process with configured output options.
    *
-   * Rejects when the platform refuses to start the recording.
+   * Rejects when the platform refuses to start the recording, or
+   * `options.maxDuration` is not a positive number.
    */
-  start(): Promise<void> {
-    return this.recorder.start();
+  async start(options?: AudioRecorderStartOptions): Promise<void> {
+    await this.recorder.start(options ?? {});
+    this.listenForMaxDuration();
   }
 
   /**
@@ -156,6 +168,7 @@ export default class AudioRecorder {
    * recorder was not started, or the output files could not be finalized.
    */
   stop(): Promise<FileInfo> {
+    this.stopListeningForMaxDuration();
     return this.recorder.stop();
   }
 
@@ -341,5 +354,48 @@ export default class AudioRecorder {
 
     this.onErrorSubscription.remove();
     this.onErrorSubscription = null;
+  }
+
+  /**
+   * Called when a recording started with
+   * {@link AudioRecorderStartOptions.maxDuration} reaches it, right after the
+   * recorder has called {@link stop}; `stopped` is that stop's promise. The
+   * recording notification stays shown: hide it once `stopped` settles.
+   */
+  onMaxDurationReached(callback: (stopped: Promise<FileInfo>) => void): void {
+    this.onMaxDurationReachedCallback = callback;
+  }
+
+  clearOnMaxDurationReached(): void {
+    this.onMaxDurationReachedCallback = null;
+  }
+
+  private listenForMaxDuration(): void {
+    this.stopListeningForMaxDuration();
+
+    this.maxDurationSubscription = this.audioEventEmitter.addAudioEventListener(
+      'recorderMaxDurationReached',
+      () => this.stopAtMaxDuration()
+    );
+
+    this.recorder.setOnMaxDurationReached({
+      callbackId: this.maxDurationSubscription.subscriptionId,
+    });
+  }
+
+  private stopListeningForMaxDuration(): void {
+    if (!this.maxDurationSubscription) {
+      return;
+    }
+
+    this.recorder.clearOnMaxDurationReached();
+    this.maxDurationSubscription.remove();
+    this.maxDurationSubscription = null;
+  }
+
+  private stopAtMaxDuration(): void {
+    const stopped = this.stop();
+    stopped.catch(() => {});
+    this.onMaxDurationReachedCallback?.(stopped);
   }
 }

@@ -144,11 +144,36 @@ if (AudioRecorder.isRecordingOngoing()) {
   // the recording is still running — re-attach the UI to it
 } else {
   const info = AudioRecorder.consumeLastRecordingResult();
-  if (info) {
-    // the recording was stopped from the notification; info.paths holds the files
+  if (info && !savedRecordings.has(info.paths[0])) {
+    // a recording the app has not handled yet, e.g. one stopped from the notification
   }
 }
 ```
+
+`savedRecordings` stands for the file paths your app has already stored. The check matters because [consumeLastRecordingResult](#consumelastrecordingresult) also returns a recording your app received from [stop](#stop) or [onMaxDurationReached](#onmaxdurationreached).
+
+### Limiting the recording duration {#limiting-the-recording-duration}
+
+JS timers do not run while the app is in the background on Android, so a `setTimeout` cannot be trusted to end a recording made with the screen locked. Pass `maxDuration` to [start](#start) instead. The native recorder counts the recorded frames, so the limit holds with the screen locked too. When it is reached, the recorder calls [stop](#stop).
+
+- The file ends at exactly `maxDuration` seconds of audio. Paused time does not count.
+- [onMaxDurationReached](#onmaxdurationreached) receives the promise of that stop, which resolves with the [FileInfo](#fileinfo) or rejects when the file could not be finalized.
+- The [recording notification](../system/recording-notification-manager.mdx) stays shown. Hide it in [onMaxDurationReached](#onmaxdurationreached) once the stop settles, unless your app wants to keep it or show something else.
+
+```tsx
+audioRecorder.onMaxDurationReached(async (stopped) => {
+  try {
+    const info = await stopped;
+    // info.paths holds the files
+  } finally {
+    await RecordingNotificationManager.hide();
+  }
+});
+
+await audioRecorder.start({ maxDuration: 30 * 60 });
+```
+
+The recorder does not wake the device up.
 
 ### Building without the recorder {#building-without-the-recorder}
 
@@ -465,12 +490,14 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it.
+          Starts the stream from the system audio input device. Returns a `Promise<void>` that resolves when recording has started, and rejects when the system refuses to start it or `maxDuration` is not a positive number.
+
+          Takes optional [`AudioRecorderStartOptions`](#audiorecorderstartoptions) for this session.
         </div>
 
         ```tsx
         try {
-          await audioRecorder.start();
+          await audioRecorder.start({ maxDuration: 60 });
         } catch (error) {
           console.error(error);
         }
@@ -615,12 +642,14 @@ export default MyRecorder;
           Returns the [FileInfo](#fileinfo) stashed by the last successful stop that produced output files, or `null` if there is none. That includes JS [stop](#stop), the Android [recording notification](../system/recording-notification-manager.mdx#native-action-handling), and [deactivating the iOS audio session](../system/audio-manager.mdx#setaudiosessionactivity) mid-recording. Consume-once: the stash is cleared on read, so a second call returns `null`.
 
           If the recording was already finalized natively, calling [stop](#stop) on an `AudioRecorder` instance does not return those files — it reports that the recorder is not recording. Read the stashed [FileInfo](#fileinfo) from this method instead.
+
+          A stop your app made itself is stashed too, so this method can return a recording your app already received from [stop](#stop) or [onMaxDurationReached](#onmaxdurationreached). If you read both, compare `paths` before saving the recording twice.
         </div>
 
         ```tsx
           const info = AudioRecorder.consumeLastRecordingResult();
-          if (info) {
-            // the recording was stopped from the notification; info.paths holds the files
+          if (info && !savedRecordings.has(info.paths[0])) {
+            // a recording the app has not handled yet, e.g. one stopped from the notification
           }
         ```
       </td>
@@ -660,6 +689,40 @@ export default MyRecorder;
 
         ```tsx
           audioRecorder.clearOnError();
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### onMaxDurationReached
+      </div></td>
+      <td>
+        <div class="text-content">
+          Sets a callback called when a recording started with [`maxDuration`](#audiorecorderstartoptions) reaches it. The recorder has called [stop](#stop) just before, and the callback receives that stop's `Promise<FileInfo>`; await it before you rely on the recording being finalized. The recording notification stays shown, so hide it here if your app should. See [Limiting the recording duration](#limiting-the-recording-duration).
+        </div>
+        ```tsx
+          audioRecorder.onMaxDurationReached(async (stopped) => {
+            const info = await stopped;
+          });
+        ```
+      </td>
+    </tr>
+
+<!-- -->
+
+    <tr>
+      <td><div class="text-content">
+        ##### clearOnMaxDurationReached
+      </div></td>
+      <td>
+        <div class="text-content">
+          Removes the max-duration callback.
+        </div>
+        ```tsx
+          audioRecorder.clearOnMaxDurationReached();
         ```
       </td>
     </tr>
@@ -956,6 +1019,18 @@ Both options are applied when the capture stream is created and cannot be change
 :::caution
 Voice processing changes the hardware input format and engages a shared platform processing unit, so the resolved sample rate and channel count of the recorded audio may differ from the raw microphone format.
 :::
+
+#### `AudioRecorderStartOptions`
+
+```tsx
+interface AudioRecorderStartOptions {
+  maxDuration?: number;
+}
+```
+
+| Parameter | Type | Default | Description |
+| :---: | :---: | :---: | :---- |
+| `maxDuration` <Optional /> | `number` | none | Seconds of audio after which the recording stops. Must be positive. See [Limiting the recording duration](#limiting-the-recording-duration). |
 
 #### `AndroidInputPreset`
 
