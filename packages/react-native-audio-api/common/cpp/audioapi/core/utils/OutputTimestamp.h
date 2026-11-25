@@ -8,31 +8,33 @@
 
 namespace audioapi {
 
-/// Now on the `performance.now()` axis, which every presentation time is expressed in.
+/// The JS runtime's `performance.now()` reads this clock on Android. On iOS it does not, see
+/// `IOSAudioPlayer::presentationClockNowNs`.
 [[nodiscard]] inline std::int64_t steadyClockNowNs() {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
              std::chrono::steady_clock::now().time_since_epoch())
       .count();
 }
 
-/// A context sample frame and the `steady_clock` moment it leaves the output device.
+/// A context sample frame and the moment it leaves the output device, on the clock the player's
+/// `presentationClockNowNs()` reads.
 struct OutputPresentation {
   /// Signed: a platform may report a device position from before the context's first frame.
   std::int64_t contextFrame = 0;
   std::int64_t presentationTimeNs = 0;
 };
 
-/// @brief Spec `getOutputTimestamp()`: the frame leaving the device now, and the `steady_clock`
-/// time of now.
+/// @brief Spec `getOutputTimestamp()`: the frame leaving the device now, and the time of now on
+/// the clock @p presentation is expressed in.
 /// @param presentation the latest frame/moment pair the platform reported.
 /// @param renderedFrames frames the graph has rendered
-/// @param nowNs the `steady_clock` moment to report the position at.
+/// @param nowNs the moment to report the position at, on that same clock.
 [[nodiscard]] inline AudioTimestamp outputTimestampAt(
     const OutputPresentation &presentation,
     float sampleRate,
     std::size_t renderedFrames,
     bool isPlaying,
-    std::int64_t nowNs = steadyClockNowNs()) {
+    std::int64_t nowNs) {
   constexpr double NANOSECONDS_PER_SECOND = 1e9;
   constexpr double NANOSECONDS_PER_MILLISECOND = 1e6;
 

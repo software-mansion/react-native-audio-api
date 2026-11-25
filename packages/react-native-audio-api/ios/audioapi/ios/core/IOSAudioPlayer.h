@@ -37,6 +37,11 @@ class IOSAudioPlayer : public AudioPlayer {
   /// unit; the session's `outputLatency` covers the rest of the way to the speaker.
   [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
 
+  /// Mach uptime: the clock React Native's `performance.now()` reads on iOS, and the one
+  /// CoreAudio stamps buffers with. libc++ `steady_clock` (`CLOCK_MONOTONIC_RAW`) keeps counting
+  /// while the device sleeps, so it runs ahead of both by the total sleep since boot.
+  [[nodiscard]] std::int64_t presentationClockNowNs() const override;
+
  private:
   void clearPendingSaved();
   /// @note Audio Thread only

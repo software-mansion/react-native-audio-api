@@ -187,7 +187,11 @@ AudioTimestamp AudioContext::getOutputTimestamp() const {
   }
 
   return outputTimestampAt(
-      *presentation, getSampleRate(), getCurrentSampleFrame(), audioPlayer_->isRunning());
+      *presentation,
+      getSampleRate(),
+      getCurrentSampleFrame(),
+      audioPlayer_->isRunning(),
+      audioPlayer_->presentationClockNowNs());
 }
 
 double AudioContext::getOutputLatency() const {

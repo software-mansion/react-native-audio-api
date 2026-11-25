@@ -36,17 +36,6 @@ std::int64_t machTicksToNs(std::int64_t ticks)
       static_cast<__int128>(ticks) * kHostTimebase.numer / kHostTimebase.denom);
 }
 
-/// Mach host time stops while the device sleeps, but libc++ `steady_clock` (`CLOCK_MONOTONIC_RAW`)
-/// keeps counting, so the two drift apart by the total sleep. Translating only the distance from
-/// now keeps the drift out.
-std::int64_t hostTimeToSteadyClockNs(UInt64 hostTime)
-{
-  const auto hostNow = mach_absolute_time();
-  const auto steadyNowNs = steadyClockNowNs();
-  return steadyNowNs -
-      machTicksToNs(static_cast<std::int64_t>(hostNow) - static_cast<std::int64_t>(hostTime));
-}
-
 /// In frames of the session's own rate, which may differ from the context's.
 int preferredIOBufferFramesFor(AudioContextLatencyHint latencyHint)
 {
@@ -141,7 +130,7 @@ void IOSAudioPlayer::deliverOutputBuffers(
     // Frames left over from the previous quantum play first; they were rendered but not delivered.
     publishOutputAnchor(
         {.contextFrame = renderedFrames_ - pendingSavedCount_,
-         .hostTimeNs = hostTimeToSteadyClockNs(timestamp->mHostTime),
+         .hostTimeNs = machTicksToNs(static_cast<std::int64_t>(timestamp->mHostTime)),
          .isValid = true});
   }
 
@@ -286,6 +275,11 @@ std::optional<OutputPresentation> IOSAudioPlayer::getOutputPresentation()
   return OutputPresentation{
       .contextFrame = anchor->contextFrame,
       .presentationTimeNs = anchor->hostTimeNs + outputLatencyNs};
+}
+
+std::int64_t IOSAudioPlayer::presentationClockNowNs() const
+{
+  return machTicksToNs(static_cast<std::int64_t>(mach_absolute_time()));
 }
 
 std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(

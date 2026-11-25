@@ -7,7 +7,7 @@ namespace audioapi {
 struct AudioTimestamp {
   /// Seconds, on the context's `currentTime` axis.
   double contextTime = 0.0;
-  /// Milliseconds, on the `performance.now()` axis (`std::chrono::steady_clock`).
+  /// Milliseconds, on the JS runtime's `performance.now()` axis.
   double performanceTime = 0.0;
 };
 

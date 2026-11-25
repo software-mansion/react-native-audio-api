@@ -59,12 +59,20 @@ class AudioPlayer {
   /// @note JS Thread only: it is the single reader of the anchors published from the audio thread.
   [[nodiscard]] virtual std::optional<OutputPresentation> getOutputPresentation() = 0;
 
+  /// @brief Now on the clock `getOutputPresentation()` reports its times in. It has to be the
+  /// clock this platform's JS runtime reads for `performance.now()`: the timestamp is only
+  /// useful for turning one of those readings into a context time.
+  [[nodiscard]] virtual std::int64_t presentationClockNowNs() const {
+    return steadyClockNowNs();
+  }
+
  protected:
   /// One render callback's first output sample, tied to the platform's own timeline.
   struct OutputAnchor {
     /// Context frame of the callback's first output sample.
     std::int64_t contextFrame = 0;
-    /// `steady_clock` time the platform attached to that sample, before output latency.
+    /// Time the platform attached to that sample, before output latency, on the clock
+    /// `presentationClockNowNs()` reads.
     std::int64_t hostTimeNs = 0;
     /// Index of that sample in the device stream, counted by platform.
     std::int64_t streamFrame = 0;

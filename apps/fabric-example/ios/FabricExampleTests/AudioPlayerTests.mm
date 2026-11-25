@@ -12,7 +12,9 @@
 #import <audioapi/utils/AudioBuffer.hpp>
 
 #include <atomic>
+#include <cmath>
 #include <cstddef>
+#include <ctime>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -39,6 +41,7 @@ class IOSAudioPlayer : public AudioPlayer {
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
   [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
+  [[nodiscard]] std::int64_t presentationClockNowNs() const override;
 
  protected:
   NativeAudioPlayer *createNativePlayer();
@@ -774,6 +777,43 @@ struct TestAudioOutput {
     XCTAssertGreaterThanOrEqual(presentation->presentationTimeNs, previousPresentationTimeNs);
     previousPresentationTimeNs = presentation->presentationTimeNs;
   }
+}
+
+// `performance.now()` reads mach uptime on iOS. A time moved onto `steady_clock` is ahead of it by
+// however long the machine has slept since boot.
+- (void)testOutputPresentationStaysOnTheCallbackHostClock
+{
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  player->setRunning(true);
+  TestAudioOutput output(2, 128);
+  BOOL isSilence = NO;
+  AudioTimeStamp timestamp = {};
+  timestamp.mFlags = kAudioTimeStampHostTimeValid;
+  timestamp.mHostTime = mach_absolute_time();
+
+  player->getAudioPlayer().renderBlock(&isSilence, &timestamp, 128, output.bufferList());
+
+  mach_timebase_info_data_t timebase{};
+  mach_timebase_info(&timebase);
+  const auto hostTimeNs = static_cast<std::int64_t>(
+      static_cast<__int128>(timestamp.mHostTime) * timebase.numer / timebase.denom);
+  const auto outputLatencyNs = static_cast<std::int64_t>(
+      std::llround([[AudioSessionManager sharedInstance] outputLatencySeconds] * 1e9));
+  const auto presentation = player->getOutputPresentation();
+  XCTAssertTrue(presentation.has_value());
+  XCTAssertEqual(presentation->presentationTimeNs, hostTimeNs + outputLatencyNs);
+}
+
+- (void)testPresentationClockIsMachUptime
+{
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+
+  const auto before = static_cast<std::int64_t>(clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
+  const auto now = player->presentationClockNowNs();
+  const auto after = static_cast<std::int64_t>(clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
+
+  XCTAssertGreaterThanOrEqual(now, before);
+  XCTAssertLessThanOrEqual(now, after);
 }
 
 - (void)testRenderBlockZerosBufferedAudioWhenPlayerIsNotRunning
