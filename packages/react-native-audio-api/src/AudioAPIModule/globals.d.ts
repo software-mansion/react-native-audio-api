@@ -1,9 +1,11 @@
 import type {
+  IAudioConsumer,
   IAudioContext,
   IAudioDecoder,
   IAudioEventEmitter,
   IAudioFileUtils,
   IAudioRecorder,
+  IAudioRecorderCallbackOptions,
   IAudioBuffer,
   IOfflineAudioContext,
 } from '../jsi-interfaces';
@@ -28,6 +30,11 @@ declare global {
   ) => IOfflineAudioContext;
 
   var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
+
+  /** The consumer behind `AudioRecorder.onAudioReady`. */
+  var createAudioReadyConsumer: (
+    options: IAudioRecorderCallbackOptions
+  ) => IAudioConsumer;
 
   var isRecordingOngoing: (() => boolean) | undefined;
 

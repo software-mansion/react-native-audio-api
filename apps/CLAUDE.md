@@ -371,6 +371,8 @@ pnpm --filter react-native-audio-api build
 pnpm exec tsc --noEmit -p apps/common-app
 ```
 
+`common-app/tsconfig.json` overrides the root `NodeNext` resolution with `Bundler`, which is how Metro resolves imports. Under `NodeNext`, packages that ship extensionless ESM `.d.ts` re-exports, such as Reanimated, resolve every export to `any`. The root `skipLibCheck` hides those errors, so the only symptom is missing types.
+
 ## Metro Config Notes
 
 `fabric-example/metro.config.js` sets `watchFolders: [monorepoRoot, appsRoot]` so Metro hot-reloads changes in `common-app` and `packages/react-native-audio-api` without restarting.

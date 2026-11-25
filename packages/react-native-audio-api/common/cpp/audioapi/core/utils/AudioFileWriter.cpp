@@ -5,7 +5,6 @@
 #include <audioapi/encoding/OSFilePath.h>
 #include <audioapi/encoding/StreamFormat.h>
 #include <audioapi/events/AudioEventPayload.h>
-#include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/FileSystem.hpp>
 
@@ -13,9 +12,7 @@
 #include <android/log.h>
 #endif
 
-#include <array>
 #include <cstdio>
-#include <cstring>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -35,22 +32,22 @@ const PlatformFileBackend &osFileBackend() {
 }
 
 AudioFileWriter::AudioFileWriter(
-    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    std::shared_ptr<EventCaller<AudioEvent::RECORDER_ERROR>> errorEvent,
     const std::shared_ptr<AudioFileProperties> &fileProperties,
     const PlatformFileBackend &backend)
-    : fileProperties_(fileProperties), backend_(backend), errorEvent_(audioEventHandlerRegistry) {}
+    : fileProperties_(fileProperties), backend_(backend), errorEvent_(std::move(errorEvent)) {}
 
 AudioFileWriter::~AudioFileWriter() {
   isFileOpen_.store(false, std::memory_order_release);
-  cleanupPreallocatedInputPool();
+  worker_.stop();
   currentEncoder_.reset();
 }
 
-OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
+Result<NoneType, std::string> AudioFileWriter::prepare(const StreamFormat &streamFormat) {
   {
     std::scoped_lock lock(fileMutex_);
     if (isSessionOpen_) {
-      return OpenFileResult::Err("file already open");
+      return Err("file already open");
     }
 
     sessionStem_ = recording_file_name::sessionStem(fileProperties_);
@@ -61,11 +58,12 @@ OpenFileResult AudioFileWriter::openFile(const StreamFormat &streamFormat) {
   }
 
   auto opened = startNextFile(streamFormat);
-  if (opened.is_ok()) {
-    std::scoped_lock lock(fileMutex_);
-    isSessionOpen_ = true;
+  if (opened.is_err()) {
+    return Err(opened.unwrap_err());
   }
-  return opened;
+  std::scoped_lock lock(fileMutex_);
+  isSessionOpen_ = true;
+  return Ok(None);
 }
 
 CloseFileResult AudioFileWriter::closeFile() {
@@ -94,17 +92,21 @@ CloseFileResult AudioFileWriter::closeFile() {
   return CloseFileResult::Ok(std::move(session));
 }
 
-OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &streamFormat) {
+void AudioFileWriter::close() {
+  (void)closeFile();
+}
+
+Result<NoneType, std::string> AudioFileWriter::reprepare(const StreamFormat &streamFormat) {
   if (!isFileOpen()) {
-    return OpenFileResult::Err("file is not open");
+    return Err("file is not open");
   }
   if (streamFormat.layout.sampleRate <= 0 || streamFormat.layout.channelCount <= 0 ||
       streamFormat.maxFramesPerBuffer == 0) {
-    return OpenFileResult::Err(
+    return Err(
         "Invalid input format: sampleRate, channelCount and buffer size must be greater than 0");
   }
 
-  cleanupPreallocatedInputPool();
+  worker_.stop();
   isFileOpen_.store(false, std::memory_order_release);
 
   OpenFileResult reprepareResult = OpenFileResult::Err("");
@@ -116,16 +118,16 @@ OpenFileResult AudioFileWriter::reprepareStreamFormat(const StreamFormat &stream
   if (reprepareResult.is_err()) {
     // Nothing more can be encoded in the new format, so the file is finished as far as it got.
     finishCurrentFile();
-    return reprepareResult;
+    return Err(reprepareResult.unwrap_err());
   }
 
-  if (!initializePreallocatedInputPool()) {
+  if (!worker_.start(streamFormat_)) {
     finishCurrentFile();
-    return OpenFileResult::Err("Failed to preallocate file writer buffers");
+    return Err("Failed to preallocate file writer buffers");
   }
 
   isFileOpen_.store(true, std::memory_order_release);
-  return reprepareResult;
+  return Ok(None);
 }
 
 OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) {
@@ -146,7 +148,7 @@ OpenFileResult AudioFileWriter::startNextFile(const StreamFormat &streamFormat) 
     return openResult;
   }
 
-  if (!initializePreallocatedInputPool()) {
+  if (!worker_.start(streamFormat_)) {
     rollbackFailedOpen();
     return OpenFileResult::Err("Failed to preallocate file writer buffers");
   }
@@ -163,7 +165,7 @@ CloseEncoderResult AudioFileWriter::finishCurrentFile() {
   // Drains and joins the worker while the file still counts as open, so buffers already
   // queued are encoded rather than dropped. Must run without fileMutex_: the worker takes
   // it, and joining while holding it would deadlock.
-  cleanupPreallocatedInputPool();
+  worker_.stop();
   isFileOpen_.store(false, std::memory_order_release);
 
   std::scoped_lock lock(fileMutex_);
@@ -299,7 +301,7 @@ void AudioFileWriter::addFinishedFile(const std::tuple<double, double> &finished
 }
 
 void AudioFileWriter::rollbackFailedOpen() {
-  cleanupPreallocatedInputPool();
+  worker_.stop();
 
   std::scoped_lock lock(fileMutex_);
   if (currentEncoder_ != nullptr) {
@@ -356,67 +358,20 @@ void AudioFileWriter::rotateIfFileOutgrowsCap() {
   }
 }
 
-void AudioFileWriter::createOffloader() {
-  auto offloaderLambda = [this](PendingFileWrite pending) {
-    runWriterTask(std::move(pending));
-  };
-  offloader_ = std::make_unique<Offloader>(CHANNEL_CAPACITY, offloaderLambda);
+Result<NoneType, std::string> AudioFileWriter::consume(
+    const AudioBuffer &frames,
+    size_t numFrames) {
+  if (isFileOpen()) {
+    worker_.push(frames, numFrames);
+  }
+  return Ok(None);
 }
 
-bool AudioFileWriter::initializePreallocatedInputPool() {
-  cleanupPreallocatedInputPool();
-
-  if (streamFormat_.maxFramesPerBuffer == 0 || streamFormat_.layout.channelCount <= 0 ||
-      streamFormat_.layout.channelCount > MAX_CHANNEL_COUNT) {
-    return false;
-  }
-
-  if (!inputBufferPool_.allocate(
-          streamFormat_.maxFramesPerBuffer,
-          streamFormat_.layout.channelCount,
-          streamFormat_.layout.sampleRate)) {
-    return false;
-  }
-
-  // Last, so the worker never sees a half-built pool.
-  createOffloader();
-  return true;
-}
-
-void AudioFileWriter::cleanupPreallocatedInputPool() {
-  // Stop the worker before freeing the pool it reads from.
-  offloader_.reset();
-  inputBufferPool_.clear();
-}
-
-void AudioFileWriter::writeAudioData(const float *const *channels, int numFrames) {
-  if (!isFileOpen() || channels == nullptr || numFrames <= 0 || offloader_ == nullptr) {
-    return;
-  }
-
-  AudioBufferLease slot = inputBufferPool_.tryAcquire();
-  if (slot == nullptr) {
-    return;
-  }
-
-  const auto frames = static_cast<size_t>(numFrames);
-  if (frames > slot->getSize()) {
-    return;
-  }
-
-  for (int channel = 0; channel < streamFormat_.layout.channelCount; ++channel) {
-    std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
-  }
-  // Never blocks: the channel has room for every buffer the pool can hand out.
-  offloader_->getSender()->send(
-      PendingFileWrite{.buffer = std::move(slot), .numFrames = numFrames});
-}
-
-void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
+void AudioFileWriter::runWriterTask(PendingFrames pending) {
   if (pending.buffer == nullptr) {
     return;
   }
-  const int numFrames = pending.numFrames;
+  const auto numFrames = static_cast<int>(pending.numFrames);
 
   std::string encodeError;
   bool encoded = false;
@@ -468,16 +423,10 @@ size_t AudioFileWriter::getFileSizeBytes() const {
   return currentEncoder_ != nullptr ? currentEncoder_->getFileSizeBytes() : 0;
 }
 
-void AudioFileWriter::setOnErrorCallback(uint64_t callbackId) {
-  errorEvent_.assignCallbackId(callbackId);
-}
-
-void AudioFileWriter::clearOnErrorCallback() {
-  errorEvent_.assignCallbackId(0);
-}
-
 void AudioFileWriter::invokeOnErrorCallback(const std::string &message) {
-  errorEvent_.dispatch(StringPayload{.name = "message", .reason = message});
+  if (errorEvent_ != nullptr) {
+    errorEvent_->dispatch(StringPayload{.name = "message", .reason = message});
+  }
 }
 
 bool AudioFileWriter::isFileOpen() const {

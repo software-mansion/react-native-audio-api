@@ -2,6 +2,7 @@ import './AudioAPIModule';
 
 export { default as AnalyserNode } from './core/AnalyserNode';
 export { default as AudioBuffer } from './core/AudioBuffer';
+export { default as AudioConsumer } from './core/AudioConsumer';
 export { default as AudioBufferQueueSourceNode } from './core/AudioBufferQueueSourceNode';
 export { default as AudioBufferSourceNode } from './core/AudioBufferSourceNode';
 export { default as AudioContext } from './core/AudioContext';

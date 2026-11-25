@@ -977,6 +977,10 @@ class OfflineAudioContextMock extends BaseAudioContextMock {
   }
 }
 
+class AudioConsumerMock {
+  constructor(_consumer?: unknown) {}
+}
+
 class AudioRecorderMock {
   private static lastCreated: AudioRecorderMock | null = null;
 
@@ -987,6 +991,7 @@ class AudioRecorderMock {
   private eventEmitter = new MockAudioEventEmitter();
   private onAudioReadySubscription: MockEventSubscription | null = null;
   private onErrorSubscription: MockEventSubscription | null = null;
+  private consumers = new Set<AudioConsumerMock>();
 
   // Options only configure the native capture chain, so the mock ignores them.
   constructor(_options?: AudioRecorderOptions) {
@@ -1074,6 +1079,21 @@ class AudioRecorderMock {
     }
   }
 
+  addConsumer(consumer: AudioConsumerMock): Result<{}> {
+    if (this.consumers.has(consumer)) {
+      return {
+        status: 'error',
+        message: 'Recorder consumer is already added.',
+      };
+    }
+    this.consumers.add(consumer);
+    return { status: 'success' };
+  }
+
+  removeConsumer(consumer: AudioConsumerMock): void {
+    this.consumers.delete(consumer);
+  }
+
   isRecording(): boolean {
     return this._isRecording;
   }
@@ -1084,6 +1104,10 @@ class AudioRecorderMock {
 
   getCurrentDuration(): number {
     return this._currentDuration;
+  }
+
+  get clock(): { readonly currentDuration: number } {
+    return { currentDuration: this._currentDuration };
   }
 
   getInputLatency(): number {
@@ -1323,6 +1347,7 @@ class AudioApiErrorMock extends Error {
 // Export classes with original API names (for compatibility)
 export const AnalyserNode = AnalyserNodeMock;
 export const AudioBuffer = AudioBufferMock;
+export const AudioConsumer = AudioConsumerMock;
 export const AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export const AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export const AudioContext = AudioContextMock;
@@ -1375,6 +1400,7 @@ export {
 // Type exports to allow using classes as types
 export type AnalyserNode = AnalyserNodeMock;
 export type AudioBuffer = AudioBufferMock;
+export type AudioConsumer = AudioConsumerMock;
 export type AudioBufferQueueSourceNode = AudioBufferQueueSourceNodeMock;
 export type AudioBufferSourceNode = AudioBufferSourceNodeMock;
 export type AudioContext = AudioContextMock;
@@ -1445,6 +1471,7 @@ export default {
   AudioNode: AudioNodeMock,
   AudioParam: AudioParamMock,
   AudioRecorder: AudioRecorderMock,
+  AudioConsumer: AudioConsumerMock,
   AudioScheduledSourceNode: AudioScheduledSourceNodeMock,
   BaseAudioContext: BaseAudioContextMock,
   BiquadFilterNode: BiquadFilterNodeMock,

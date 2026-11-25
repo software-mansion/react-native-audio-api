@@ -60,8 +60,10 @@ const AudioVisualizer: React.FC = () => {
   const frequencyWorkletRef = useRef<WorkletNode | null>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  const timeDataSV = useSharedValue(new Uint8Array(FFT_SIZE).fill(127));
-  const frequencyDataSV = useSharedValue(
+  const timeDataSV = useSharedValue<Uint8Array<ArrayBuffer>>(
+    new Uint8Array(FFT_SIZE).fill(127)
+  );
+  const frequencyDataSV = useSharedValue<Uint8Array<ArrayBuffer>>(
     new Uint8Array(FREQUENCY_BIN_COUNT).fill(0)
   );
 
@@ -129,7 +131,7 @@ const AudioVisualizer: React.FC = () => {
         timeDataSV.modify((snapshot) => {
           'worklet';
           for (let i = 0; i < audioData.length; i++) {
-            const sample = Math.max(-1, Math.min(1, audioData[i]!));
+            const sample = Math.max(-1, Math.min(1, audioData[i]));
             snapshot[i] = Math.round((sample + 1) * 127.5);
           }
           return snapshot;
@@ -146,7 +148,7 @@ const AudioVisualizer: React.FC = () => {
         frequencyDataSV.modify((snapshot) => {
           'worklet';
           for (let i = 0; i < audioData.length; i++) {
-            snapshot[i] = linearMagnitudeToByte(audioData[i]!);
+            snapshot[i] = linearMagnitudeToByte(audioData[i]);
           }
           return snapshot;
         });

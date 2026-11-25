@@ -3,6 +3,7 @@
 #include <audioapi/core/utils/graph/BridgeNode.h>
 #include <audioapi/core/utils/param/ParamEvent.h>
 #include <audioapi/jsi/HostObject.h>
+#include <audioapi/jsi/JsiUtils.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <memory>
 #include <string>
@@ -187,20 +188,7 @@ void AudioParamHostObject::connectToGraph() {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioParamHostObject, checkCurveExclusion) {
-  auto checkExclusionResult = checkCurveExclusionFromJSI(runtime, args);
-
-  auto jsResult = jsi::Object(runtime);
-  jsResult.setProperty(
-      runtime,
-      "status",
-      jsi::String::createFromUtf8(runtime, checkExclusionResult.is_ok() ? "success" : "error"));
-  if (checkExclusionResult.is_err()) {
-    jsResult.setProperty(
-        runtime,
-        "message",
-        jsi::String::createFromUtf8(runtime, checkExclusionResult.unwrap_err()));
-  }
-  return jsResult;
+  return jsiutils::toJsResult(runtime, checkCurveExclusionFromJSI(runtime, args));
 }
 
 Result<NoneType, std::string> AudioParamHostObject::checkCurveExclusionFromJSI(
