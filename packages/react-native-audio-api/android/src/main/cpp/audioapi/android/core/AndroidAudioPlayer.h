@@ -83,6 +83,7 @@ class AndroidAudioPlayer : public AudioPlayer,
   bool startStreamLocked();
   void cleanupLocked();
   [[nodiscard]] bool isRunningLocked() const;
+  [[nodiscard]] double getOutputLatencyLocked() const;
 
   /// Pins the audio thread to the core it runs on
   void keepAudioThreadOnOneCore();
