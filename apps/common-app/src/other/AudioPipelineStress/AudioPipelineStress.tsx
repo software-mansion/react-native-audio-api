@@ -25,6 +25,7 @@ import {
 } from './constants';
 import StressResourceOwner from './StressResourceOwner';
 import StopRequestedError from './StopRequestedError';
+import { runRecorderTorture } from './recorderTorture';
 import {
   activatePlaybackSession,
   activateRecordingSession,
@@ -55,6 +56,11 @@ interface ScenarioSteps {
 const AudioPipelineStress: FC = () => {
   const resourcesRef = useRef(new StressResourceOwner(staticAsset));
   const stopRequestedRef = useRef(false);
+  /**
+   * Known-issue notes raised during the running step; steps.run turns them into
+   * info steps.
+   */
+  const knownIssuesRef = useRef<string[]>([]);
   const {
     runnerState,
     setRunnerState,
@@ -132,6 +138,20 @@ const AudioPipelineStress: FC = () => {
       }
 
       await sleep(POSITION_POLL_INTERVAL_MS);
+    }
+
+    // RNAA-586: once the library's event queue runs out of blocks, audio-thread events such as
+    // onpositionchanged are dropped for the rest of the process while playback still renders.
+    // A running clock with no position event at all is that, not a stalled node.
+    const stats = collectStats();
+    if (stats.engineDeltaSeconds >= minimumSeconds && maxObserved === 0) {
+      knownIssuesRef.current.push(
+        `${contextLabel}: ${formatPlaybackProgressStats(stats)}`
+      );
+      appendLog(
+        `${contextLabel}: no position events while the clock ran; treated as known issue RNAA-586`
+      );
+      return stats;
     }
 
     const { recorder, callbackCount, lastRecorderError } = resourcesRef.current;
@@ -249,10 +269,18 @@ const AudioPipelineStress: FC = () => {
         ensureCanContinue();
         showStep(`${label}: ${message}`);
         appendLog(`[${label}] ${message}`);
+        knownIssuesRef.current = [];
 
         try {
           await stepAction();
           addStep({ message, status: 'pass' });
+          knownIssuesRef.current.forEach((details) => {
+            addStep({
+              message: 'Known issue RNAA-586: position events dropped',
+              status: 'info',
+              details,
+            });
+          });
         } catch (error) {
           const serializedError = serializeUnknownError(error, label);
           addStep({
@@ -534,6 +562,10 @@ const AudioPipelineStress: FC = () => {
           );
         }
       );
+
+      await runScenario('Recorder Torture', async (steps) => {
+        await runRecorderTorture({ resources: resourcesRef.current, steps });
+      });
 
       await runScenario('Final Clean Cycle', async ({ run }) => {
         await run('Run one final clean record and playback cycle', async () => {

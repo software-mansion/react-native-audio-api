@@ -62,6 +62,7 @@
 - (void)resetInputNode;
 - (BOOL)mustRebuildBeforeStart;
 - (void)rebuildGraphForCurrentHardware;
+- (bool)startIfNecessary:(NSError **)error notifyingInput:(BOOL)notifyingInput;
 - (bool)startEngine:(NSError **)error;
 - (void)settleStateAfterFailedStart;
 - (void)resumeAfterRebuild:(NSError **)error;
@@ -887,6 +888,22 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
 - (bool)startIfNecessary:(NSError **)error
 {
+  return [self startIfNecessary:error notifyingInput:YES];
+}
+
+- (bool)startInputIfNecessary:(NSError **)error
+{
+  // The input calls this while its recorder holds the recorder's control mutex, and the
+  // notification handler takes that mutex: notifying from here would deadlock. The input reads
+  // the new format itself once this returns.
+  return [self startIfNecessary:error notifyingInput:NO];
+}
+
+/// @brief Starts the engine, rebuilding the graph first when the hardware changed.
+/// @discussion With @p notifyingInput, a rebuild is reported to the registered input before the
+/// engine starts, outside the lock.
+- (bool)startIfNecessary:(NSError **)error notifyingInput:(BOOL)notifyingInput
+{
   std::unique_lock lock(_engineLock);
   if (self.state == AudioEngineState::AudioEngineStateRunning && self.audioEngine != nil &&
       [self.audioEngine isRunning]) {
@@ -901,8 +918,11 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
 
   if ([self mustRebuildBeforeStart]) {
     [self rebuildGraphForCurrentHardware];
-    auto notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged
-                                              error:nil];
+    dispatch_block_t notifyInput = nil;
+    if (notifyingInput) {
+      notifyInput = [self inputNotificationBlock:AudioEngineInputNotificationHardwareChanged
+                                           error:nil];
+    }
     // TODO: refactor lock-aware operations and communication between engine-recorder-player-manager
     if (notifyInput != nil) {
       lock.unlock();
@@ -977,7 +997,7 @@ shouldEngineResumeAfterInterruption(BOOL shouldPlaybackResume, BOOL hasInput, BO
     }
   }
 
-  if ([self startIfNecessary:error]) {
+  if ([self startInputIfNecessary:error]) {
     return true;
   }
 

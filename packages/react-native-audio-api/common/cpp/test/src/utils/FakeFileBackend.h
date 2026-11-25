@@ -136,6 +136,25 @@ inline PlatformFileBackend makeFakeBackend(FakeEncoderLog &log) {
   };
 }
 
+/// WAV properties for a recording in the cache directory; the fake backend never writes them.
+inline std::shared_ptr<AudioFileProperties> wavFileProperties(int channelCount = 1) {
+  return std::make_shared<AudioFileProperties>(
+      AudioFileProperties::PathConfig{
+          .directory = AudioFileProperties::FileDirectory::Cache,
+          .subDirectory = "",
+          .fileName = "",
+      },
+      AudioLayout{.sampleRate = 48000.0F, .channelCount = channelCount},
+      AudioFileProperties::EncodingConfig{
+          .format = AudioFileProperties::FileFormat::WAV,
+          .bitRate = 0,
+          .bitDepth = AudioFileProperties::BitDepth::Bit16,
+          .flacCompressionLevel = 0,
+          .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+      },
+      AudioFileProperties::WriterConfig{.rotateIntervalBytes = 0, .androidFlushIntervalMs = 0});
+}
+
 } // namespace audioapi::test_support
 
 // NOLINTEND
