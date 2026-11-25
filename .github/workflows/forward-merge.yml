@@ -47,14 +47,20 @@ jobs:
           fi
 
           # Closing keywords act only on PRs merged into the default branch, so the
-          # issues closed by release PRs are carried into the forward-merge PR.
-          closes=$(git rev-list "origin/main..origin/$RELEASE_BRANCH" \
+          # issues closed by release PRs are carried into the forward-merge PR. A release
+          # PR has no closingIssuesReferences from its body (only sidebar links), so its
+          # body is scanned for closing keywords too.
+          release_prs=$(git rev-list "origin/main..origin/$RELEASE_BRANCH" \
             | xargs -I{} gh api "repos/$GITHUB_REPOSITORY/commits/{}/pulls" --jq '.[] | select(.merged_at) | .number' \
-            | sort -un \
-            | xargs -I{} gh api graphql -F number={} -F owner="${GITHUB_REPOSITORY%/*}" -F name="${GITHUB_REPOSITORY#*/}" \
+            | sort -un)
+          closes=$(for pr in $release_prs; do
+              gh api graphql -F number="$pr" -F owner="${GITHUB_REPOSITORY%/*}" -F name="${GITHUB_REPOSITORY#*/}" \
                 -f query='query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { closingIssuesReferences(first: 50) { nodes { number repository { nameWithOwner } } } } } }' \
-                --jq '.data.repository.pullRequest.closingIssuesReferences.nodes[] | "Closes \(.repository.nameWithOwner)#\(.number)"' \
-            | sort -u)
+                --jq '.data.repository.pullRequest.closingIssuesReferences.nodes[] | "\(.repository.nameWithOwner)#\(.number)"'
+              gh pr view "$pr" --json body --jq .body \
+                | grep -oiE '\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+([[:alnum:]_.-]+/[[:alnum:]_.-]+)?#[0-9]+' \
+                | sed -E "s/^[^[:space:]]+[[:space:]]+//; s|^#|$GITHUB_REPOSITORY#|"
+            done | sort -fu | sed 's/^/Closes /')
 
           open_pr=$(gh pr list --base main --head "$FORWARD_BRANCH" --state open --json number --jq '.[0].number // empty')
 
