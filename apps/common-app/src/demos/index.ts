@@ -78,7 +78,7 @@ export const demos: DemoScreen[] = [
     key: 'Orchestra',
     title: 'Phone orchestra',
     subtitle:
-      'Many phones play one piece together: clock sync over WebSocket plus start(when) scheduling. Needs orchestra-server.',
+      'Many phones play one piece in sync over a shared clock. Needs orchestra-server.',
     icon: 'piano',
     color: colors.accent,
     screen: Orchestra,

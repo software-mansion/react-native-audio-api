@@ -45,6 +45,7 @@
     "@react-native/metro-config": "catalog:",
     "@react-native/typescript-config": "catalog:",
     "@types/jest": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-native-background-timer": "^2.0.2",
     "@types/react-test-renderer": "catalog:",

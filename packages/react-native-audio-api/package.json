@@ -203,7 +203,7 @@
     "@types/babel__traverse": "^7.14.2",
     "@types/convert-source-map": "^2.0.0",
     "@types/jest": "catalog:",
-    "@types/node": "^18.0.0",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-test-renderer": "catalog:",
     "@types/semver": "catalog:",

@@ -17,7 +17,7 @@ import {
 import { AudioContext } from 'react-native-audio-api';
 import { useRoute } from '@react-navigation/native';
 
-import { Button, Container, Spacer } from '../../components';
+import { Button, Card, Container, RoundButton } from '../../components';
 import { colors, layout, typography } from '../../styles';
 import { activatePlaybackSession } from '../../utils/audio';
 import { metroHost } from '../../utils/metroHost';
@@ -239,28 +239,37 @@ const Orchestra: FC = () => {
     return (
       <Container>
         <View style={styles.performance}>
-          <View style={styles.transportRow}>
-            <Button
-              title={
-                playing
-                  ? '■ Stop'
-                  : startBar > 1
-                    ? `▶ Start at bar ${startBar}`
-                    : '▶ Start'
-              }
+          <View style={styles.nowPlaying}>
+            <View style={styles.grow}>
+              <Text style={typography.caption} numberOfLines={1}>
+                {score?.title ?? 'Connecting…'}
+              </Text>
+              <View style={styles.partRow}>
+                <View style={[styles.partDot, { backgroundColor: accent }]} />
+                <Text style={styles.partName} numberOfLines={1}>
+                  {partsLabel(parts)}
+                </Text>
+              </View>
+              <Text style={typography.hint} numberOfLines={1}>
+                {transportLine(transport?.bpm, playing, startBar, muted)}
+              </Text>
+            </View>
+            <RoundButton
+              icon={playing ? 'stop' : 'play'}
+              accessibilityLabel={playing ? 'Stop' : 'Start'}
               onPress={toggleTransport}
               disabled={!snapshot.state}
-              minWidth={110}
+              size={56}
+              color={accent}
             />
           </View>
-          <Spacer.Vertical size={12} />
           <View style={styles.roll}>
             <NoteRoll
               notes={myNotes}
               parts={score?.parts ?? []}
               lengthBeats={score?.lengthBeats ?? 0}
               bpm={transport?.bpm ?? 120}
-              playing={transport?.playing ?? false}
+              playing={playing}
               epoch={transport?.epoch ?? 0}
               subscribeToBeats={subscribeToBeats}
               subscribeToNotes={subscribeToNotes}
@@ -273,13 +282,11 @@ const Orchestra: FC = () => {
               />
             )}
           </View>
-          <Spacer.Vertical size={12} />
           <DrumPads
             notes={myNotes}
             parts={score?.parts ?? []}
             subscribeToNotes={subscribeToNotes}
           />
-          <Spacer.Vertical size={12} />
           {/* Not in a ScrollView: dragging the XY pad would fight the scroll. */}
           <ConsolePanel
             settings={consoleSettings}
@@ -297,39 +304,61 @@ const Orchestra: FC = () => {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.fieldLabel}>Server</Text>
-        <TextInput
-          style={styles.input}
-          value={serverUrl}
-          onChangeText={setServerUrl}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          placeholder="ws://host:8765"
-          placeholderTextColor={colors.textMuted}
-        />
-        <Spacer.Vertical size={12} />
-        <Text style={styles.fieldLabel}>Name</Text>
-        <View style={styles.row}>
+        <Card>
+          <Text style={typography.sectionTitle}>Join the orchestra</Text>
+          <Text style={typography.hint}>
+            Scan the QR code on the orchestra dashboard, or enter the address it
+            shows.
+          </Text>
+          <Text style={styles.fieldLabel}>Server</Text>
           <TextInput
-            style={[styles.input, styles.grow]}
+            style={styles.input}
+            value={serverUrl}
+            onChangeText={setServerUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            placeholder="ws://host:8765"
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={styles.fieldLabel}>Name</Text>
+          <TextInput
+            style={styles.input}
             value={name}
             onChangeText={setName}
             autoCorrect={false}
             placeholder="name"
             placeholderTextColor={colors.textMuted}
           />
-          <Button title="Connect" onPress={connect} />
-        </View>
-        <Spacer.Vertical size={12} />
-        <Text style={typography.hint}>
-          Scan the QR code on the orchestra dashboard, or enter the address it
-          shows.
-        </Text>
+        </Card>
+        <Button title="Connect" onPress={connect} minWidth={160} />
       </ScrollView>
     </Container>
   );
 };
+
+function partsLabel(parts: readonly ScorePart[]): string {
+  if (parts.length === 0) {
+    return 'Waiting for a part';
+  }
+  return parts.length <= 2
+    ? parts.map((part) => part.name).join(' · ')
+    : `${parts[0].name} + ${parts.length - 1} more`;
+}
+
+function transportLine(
+  bpm: number | undefined,
+  playing: boolean,
+  startBar: number,
+  muted: boolean
+): string {
+  const facts = [
+    bpm === undefined ? null : `${Math.round(bpm)} BPM`,
+    playing ? 'playing' : startBar > 1 ? `starts at bar ${startBar}` : null,
+    muted ? 'muted' : null,
+  ];
+  return facts.filter((fact) => fact !== null).join(' · ');
+}
 
 function myParts(score: Score, partIndices: readonly number[]): ScorePart[] {
   return partIndices.flatMap((index) =>
@@ -341,33 +370,51 @@ export default Orchestra;
 
 const styles = StyleSheet.create({
   scroll: {
+    gap: layout.spacing * 2,
     paddingBottom: 48,
   },
   fieldLabel: {
     ...typography.caption,
-    marginBottom: 4,
+    marginTop: layout.spacing,
+  },
+  input: {
+    backgroundColor: colors.recess,
+    borderRadius: 12,
+    color: colors.textPrimary,
+    fontSize: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   performance: {
     flex: 1,
+    gap: 12,
   },
-  transportRow: {
+  nowPlaying: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
-  roll: {
-    flex: 1,
-  },
-  input: {
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    color: colors.textPrimary,
-    fontSize: 15,
-    paddingHorizontal: layout.screenPadding,
-  },
-  row: {
+  partRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: layout.spacing,
+    marginVertical: 2,
+  },
+  partDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  partName: {
+    flexShrink: 1,
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  roll: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   grow: {
     flex: 1,

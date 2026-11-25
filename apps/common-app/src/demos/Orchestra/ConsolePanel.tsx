@@ -100,6 +100,8 @@ const XYPad: FC<XYPadProps> = ({ x, y, accent, onChange }) => {
 
   return (
     <View style={styles.pad} onLayout={onLayout} {...responder.panHandlers}>
+      <View pointerEvents="none" style={styles.verticalGuide} />
+      <View pointerEvents="none" style={styles.horizontalGuide} />
       <View
         pointerEvents="none"
         style={[
@@ -130,10 +132,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.recess,
     overflow: 'hidden',
   },
+  verticalGuide: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.track,
+  },
+  horizontalGuide: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '50%',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.track,
+  },
   knob: {
     position: 'absolute',
     width: KNOB_SIZE,
     height: KNOB_SIZE,
     borderRadius: KNOB_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.textPrimary,
   },
 });

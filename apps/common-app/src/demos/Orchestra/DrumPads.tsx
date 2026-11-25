@@ -89,7 +89,12 @@ const Pad: FC<PadProps> = ({ piece, color, subscribeToNotes }) => {
       <Animated.View
         style={[StyleSheet.absoluteFill, { backgroundColor: color }, litStyle]}
       />
-      <Text style={styles.label} numberOfLines={1}>
+      <Text
+        style={styles.label}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
         {DRUM_PIECES[piece].label}
       </Text>
     </Animated.View>
@@ -117,5 +122,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '600',
+    paddingHorizontal: 4,
   },
 });

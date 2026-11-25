@@ -35,7 +35,6 @@ type ExampleRoutes = {
   AudioParamPipeline: undefined;
   TestScreen: undefined;
   LatencyValidation: undefined;
-  OutputTimestampSync: undefined;
   EchoCancellation: undefined;
 };
 
