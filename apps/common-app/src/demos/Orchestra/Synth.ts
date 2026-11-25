@@ -12,28 +12,26 @@ import type {
 } from 'react-native-audio-api';
 
 import { DRUMS } from '../../../orchestra-server/drumKit';
-import InstrumentBank, {
-  type InstrumentRequest,
-  type RecordedTake,
-} from './InstrumentBank';
+import { noteFrequency } from '../../utils/midi';
+import InstrumentBank from './InstrumentBank';
+import type { InstrumentRequest, RecordedTake } from './InstrumentBank';
 import SampleBank, {
   PAD_BAKED_ATTACK_SEC,
   steeperDecayTimeConstant,
-  type Sample,
-  type SampleRequest,
 } from './SampleBank';
+import type { Sample, SampleRequest } from './SampleBank';
 import {
   clamp,
   createNoise,
   leadRelease,
-  midiToFrequency,
   padAttack,
   padRelease,
   playVoice,
   resolveTimbre,
   SILENT,
-  type VoiceTimbre,
+  STOP_MARGIN_SEC,
 } from './Voices';
+import type { VoiceTimbre } from './Voices';
 import type { Timbre } from './protocol';
 
 const MASTER_GAIN = 0.6;
@@ -48,7 +46,6 @@ const FILTER_MAX_Q = 14;
 /** How far past full scale the soft clip still bends instead of flattening. */
 const SOFT_CLIP_HEADROOM = 3;
 const SOFT_CLIP_CURVE_LENGTH = 2049;
-const STOP_MARGIN_SEC = 0.02;
 /** Recorded notes are mastered hotter than the synth voices. */
 const RECORDED_LEVEL = 0.8;
 /** A released recorded note fades out over ~5 of these. */
@@ -163,7 +160,7 @@ export default class Synth {
     }
     playVoice(this.context, this.master, this.noise, voice, {
       time,
-      frequency: midiToFrequency(midi),
+      frequency: noteFrequency(midi),
       durationSec,
       velocity: level,
     });

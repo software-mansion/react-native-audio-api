@@ -8,7 +8,8 @@ import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { acceptUpgrade, type WebSocketConnection } from './websocket.ts';
+import { acceptUpgrade } from './websocket.ts';
+import type { WebSocketConnection } from './websocket.ts';
 import { scores, sampleStore, DEFAULT_SCORE_ID } from './score.ts';
 import { qrSvg } from './qr.ts';
 import type {
@@ -119,7 +120,7 @@ function leastPopulatedPart(counts: number[]): number {
 }
 
 function partCounts(except?: Client): number[] {
-  const counts = new Array<number>(currentScore().parts.length).fill(0);
+  const counts = Array.from({ length: currentScore().parts.length }, () => 0);
   for (const player of players()) {
     if (player !== except) {
       for (const index of player.partIndices) {
@@ -131,7 +132,7 @@ function partCounts(except?: Client): number[] {
 }
 
 function rebalanceParts(): void {
-  const counts = new Array<number>(currentScore().parts.length).fill(0);
+  const counts = Array.from({ length: currentScore().parts.length }, () => 0);
   for (const player of players()) {
     const part = leastPopulatedPart(counts);
     player.partIndices = [part];
@@ -367,5 +368,7 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`  phones:    ws://${address}:${PORT}`);
     console.log(`  dashboard: http://${address}:${PORT}`);
   }
-  void sampleStore.prefetch(Object.values(scores));
+  sampleStore
+    .prefetch(Object.values(scores))
+    .catch((error) => console.error('Sample prefetch failed:', error));
 });

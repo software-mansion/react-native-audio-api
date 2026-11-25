@@ -17,6 +17,8 @@
 // accumulates.
 import type { AudioContext } from 'react-native-audio-api';
 
+import { median } from './ClockSync';
+
 export type AudioClockSource = 'outputTimestamp' | 'currentTime';
 
 export interface AudioClockQuality {
@@ -171,9 +173,4 @@ function trim(samples: LeadSample[], horizon: number): void {
   while (samples.length && samples[0].perf < horizon) {
     samples.shift();
   }
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
 }

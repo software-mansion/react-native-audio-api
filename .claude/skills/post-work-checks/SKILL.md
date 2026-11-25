@@ -75,6 +75,8 @@ Hooks run when lefthook is installed (`lefthook install`).
 
 **If a hook fails, the commit is aborted.** Fix the issue and re-commit — do NOT use `--no-verify`.
 
+`pnpm lint` runs oxlint from each package directory with that package's own `.oxlintrc.json` (`apps/common-app` has one), while editors apply the stricter root `.oxlintrc.json` (`tsdoc/syntax`, `import/consistent-type-specifier-style` as errors). To see what the editor reports, run `pnpm exec oxlint -c .oxlintrc.json <path>` from the root. oxfmt's `jsdoc: true` rewraps comments to 80 columns and can split a code span across lines (`tsdoc-code-span-missing-delimiter`); reword so the span doesn't land on a line break, then re-run oxfmt and check. Vendored files need an ignore in both the root and the package config.
+
 There is no pre-push hook — `pnpm validate:fast` (and native/C++ extended tiers) are run manually before opening a PR. Native builds (`validate:android`, `validate:ios`, `validate:full`) and extended C++ (`validate:cpp-extended`) are never run by lefthook.
 
 ---

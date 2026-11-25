@@ -26,6 +26,8 @@ apps/
     │   ├── utils/
     │   │   ├── audio.ts      # useAudioContext, useDecodedAudio, activatePlaybackSession
     │   │   ├── formatClock.ts # m:ss / mm:ss, worklet-safe
+    │   │   ├── midi.ts       # noteName, noteFrequency, 88-key piano range (Piano, Orchestra)
+    │   │   ├── metroHost.ts  # host that served the bundle, for companion servers (Voice Chat, Orchestra)
     │   │   ├── soundEngines/ # Reusable synth classes (Kick, HiHat, Clap); each voice disconnects itself on `onended`
     │   │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
     │   │   └── usePlayer.tsx # Hook for pattern-based scheduled playback

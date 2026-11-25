@@ -7,25 +7,22 @@
 //   final exponential decay to end where the live voice would have,
 // - sustained voices are baked holding, loop a crossfaded stretch of the hold
 //   for as long as the note lasts, and release on the gain.
-import {
-  OfflineAudioContext,
-  type AudioBuffer,
-  type BaseAudioContext,
-} from 'react-native-audio-api';
+import { OfflineAudioContext } from 'react-native-audio-api';
+import type { AudioBuffer, BaseAudioContext } from 'react-native-audio-api';
 
+import { noteFrequency } from '../../utils/midi';
 import {
   bellLength,
   clapLength,
   clickLength,
   createNoise,
   hatLength,
-  midiToFrequency,
   padAttack,
   playVoice,
   pluckLength,
   SILENT,
-  type VoiceTimbre,
 } from './Voices';
+import type { VoiceTimbre } from './Voices';
 
 interface DecayingShape {
   kind: 'decaying';
@@ -206,7 +203,7 @@ export default class SampleBank {
       const shape = SHAPES[job.timbre];
       playVoice(offline, offline.destination, noise, job.timbre, {
         time: startFrame / sampleRate,
-        frequency: midiToFrequency(job.midi),
+        frequency: noteFrequency(job.midi),
         durationSec:
           shape.kind === 'sustained'
             ? HELD_DURATION_SEC

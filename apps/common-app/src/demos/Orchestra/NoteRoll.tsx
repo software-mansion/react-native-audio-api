@@ -13,12 +13,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors } from '../../styles';
-import {
-  DRUM_PIECES,
-  drumPieceFor,
-  type DrumPiece,
-} from '../../../orchestra-server/drumKit';
+import { colors, typography } from '../../styles';
+import { noteName } from '../../utils/midi';
+import { DRUM_PIECES, drumPieceFor } from '../../../orchestra-server/drumKit';
+import type { DrumPiece } from '../../../orchestra-server/drumKit';
 import type { NoteListener, PartNote } from './Scheduler';
 import type { ScorePart } from './protocol';
 
@@ -34,24 +32,6 @@ const MIN_LIT_MS = 120;
 
 const PAST_OPACITY = 0.25;
 const UPCOMING_OPACITY = 0.6;
-
-const NOTE_NAMES = [
-  'C',
-  'C♯',
-  'D',
-  'D♯',
-  'E',
-  'F',
-  'F♯',
-  'G',
-  'G♯',
-  'A',
-  'A♯',
-  'B',
-];
-export function noteName(midi: number): string {
-  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
-}
 
 interface NoteRollProps {
   notes: readonly PartNote[];
@@ -178,7 +158,7 @@ const NoteRoll: FC<NoteRollProps> = ({
                     width={Math.max(4, note.duration * BEAT_WIDTH - 2)}
                     top={rowTop(note.midi) + 1}
                     height={Math.max(3, rowHeight - 2)}
-                    color={parts[note.partIndex]?.color ?? colors.main}
+                    color={parts[note.partIndex]?.color ?? colors.blue}
                     endBeat={startBeat + note.duration}
                     isLit={lit.has(key)}
                     position={position}
@@ -424,9 +404,9 @@ const styles = StyleSheet.create({
   },
   roll: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: colors.backgroundDark,
+    backgroundColor: colors.recess,
   },
   window: {
     position: 'absolute',
@@ -447,13 +427,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ffffff14',
+    borderBottomColor: colors.track,
   },
   blackKeyRow: {
-    backgroundColor: '#00000033',
+    backgroundColor: colors.background,
   },
   cRow: {
-    borderBottomColor: '#ffffff40',
+    borderBottomColor: colors.textMuted,
   },
   rowLabel: {
     position: 'absolute',
@@ -462,27 +442,25 @@ const styles = StyleSheet.create({
     height: LABEL_HEIGHT,
     lineHeight: LABEL_HEIGHT,
     fontSize: 10,
-    color: colors.white,
-    opacity: 0.55,
+    color: colors.textMuted,
     textAlign: 'right',
   },
   beatLine: {
     position: 'absolute',
     top: 0,
     width: StyleSheet.hairlineWidth,
-    backgroundColor: '#ffffff1a',
+    backgroundColor: colors.track,
   },
   barLine: {
     width: 1,
-    backgroundColor: '#ffffff40',
+    backgroundColor: colors.textMuted,
   },
   barNumber: {
     position: 'absolute',
     top: 2,
     left: 4,
     width: 30,
-    color: colors.white,
-    opacity: 0.5,
+    color: colors.textMuted,
     fontSize: 10,
   },
   note: {
@@ -491,19 +469,17 @@ const styles = StyleSheet.create({
   },
   litNote: {
     borderWidth: 1,
-    borderColor: colors.white,
+    borderColor: colors.textPrimary,
   },
   playhead: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: colors.white,
-    opacity: 0.9,
+    backgroundColor: colors.textPrimary,
   },
   empty: {
-    color: colors.white,
-    opacity: 0.5,
+    ...typography.hint,
     textAlign: 'center',
     marginTop: 24,
   },

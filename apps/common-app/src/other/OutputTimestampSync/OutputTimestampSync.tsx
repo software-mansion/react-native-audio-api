@@ -1,17 +1,11 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { AudioContext, type AudioBuffer } from 'react-native-audio-api';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
+import { AudioContext } from 'react-native-audio-api';
+import type { AudioBuffer } from 'react-native-audio-api';
 
-import { Container, Select } from '../../components';
-import { colors } from '../../styles';
-import { TestUI, type ControlAction } from '../../testComponents';
+import { Card, Container, Select } from '../../components';
+import { colors, typography } from '../../styles';
+import * as TestUI from '../../testComponents';
 import {
   CLICK_FREQUENCY_HZ,
   CSV_HEADER,
@@ -25,10 +19,8 @@ import {
   methodForTrial,
   scheduleTimes,
   toCsvRow,
-  type SchedulingMethod,
-  type SchedulingMode,
-  type Trial,
 } from './trials';
+import type { SchedulingMethod, SchedulingMode, Trial } from './trials';
 
 /** Wake this early before the target, then poll frames until it passes. */
 const FLASH_WAKE_EARLY_MS = 40;
@@ -221,18 +213,10 @@ const OutputTimestampSync: FC = () => {
     )
   );
 
-  const schedulingSummary = [
-    { label: 'Trials', value: `${trials.length}` },
-    {
-      label: '− outputLatency vs timestamp',
-      value: `${compensatedOffset.mean.toFixed(1)} ± ${compensatedOffset.spread.toFixed(1)} ms`,
-    },
-    {
-      label: 'plain currentTime vs timestamp',
-      value: `${currentTimeOffset.mean.toFixed(1)} ± ${currentTimeOffset.spread.toFixed(1)} ms`,
-    },
-  ];
-  const deviceSummary = [
+  const formatStat = ({ mean, spread }: { mean: number; spread: number }) =>
+    `${mean.toFixed(1)} ± ${spread.toFixed(1)} ms`;
+
+  const deviceStats = [
     {
       label: 'currentTime − contextTime',
       value: `${renderLead.mean.toFixed(1)} ms`,
@@ -241,58 +225,65 @@ const OutputTimestampSync: FC = () => {
       label: 'outputLatency',
       value: `${(lastTrial?.outputLatencyMs ?? 0).toFixed(1)} ms`,
     },
-    {
-      label: 'Flash trigger error',
-      value: `${flashError.mean.toFixed(1)} ± ${flashError.spread.toFixed(1)} ms`,
-    },
+    { label: 'Flash trigger error', value: formatStat(flashError) },
   ];
 
-  const controls: ControlAction[] = [
-    { title: 'Start', onPress: start, disabled: isRunning, width: 90 },
-    { title: 'Stop', onPress: stop, disabled: !isRunning, width: 90 },
+  const actions: TestUI.ControlAction[] = [
+    { title: 'Start', onPress: start, disabled: isRunning, minWidth: 90 },
+    { title: 'Stop', onPress: stop, disabled: !isRunning, minWidth: 90 },
     {
       title: 'Print CSV',
       onPress: printCsv,
       disabled: isRunning || trials.length === 0,
-      width: 120,
+      minWidth: 120,
     },
   ];
 
   return (
-    <Container disablePadding>
-      <TestUI.Header
-        title="Output Timestamp Sync"
-        subtitle={`Each trial aims a click and a screen flash at performance.now() + ${LEAD_MS} ms. The 2 kHz click uses getOutputTimestamp, 1 kHz currentTime − outputLatency, 500 Hz plain currentTime.`}
-      />
-      <TestUI.CurrentStepCard message={status} />
-      <TestUI.ControlBar actions={controls} />
+    <View style={styles.screen}>
+      <TestUI.TestLayout
+        description={`Each trial aims a click and a screen flash at performance.now() + ${LEAD_MS} ms. The 2 kHz click uses getOutputTimestamp, 1 kHz currentTime − outputLatency, 500 Hz plain currentTime.`}
+        summary={[
+          { label: 'Trials', value: `${trials.length}` },
+          { label: '−latency Δ', value: formatStat(compensatedOffset) },
+          { label: 'currentTime Δ', value: formatStat(currentTimeOffset) },
+        ]}
+        currentStep={status}
+        actions={actions}
+      >
+        <View style={styles.selectRow}>
+          <Select value={mode} options={SCHEDULING_MODES} onChange={setMode} />
+          <Select
+            value={latencyHint}
+            options={[...LATENCY_HINTS]}
+            onChange={(hint) => {
+              if (!isRunning) {
+                setLatencyHint(hint);
+              }
+            }}
+          />
+        </View>
 
-      <View style={styles.modeRow}>
-        <Select value={mode} options={SCHEDULING_MODES} onChange={setMode} />
-        <Select
-          value={latencyHint}
-          options={[...LATENCY_HINTS]}
-          onChange={(hint) => {
-            if (!isRunning) {
-              setLatencyHint(hint);
-            }
-          }}
-        />
-      </View>
+        {/* Large enough to read on slow-motion footage. */}
+        <View style={styles.cameraLabel}>
+          <Text style={styles.trialNumber}>{lastTrial?.index ?? '–'}</Text>
+          <Text style={styles.trialMethod}>
+            {lastTrial
+              ? `${lastTrial.method} · ${CLICK_FREQUENCY_HZ[lastTrial.method]} Hz`
+              : 'idle'}
+          </Text>
+        </View>
 
-      {/* Large enough to read on slow-motion footage. */}
-      <View style={styles.cameraLabel}>
-        <Text style={styles.trialNumber}>{lastTrial?.index ?? '–'}</Text>
-        <Text style={styles.trialMethod}>
-          {lastTrial
-            ? `${lastTrial.method} · ${CLICK_FREQUENCY_HZ[lastTrial.method]} Hz`
-            : 'idle'}
-        </Text>
-      </View>
+        <TestUI.SectionTitle title="Device" />
+        <Card>
+          {deviceStats.map((stat) => (
+            <View key={stat.label} style={styles.statRow}>
+              <Text style={typography.caption}>{stat.label}</Text>
+              <Text style={styles.statValue}>{stat.value}</Text>
+            </View>
+          ))}
+        </Card>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TestUI.Summary items={schedulingSummary} />
-        <TestUI.Summary items={deviceSummary} />
         <TestUI.LiveLog
           entries={trials
             .slice(-LOG_LENGTH)
@@ -303,28 +294,29 @@ const OutputTimestampSync: FC = () => {
             )}
           emptyMessage="Trials appear here once started."
         />
-      </ScrollView>
+      </TestUI.TestLayout>
 
       <Animated.View
         pointerEvents="none"
         style={[styles.flash, { opacity: flashOpacity }]}
       />
-    </Container>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modeRow: {
+  screen: {
+    flex: 1,
+  },
+  selectRow: {
+    flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
   },
   cameraLabel: {
     alignItems: 'center',
-    paddingVertical: 8,
   },
   trialNumber: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 72,
     fontWeight: '700',
   },
@@ -332,14 +324,19 @@ const styles = StyleSheet.create({
     color: colors.yellow,
     fontSize: 20,
   },
-  scrollContent: {
-    gap: 12,
-    paddingBottom: 32,
-    paddingHorizontal: 18,
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statValue: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
   },
   flash: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: colors.white,
+    backgroundColor: colors.textPrimary,
   },
 });
 

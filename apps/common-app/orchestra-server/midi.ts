@@ -9,7 +9,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 
-import { DRUM_PIECES, DRUMS, drumPieceFor, type DrumPiece } from './drumKit.ts';
+import { DRUM_PIECES, DRUMS, drumPieceFor } from './drumKit.ts';
+import type { DrumPiece } from './drumKit.ts';
 
 import type {
   Score,
@@ -276,10 +277,10 @@ export interface MidiPartConfig {
   skip?: boolean;
   color?: string;
   /**
-   * Drum parts only: replaces the part with one part per entry, named `<part>:
-   * <group>` and holding the hits of the listed kit pieces. Pieces no group
-   * lists stay in a part with the original name. The new parts take their own
-   * entries in `parts`.
+   * Drum parts only: replaces the part with one part per entry. Each holds the
+   * hits of the listed kit pieces and is named `<part>: <group>`. Pieces no
+   * group lists stay in a part with the original name. The new parts take their
+   * own entries in `parts`.
    */
   splitDrums?: Record<string, DrumPiece[]>;
 }

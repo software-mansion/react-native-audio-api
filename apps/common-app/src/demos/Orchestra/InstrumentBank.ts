@@ -11,10 +11,10 @@ import {
   DRUMS,
   drumPieceFor,
 } from '../../../orchestra-server/drumKit';
+import { highestPianoMidi, lowestPianoMidi } from '../../utils/midi';
 import { crossfadeLoopFrames } from './SampleBank';
+import { clamp } from './Voices';
 
-const LOWEST_SAMPLED_MIDI = 21;
-const HIGHEST_SAMPLED_MIDI = 108;
 /** Decodes in flight at once: enough to fill a part quickly on a LAN. */
 const CONCURRENT_LOADS = 4;
 /** The loop: the stretch a long note repeats, ending at the render's cut. */
@@ -50,7 +50,7 @@ export interface InstrumentRequest {
 }
 
 export function sampledMidi(midi: number): number {
-  return Math.min(HIGHEST_SAMPLED_MIDI, Math.max(LOWEST_SAMPLED_MIDI, midi));
+  return clamp(midi, lowestPianoMidi, highestPianoMidi);
 }
 
 interface Take {

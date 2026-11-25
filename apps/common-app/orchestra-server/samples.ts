@@ -6,12 +6,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import {
-  DRUM_PIECES,
-  DRUMS,
-  drumPieceFor,
-  type DrumPiece,
-} from './drumKit.ts';
+import { DRUM_PIECES, DRUMS, drumPieceFor } from './drumKit.ts';
+import type { DrumPiece } from './drumKit.ts';
 import type { Score } from '../src/demos/Orchestra/protocol.ts';
 
 const UPSTREAM = 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM';
@@ -176,11 +172,10 @@ export class SampleStore {
         if (part.instrument === DRUMS) {
           for (const note of part.notes) {
             const piece = drumPieceFor(note.midi);
-            for (
-              let take = 1;
-              piece && take <= DRUM_PIECES[piece].takes;
-              take += 1
-            ) {
+            if (!piece) {
+              continue;
+            }
+            for (let take = 1; take <= DRUM_PIECES[piece].takes; take += 1) {
               wanted.add(`${DRUMS}/${piece}/${take}`);
             }
           }

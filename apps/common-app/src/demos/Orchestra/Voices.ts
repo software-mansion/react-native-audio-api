@@ -28,11 +28,7 @@ export interface VoiceNote {
 const NOISE_SECONDS = 1;
 /** Exponential ramps cannot reach zero. */
 export const SILENT = 0.0001;
-const STOP_MARGIN_SEC = 0.02;
-
-export function midiToFrequency(midi: number): number {
-  return 440 * Math.pow(2, (midi - 69) / 12);
-}
+export const STOP_MARGIN_SEC = 0.02;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));

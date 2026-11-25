@@ -437,9 +437,11 @@ function arpeggioPart(bars: Bar[]): ScoreNote[] {
         return bar.barInSection === 3
           ? figureNotes(
               bar.start,
-              [69, 73, 76, 81, 85, 81, 76, 73].map(
-                (midi, step): Figure => [step / 2, midi, 0.5]
-              ),
+              [69, 73, 76, 81, 85, 81, 76, 73].map((midi, step): Figure => [
+                step / 2,
+                midi,
+                0.5,
+              ]),
               0.45
             )
           : [];

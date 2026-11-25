@@ -8,9 +8,8 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import RootStackNavigator, {
-  type RootStackParamList,
-} from './navigation/RootStack';
+import RootStackNavigator from './navigation/RootStack';
+import type { RootStackParamList } from './navigation/RootStack';
 
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['audioapi-example://'],

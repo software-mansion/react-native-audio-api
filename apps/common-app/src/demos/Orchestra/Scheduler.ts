@@ -15,8 +15,8 @@ import {
   INSTRUMENT_CHOICES,
   isPercussion,
   STUTTER_STEP_BEATS,
-  type ConsoleSettings,
 } from './Console';
+import type { ConsoleSettings } from './Console';
 import { DRUMS } from '../../../orchestra-server/drumKit';
 import type { InstrumentRequest } from './InstrumentBank';
 import type { SampleRequest } from './SampleBank';

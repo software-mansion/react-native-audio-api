@@ -7,7 +7,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  NativeModules,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,21 +14,24 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { AudioContext, AudioManager } from 'react-native-audio-api';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { AudioContext } from 'react-native-audio-api';
+import { useRoute } from '@react-navigation/native';
 
 import { Button, Container, Spacer } from '../../components';
-import { colors, layout } from '../../styles';
+import { colors, layout, typography } from '../../styles';
+import { activatePlaybackSession } from '../../utils/audio';
+import { metroHost } from '../../utils/metroHost';
 import AudioClockMap from './AudioClockMap';
 import OrchestraClient, { OrchestraSnapshot } from './OrchestraClient';
-import Scheduler from './Scheduler';
+import Scheduler, { mergeParts } from './Scheduler';
 import Synth from './Synth';
-import { NEUTRAL_CONSOLE, type ConsoleSettings } from './Console';
+import { NEUTRAL_CONSOLE } from './Console';
+import type { ConsoleSettings } from './Console';
 import ConsolePanel from './ConsolePanel';
 import CountIn from './CountIn';
 import DrumPads from './DrumPads';
 import NoteRoll from './NoteRoll';
-import { mergeParts, type NoteListener } from './Scheduler';
+import type { NoteListener } from './Scheduler';
 import type { Score, ScorePart } from './protocol';
 
 const SERVER_PORT = 8765;
@@ -41,16 +43,6 @@ const COUNT_IN_MS = 3000;
 let lastServerUrl = `ws://${metroHost() ?? '192.168.0.10'}:${SERVER_PORT}`;
 let lastName = `${Platform.OS}-${Math.random().toString(36).slice(2, 6)}`;
 
-function metroHost(): string | null {
-  const sourceCode = NativeModules.SourceCode as
-    | { scriptURL?: string; getConstants?: () => { scriptURL?: string } }
-    | undefined;
-  const scriptURL =
-    sourceCode?.getConstants?.().scriptURL ?? sourceCode?.scriptURL;
-  const match = scriptURL?.match(/^https?:\/\/([^/:]+)/);
-  return match ? match[1] : null;
-}
-
 interface Engine {
   context: AudioContext;
   clockMap: AudioClockMap;
@@ -58,11 +50,6 @@ interface Engine {
   scheduler: Scheduler;
   client: OrchestraClient;
 }
-
-type OrchestraRoute = RouteProp<
-  { Orchestra: { url?: string; name?: string } | undefined },
-  'Orchestra'
->;
 
 const IDLE_SNAPSHOT: OrchestraSnapshot = {
   status: 'disconnected',
@@ -72,7 +59,7 @@ const IDLE_SNAPSHOT: OrchestraSnapshot = {
 };
 
 const Orchestra: FC = () => {
-  const route = useRoute<OrchestraRoute>();
+  const route = useRoute('Orchestra');
   const scannedUrl = route.params?.url;
   const [serverUrl, setServerUrl] = useState(scannedUrl ?? lastServerUrl);
   const [name, setName] = useState(route.params?.name ?? lastName);
@@ -111,14 +98,7 @@ const Orchestra: FC = () => {
     async (url: string) => {
       disconnect();
 
-      AudioManager.setSystemOptions({
-        ios: {
-          category: 'playback',
-          mode: 'default',
-          options: [],
-        },
-      });
-      await AudioManager.setAudioSessionActivity(true);
+      await activatePlaybackSession();
 
       // Small hardware buffers keep the gap between rendering a note and
       // hearing it short, and getOutputTimestamp() reports that gap exactly.
@@ -245,7 +225,7 @@ const Orchestra: FC = () => {
     snapshot.state && snapshot.me
       ? myParts(snapshot.state.score, snapshot.me.partIndices)
       : [];
-  const accent = parts[0]?.color ?? colors.main;
+  const accent = parts[0]?.color ?? colors.blue;
   const score = snapshot.state?.score;
   const partIndicesKey = snapshot.me?.partIndices.join(',') ?? '';
   const myNotes = useMemo(
@@ -270,7 +250,7 @@ const Orchestra: FC = () => {
               }
               onPress={toggleTransport}
               disabled={!snapshot.state}
-              width={startBar > 1 && !playing ? 190 : 110}
+              minWidth={110}
             />
           </View>
           <Spacer.Vertical size={12} />
@@ -326,7 +306,7 @@ const Orchestra: FC = () => {
           autoCorrect={false}
           keyboardType="url"
           placeholder="ws://host:8765"
-          placeholderTextColor={colors.border}
+          placeholderTextColor={colors.textMuted}
         />
         <Spacer.Vertical size={12} />
         <Text style={styles.fieldLabel}>Name</Text>
@@ -337,12 +317,12 @@ const Orchestra: FC = () => {
             onChangeText={setName}
             autoCorrect={false}
             placeholder="name"
-            placeholderTextColor={colors.border}
+            placeholderTextColor={colors.textMuted}
           />
-          <Button title="Connect" onPress={connect} width={110} />
+          <Button title="Connect" onPress={connect} />
         </View>
         <Spacer.Vertical size={12} />
-        <Text style={styles.hint}>
+        <Text style={typography.hint}>
           Scan the QR code on the orchestra dashboard, or enter the address it
           shows.
         </Text>
@@ -364,15 +344,8 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   fieldLabel: {
-    color: colors.white,
-    opacity: 0.6,
-    fontSize: 12,
+    ...typography.caption,
     marginBottom: 4,
-  },
-  hint: {
-    color: colors.white,
-    opacity: 0.5,
-    fontSize: 13,
   },
   performance: {
     flex: 1,
@@ -384,12 +357,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: layout.radius,
-    color: colors.white,
-    paddingHorizontal: layout.spacing,
-    paddingVertical: layout.spacing,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    fontSize: 15,
+    paddingHorizontal: layout.screenPadding,
   },
   row: {
     flexDirection: 'row',

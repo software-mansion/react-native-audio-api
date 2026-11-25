@@ -1,5 +1,6 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["orchestra-server/qrcodegen.ts"],
   "categories": {
     "correctness": "error"
   },

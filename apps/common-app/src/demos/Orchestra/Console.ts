@@ -41,7 +41,7 @@ export const NEUTRAL_CONSOLE: ConsoleSettings = {
 };
 
 export const STUTTER_STEP_BEATS: Record<Stutter, number | null> = {
-  off: null,
+  'off': null,
   '1/8': 0.5,
   '1/16': 0.25,
 };

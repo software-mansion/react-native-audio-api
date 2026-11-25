@@ -8,11 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors, layout } from '../../styles';
-import {
-  DRUM_PIECES,
-  drumPieceFor,
-  type DrumPiece,
-} from '../../../orchestra-server/drumKit';
+import { DRUM_PIECES, drumPieceFor } from '../../../orchestra-server/drumKit';
+import type { DrumPiece } from '../../../orchestra-server/drumKit';
 import { DRUM_ROW_ORDER } from './NoteRoll';
 import type { NoteListener, PartNote } from './Scheduler';
 import type { ScorePart } from './protocol';
@@ -34,7 +31,7 @@ const DrumPads: FC<DrumPadsProps> = ({ notes, parts, subscribeToNotes }) => {
     for (const note of notes) {
       const piece = note.timbre === 'kit' ? drumPieceFor(note.midi) : null;
       if (piece && !colorOf.has(piece)) {
-        colorOf.set(piece, parts[note.partIndex]?.color ?? colors.main);
+        colorOf.set(piece, parts[note.partIndex]?.color ?? colors.blue);
       }
     }
     return [...DRUM_ROW_ORDER]
@@ -109,15 +106,15 @@ const styles = StyleSheet.create({
   pad: {
     flex: 1,
     height: PAD_HEIGHT,
-    borderRadius: layout.radius,
+    borderRadius: 12,
     borderWidth: 2,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   label: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '600',
   },

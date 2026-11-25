@@ -12,7 +12,9 @@ import MainTabsNavigator, { MainTabs } from './MainTabs';
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<typeof MainTabs>;
-} & Record<ExampleKey | DemoKey, undefined>;
+  /** Filled by the conductor dashboard's QR code deep link. */
+  Orchestra: { url?: string; name?: string } | undefined;
+} & Record<Exclude<ExampleKey | DemoKey, 'Orchestra'>, undefined>;
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 

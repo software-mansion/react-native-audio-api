@@ -13,8 +13,9 @@ export type Timbre =
   | 'hat'
   | 'clap'
   /**
-   * Drums: `midi` is a General MIDI percussion key (see orchestra-server/drumKit.ts), played on
-   * the recorded kit or, as a stand-in, by the hat and clap voices.
+   * Drums: `midi` is a General MIDI percussion key (see
+   * orchestra-server/drumKit.ts), played on the recorded kit or, as a stand-in,
+   * by the hat and clap voices.
    */
   | 'kit'
   | 'click';
@@ -133,8 +134,8 @@ export type ServerMessage =
       score: Score;
       players: PlayerInfo[];
       /**
-       * The bar, counting from 1, that a start without its own `startBar`
-       * plays from; set by the conductor. Absent from servers that predate it.
+       * The bar, counting from 1, that a start without its own `startBar` plays
+       * from; set by the conductor. Absent from servers that predate it.
        */
       startBar?: number;
       /** Every score the conductor can switch to. */

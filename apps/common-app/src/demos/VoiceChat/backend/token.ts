@@ -1,22 +1,16 @@
-import { NativeModules, Platform } from 'react-native';
+import { Platform } from 'react-native';
+
+import { metroHost } from '../../../utils/metroHost';
 
 const TOKEN_REQUEST_TIMEOUT_MS = 10_000;
 
 function tokenUrl(): string {
-  const scriptUrl = NativeModules.SourceCode?.getConstants?.().scriptURL;
-  if (typeof scriptUrl === 'string') {
-    const match = scriptUrl.match(/^https?:\/\/(\[[^\]]+\]|[^/:]+)/);
-    if (match?.[1]) {
-      const host = match[1];
-      return `http://${host}:8787/token`;
-    }
-  }
-  return 'http://localhost:8787/token';
+  return `http://${metroHost() ?? 'localhost'}:8787/token`;
 }
 
 /**
- * A USB-connected Android device loads its bundle from `localhost` through `adb
- * reverse`, so the token server's port needs forwarding as well.
+ * `adb reverse` gives a USB-connected Android device the laptop's `localhost`
+ * for the bundle, so the token server's port needs forwarding as well.
  */
 function unreachableMessage(url: string): string {
   const start = `Could not reach the token server at ${url}. Start it with \`pnpm server\` from the repository root.`;

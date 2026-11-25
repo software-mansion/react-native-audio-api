@@ -2,14 +2,16 @@ import React, { FC, memo, useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
   PanResponder,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { colors, layout } from '../../styles';
-import { NEUTRAL_CONSOLE, type ConsoleSettings } from './Console';
+import { Button, Card } from '../../components';
+import { colors, typography } from '../../styles';
+import { NEUTRAL_CONSOLE } from './Console';
+import type { ConsoleSettings } from './Console';
+import { clamp } from './Voices';
 
 interface ConsolePanelProps {
   settings: ConsoleSettings;
@@ -26,12 +28,14 @@ const ConsolePanel: FC<ConsolePanelProps> = ({
     onChange({ ...settings, ...patch });
 
   return (
-    <View>
+    <Card>
       <View style={styles.header}>
-        <Text style={styles.heading}>Console</Text>
-        <Pressable onPress={() => onChange(NEUTRAL_CONSOLE)} hitSlop={8}>
-          <Text style={styles.resetText}>Reset</Text>
-        </Pressable>
+        <Text style={typography.sectionTitle}>Console</Text>
+        <Button
+          title="Reset"
+          onPress={() => onChange(NEUTRAL_CONSOLE)}
+          minWidth={80}
+        />
       </View>
 
       <XYPad
@@ -40,10 +44,10 @@ const ConsolePanel: FC<ConsolePanelProps> = ({
         accent={accent}
         onChange={(cutoff, resonance) => update({ cutoff, resonance })}
       />
-      <Text style={styles.hint}>
+      <Text style={typography.hint}>
         Filter: left darker, right brighter, up more resonance
       </Text>
-    </View>
+    </Card>
   );
 };
 
@@ -73,8 +77,8 @@ const XYPad: FC<XYPadProps> = ({ x, y, accent, onChange }) => {
       }
       // The knob's centre travels inset by its radius, so it never leaves the pad.
       onChangeRef.current(
-        clamp01((locationX - KNOB_SIZE / 2) / (padWidth - KNOB_SIZE)),
-        clamp01(1 - (locationY - KNOB_SIZE / 2) / (PAD_HEIGHT - KNOB_SIZE))
+        clamp((locationX - KNOB_SIZE / 2) / (padWidth - KNOB_SIZE), 0, 1),
+        clamp(1 - (locationY - KNOB_SIZE / 2) / (PAD_HEIGHT - KNOB_SIZE), 0, 1)
       );
     };
     return PanResponder.create({
@@ -111,10 +115,6 @@ const XYPad: FC<XYPadProps> = ({ x, y, accent, onChange }) => {
   );
 };
 
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
 // Memoised: the screen above re-renders on every status tick.
 export default memo(ConsolePanel);
 
@@ -123,25 +123,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: layout.spacing,
-  },
-  heading: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  hint: {
-    color: colors.white,
-    opacity: 0.5,
-    fontSize: 12,
-    marginTop: 4,
   },
   pad: {
     height: PAD_HEIGHT,
-    borderRadius: layout.radius,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundLight,
+    borderRadius: 12,
+    backgroundColor: colors.recess,
     overflow: 'hidden',
   },
   knob: {
@@ -149,8 +135,5 @@ const styles = StyleSheet.create({
     width: KNOB_SIZE,
     height: KNOB_SIZE,
     borderRadius: KNOB_SIZE / 2,
-  },
-  resetText: {
-    color: colors.main,
   },
 });
