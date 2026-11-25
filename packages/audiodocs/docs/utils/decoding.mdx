@@ -140,7 +140,7 @@ Decodes base64-encoded PCM audio data.
 ```tsx
 const data = ... // data encoded in base64 string
 // data is interleaved (Channel1, Channel2, Channel1, Channel2, ...)
-const buffer = await decodeAudioData(data, 4800, 2, true);
+const buffer = await decodePCMInBase64(data, 4800, 2, true);
 ```
 
 </details>
