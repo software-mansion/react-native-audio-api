@@ -44,7 +44,10 @@ export interface Trial {
   /** `currentTime - contextTime` when scheduling: the audible lag of the graph. */
   renderLeadMs: number;
   outputLatencyMs: number;
-  /** When the flash was actually triggered, relative to the target. */
+  /**
+   * Timestamp of the UI frame that lit the flash, relative to the target: the
+   * next frame's display time on iOS, the vsync time on Android.
+   */
   flashErrorMs?: number;
 }
 

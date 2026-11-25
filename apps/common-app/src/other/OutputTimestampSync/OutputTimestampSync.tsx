@@ -1,5 +1,14 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useFrameCallback,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import type { FrameInfo } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { AudioContext } from 'react-native-audio-api';
 import type { AudioBuffer } from 'react-native-audio-api';
 
@@ -22,8 +31,6 @@ import {
 } from './trials';
 import type { SchedulingMethod, SchedulingMode, Trial } from './trials';
 
-/** Wake this early before the target, then poll frames until it passes. */
-const FLASH_WAKE_EARLY_MS = 40;
 const FLASH_FADE_MS = 120;
 const LOG_LENGTH = 12;
 /**
@@ -42,7 +49,15 @@ const OutputTimestampSync: FC = () => {
     'Film the screen in slow motion; each flash marks the moment its click should be heard.'
   );
 
-  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const flashOpacity = useSharedValue(0);
+  /**
+   * JS `performance.now()` the pending flash aims at, -1 when none is. The
+   * frame callback compares it with `FrameInfo.timestamp`, which runs on the
+   * same clock; the UI runtime's own `performance.now()` does not on iOS (it
+   * counts device sleep).
+   */
+  const flashTargetMs = useSharedValue(-1);
+  const flashTrialIndex = useSharedValue(-1);
   const contextRef = useRef<AudioContext | null>(null);
   const clickBuffersRef = useRef<Record<SchedulingMethod, AudioBuffer> | null>(
     null
@@ -53,14 +68,36 @@ const OutputTimestampSync: FC = () => {
   const modeRef = useRef(mode);
   modeRef.current = mode;
 
-  useEffect(() => {
-    // Moves the value to the native driver now, so the first flash is not set from JS.
-    Animated.timing(flashOpacity, {
-      toValue: 0,
-      duration: 0,
-      useNativeDriver: true,
-    }).start();
+  const recordFlash = (trialIndex: number, flashErrorMs: number) => {
+    setTrials((previous) =>
+      previous.map((trial) =>
+        trial.index === trialIndex ? { ...trial, flashErrorMs } : trial
+      )
+    );
+  };
 
+  // Lights the flash on the UI thread in the first frame at or past the target,
+  // so no JS-thread hop sits between the decision and the frame.
+  const flashFrames = useFrameCallback((frame: FrameInfo) => {
+    const targetMs = flashTargetMs.value;
+    if (targetMs < 0 || frame.timestamp < targetMs) {
+      return;
+    }
+    flashTargetMs.value = -1;
+    flashOpacity.value = withSequence(
+      withTiming(1, { duration: 0 }),
+      withTiming(0, { duration: FLASH_FADE_MS })
+    );
+    scheduleOnRN(
+      recordFlash,
+      flashTrialIndex.value,
+      frame.timestamp - targetMs
+    );
+  }, false);
+
+  const flashStyle = useAnimatedStyle(() => ({ opacity: flashOpacity.value }));
+
+  useEffect(() => {
     return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -88,33 +125,8 @@ const OutputTimestampSync: FC = () => {
   };
 
   const flashAt = (targetPerfMs: number, trialIndex: number) => {
-    const pollFrame = () => {
-      if (!isRunningRef.current) {
-        return;
-      }
-      if (performance.now() < targetPerfMs) {
-        requestAnimationFrame(pollFrame);
-        return;
-      }
-
-      const flashErrorMs = performance.now() - targetPerfMs;
-      flashOpacity.setValue(1);
-      Animated.timing(flashOpacity, {
-        toValue: 0,
-        duration: FLASH_FADE_MS,
-        useNativeDriver: true,
-      }).start();
-
-      setTrials((previous) =>
-        previous.map((trial) =>
-          trial.index === trialIndex ? { ...trial, flashErrorMs } : trial
-        )
-      );
-    };
-
-    after(LEAD_MS - FLASH_WAKE_EARLY_MS, () =>
-      requestAnimationFrame(pollFrame)
-    );
+    flashTrialIndex.value = trialIndex;
+    flashTargetMs.value = targetPerfMs;
   };
 
   const runTrial = () => {
@@ -173,11 +185,14 @@ const OutputTimestampSync: FC = () => {
     setTrials([]);
     isRunningRef.current = true;
     setIsRunning(true);
+    flashFrames.setActive(true);
     runTrial();
   };
 
   function stop() {
     isRunningRef.current = false;
+    flashFrames.setActive(false);
+    flashTargetMs.value = -1;
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
     setIsRunning(false);
@@ -296,10 +311,7 @@ const OutputTimestampSync: FC = () => {
         />
       </TestUI.TestLayout>
 
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.flash, { opacity: flashOpacity }]}
-      />
+      <Animated.View pointerEvents="none" style={[styles.flash, flashStyle]} />
     </View>
   );
 };
