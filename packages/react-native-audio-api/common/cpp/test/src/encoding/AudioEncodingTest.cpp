@@ -1,12 +1,15 @@
 #include <audioapi/encoding/AudioEncoding.h>
 #include <audioapi/encoding/EncoderCapabilities.h>
+#include <audioapi/encoding/PlatformFileBackend.h>
 #include <audioapi/utils/Path.h>
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace audioapi;
@@ -209,6 +212,77 @@ TEST(AudioEncodingTest, LeavesNoFileWhenEncodingFails) {
 
   ASSERT_TRUE(result.is_err());
   EXPECT_FALSE(std::filesystem::exists(::testing::TempDir() + "encode-failing.wav"));
+}
+
+/// Creates its file only after a pause, so a second open overlaps the first one.
+class SlowOpeningEncoder final : public AudioEncoder {
+ public:
+  using AudioEncoder::AudioEncoder;
+
+  OpenEncoderResult open(const StreamFormat &, const EncoderOutputSpec &, const std::string &path)
+      override {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    filePath_ = path;
+    std::ofstream created(path, std::ios::binary);
+    markOpen();
+    return OpenEncoderResult::Ok(path);
+  }
+
+  EncodeResult encode(const AudioBuffer &, int numFrames) override {
+    return EncodeResult::Ok(static_cast<size_t>(numFrames));
+  }
+
+  CloseEncoderResult close() override {
+    markClosed();
+    return CloseEncoderResult::Ok({0.0, 0.0});
+  }
+
+  [[nodiscard]] size_t getFileSizeBytes() const override {
+    return 0;
+  }
+
+ protected:
+  OpenEncoderResult reprepareInput(const StreamFormat &) override {
+    return OpenEncoderResult::Ok(filePath_);
+  }
+};
+
+TEST(AudioEncodingTest, ConcurrentOpensNeverShareAGeneratedName) {
+  const std::string directory = ::testing::TempDir() + "concurrent-opens/";
+  std::filesystem::remove_all(directory);
+  std::filesystem::create_directories(directory);
+  const PlatformFileBackend backend{
+      .resolveOutputSpec =
+          [](AudioFileProperties::FileFormat format) {
+            return Result<EncoderOutputSpec, std::string>::Ok(
+                encoder_capabilities::specForFormat(format));
+          },
+      .resolvePath =
+          [&directory](const std::shared_ptr<AudioFileProperties> &, const std::string &fileName) {
+            return Result<std::string, std::string>::Ok(directory + fileName);
+          },
+      .createEncoder =
+          [](const EncoderSettings &settings) {
+            return CreateEncoderResult::Ok(std::make_unique<SlowOpeningEncoder>(settings));
+          },
+  };
+  const auto properties = makeProperties("");
+  const StreamFormat inputFormat{.layout = {.sampleRate = sampleRate, .channelCount = 1}};
+
+  std::string firstPath;
+  std::thread first([&] {
+    auto result = openFileEncoder(backend, properties, "encoded", inputFormat);
+    ASSERT_TRUE(result.is_ok());
+    firstPath = result.unwrap()->getFilePath();
+  });
+  // Starts while the first open is still inside its pause, before its file exists.
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  auto second = openFileEncoder(backend, properties, "encoded", inputFormat);
+  first.join();
+
+  ASSERT_TRUE(second.is_ok());
+  EXPECT_NE(second.unwrap()->getFilePath(), firstPath);
+  std::filesystem::remove_all(directory);
 }
 
 // NOLINTEND

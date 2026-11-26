@@ -95,6 +95,31 @@ describe('encodeAudioData', () => {
     expect(buffer.getChannelData(0)).not.toBe(before);
   });
 
+  it('hands out fresh channel views while the encode is still running', () => {
+    encoder.encode.mockReturnValueOnce(new Promise(() => {}));
+    const buffer = createBuffer();
+    const before = buffer.getChannelData(0);
+
+    const pending = encodeAudioData(buffer);
+
+    expect(pending).toBeInstanceOf(Promise);
+    expect(buffer.getChannelData(0)).not.toBe(before);
+  });
+
+  it('hands out fresh channel views when native throws after a snapshot', async () => {
+    encoder.encode.mockImplementationOnce(() => {
+      throw new Error('encodeAudioData input must be AudioBuffers.');
+    });
+    const buffer = createBuffer();
+    const before = buffer.getChannelData(0);
+
+    await expect(encodeAudioData(buffer)).rejects.toThrow(
+      'encodeAudioData input must be AudioBuffers.'
+    );
+
+    expect(buffer.getChannelData(0)).not.toBe(before);
+  });
+
   it('rejects an empty buffer list', async () => {
     await expect(encodeAudioData([])).rejects.toThrow(
       'encodeAudioData requires at least one AudioBuffer.'

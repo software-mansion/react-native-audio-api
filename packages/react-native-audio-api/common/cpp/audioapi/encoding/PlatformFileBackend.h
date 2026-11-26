@@ -35,7 +35,8 @@ struct PlatformFileBackend {
 /// Creates the encoder for @p properties and opens it on a file named @p stem, in the format's
 /// extension, in the directory the properties select. A name the user chose is used as given,
 /// overwriting a file of that name with a warning; a generated one gets _1, _2, ... until no
-/// file holds it. The opened path is the encoder's getFilePath().
+/// file holds it, and concurrent calls never pick the same one. The opened path is the encoder's
+/// getFilePath().
 [[nodiscard]] CreateEncoderResult openFileEncoder(
     const PlatformFileBackend &backend,
     const std::shared_ptr<AudioFileProperties> &properties,

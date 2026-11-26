@@ -10,6 +10,7 @@
 
 #include <cstdio>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 
@@ -76,17 +77,23 @@ CreateEncoderResult openFileEncoder(
   }
   const auto &outputSpec = specResult.unwrap();
 
-  auto pathResult = resolveFilePath(backend, properties, stem, std::string(outputSpec.extension));
-  if (pathResult.is_err()) {
-    return Err(std::move(pathResult).unwrap_err());
-  }
-
   auto encoderResult = backend.createEncoder(
       EncoderSettings{.fileLayout = properties->fileLayout, .encoding = properties->encoding});
   if (encoderResult.is_err()) {
     return encoderResult;
   }
   auto encoder = std::move(encoderResult).unwrap();
+
+  // Picking a free name and creating its file is one step: two opens in the same second would
+  // otherwise both find the generated name free and write the same file.
+  static std::mutex nameSelectionMutex;
+  std::scoped_lock nameSelectionLock(nameSelectionMutex);
+
+  auto pathResult = resolveFilePath(backend, properties, stem, std::string(outputSpec.extension));
+  if (pathResult.is_err()) {
+    return Err(std::move(pathResult).unwrap_err());
+  }
+
   auto openResult = encoder->open(inputFormat, outputSpec, pathResult.unwrap());
   if (openResult.is_err()) {
     return Err(std::move(openResult).unwrap_err());

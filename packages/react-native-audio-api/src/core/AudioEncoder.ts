@@ -32,19 +32,20 @@ class AudioEncoder {
       );
     }
 
-    const promise = this.encoder.encode(
-      buffers.map((buffer) => buffer.buffer),
-      withDefaultEncoderOptions({
-        ...options,
-        channelCount: options.channelCount ?? 0,
-        preset: options.preset ?? { ...FilePreset.High, sampleRate: 0 },
-      })
-    );
-
-    // Native snapshotted the samples, cutting off the views handed out so far.
-    buffers.forEach((buffer) => buffer.invalidateChannelDataCache());
-
-    return promise;
+    try {
+      return this.encoder.encode(
+        buffers.map((buffer) => buffer.buffer),
+        withDefaultEncoderOptions({
+          ...options,
+          channelCount: options.channelCount ?? 0,
+          preset: options.preset ?? { ...FilePreset.High, sampleRate: 0 },
+        })
+      );
+    } finally {
+      // Native snapshotted the samples, cutting off the views handed out so far. It may have
+      // snapshotted some before throwing on a later argument, so this runs either way.
+      buffers.forEach((buffer) => buffer.invalidateChannelDataCache());
+    }
   }
 }
 
