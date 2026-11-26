@@ -55,12 +55,11 @@ export function withDefaultEncoderOptions(
   inOptions: AudioEncoderOptions
 ): Required<AudioEncoderOptions> {
   return {
-    directory: FileDirectory.Cache,
-    subDirectory: 'AudioAPI',
-    fileName: '',
-    channelCount: 2,
-    format: FileFormat.M4A,
-    preset: FilePreset.High,
-    ...inOptions,
+    directory: inOptions.directory ?? FileDirectory.Cache,
+    subDirectory: inOptions.subDirectory ?? 'AudioAPI',
+    fileName: inOptions.fileName ?? '',
+    channelCount: inOptions.channelCount ?? 2,
+    format: inOptions.format ?? FileFormat.M4A,
+    preset: inOptions.preset ?? FilePreset.High,
   };
 }

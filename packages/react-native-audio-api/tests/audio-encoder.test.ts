@@ -50,6 +50,26 @@ describe('encodeAudioData', () => {
     });
   });
 
+  it('keeps the defaults for options given as undefined', async () => {
+    const buffer = createBuffer();
+
+    await encodeAudioData(buffer, {
+      format: undefined,
+      channelCount: undefined,
+      preset: undefined,
+      directory: undefined,
+    });
+
+    expect(encoder.encode).toHaveBeenCalledWith([buffer.buffer], {
+      format: FileFormat.M4A,
+      channelCount: 0,
+      preset: { ...FilePreset.High, sampleRate: 0 },
+      directory: FileDirectory.Cache,
+      subDirectory: 'AudioAPI',
+      fileName: '',
+    });
+  });
+
   it('takes the file rate from a given preset instead of the input', async () => {
     await encodeAudioData([createBuffer(), createBuffer()], {
       format: FileFormat.OpusOgg,

@@ -35,9 +35,9 @@ class AudioEncoder {
     const promise = this.encoder.encode(
       buffers.map((buffer) => buffer.buffer),
       withDefaultEncoderOptions({
-        channelCount: 0,
-        preset: { ...FilePreset.High, sampleRate: 0 },
         ...options,
+        channelCount: options.channelCount ?? 0,
+        preset: options.preset ?? { ...FilePreset.High, sampleRate: 0 },
       })
     );
 
