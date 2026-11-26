@@ -5,7 +5,6 @@
 
 #include <audioapi/dsp/r8brain/Resampler.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
-#include <audioapi/utils/Path.h>
 
 #include <android/api-level.h>
 #include <media/NdkMediaCodec.h>
@@ -772,8 +771,9 @@ decoding::DecoderResult AndroidDecoder::open(const decoding::LocalFileSource &so
   // through the media HTTP service, which is unavailable to app processes on
   // some devices ("NdkMediaExtractor: can't create http service", status
   // -10002). Local files must use the fd overload.
-  const std::string filePath = path::normalizeFilePath(source.path);
-  const int fd = ::open(filePath.c_str(), O_RDONLY | O_CLOEXEC);
+  // source.path is already a decoded filesystem path; decoding it again would
+  // turn a literal "%20" in a file name into a space.
+  const int fd = ::open(source.path.c_str(), O_RDONLY | O_CLOEXEC);
   if (fd < 0) {
     return Err(
         "AndroidDecoder::open: failed to open '" + source.path + "': " + std::strerror(errno));
