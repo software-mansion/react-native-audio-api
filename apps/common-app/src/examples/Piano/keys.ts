@@ -1,26 +1,18 @@
-/** Full 88-key piano range, A0 (MIDI 21) to C8 (MIDI 108). */
-export const lowestMidi = 21;
-export const highestMidi = 108;
+import {
+  highestPianoMidi,
+  lowestPianoMidi,
+  noteFrequency,
+  noteName,
+} from '../../utils/midi';
+
+export { noteFrequency, noteName };
+export const lowestMidi = lowestPianoMidi;
+export const highestMidi = highestPianoMidi;
 
 export const whiteKeyWidth = 44;
 export const whiteKeyHeight = 236;
 export const blackKeyWidth = whiteKeyWidth * 0.58;
 export const blackKeyHeight = whiteKeyHeight * 0.62;
-
-const noteClassNames = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-];
 
 /**
  * Black keys on a real piano are not centred on the gap between white keys:
@@ -47,14 +39,6 @@ export interface PianoKey {
 
 function isBlackNote(midi: number) {
   return midi % 12 in blackKeyOffsets;
-}
-
-export function noteName(midi: number) {
-  return `${noteClassNames[midi % 12]}${Math.floor(midi / 12) - 1}`;
-}
-
-export function noteFrequency(midi: number) {
-  return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
 function buildKeys(): PianoKey[] {

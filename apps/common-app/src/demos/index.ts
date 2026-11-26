@@ -5,13 +5,15 @@ import Record from './Record/Record';
 import Crossfade from './Crossfade/Crossfade';
 import Player from './Player/Player';
 import VoiceChat from './VoiceChat';
+import Orchestra from './Orchestra';
 
 export type DemoKey =
   | 'RecordDemo'
   | 'PedalBoard'
   | 'Crossfade'
   | 'Player'
-  | 'VoiceChat';
+  | 'VoiceChat'
+  | 'Orchestra';
 
 export interface DemoScreen {
   key: DemoKey;
@@ -71,5 +73,14 @@ export const demos: DemoScreen[] = [
     icon: 'messages-square',
     color: colors.blue,
     screen: VoiceChat,
+  },
+  {
+    key: 'Orchestra',
+    title: 'Phone orchestra',
+    subtitle:
+      'Many phones play one piece in sync over a shared clock. Needs orchestra-server.',
+    icon: 'piano',
+    color: colors.accent,
+    screen: Orchestra,
   },
 ] as const;

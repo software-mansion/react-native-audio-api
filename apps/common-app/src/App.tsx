@@ -8,9 +8,8 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import RootStackNavigator, {
-  type RootStackParamList,
-} from './navigation/RootStack';
+import RootStackNavigator from './navigation/RootStack';
+import type { RootStackParamList } from './navigation/RootStack';
 
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['audioapi-example://'],
@@ -18,6 +17,9 @@ const linking: LinkingOptions<RootStackParamList> = {
     initialRouteName: 'MainTabs',
     screens: {
       RecordDemo: 'record',
+      // audioapi-example://orchestra?url=ws://host:8765 — what the conductor
+      // dashboard's QR code encodes.
+      Orchestra: 'orchestra',
     },
   },
 };

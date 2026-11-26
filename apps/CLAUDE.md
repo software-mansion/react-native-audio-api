@@ -26,6 +26,8 @@ apps/
     │   ├── utils/
     │   │   ├── audio.ts      # useAudioContext, useDecodedAudio, activatePlaybackSession
     │   │   ├── formatClock.ts # m:ss / mm:ss, worklet-safe
+    │   │   ├── midi.ts       # noteName, noteFrequency, 88-key piano range (Piano, Orchestra)
+    │   │   ├── metroHost.ts  # host that served the bundle, for companion servers (Voice Chat, Orchestra)
     │   │   ├── soundEngines/ # Reusable synth classes (Kick, HiHat, Clap); each voice disconnects itself on `onended`
     │   │   ├── systemOptions.ts # Runtime lists of every IOSCategory/IOSMode/IOSOption/AndroidAudioMode/CommunicationDevice/AndroidInputPreset/AndroidOutputProfile/AudioFocusType (the library exports only the types)
     │   │   └── usePlayer.tsx # Hook for pattern-based scheduled playback
@@ -45,7 +47,7 @@ Bottom Tabs (native)
 └── Other       → One grouped section of internal tooling / repro screens, registered in `other/index.ts` (`otherScreens`); add the key to `ExampleRoutes` in `examples/index.ts`
 ```
 
-Each item navigates into a Stack screen. No manual stack registration needed — `examples/index.ts`, `other/index.ts` and `demos/index.ts` drive it automatically. The root param list is declared once in `RootStack.tsx` (`RootNavigator` module augmentation), so `useNavigation()` needs no generic or cast: `navigation.navigate(item.key)` is typed against the route keys (`ExampleKey`, `DemoKey`).
+Each item navigates into a Stack screen. No manual stack registration needed — `examples/index.ts`, `other/index.ts` and `demos/index.ts` drive it automatically. The root param list is declared once in `RootStack.tsx` (`RootNavigator` module augmentation), so `useNavigation()` needs no generic or cast: `navigation.navigate(item.key)` is typed against the route keys (`ExampleKey`, `DemoKey`). A screen that takes params gets its own entry in `RootStackParamList` and reads them with the name form, `useRoute('Orchestra')`; `useRoute<…>()` with a type argument resolves `params` to `object` here. Reference: the Orchestra demo's `?url=` deep link.
 
 Screens with an always-visible control panel render `ControlsSheet` (`components/ControlsSheet.tsx`, built on `@swmansion/react-native-bottom-sheet`) as the last child of their `Container`. It is part of the screen, so it shares the screen's state directly; pad content with the height its `onCoveredHeightChange` reports. References: Drum Machine (`useDrumMachine` holds pattern, tempo and transport), Recorder, Audio Visualizer. These were once separate react-native-screens `formSheet` routes, which needed module stores to share state and a layout that popped the sheet when its owner screen left the stack.
 
@@ -265,6 +267,10 @@ Use `react-native-background-timer` (not `setTimeout`) for scheduling — it con
 ### Moving AudioParams from an animation loop
 
 Never assign `param.value` once per frame for continuous motion: each assignment is a step, and 60 steps a second are heard as a buzz at the frame rate. Glide with `param.setTargetAtTime(value, ctx.currentTime, ~0.03)` instead. Reference: `examples/PannerNode/PannerNode.tsx` (`applyPose`). Screens that never react to a tap can open their context with `latencyHint: 'playback'` (Oboe power-saving mode, a 20 ms mixer period instead of a 2 ms exclusive stream) for more render headroom. With that hint `currentTime` freezes for whole 20–40 ms buffers, so drive animation from `currentTime` carried forward with wall time between jumps (as `usePlayer` does), not from raw `currentTime` deltas. When the animation also drives the audio (it computes a pose and schedules it at that clock time), schedule at the clock but show what is heard: keep the recent frames and display the newest one at least `outputLatency` plus the glide time constant old (~200 ms with the playback hint on Android); otherwise the picture runs ahead of the sound. Keep per-frame `useState` in a small child component: re-rendering the whole PannerNode screen every frame held the JS thread at ~20 fps on a Samsung A26, against ~50 fps with only the live readouts re-rendering.
+
+### Timing a frame against a JS timestamp
+
+To act in the first UI frame at or past a time computed on the JS thread (`performance.now()`, or `getOutputTimestamp().performanceTime`), compare it with `FrameInfo.timestamp` in a `useFrameCallback`: both read the same monotonic clock with no offset (iOS `mach_absolute_time`, Android `CLOCK_MONOTONIC`). Never compare it with `performance.now()` called inside a worklet: on iOS the UI runtime's `performance.now()` is libc++ `steady_clock`, which counts device sleep and drifts ahead. On iOS `FrameInfo.timestamp` is the upcoming frame's display time, on Android the vsync time. Slow animations in the simulator rescale both.
 
 ### Effects chain (PedalBoard pattern)
 
