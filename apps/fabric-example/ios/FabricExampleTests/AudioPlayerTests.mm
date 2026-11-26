@@ -1,6 +1,8 @@
 #import <AudioToolbox/AudioServices.h>
 #import <XCTest/XCTest.h>
 
+#include <mach/mach_time.h>
+
 #import <audioapi/core/AudioPlayer.h>
 #import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/NativeAudioPlayer.h>
@@ -10,7 +12,9 @@
 #import <audioapi/utils/AudioBuffer.hpp>
 
 #include <atomic>
+#include <cmath>
 #include <cstddef>
+#include <ctime>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -36,6 +40,8 @@ class IOSAudioPlayer : public AudioPlayer {
 
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
+  [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
+  [[nodiscard]] std::int64_t presentationClockNowNs() const override;
 
  protected:
   NativeAudioPlayer *createNativePlayer();
@@ -345,7 +351,8 @@ struct TestAudioOutput {
 - (NativeAudioPlayer *)createPlayerWithRenderCallCount:(NSInteger *)renderCallCount
 {
   return [[NativeAudioPlayer alloc]
-          initWithRenderAudio:^(AudioBufferList *outputBuffer, int numFrames) {
+          initWithRenderAudio:^(
+              AudioBufferList *outputBuffer, int numFrames, const AudioTimeStamp *) {
             if (renderCallCount != nullptr) {
               *renderCallCount += 1;
             }
@@ -409,11 +416,14 @@ struct TestAudioOutput {
   __block NSInteger renderCallCount = 0;
   __block AVAudioFrameCount renderedFrameCount = 0;
   __block AudioBufferList *renderedBufferList = nullptr;
+  __block const AudioTimeStamp *renderedTimestamp = nullptr;
   NativeAudioPlayer *player = [[NativeAudioPlayer alloc]
-          initWithRenderAudio:^(AudioBufferList *outputBuffer, int numFrames) {
+          initWithRenderAudio:^(
+              AudioBufferList *outputBuffer, int numFrames, const AudioTimeStamp *timestamp) {
             renderCallCount += 1;
             renderedFrameCount = static_cast<AVAudioFrameCount>(numFrames);
             renderedBufferList = outputBuffer;
+            renderedTimestamp = timestamp;
           }
                    sampleRate:48000
                  channelCount:2
@@ -428,6 +438,7 @@ struct TestAudioOutput {
   XCTAssertEqual(renderCallCount, 1);
   XCTAssertEqual(renderedFrameCount, 64U);
   XCTAssertEqual(renderedBufferList, output.bufferList());
+  XCTAssertEqual(renderedTimestamp, &timestamp);
 }
 
 - (void)testStartAndResumeActivateSessionAttachSourceAndStartEngine
@@ -725,6 +736,84 @@ struct TestAudioOutput {
     XCTAssertEqualWithAccuracy(output.channels[0][frame], 0.4f, 0.0001f);
     XCTAssertEqualWithAccuracy(output.channels[1][frame], 0.5f, 0.0001f);
   }
+}
+
+- (void)testOutputPresentationIsEmptyWithoutAValidHostTime
+{
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  player->setRunning(true);
+  TestAudioOutput output(2, 300);
+  BOOL isSilence = NO;
+  AudioTimeStamp timestamp = {};
+
+  XCTAssertFalse(player->getOutputPresentation().has_value());
+
+  player->getAudioPlayer().renderBlock(&isSilence, &timestamp, 300, output.bufferList());
+
+  XCTAssertFalse(player->getOutputPresentation().has_value());
+}
+
+- (void)testOutputPresentationStartsAtTheBufferFirstFrameAcrossOverflow
+{
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  player->setRunning(true);
+  NativeAudioPlayer *nativePlayer = player->getAudioPlayer();
+  BOOL isSilence = NO;
+
+  // 300-frame buffers pull whole quanta, so each buffer starts with the previous one's leftover.
+  const std::int64_t expectedFirstFrames[] = {0, 300, 600};
+  std::int64_t previousPresentationTimeNs = 0;
+  for (const std::int64_t expectedFirstFrame : expectedFirstFrames) {
+    TestAudioOutput output(2, 300);
+    AudioTimeStamp timestamp = {};
+    timestamp.mFlags = kAudioTimeStampHostTimeValid;
+    timestamp.mHostTime = mach_absolute_time();
+
+    nativePlayer.renderBlock(&isSilence, &timestamp, 300, output.bufferList());
+
+    const auto presentation = player->getOutputPresentation();
+    XCTAssertTrue(presentation.has_value());
+    XCTAssertEqual(presentation->contextFrame, expectedFirstFrame);
+    XCTAssertGreaterThanOrEqual(presentation->presentationTimeNs, previousPresentationTimeNs);
+    previousPresentationTimeNs = presentation->presentationTimeNs;
+  }
+}
+
+// `performance.now()` reads mach uptime on iOS. A time moved onto `steady_clock` is ahead of it by
+// however long the machine has slept since boot.
+- (void)testOutputPresentationStaysOnTheCallbackHostClock
+{
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  player->setRunning(true);
+  TestAudioOutput output(2, 128);
+  BOOL isSilence = NO;
+  AudioTimeStamp timestamp = {};
+  timestamp.mFlags = kAudioTimeStampHostTimeValid;
+  timestamp.mHostTime = mach_absolute_time();
+
+  player->getAudioPlayer().renderBlock(&isSilence, &timestamp, 128, output.bufferList());
+
+  mach_timebase_info_data_t timebase{};
+  mach_timebase_info(&timebase);
+  const auto hostTimeNs = static_cast<std::int64_t>(
+      static_cast<__int128>(timestamp.mHostTime) * timebase.numer / timebase.denom);
+  const auto outputLatencyNs = static_cast<std::int64_t>(
+      std::llround([[AudioSessionManager sharedInstance] outputLatencySeconds] * 1e9));
+  const auto presentation = player->getOutputPresentation();
+  XCTAssertTrue(presentation.has_value());
+  XCTAssertEqual(presentation->presentationTimeNs, hostTimeNs + outputLatencyNs);
+}
+
+- (void)testPresentationClockIsMachUptime
+{
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+
+  const auto before = static_cast<std::int64_t>(clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
+  const auto now = player->presentationClockNowNs();
+  const auto after = static_cast<std::int64_t>(clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
+
+  XCTAssertGreaterThanOrEqual(now, before);
+  XCTAssertLessThanOrEqual(now, after);
 }
 
 - (void)testRenderBlockZerosBufferedAudioWhenPlayerIsNotRunning
