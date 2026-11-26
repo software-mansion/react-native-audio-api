@@ -65,6 +65,7 @@ class IEncoderBackend {
 
   // Opens the backend. `desired` comes from the encoder settings; the backend may
   // override it (e.g. Opus) via `effective`, which the caller then resamples/channel-maps to.
+  // A failure after the file is created removes it, per AudioEncoder::open.
   virtual std::string open(
       const AudioLayout &desired,
       const std::string &filePath,
@@ -524,6 +525,7 @@ class MuxedBackend : public MediaCodecBackend {
     if (muxer_ == nullptr) {
       ::close(fd_);
       fd_ = -1;
+      file_system::removeFile(filePath);
       return "MuxedBackend: failed to create muxer";
     }
 
@@ -534,6 +536,7 @@ class MuxedBackend : public MediaCodecBackend {
       muxer_ = nullptr;
       ::close(fd_);
       fd_ = -1;
+      file_system::removeFile(filePath);
       return err;
     }
     filePath_ = filePath;
@@ -638,6 +641,7 @@ class FlacBackend : public MediaCodecBackend {
     if (!err.empty()) {
       std::fclose(file_);
       file_ = nullptr;
+      file_system::removeFile(filePath);
       return err;
     }
     return "";
@@ -716,6 +720,7 @@ class AdtsBackend : public MediaCodecBackend {
         true);
     if (!err.empty()) {
       file_.reset();
+      file_system::removeFile(filePath);
       return err;
     }
     return "";
@@ -862,6 +867,7 @@ OpenEncoderResult AndroidEncoder::open(
   if (conversionResult.is_err()) {
     backend_->close();
     backend_.reset();
+    file_system::removeFile(filePath_);
     return Err(conversionResult.unwrap_err());
   }
 

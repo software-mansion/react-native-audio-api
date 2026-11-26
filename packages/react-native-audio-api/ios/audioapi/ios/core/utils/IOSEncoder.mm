@@ -6,6 +6,7 @@
 #include <audioapi/encoding/EncoderOutputSpec.h>
 #include <audioapi/ios/core/utils/IOSEncoder.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/FileSystem.hpp>
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
@@ -240,6 +241,7 @@ OpenEncoderResult IOSEncoder::open(
     if (pipelineResult.is_err()) {
       releaseConversionPipeline();
       state_->audioFile = nil;
+      file_system::removeFile(filePath_);
       return Err(pipelineResult.unwrap_err());
     }
 
