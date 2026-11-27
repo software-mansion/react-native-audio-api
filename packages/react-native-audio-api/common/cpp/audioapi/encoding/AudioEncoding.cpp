@@ -111,7 +111,7 @@ EncodeAudioDataResult encodeAudioData(
             : "Failed to finalize '" + filePath + "': " + closeResult.unwrap_err());
   }
 
-  const auto &[sizeMB, durationSeconds] = closeResult.unwrap();
+  const auto [sizeMB, durationSeconds] = closeResult.unwrap();
   return Ok(
       EncodedFileInfo{
           .path = path::toFileUrl(filePath), .size = sizeMB, .duration = durationSeconds});

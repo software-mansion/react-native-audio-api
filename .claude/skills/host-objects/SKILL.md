@@ -239,18 +239,22 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(...) {
 ### Primitives
 
 ```cpp
-float v       = static_cast<float>(args[0].getNumber());
-double d      = args[0].getNumber();
-int i         = static_cast<int>(args[0].getNumber());
-bool b        = args[0].getBool();
-std::string s = args[0].getString(runtime).utf8(runtime);
+float v       = static_cast<float>(args[0].asNumber());
+double d      = args[0].asNumber();
+int i         = static_cast<int>(args[0].asNumber());
+bool b        = args[0].asBool();
+std::string s = args[0].asString(runtime).utf8(runtime);
 ```
+
+`asX()` throws a `JSError` on a wrong type; `getX()` only `assert`s, so in release a wrong type reads garbage (and `getHostObject<T>` on the wrong object is undefined behaviour, while `asHostObject<T>` throws). Use `getX()` only right after an `isX()` check on the same value. Don't add `isX()` + `JSError` guards in front of `asX()`. Most existing HostObjects still use `getX()`.
 
 ### Optional arguments — check count first
 
+`args` holds exactly `count` values; reading `args[count]` is out of bounds, and `asX()` cannot catch it.
+
 ```cpp
 // args[2] is optional, default -1
-double duration = (count > 2 && !args[2].isUndefined()) ? args[2].getNumber() : -1.0;
+double duration = (count > 2 && !args[2].isUndefined()) ? args[2].asNumber() : -1.0;
 ```
 
 Use `jsiutils::argToString(runtime, args, count, index, defaultValue)` for optional string args.

@@ -20,7 +20,7 @@ AudioEncoderHostObject::AudioEncoderHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioEncoderHostObject, encode) {
-  if (count < 2 || !args[0].isObject() || !args[1].isObject()) {
+  if (count < 2) {
     throw jsi::JSError(runtime, "encodeAudioData expects AudioBuffers and options.");
   }
 
@@ -30,13 +30,9 @@ JSI_HOST_FUNCTION_IMPL(AudioEncoderHostObject, encode) {
   buffers.reserve(bufferCount);
 
   for (size_t i = 0; i < bufferCount; ++i) {
-    auto value = bufferArray.getValueAtIndex(runtime, i);
-    if (!value.isObject() ||
-        !value.asObject(runtime).isHostObject<AudioBufferHostObject>(runtime)) {
-      throw jsi::JSError(runtime, "encodeAudioData input must be AudioBuffers.");
-    }
     // A snapshot: JS writes made after this call reach a copy, not the encoder.
-    buffers.push_back(value.asObject(runtime)
+    buffers.push_back(bufferArray.getValueAtIndex(runtime, i)
+                          .asObject(runtime)
                           .asHostObject<AudioBufferHostObject>(runtime)
                           ->sharedBuffer_->acquireContent());
   }

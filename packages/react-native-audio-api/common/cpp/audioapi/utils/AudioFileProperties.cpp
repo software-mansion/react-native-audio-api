@@ -83,45 +83,45 @@ Result<NoneType, std::string> AudioFileProperties::validate() const {
 std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
     facebook::jsi::Runtime &runtime,
     const facebook::jsi::Value &value) {
-  auto options = value.getObject(runtime);
+  auto options = value.asObject(runtime);
 
   FileDirectory directory =
-      static_cast<FileDirectory>(options.getProperty(runtime, "directory").getNumber());
+      static_cast<FileDirectory>(options.getProperty(runtime, "directory").asNumber());
 
   std::string subDirectory =
       options.getProperty(runtime, "subDirectory").asString(runtime).utf8(runtime);
 
   std::string fileName = options.getProperty(runtime, "fileName").asString(runtime).utf8(runtime);
 
-  int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
+  int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").asNumber());
 
   // Recording-only fields: encodeAudioData leaves them out.
   auto rotateIntervalValue = options.getProperty(runtime, "rotateIntervalBytes");
   size_t rotateIntervalBytes =
       rotateIntervalValue.isNumber() ? static_cast<size_t>(rotateIntervalValue.getNumber()) : 0;
 
-  FileFormat format = static_cast<FileFormat>(options.getProperty(runtime, "format").getNumber());
+  FileFormat format = static_cast<FileFormat>(options.getProperty(runtime, "format").asNumber());
 
   auto androidFlushIntervalValue = options.getProperty(runtime, "androidFlushIntervalMs");
   int androidFlushIntervalMs = androidFlushIntervalValue.isNumber()
       ? static_cast<int>(androidFlushIntervalValue.getNumber())
       : 0;
 
-  auto presetOptions = options.getProperty(runtime, "preset").getObject(runtime);
+  auto presetOptions = options.getProperty(runtime, "preset").asObject(runtime);
 
   float sampleRate =
-      static_cast<float>(presetOptions.getProperty(runtime, "sampleRate").getNumber());
+      static_cast<float>(presetOptions.getProperty(runtime, "sampleRate").asNumber());
 
-  size_t bitRate = static_cast<size_t>(presetOptions.getProperty(runtime, "bitRate").getNumber());
+  size_t bitRate = static_cast<size_t>(presetOptions.getProperty(runtime, "bitRate").asNumber());
 
   BitDepth bitDepth =
-      static_cast<BitDepth>(presetOptions.getProperty(runtime, "bitDepth").getNumber());
+      static_cast<BitDepth>(presetOptions.getProperty(runtime, "bitDepth").asNumber());
 
   int flacCompressionLevel =
-      static_cast<int>(presetOptions.getProperty(runtime, "flacCompressionLevel").getNumber());
+      static_cast<int>(presetOptions.getProperty(runtime, "flacCompressionLevel").asNumber());
 
   IOSAudioQuality iosAudioQuality =
-      static_cast<IOSAudioQuality>(presetOptions.getProperty(runtime, "iosQuality").getNumber());
+      static_cast<IOSAudioQuality>(presetOptions.getProperty(runtime, "iosQuality").asNumber());
 
   return std::make_shared<AudioFileProperties>(
       PathConfig{
