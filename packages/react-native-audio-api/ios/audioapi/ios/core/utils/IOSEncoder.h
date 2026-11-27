@@ -35,6 +35,8 @@ class IOSEncoder : public AudioEncoder {
   /// Builds the input format, converter and conversion buffers for an already open file.
   Result<NoneType, std::string> prepareConversionPipeline(const StreamFormat &inputFormat);
   void releaseConversionPipeline();
+  /// Writes the frames the converter still holds back; the converter takes no input after it.
+  Result<NoneType, std::string> drainConverter();
 
   std::unique_ptr<IOSEncoderState> state_;
 };

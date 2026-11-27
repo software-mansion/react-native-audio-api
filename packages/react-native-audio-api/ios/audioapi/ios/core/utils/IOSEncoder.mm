@@ -260,8 +260,29 @@ OpenEncoderResult IOSEncoder::reprepareInput(const StreamFormat &inputFormat)
       return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
     }
 
+    // The converter takes remixed input, already in the file's channel count, so a channel-only change
+    // keeps it and only the remixer is rebuilt.
+    if (inputFormat.layout.sampleRate == state_->inputFormat.sampleRate &&
+        inputFormat.maxFramesPerBuffer == state_->maxInputFrames) {
+      if (inputFormat.layout.channelCount > MAX_CHANNEL_COUNT) {
+        return Err("Channel count exceeds MAX_CHANNEL_COUNT");
+      }
+      inputFormat_ = inputFormat;
+      state_->remixer = ChannelRemixer(
+          inputFormat.layout.channelCount,
+          settings_.fileLayout.channelCount,
+          std::max<size_t>(inputFormat.maxFramesPerBuffer, 1),
+          inputFormat.layout.sampleRate);
+      return Ok(filePath_);
+    }
+
     // The file's settings come from the encoder settings, not the input, so it stays open and the recording
-    // is not split; only the converter, which is built for the input, is rebuilt.
+    // is not split; only the converter, which is built for the input, is rebuilt. Replacing it would drop
+    // the frames it still holds back.
+    auto drainResult = drainConverter();
+    if (drainResult.is_err()) {
+      return Err(drainResult.unwrap_err());
+    }
     releaseConversionPipeline();
 
     auto pipelineResult = prepareConversionPipeline(inputFormat);
@@ -312,7 +333,9 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
     }
     state_->converter.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     state_->converter.sampleRateConverterQuality = AVAudioQualityMax;
-    state_->converter.primeMethod = AVAudioConverterPrimeMethod_None;
+    // Normal assumes silence before the first frame, so output starts with the input instead of a
+    // latency's worth of zeros; drainConverter() then flushes the matching tail.
+    state_->converter.primeMethod = AVAudioConverterPrimeMethod_Normal;
 
     size_t outputCapacity = std::max(
         static_cast<float>(inputFormat.maxFramesPerBuffer),
@@ -327,6 +350,44 @@ Result<NoneType, std::string> IOSEncoder::prepareConversionPipeline(const Stream
     }
 
     return Ok(None);
+  }
+}
+
+Result<NoneType, std::string> IOSEncoder::drainConverter()
+{
+  if (state_->converter == nil) {
+    return Ok(None);
+  }
+  AVAudioConverterInputBlock endOfStream = ^AVAudioBuffer *_Nullable(
+      AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+  {
+    *outStatus = AVAudioConverterInputStatus_EndOfStream;
+    return nil;
+  };
+
+  while (true) {
+    NSError *error = nil;
+    const AVAudioConverterOutputStatus status =
+        [state_->converter convertToBuffer:state_->converterOutputBuffer
+                                     error:&error
+                        withInputFromBlock:endOfStream];
+    if (status == AVAudioConverterOutputStatus_Error || error != nil) {
+      return Err(
+          std::string("Error draining the audio converter: ") +
+          [[error debugDescription] UTF8String]);
+    }
+    if (state_->converterOutputBuffer.frameLength == 0) {
+      return Ok(None);
+    }
+    [state_->audioFile writeFromBuffer:state_->converterOutputBuffer error:&error];
+    if (error != nil) {
+      return Err(
+          std::string("Error writing audio data to file: ") +
+          [[error debugDescription] UTF8String]);
+    }
+    if (status != AVAudioConverterOutputStatus_HaveData) {
+      return Ok(None);
+    }
   }
 }
 
@@ -437,6 +498,8 @@ CloseEncoderResult IOSEncoder::close()
     }
     markClosed();
 
+    auto drainResult = drainConverter();
+
     // AVAudioFile finalizes the file on deallocation.
     state_->audioFile = nil;
     state_->converter = nil;
@@ -451,6 +514,9 @@ CloseEncoderResult IOSEncoder::close()
     state_->fileURL = nil;
     resetEncodedDuration();
 
+    if (drainResult.is_err()) {
+      return Err(drainResult.unwrap_err());
+    }
     return Ok(std::make_tuple(fileSizeMB, durationSeconds));
   }
 }

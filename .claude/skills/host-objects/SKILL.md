@@ -246,7 +246,7 @@ bool b        = args[0].asBool();
 std::string s = args[0].asString(runtime).utf8(runtime);
 ```
 
-`asX()` throws a `JSError` on a wrong type; `getX()` only `assert`s, so in release a wrong type reads garbage (and `getHostObject<T>` on the wrong object is undefined behaviour, while `asHostObject<T>` throws). Use `getX()` only right after an `isX()` check on the same value. Don't add `isX()` + `JSError` guards in front of `asX()`. Most existing HostObjects still use `getX()`.
+`asX()` throws on a wrong type, but not always the same exception: `asNumber()` / `asBool()` throw `jsi::JSINativeException`, `asString()` / `asObject()` throw `jsi::JSError`. A C++ `catch (const jsi::JSError &)` therefore misses the first two; JS sees an `Error` either way. `getX()` only `assert`s, so in release a wrong type reads garbage (and `getHostObject<T>` on the wrong object is undefined behaviour, while `asHostObject<T>` throws). Use `getX()` only right after an `isX()` check on the same value. Don't add `isX()` + `JSError` guards in front of `asX()`. Most existing HostObjects still use `getX()`.
 
 ### Optional arguments — check count first
 

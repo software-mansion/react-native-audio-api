@@ -186,6 +186,8 @@ audioapi::GB_IN_BYTES   // 1024^3.0
 
 Every encoder (iOS `IOSEncoder`, Android `AndroidEncoder`, common `OggOpusEncoder`) brings its input to the file's channel count through this, before any resampling: `ChannelRemixer(inputChannels, fileChannels, maxFrames, sampleRate)`, then `remix(channels, frames)` returns the file's channel pointers (the caller's own when the counts match). It applies `AudioBuffer::copy` speaker rules (quad and 5.1 mixed, LFE dropped, other counts discrete in order), so all file formats on both platforms get the same channels. Don't hand channel mapping to a platform converter (`AVAudioConverter.channelMap`, discrete layouts): it differs per platform and dropped the right channel on stereo → mono.
 
+Because the remix comes first, the rate converter after it always runs on the file's channel count. A channel-only input change therefore keeps the converter and rebuilds just the remixer. A rate change, or `close()`, must drain the converter first. r8brain holds back a group delay's worth of output: push silence until the output reaches `inputFrames × outRate / inRate` (`drainResampler` in `OggOpusEncoder` / `AndroidEncoder`). `AVAudioConverter` needs `primeMethod = Normal` (`None` starts every converter with about 3 ms of zeros) and an `EndOfStream` input pass (`IOSEncoder::drainConverter`). Without a drain, `encodeAudioData` with many short buffers lost nearly all of its audio.
+
 ## `common/cpp/audioapi/core/utils/` — Node and context utilities
 
 ### `Constants.h` — global audio constants

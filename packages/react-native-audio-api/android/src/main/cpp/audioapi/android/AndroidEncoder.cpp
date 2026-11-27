@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -788,6 +789,7 @@ class AdtsBackend : public MediaCodecBackend {
 struct AndroidEncoder::ConversionState {
   ConversionState(const AudioLayout &input, const AudioLayout &output, size_t maxInputFrames)
       : maxInputFrames(maxInputFrames),
+        inputSampleRate(input.sampleRate),
         remixer(input.channelCount, output.channelCount, maxInputFrames, input.sampleRate) {
     if (input.sampleRate != output.sampleRate) {
       resampler = std::make_unique<r8b::MultiChannelResampler>(
@@ -796,14 +798,21 @@ struct AndroidEncoder::ConversionState {
           static_cast<size_t>(std::max(1, resampler->getMaxOutLen())),
           output.channelCount,
           output.sampleRate);
+      silence = std::make_unique<AudioBuffer>(
+          r8b::DRAIN_STEP_FRAMES, output.channelCount, input.sampleRate);
     }
   }
 
   size_t maxInputFrames;
+  float inputSampleRate;
   ChannelRemixer remixer;
   // Rate conversion only.
   std::unique_ptr<r8b::MultiChannelResampler> resampler;
   std::unique_ptr<AudioBuffer> resampled;
+  /// Input-rate zeros pushed through the resampler to flush its tail.
+  std::unique_ptr<AudioBuffer> silence;
+  int64_t resamplerInputFrames = 0;
+  int64_t resamplerOutputFrames = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -883,7 +892,6 @@ OpenEncoderResult AndroidEncoder::reprepareInput(const StreamFormat &inputFormat
     return Err("Invalid input format: sampleRate and channelCount must be greater than 0");
   }
 
-  // The frames the old resampler still holds, at most its group delay, are dropped with it.
   auto conversionResult = prepareConversion(inputFormat);
   if (conversionResult.is_err()) {
     return Err(conversionResult.unwrap_err());
@@ -894,17 +902,65 @@ OpenEncoderResult AndroidEncoder::reprepareInput(const StreamFormat &inputFormat
 
 Result<NoneType, std::string> AndroidEncoder::prepareConversion(const StreamFormat &inputFormat) {
   const AudioLayout &inputLayout = inputFormat.layout;
-  if (inputLayout == outputLayout_) {
-    conversion_.reset();
-    return Ok(None);
-  }
   if (inputLayout.channelCount > MAX_CHANNEL_COUNT ||
       outputLayout_.channelCount > MAX_CHANNEL_COUNT) {
     return Err("Channel count exceeds MAX_CHANNEL_COUNT");
   }
+  const size_t maxInputFrames = std::max<size_t>(inputFormat.maxFramesPerBuffer, 1);
 
-  conversion_ = std::make_unique<ConversionState>(
-      inputLayout, outputLayout_, std::max<size_t>(inputFormat.maxFramesPerBuffer, 1));
+  // The resampler runs after the remix, on output channels, so a channel-only change keeps it.
+  if (conversion_ != nullptr && conversion_->resampler != nullptr &&
+      conversion_->inputSampleRate == inputLayout.sampleRate) {
+    conversion_->maxInputFrames = maxInputFrames;
+    conversion_->remixer = ChannelRemixer(
+        inputLayout.channelCount,
+        outputLayout_.channelCount,
+        maxInputFrames,
+        inputLayout.sampleRate);
+    return Ok(None);
+  }
+
+  // Replacing the resampler would drop the group delay it still holds back.
+  auto drainResult = drainResampler();
+  if (drainResult.is_err()) {
+    return drainResult;
+  }
+
+  if (inputLayout == outputLayout_) {
+    conversion_.reset();
+    return Ok(None);
+  }
+  conversion_ = std::make_unique<ConversionState>(inputLayout, outputLayout_, maxInputFrames);
+  return Ok(None);
+}
+
+/// r8brain compensates its latency by holding back a group delay's worth of output, so the
+/// last input frames only come out once silence is pushed after them.
+Result<NoneType, std::string> AndroidEncoder::drainResampler() {
+  if (conversion_ == nullptr || conversion_->resampler == nullptr) {
+    return Ok(None);
+  }
+  ConversionState &state = *conversion_;
+  const auto expectedOutputFrames = static_cast<int64_t>(std::llround(
+      static_cast<double>(state.resamplerInputFrames) * outputLayout_.sampleRate /
+      state.inputSampleRate));
+
+  for (int step = 0;
+       step < r8b::DRAIN_MAX_STEPS && state.resamplerOutputFrames < expectedOutputFrames;
+       ++step) {
+    const int produced =
+        state.resampler->process(*state.silence, r8b::DRAIN_STEP_FRAMES, *state.resampled);
+    if (produced <= 0) {
+      continue;
+    }
+    const auto take = static_cast<int>(
+        std::min<int64_t>(produced, expectedOutputFrames - state.resamplerOutputFrames));
+    state.resamplerOutputFrames += produced;
+    std::string err = backend_->encode(*state.resampled, take);
+    if (!err.empty()) {
+      return Err(err);
+    }
+  }
   return Ok(None);
 }
 
@@ -927,9 +983,11 @@ std::string AndroidEncoder::encodeConverted(const AudioBuffer &input, int numFra
     const int produced =
         state.resampler->process(remixed, static_cast<size_t>(consumed), chunk, *state.resampled);
     consumed += chunk;
+    state.resamplerInputFrames += chunk;
     if (produced <= 0) {
       continue;
     }
+    state.resamplerOutputFrames += produced;
     std::string err = backend_->encode(*state.resampled, produced);
     if (!err.empty()) {
       return err;
@@ -964,7 +1022,11 @@ CloseEncoderResult AndroidEncoder::close() {
   }
   markClosed();
 
+  auto drainResult = drainResampler();
   std::string err = backend_->close();
+  if (drainResult.is_err()) {
+    err = drainResult.unwrap_err();
+  }
   const size_t sizeBytes = backend_->getFileSizeBytes();
   const double durationSeconds = getEncodedDurationSeconds();
   backend_.reset();
