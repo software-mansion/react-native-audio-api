@@ -206,6 +206,34 @@ static AudioEngine *_sharedInstance = nil;
   });
 }
 
+/// Deinterleaved float in the player's channel order (`DSPAudioBuffer`'s speaker layouts). Above 2
+/// channels the format needs a layout: the plain initializer returns nil there.
+static AVAudioFormat *sourceNodeFormat(double sampleRate, AVAudioChannelCount channelCount)
+{
+  if (channelCount <= 2) {
+    return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate
+                                                          channels:channelCount];
+  }
+
+  AudioChannelLayoutTag layoutTag = kAudioChannelLayoutTag_DiscreteInOrder | channelCount;
+  switch (channelCount) {
+    case 4: // L R SL SR
+      layoutTag = kAudioChannelLayoutTag_Quadraphonic;
+      break;
+    case 5: // L R C SL SR
+      layoutTag = kAudioChannelLayoutTag_MPEG_5_0_A;
+      break;
+    case 6: // L R C LFE SL SR
+      layoutTag = kAudioChannelLayoutTag_MPEG_5_1_A;
+      break;
+    default:
+      break;
+  }
+
+  AVAudioChannelLayout *layout = [AVAudioChannelLayout layoutWithLayoutTag:layoutTag];
+  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate channelLayout:layout];
+}
+
 - (void)materializeSourceNodeWithId:(NSString *)sourceNodeId
 {
   AudioEngineSourceRegistration *registration = self.sourceRegistrations[sourceNodeId];
@@ -214,9 +242,7 @@ static AudioEngine *_sharedInstance = nil;
     return;
   }
 
-  AVAudioFormat *format =
-      [[AVAudioFormat alloc] initStandardFormatWithSampleRate:registration.sampleRate
-                                                     channels:registration.channelCount];
+  AVAudioFormat *format = sourceNodeFormat(registration.sampleRate, registration.channelCount);
   AVAudioSourceNode *sourceNode =
       [[AVAudioSourceNode alloc] initWithFormat:format renderBlock:registration.renderBlock];
 
