@@ -276,9 +276,10 @@ Tests compile the package's own `common/cpp` sources. react-native's headers com
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")  # no JSI in tests
 list(APPEND RNAUDIOAPI_SRC ".../HostObjects/utils/JsEnumParser.cpp")           # the one exception
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/AudioThreadGuard\\.cpp$")         # compiled into each test executable
-list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                        # needs real audio I/O
 list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FfmpegDecoder.cpp")                       # FFmpeg disabled in tests
 ```
+
+`AudioContext.cpp` is compiled, but no platform player is: `test/src/core/AudioContextTest.cpp` defines a `createPlatformAudioPlayer()` that returns `nullptr`, so a test `AudioContext` can be built and destroyed but never started.
 
 `tests_tsan` / `tests_asan` do not reuse those objects. `add_sanitized_tests` compiles a separate `rnaudioapi_<sanitizer>` and `rnaudioapi_libs_<sanitizer>` with the same `-fsanitize=` flags as the executable. Sanitizer instrumentation is per translation unit.
 

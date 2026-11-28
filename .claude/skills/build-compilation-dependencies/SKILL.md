@@ -316,7 +316,7 @@ Script: [`scripts/validate.sh`](../../../scripts/validate.sh) at monorepo root.
 | Prebuilt libs (Opus, FFmpeg, etc.) | **No** | `--android` / `--ios` (via `download-prebuilt-binaries.sh`) |
 | TurboModule codegen, worklets linking | **No** | `--android` / `--ios` |
 
-The C++ test build excludes HostObjects, `AudioContext.cpp`, `FfmpegDecoder.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `pnpm test` alone does not prove native layers compile.
+The C++ test build excludes HostObjects, the platform audio players, `FfmpegDecoder.cpp`, and worklet nodes — see [C++ Tests](#c-tests-standalone-build) below. Passing `pnpm test` alone does not prove native layers compile.
 
 ### Shared prebuild phase (before native tiers)
 

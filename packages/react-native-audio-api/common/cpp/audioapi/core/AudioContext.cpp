@@ -25,7 +25,8 @@ AudioContext::AudioContext(
 }
 
 AudioContext::~AudioContext() {
-  if (getState() != ContextState::CLOSED) {
+  // No player means construction failed before `initialize()`: no driver was ever started.
+  if (audioPlayer_ != nullptr && getState() != ContextState::CLOSED) {
     std::scoped_lock lock(driverMutex_);
     stopDriver();
   }
@@ -164,7 +165,7 @@ void AudioContext::waitForRenderQuiescence() const {
 }
 
 bool AudioContext::isDriverRunning() const {
-  return audioPlayer_->isRunning();
+  return audioPlayer_ != nullptr && audioPlayer_->isRunning();
 }
 
 double AudioContext::getBaseLatency() const {
