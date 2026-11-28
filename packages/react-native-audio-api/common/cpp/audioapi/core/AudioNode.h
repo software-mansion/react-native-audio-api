@@ -217,7 +217,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   const int numberOfInputs_ = 1;
   const int numberOfOutputs_ = 1;
   /// @brief The `channelCount` attribute (input mixing width). Host thread only.
-  int channelCount_ = 2;
+  int channelCount_ = DEFAULT_CHANNEL_COUNT;
   /// @brief Number of channels this node emits; the width of `audioBuffer_`
   ///
   /// Atomic because it is read on the JS thread during channel negotiation
@@ -225,7 +225,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// RecorderAdapter write it from other threads once they learn their
   /// channel count. Every other writer is the host thread, which must
   /// renegotiate after a change.
-  std::atomic<int> outputChannelNumber_ = 2;
+  std::atomic<int> outputChannelNumber_ = DEFAULT_CHANNEL_COUNT;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
   const bool requiresTailProcessing_;

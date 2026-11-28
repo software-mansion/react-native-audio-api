@@ -20,7 +20,7 @@ NodeAudioPlayer::~NodeAudioPlayer() {
 void NodeAudioPlayer::terminateWorker() {
   shouldStop_.store(true, std::memory_order_release);
   isPaused_.store(true, std::memory_order_release);
-  isRunning_.store(false, std::memory_order_release);
+  isRunning_->store(false, std::memory_order_release);
 
   if (worker_.joinable()) {
     worker_.join();
@@ -37,7 +37,7 @@ bool NodeAudioPlayer::start() {
   shouldStop_.store(false, std::memory_order_release);
   markStarted();
   isPaused_.store(false, std::memory_order_release);
-  isRunning_.store(true, std::memory_order_release);
+  isRunning_->store(true, std::memory_order_release);
   isInitialized_.store(true, std::memory_order_release);
 
   worker_ = std::thread(&NodeAudioPlayer::run, this);
@@ -51,7 +51,7 @@ void NodeAudioPlayer::stop() {
 
   shouldStop_.store(true, std::memory_order_release);
   isPaused_.store(true, std::memory_order_release);
-  isRunning_.store(false, std::memory_order_release);
+  isRunning_->store(false, std::memory_order_release);
 
   if (!worker_.joinable()) {
     return;
@@ -73,13 +73,13 @@ bool NodeAudioPlayer::resume() {
     return false;
   }
 
-  if (isRunning_.load(std::memory_order_acquire)) {
+  if (isRunning_->load(std::memory_order_acquire)) {
     return true;
   }
 
   markStarted();
   isPaused_.store(false, std::memory_order_release);
-  isRunning_.store(true, std::memory_order_release);
+  isRunning_->store(true, std::memory_order_release);
   return true;
 }
 
@@ -89,7 +89,7 @@ void NodeAudioPlayer::suspend() {
   }
 
   isPaused_.store(true, std::memory_order_release);
-  isRunning_.store(false, std::memory_order_release);
+  isRunning_->store(false, std::memory_order_release);
 }
 
 void NodeAudioPlayer::cleanup() {
@@ -103,7 +103,7 @@ void NodeAudioPlayer::cleanup() {
 }
 
 bool NodeAudioPlayer::isRunning() const {
-  return isRunning_.load(std::memory_order_acquire);
+  return isRunning_->load(std::memory_order_acquire);
 }
 
 double NodeAudioPlayer::getOutputLatency() const {
@@ -144,9 +144,9 @@ void NodeAudioPlayer::run() {
     // Before the render, so `renderedFrames_` is still the quantum's first frame.
     publishOutputAnchor(
         {.contextFrame = renderedFrames_,
-         .hostTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           nextQuantumAt.time_since_epoch())
-                           .count(),
+         .hostTimeNs =
+             std::chrono::duration_cast<std::chrono::nanoseconds>(nextQuantumAt.time_since_epoch())
+                 .count(),
          .isValid = true});
 
     renderBuffer_->zero();

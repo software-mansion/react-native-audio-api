@@ -72,5 +72,6 @@
 - (double)outputLatencySeconds;
 - (double)inputLatencySeconds;
 - (double)ioBufferDurationSeconds;
+- (NSInteger)outputChannelCount;
 
 @end

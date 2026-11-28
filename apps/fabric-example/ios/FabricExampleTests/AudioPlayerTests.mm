@@ -5,7 +5,6 @@
 
 #import <audioapi/core/AudioPlayer.h>
 #import <audioapi/core/utils/Constants.h>
-#import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/core/NativeAudioRecorder.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
@@ -25,9 +24,17 @@ using namespace audioapi;
 
 namespace audioapi {
 
+// Mirrors `IOSAudioPlayer.h` member for member, with the private section made protected so
+// `TestableIOSAudioPlayer` can reach it. Keep the data members in the same order.
 class IOSAudioPlayer : public AudioPlayer {
  public:
-  using AudioPlayer::AudioPlayer;
+  IOSAudioPlayer(
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+      float sampleRate,
+      std::atomic<uint32_t> &currentRenders,
+      std::weak_ptr<AudioContext> context,
+      std::mutex *driverMutex,
+      AudioContextLatencyHint latencyHint);
   ~IOSAudioPlayer() override;
 
   bool start() override;
@@ -44,22 +51,16 @@ class IOSAudioPlayer : public AudioPlayer {
   [[nodiscard]] std::int64_t presentationClockNowNs() const override;
 
  protected:
-  NativeAudioPlayer *createNativePlayer();
-
-  NativeAudioPlayer *audioPlayer_ = createNativePlayer();
-  std::atomic<bool> flushOverflowNextPull_{false};
-  int pendingSavedCount_{0};
-  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, channelCount_, sampleRate_};
+  int preferredIOBufferFrames_;
+  AVAudioSourceNodeRenderBlock renderBlock_;
+  OnOutputRecoveryFailedBlock onStreamFail_;
+  NSString *sourceNodeId_;
+  std::atomic<bool> flushOverflowNextPull_;
+  int pendingSavedCount_;
+  std::unique_ptr<DSPAudioBuffer> pendingSaved_;
 };
 
 } // namespace audioapi
-
-@interface NativeAudioPlayer (TestingPrivate)
-
-- (void)attachSourceNodeIfNeeded:(AudioEngine *)audioEngine;
-- (void)detachSourceNodeIfAttached:(AudioEngine *)audioEngine;
-
-@end
 
 @interface FakePlayerAudioSessionManager : AudioSessionManager
 
@@ -67,6 +68,7 @@ class IOSAudioPlayer : public AudioPlayer {
 @property (nonatomic, strong) NSError *ensureActiveFailure;
 @property (nonatomic, assign) NSInteger ensureActiveCallCount;
 @property (nonatomic, assign) BOOL lastEnsureActiveForce;
+@property (nonatomic, assign) NSInteger fakeOutputChannelCount;
 
 @end
 
@@ -97,6 +99,11 @@ class IOSAudioPlayer : public AudioPlayer {
   }
 
   return self.ensureActiveResult;
+}
+
+- (NSInteger)outputChannelCount
+{
+  return self.fakeOutputChannelCount;
 }
 
 @end
@@ -196,70 +203,15 @@ class IOSAudioPlayer : public AudioPlayer {
 
 @end
 
-@interface FakeNativeAudioPlayer : NativeAudioPlayer
-
-@property (nonatomic, assign) BOOL startResult;
-@property (nonatomic, assign) BOOL resumeResult;
-@property (nonatomic, assign) NSInteger startCallCount;
-@property (nonatomic, assign) NSInteger stopCallCount;
-@property (nonatomic, assign) NSInteger resumeCallCount;
-@property (nonatomic, assign) NSInteger suspendCallCount;
-@property (nonatomic, assign) NSInteger cleanupCallCount;
-
-@end
-
-@implementation FakeNativeAudioPlayer
-
-- (instancetype)init
-{
-  if (self = [super init]) {
-    self.startResult = YES;
-    self.resumeResult = YES;
-  }
-
-  return self;
-}
-
-- (bool)start
-{
-  self.startCallCount += 1;
-  return self.startResult;
-}
-
-- (void)stop
-{
-  self.stopCallCount += 1;
-}
-
-- (bool)resume
-{
-  self.resumeCallCount += 1;
-  return self.resumeResult;
-}
-
-- (void)suspend
-{
-  self.suspendCallCount += 1;
-}
-
-- (void)cleanup
-{
-  self.cleanupCallCount += 1;
-}
-
-@end
-
 class TestableIOSAudioPlayer : public IOSAudioPlayer {
  public:
   TestableIOSAudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
-      float sampleRate,
-      int channelCount)
+      float sampleRate)
       : currentRendersStorage_(0),
         IOSAudioPlayer(
             renderAudio,
             sampleRate,
-            channelCount,
             currentRendersStorage_,
             std::weak_ptr<AudioContext>{},
             nullptr,
@@ -267,26 +219,24 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
   {
   }
 
-  NativeAudioPlayer *replaceAudioPlayer(NativeAudioPlayer *audioPlayer)
+  AVAudioSourceNodeRenderBlock renderBlock() const
   {
-    NativeAudioPlayer *previous = audioPlayer_;
-    audioPlayer_ = audioPlayer;
-    return previous;
+    return renderBlock_;
   }
 
-  NativeAudioPlayer *getAudioPlayer() const
+  NSString *sourceNodeId() const
   {
-    return audioPlayer_;
+    return sourceNodeId_;
   }
 
-  std::shared_ptr<DSPAudioBuffer> getAudioBuffer() const
+  DSPAudioBuffer *getAudioBuffer() const
   {
-    return renderBuffer_;
+    return renderBuffer_.get();
   }
 
   void setRunning(bool isRunning)
   {
-    isRunning_.store(isRunning, std::memory_order_release);
+    isRunning_->store(isRunning, std::memory_order_release);
   }
 
  private:
@@ -320,243 +270,10 @@ struct TestAudioOutput {
   std::vector<std::vector<float>> channels;
 };
 
-@interface NativeAudioPlayerTests : XCTestCase
-
-@property (nonatomic, strong) FakePlayerAudioEngine *audioEngine;
-@property (nonatomic, strong) FakePlayerAudioSessionManager *sessionManager;
-
-@end
-
-@implementation NativeAudioPlayerTests
-
-- (void)setUp
+static std::unique_ptr<TestableIOSAudioPlayer> makePlayer()
 {
-  [super setUp];
-
-  self.audioEngine = [[FakePlayerAudioEngine alloc] init];
-  self.sessionManager = [[FakePlayerAudioSessionManager alloc] init];
-  self.audioEngine.sessionManager = self.sessionManager;
+  return std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000);
 }
-
-- (void)tearDown
-{
-  [self.audioEngine cleanup];
-  [self.sessionManager cleanup];
-  self.audioEngine = nil;
-  self.sessionManager = nil;
-
-  [super tearDown];
-}
-
-- (NativeAudioPlayer *)createPlayerWithRenderCallCount:(NSInteger *)renderCallCount
-{
-  return [[NativeAudioPlayer alloc]
-          initWithRenderAudio:^(
-              AudioBufferList *outputBuffer, int numFrames, const AudioTimeStamp *) {
-            if (renderCallCount != nullptr) {
-              *renderCallCount += 1;
-            }
-          }
-                   sampleRate:48000
-                 channelCount:2
-      preferredIOBufferFrames:RENDER_QUANTUM_SIZE];
-}
-
-- (void)assertStartLikeOperationRunsGraphForSelector:(SEL)selector
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL);
-  NativeAudioPlayerBoolMethod operation =
-      (NativeAudioPlayerBoolMethod)[player methodForSelector:selector];
-
-  XCTAssertTrue(operation(player, selector));
-  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
-  XCTAssertFalse(self.sessionManager.lastEnsureActiveForce);
-  XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
-  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
-  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertNotNil(self.audioEngine.lastAttachedRenderBlock);
-  XCTAssertEqualWithAccuracy(self.audioEngine.lastAttachedSampleRate, 48000.0f, 0.001f);
-  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 2U);
-  XCTAssertEqualObjects(player.sourceNodeId, self.audioEngine.returnedSourceNodeId);
-}
-
-- (void)assertStopLikeOperationDetachesSourceForSelector:(SEL)selector
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  player.sourceNodeId = @"attached-source-node";
-  typedef void (*NativeAudioPlayerVoidMethod)(id, SEL);
-  NativeAudioPlayerVoidMethod operation =
-      (NativeAudioPlayerVoidMethod)[player methodForSelector:selector];
-
-  operation(player, selector);
-
-  XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 1);
-  XCTAssertEqualObjects(self.audioEngine.lastDetachedSourceNodeId, @"attached-source-node");
-  XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
-  XCTAssertNil(player.sourceNodeId);
-}
-
-- (void)testRenderBlockReturnsErrorWhenBufferCountDoesNotMatch
-{
-  NSInteger renderCallCount = 0;
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:&renderCallCount];
-  TestAudioOutput output(1, 64, 1.0f);
-  BOOL isSilence = NO;
-  AudioTimeStamp timestamp = {};
-
-  OSStatus status = player.renderBlock(&isSilence, &timestamp, 64, output.bufferList());
-
-  XCTAssertEqual(status, kAudioServicesBadPropertySizeError);
-  XCTAssertEqual(renderCallCount, 0);
-}
-
-- (void)testRenderBlockInvokesRenderAudioWhenBufferCountMatches
-{
-  __block NSInteger renderCallCount = 0;
-  __block AVAudioFrameCount renderedFrameCount = 0;
-  __block AudioBufferList *renderedBufferList = nullptr;
-  __block const AudioTimeStamp *renderedTimestamp = nullptr;
-  NativeAudioPlayer *player = [[NativeAudioPlayer alloc]
-          initWithRenderAudio:^(
-              AudioBufferList *outputBuffer, int numFrames, const AudioTimeStamp *timestamp) {
-            renderCallCount += 1;
-            renderedFrameCount = static_cast<AVAudioFrameCount>(numFrames);
-            renderedBufferList = outputBuffer;
-            renderedTimestamp = timestamp;
-          }
-                   sampleRate:48000
-                 channelCount:2
-      preferredIOBufferFrames:RENDER_QUANTUM_SIZE];
-  TestAudioOutput output(2, 64, 0.0f);
-  BOOL isSilence = NO;
-  AudioTimeStamp timestamp = {};
-
-  OSStatus status = player.renderBlock(&isSilence, &timestamp, 64, output.bufferList());
-
-  XCTAssertEqual(status, kAudioServicesNoError);
-  XCTAssertEqual(renderCallCount, 1);
-  XCTAssertEqual(renderedFrameCount, 64U);
-  XCTAssertEqual(renderedBufferList, output.bufferList());
-  XCTAssertEqual(renderedTimestamp, &timestamp);
-}
-
-- (void)testStartAndResumeActivateSessionAttachSourceAndStartEngine
-{
-  [self assertStartLikeOperationRunsGraphForSelector:@selector(start)];
-
-  self.audioEngine.stopIfNecessaryCallCount = 0;
-  self.audioEngine.attachSourceNodeCallCount = 0;
-  self.audioEngine.startIfNecessaryCallCount = 0;
-  self.sessionManager.ensureActiveCallCount = 0;
-
-  [self assertStartLikeOperationRunsGraphForSelector:@selector(resume)];
-}
-
-- (void)testStartReturnsFalseWhenSessionActivationFails
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  self.sessionManager.ensureActiveResult = NO;
-  self.sessionManager.ensureActiveFailure = [NSError errorWithDomain:@"AudioPlayerTests"
-                                                                code:1
-                                                            userInfo:nil];
-
-  XCTAssertFalse([player start]);
-  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
-  XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 0);
-  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 0);
-  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 0);
-  XCTAssertNil(player.sourceNodeId);
-}
-
-- (void)assertFailedEngineStartDetachesSourceForSelector:(SEL)selector
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  self.audioEngine.startIfNecessaryResult = NO;
-  typedef BOOL (*NativeAudioPlayerBoolMethod)(id, SEL);
-  NativeAudioPlayerBoolMethod operation =
-      (NativeAudioPlayerBoolMethod)[player methodForSelector:selector];
-
-  XCTAssertFalse(operation(player, selector));
-  XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
-  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
-  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
-  XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 1);
-  XCTAssertEqualObjects(
-      self.audioEngine.lastDetachedSourceNodeId, self.audioEngine.returnedSourceNodeId);
-  XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
-  XCTAssertNil(player.sourceNodeId);
-  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
-}
-
-- (void)testStartAndResumeDetachSourceWhenEngineFailsToStart
-{
-  [self assertFailedEngineStartDetachesSourceForSelector:@selector(start)];
-
-  self.audioEngine.stopIfNecessaryCallCount = 0;
-  self.audioEngine.attachSourceNodeCallCount = 0;
-  self.audioEngine.startIfNecessaryCallCount = 0;
-  self.audioEngine.detachSourceNodeCallCount = 0;
-  self.audioEngine.stopIfPossibleCallCount = 0;
-  self.audioEngine.lastDetachedSourceNodeId = nil;
-  self.sessionManager.ensureActiveCallCount = 0;
-
-  [self assertFailedEngineStartDetachesSourceForSelector:@selector(resume)];
-}
-
-- (void)testFailedPlayerStartLeavesNoSourceForFollowingRecorderStart
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  self.audioEngine.startIfNecessaryResult = NO;
-
-  XCTAssertFalse([player start]);
-  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
-  XCTAssertNil(player.sourceNodeId);
-
-  self.audioEngine.startIfNecessaryResult = YES;
-  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
-       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
-      voiceProcessingEnabled:NO];
-
-  XCTAssertTrue([recorder start:nil]);
-  XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
-  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
-  XCTAssertEqual(self.audioEngine.sourceNodeIdsPresentAtLastStart.count, 0UL);
-}
-
-- (void)testAttachSourceNodeIfNeededIsIdempotent
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-  player.sourceNodeId = @"existing-source-node";
-
-  [player attachSourceNodeIfNeeded:self.audioEngine];
-
-  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 0);
-  XCTAssertEqualObjects(player.sourceNodeId, @"existing-source-node");
-}
-
-- (void)testStopAndSuspendDetachAttachedSourceAndStopIfPossible
-{
-  [self assertStopLikeOperationDetachesSourceForSelector:@selector(stop)];
-
-  self.audioEngine.detachSourceNodeCallCount = 0;
-  self.audioEngine.stopIfPossibleCallCount = 0;
-  self.audioEngine.lastDetachedSourceNodeId = nil;
-
-  [self assertStopLikeOperationDetachesSourceForSelector:@selector(suspend)];
-}
-
-- (void)testDetachSourceNodeIfAttachedNoOpsWhenNotAttached
-{
-  NativeAudioPlayer *player = [self createPlayerWithRenderCallCount:nullptr];
-
-  [player detachSourceNodeIfAttached:self.audioEngine];
-
-  XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 0);
-  XCTAssertNil(player.sourceNodeId);
-}
-
-@end
 
 @interface IOSAudioPlayerTests : XCTestCase
 
@@ -586,91 +303,270 @@ struct TestAudioOutput {
   [super tearDown];
 }
 
-- (void)testStartAndResumeReturnNativeResultAndUpdateRunningState
+- (void)resetEngineCallCounts
 {
-  auto assertOperationTracksRunning = [&](bool useResume) {
-    auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
-    FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
-    NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
-    [originalNative cleanup];
+  self.audioEngine.stopIfNecessaryCallCount = 0;
+  self.audioEngine.attachSourceNodeCallCount = 0;
+  self.audioEngine.startIfNecessaryCallCount = 0;
+  self.audioEngine.detachSourceNodeCallCount = 0;
+  self.audioEngine.stopIfPossibleCallCount = 0;
+  self.audioEngine.lastDetachedSourceNodeId = nil;
+  self.sessionManager.ensureActiveCallCount = 0;
+}
 
-    if (useResume) {
-      XCTAssertTrue(player->resume());
-      XCTAssertEqual(fakeNative.resumeCallCount, 1);
-    } else {
-      XCTAssertTrue(player->start());
-      XCTAssertEqual(fakeNative.startCallCount, 1);
-    }
+- (void)testRenderBlockReturnsErrorWhenBufferCountDoesNotMatch
+{
+  int renderCallCount = 0;
+  auto player = std::make_unique<TestableIOSAudioPlayer>(
+      [&renderCallCount](DSPAudioBuffer *, int) { renderCallCount += 1; }, 48000);
+  player->setRunning(true);
+  TestAudioOutput output(1, 64, 1.0f);
+  BOOL isSilence = NO;
+  AudioTimeStamp timestamp = {};
+
+  OSStatus status = player->renderBlock()(&isSilence, &timestamp, 64, output.bufferList());
+
+  XCTAssertEqual(status, kAudioServicesBadPropertySizeError);
+  XCTAssertEqual(renderCallCount, 0);
+}
+
+- (void)testStartAndResumeActivateSessionAttachSourceAndStartEngine
+{
+  auto assertStartLikeOperation = [&](bool useResume) {
+    auto player = makePlayer();
+
+    XCTAssertTrue(useResume ? player->resume() : player->start());
+    XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
+    XCTAssertFalse(self.sessionManager.lastEnsureActiveForce);
+    XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
+    XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
+    XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
+    XCTAssertNotNil(self.audioEngine.lastAttachedRenderBlock);
+    XCTAssertEqualWithAccuracy(self.audioEngine.lastAttachedSampleRate, 48000.0f, 0.001f);
+    XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 2U);
+    XCTAssertEqualObjects(player->sourceNodeId(), self.audioEngine.returnedSourceNodeId);
 
     self.audioEngine.fakeEngineRunning = YES;
     self.audioEngine.state = AudioEngineStateRunning;
     XCTAssertTrue(player->isRunning());
+
+    self.audioEngine.fakeEngineRunning = NO;
+    [self resetEngineCallCounts];
   };
 
-  assertOperationTracksRunning(false);
-  assertOperationTracksRunning(true);
+  assertStartLikeOperation(false);
+  assertStartLikeOperation(true);
+}
+
+- (void)testStartAttachesWithTheRouteOutputChannelCount
+{
+  auto player = makePlayer();
+  self.sessionManager.fakeOutputChannelCount = 6;
+
+  XCTAssertTrue(player->start());
+
+  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 6U);
+  XCTAssertEqual(player->getAudioBuffer()->getNumberOfChannels(), 6UL);
+}
+
+- (void)testStartFallsBackToStereoWhenTheRouteReportsNoChannels
+{
+  auto player = makePlayer();
+  self.sessionManager.fakeOutputChannelCount = 0;
+
+  XCTAssertTrue(player->start());
+
+  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 2U);
+  XCTAssertEqual(player->getAudioBuffer()->getNumberOfChannels(), 2UL);
+}
+
+- (void)testRestartAfterRouteChangeRendersTheNewChannelCount
+{
+  auto player = makePlayer();
+  self.sessionManager.fakeOutputChannelCount = 1;
+  XCTAssertTrue(player->start());
+  player->stop();
+
+  self.sessionManager.fakeOutputChannelCount = 8;
+  XCTAssertTrue(player->start());
+
+  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 8U);
+  TestAudioOutput output(8, 128, -1.0f);
+  BOOL isSilence = NO;
+  AudioTimeStamp timestamp = {};
+  XCTAssertEqual(
+      player->renderBlock()(&isSilence, &timestamp, 128, output.bufferList()),
+      kAudioServicesNoError);
+}
+
+- (void)testStartReturnsFalseWhenSessionActivationFails
+{
+  auto player = makePlayer();
+  self.sessionManager.ensureActiveResult = NO;
+  self.sessionManager.ensureActiveFailure = [NSError errorWithDomain:@"AudioPlayerTests"
+                                                                code:1
+                                                            userInfo:nil];
+
+  XCTAssertFalse(player->start());
+  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 1);
+  XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 0);
+  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 0);
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 0);
+  XCTAssertNil(player->sourceNodeId());
+}
+
+- (void)testStartAndResumeDetachSourceWhenEngineFailsToStart
+{
+  auto assertFailedStart = [&](bool useResume) {
+    auto player = makePlayer();
+    self.audioEngine.startIfNecessaryResult = NO;
+
+    XCTAssertFalse(useResume ? player->resume() : player->start());
+    XCTAssertEqual(self.audioEngine.stopIfNecessaryCallCount, 1);
+    XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
+    XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 1);
+    XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 1);
+    XCTAssertEqualObjects(
+        self.audioEngine.lastDetachedSourceNodeId, self.audioEngine.returnedSourceNodeId);
+    XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
+    XCTAssertNil(player->sourceNodeId());
+    XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
+
+    player.reset();
+    [self resetEngineCallCounts];
+  };
+
+  assertFailedStart(false);
+  assertFailedStart(true);
+}
+
+- (void)testFailedPlayerStartLeavesNoSourceForFollowingRecorderStart
+{
+  auto player = makePlayer();
+  self.audioEngine.startIfNecessaryResult = NO;
+
+  XCTAssertFalse(player->start());
+  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
+  XCTAssertNil(player->sourceNodeId());
+
+  self.audioEngine.startIfNecessaryResult = YES;
+  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
+       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
+      voiceProcessingEnabled:NO];
+
+  XCTAssertTrue([recorder start:nil]);
+  XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
+  XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
+  XCTAssertEqual(self.audioEngine.sourceNodeIdsPresentAtLastStart.count, 0UL);
+}
+
+- (void)testStartDoesNotReattachAnAttachedSource
+{
+  auto player = makePlayer();
+
+  // The engine is not reported running, so the second start goes past the running check.
+  XCTAssertTrue(player->start());
+  XCTAssertTrue(player->start());
+
+  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 1);
+  XCTAssertEqual(self.audioEngine.startIfNecessaryCallCount, 2);
+  XCTAssertEqualObjects(player->sourceNodeId(), self.audioEngine.returnedSourceNodeId);
 }
 
 - (void)testStartShortCircuitsWhenAlreadyRunning
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
-  FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
-  NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
-  [originalNative cleanup];
-
+  auto player = makePlayer();
   player->setRunning(true);
   self.audioEngine.fakeEngineRunning = YES;
   self.audioEngine.state = AudioEngineStateRunning;
 
   XCTAssertTrue(player->start());
-  XCTAssertEqual(fakeNative.startCallCount, 0);
+  XCTAssertEqual(self.sessionManager.ensureActiveCallCount, 0);
+  XCTAssertEqual(self.audioEngine.attachSourceNodeCallCount, 0);
 }
 
-- (void)testStopAndSuspendClearRunningStateAndForwardToNativePlayer
+- (void)testStopAndSuspendDetachSourceAndClearRunningState
 {
-  auto assertOperationStopsRunning = [&](bool useSuspend) {
-    auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
-    FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
-    NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
-    [originalNative cleanup];
-
-    player->setRunning(true);
+  auto assertStopLikeOperation = [&](bool useSuspend) {
+    auto player = makePlayer();
+    XCTAssertTrue(player->start());
     self.audioEngine.fakeEngineRunning = YES;
     self.audioEngine.state = AudioEngineStateRunning;
 
     if (useSuspend) {
       player->suspend();
-      XCTAssertEqual(fakeNative.suspendCallCount, 1);
     } else {
       player->stop();
-      XCTAssertEqual(fakeNative.stopCallCount, 1);
     }
 
+    XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 1);
+    XCTAssertEqualObjects(
+        self.audioEngine.lastDetachedSourceNodeId, self.audioEngine.returnedSourceNodeId);
+    XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
+    XCTAssertNil(player->sourceNodeId());
     XCTAssertFalse(player->isRunning());
+
+    player.reset();
+    self.audioEngine.fakeEngineRunning = NO;
+    [self resetEngineCallCounts];
   };
 
-  assertOperationStopsRunning(false);
-  assertOperationStopsRunning(true);
+  assertStopLikeOperation(false);
+  assertStopLikeOperation(true);
 }
 
-- (void)testCleanupStopsThenCleansUpAndClearsAudioBuffer
+- (void)testStopWithoutAttachedSourceDoesNotDetach
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
-  FakeNativeAudioPlayer *fakeNative = [[FakeNativeAudioPlayer alloc] init];
-  NativeAudioPlayer *originalNative = player->replaceAudioPlayer(fakeNative);
-  [originalNative cleanup];
+  auto player = makePlayer();
 
-  player->setRunning(true);
+  player->stop();
+
+  XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 0);
+  XCTAssertEqual(self.audioEngine.stopIfPossibleCallCount, 1);
+  XCTAssertNil(player->sourceNodeId());
+}
+
+- (void)testCleanupDetachesSourceAndClearsAudioBuffer
+{
+  auto player = makePlayer();
+  XCTAssertTrue(player->start());
+
   player->cleanup();
 
-  XCTAssertEqual(fakeNative.stopCallCount, 1);
-  XCTAssertEqual(fakeNative.cleanupCallCount, 1);
+  XCTAssertEqual(self.audioEngine.detachSourceNodeCallCount, 1);
+  XCTAssertNil(player->sourceNodeId());
   XCTAssertEqual(player->getAudioBuffer(), nullptr);
+}
+
+// The engine keeps the render block until the node is detached and may still call it after the
+// player is gone.
+- (void)testRenderBlockOutputsSilenceOnceThePlayerIsGone
+{
+  int renderCallCount = 0;
+  auto player = std::make_unique<TestableIOSAudioPlayer>(
+      [&renderCallCount](DSPAudioBuffer *, int) { renderCallCount += 1; }, 48000);
+  player->setRunning(true);
+  AVAudioSourceNodeRenderBlock renderBlock = player->renderBlock();
+  player.reset();
+
+  TestAudioOutput output(2, 64, 5.0f);
+  BOOL isSilence = NO;
+  AudioTimeStamp timestamp = {};
+
+  OSStatus status = renderBlock(&isSilence, &timestamp, 64, output.bufferList());
+
+  XCTAssertEqual(status, kAudioServicesNoError);
+  XCTAssertEqual(renderCallCount, 0);
+  for (int channel = 0; channel < 2; channel += 1) {
+    for (int frame = 0; frame < 64; frame += 1) {
+      XCTAssertEqualWithAccuracy(output.channels[channel][frame], 0.0f, 0.0001f);
+    }
+  }
 }
 
 - (void)testIsRunningRequiresInternalFlagEngineAndRunningState
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000);
 
   player->setRunning(false);
   self.audioEngine.fakeEngineRunning = YES;
@@ -705,16 +601,14 @@ struct TestAudioOutput {
 
         delta += 0.1f;
       },
-      48000,
-      2);
+      48000);
 
   player->setRunning(true);
   TestAudioOutput output(2, 300, -1.0f);
   BOOL isSilence = NO;
-  NativeAudioPlayer *nativePlayer = player->getAudioPlayer();
   AudioTimeStamp timestamp = {};
 
-  OSStatus status = nativePlayer.renderBlock(&isSilence, &timestamp, 300, output.bufferList());
+  OSStatus status = player->renderBlock()(&isSilence, &timestamp, 300, output.bufferList());
 
   XCTAssertEqual(status, kAudioServicesNoError);
   XCTAssertEqual(renderedFrameSizes.size(), 3UL);
@@ -740,7 +634,7 @@ struct TestAudioOutput {
 
 - (void)testOutputPresentationIsEmptyWithoutAValidHostTime
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000);
   player->setRunning(true);
   TestAudioOutput output(2, 300);
   BOOL isSilence = NO;
@@ -748,16 +642,15 @@ struct TestAudioOutput {
 
   XCTAssertFalse(player->getOutputPresentation().has_value());
 
-  player->getAudioPlayer().renderBlock(&isSilence, &timestamp, 300, output.bufferList());
+  player->renderBlock()(&isSilence, &timestamp, 300, output.bufferList());
 
   XCTAssertFalse(player->getOutputPresentation().has_value());
 }
 
 - (void)testOutputPresentationStartsAtTheBufferFirstFrameAcrossOverflow
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000);
   player->setRunning(true);
-  NativeAudioPlayer *nativePlayer = player->getAudioPlayer();
   BOOL isSilence = NO;
 
   // 300-frame buffers pull whole quanta, so each buffer starts with the previous one's leftover.
@@ -769,7 +662,7 @@ struct TestAudioOutput {
     timestamp.mFlags = kAudioTimeStampHostTimeValid;
     timestamp.mHostTime = mach_absolute_time();
 
-    nativePlayer.renderBlock(&isSilence, &timestamp, 300, output.bufferList());
+    player->renderBlock()(&isSilence, &timestamp, 300, output.bufferList());
 
     const auto presentation = player->getOutputPresentation();
     XCTAssertTrue(presentation.has_value());
@@ -783,7 +676,7 @@ struct TestAudioOutput {
 // however long the machine has slept since boot.
 - (void)testOutputPresentationStaysOnTheCallbackHostClock
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000);
   player->setRunning(true);
   TestAudioOutput output(2, 128);
   BOOL isSilence = NO;
@@ -791,7 +684,7 @@ struct TestAudioOutput {
   timestamp.mFlags = kAudioTimeStampHostTimeValid;
   timestamp.mHostTime = mach_absolute_time();
 
-  player->getAudioPlayer().renderBlock(&isSilence, &timestamp, 128, output.bufferList());
+  player->renderBlock()(&isSilence, &timestamp, 128, output.bufferList());
 
   mach_timebase_info_data_t timebase{};
   mach_timebase_info(&timebase);
@@ -806,7 +699,7 @@ struct TestAudioOutput {
 
 - (void)testPresentationClockIsMachUptime
 {
-  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000, 2);
+  auto player = std::make_unique<TestableIOSAudioPlayer>([](DSPAudioBuffer *, int) {}, 48000);
 
   const auto before = static_cast<std::int64_t>(clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
   const auto now = player->presentationClockNowNs();
@@ -820,7 +713,7 @@ struct TestAudioOutput {
 {
   int renderCallCount = 0;
   auto player = std::make_unique<TestableIOSAudioPlayer>(
-      [&renderCallCount](DSPAudioBuffer *, int) { renderCallCount += 1; }, 48000, 2);
+      [&renderCallCount](DSPAudioBuffer *, int) { renderCallCount += 1; }, 48000);
 
   player->setRunning(false);
   for (int channel = 0; channel < 2; channel += 1) {
@@ -831,10 +724,9 @@ struct TestAudioOutput {
 
   TestAudioOutput output(2, 64, 5.0f);
   BOOL isSilence = NO;
-  NativeAudioPlayer *nativePlayer = player->getAudioPlayer();
   AudioTimeStamp timestamp = {};
 
-  OSStatus status = nativePlayer.renderBlock(&isSilence, &timestamp, 64, output.bufferList());
+  OSStatus status = player->renderBlock()(&isSilence, &timestamp, 64, output.bufferList());
 
   XCTAssertEqual(status, kAudioServicesNoError);
   XCTAssertEqual(renderCallCount, 0);

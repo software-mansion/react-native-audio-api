@@ -1339,7 +1339,7 @@
   [self startRecordingWithPlayback:NO];
   [self.audioEngine suspendInput];
 
-  // A player starts the way NativeAudioPlayer does.
+  // A player starts the way IOSAudioPlayer does.
   [self attachSourceNodeToAudioEngine];
   [self.audioEngine stopIfNecessary];
   XCTAssertTrue([self.audioEngine startIfNecessary:nil]);

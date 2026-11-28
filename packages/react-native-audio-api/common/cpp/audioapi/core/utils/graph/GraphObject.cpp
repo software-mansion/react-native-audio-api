@@ -30,6 +30,10 @@ const AudioNode *GraphObject::asAudioNode() const {
   return nullptr;
 }
 
+bool GraphObject::isContextOutput() const {
+  return false;
+}
+
 void GraphObject::processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) {
   // Default: do nothing. Subclasses override for actual processing.
   (void)inputs;
