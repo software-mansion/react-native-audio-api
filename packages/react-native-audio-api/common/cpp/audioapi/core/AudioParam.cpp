@@ -85,15 +85,48 @@ std::shared_ptr<DSPAudioBuffer> AudioParam::processARateParam(int framesToProces
   auto inputData = inputBuffer_->getChannel(0)->span();
   auto outputData = outputBuffer_->getChannel(0)->span();
 
-  for (int i = 0; i < framesToProcess; i++) {
-    double frameTime = dsp::sampleFrameToTime(quantumStartFrame + i, sampleRate);
-    outputData[i] = inputData[i] + getValueAtTimeUnmodulated(frameTime);
+  double quantumStartTime = dsp::sampleFrameToTime(quantumStartFrame, sampleRate);
+  double quantumEndTime = dsp::sampleFrameToTime(quantumStartFrame + framesToProcess, sampleRate);
+  if (eventRenderQueue_.isSettledBetween(quantumStartTime, quantumEndTime)) {
+    float value = getValueAtTimeUnmodulated(quantumStartTime);
+    dsp::addScalar(inputData.data(), value, outputData.data(), framesToProcess);
+  } else {
+    for (int i = 0; i < framesToProcess; i++) {
+      double frameTime = dsp::sampleFrameToTime(quantumStartFrame + i, sampleRate);
+      outputData[i] = inputData[i] + getValueAtTimeUnmodulated(frameTime);
+    }
   }
 
   inputBuffer_->zero();
+  modulated_ = false;
 
   finalizeARate(framesToProcess, time);
   return outputBuffer_;
+}
+
+std::optional<float> AudioParam::settledValueAt(int framesToProcess, double time) {
+  // A processARateParam already run at this time consumed the modulation flag.
+  bool aRateProcessedThisQuantum =
+      processedARateKey_.has_value() && processedARateKey_->second == time;
+  if (modulated_ || aRateProcessedThisQuantum) {
+    return std::nullopt;
+  }
+
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    return std::nullopt;
+  }
+
+  float sampleRate = context->getSampleRate();
+  auto quantumStartFrame = static_cast<int>(dsp::timeToSampleFrame(time, sampleRate));
+  double quantumStartTime = dsp::sampleFrameToTime(quantumStartFrame, sampleRate);
+  double quantumEndTime = dsp::sampleFrameToTime(quantumStartFrame + framesToProcess, sampleRate);
+  if (!eventRenderQueue_.isSettledBetween(quantumStartTime, quantumEndTime)) {
+    return std::nullopt;
+  }
+
+  // Same add as the a-rate path with zero modulation, which turns -0 into +0.
+  return clampToNominalRange(0.0f + getValueAtTimeUnmodulated(quantumStartTime));
 }
 
 float AudioParam::processKRateParam(double time) {
@@ -106,6 +139,7 @@ float AudioParam::processKRateParam(double time) {
   float raw = modulation + getValueAtTimeUnmodulated(time);
 
   inputBuffer_->zero();
+  modulated_ = false;
 
   return finalizeKRate(raw, time);
 }

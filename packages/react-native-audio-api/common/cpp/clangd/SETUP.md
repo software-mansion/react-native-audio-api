@@ -3,7 +3,7 @@
 **Generate compile_commands.json**
 
 ```bash
-yarn setup:clangd
+pnpm setup:clangd
 ```
 
 Generates entries for `common/cpp` (sources + headers), the iOS Objective-C++/Objective-C glue (`ios/audioapi/ios`), and merges in Android's real NDK-compiled entries from `android/.cxx` (see `generate-and-copy.sh`), then copies the result to the repo root.
@@ -12,14 +12,14 @@ Generates entries for `common/cpp` (sources + headers), the iOS Objective-C++/Ob
 
 - **Android**: needs a real Gradle build's `android/.cxx` output — this CMakeLists.txt can't safely reproduce NDK cross-compile flags itself.
 - **iOS**: needs `apps/fabric-example/ios/Pods` — reuses its generated xcconfig for React/Pod header
-  *and framework* search paths. Since RN 0.87 React-Core ships prebuilt as `React.xcframework`, so
+  _and framework_ search paths. Since RN 0.87 React-Core ships prebuilt as `React.xcframework`, so
   `#import <React/...>` resolves via `-F`, not `-I`; missing framework paths show up as
   `'React/RCTBridgeModule.h' file not found` in every `.mm` that imports React.
 
 If either is missing or stale (e.g. after a dependency bump), refresh both first:
 
 ```bash
-yarn setup:clangd:clean
+pnpm setup:clangd:clean
 ```
 
 This runs `pod deintegrate && pod install` and a full Android build, then regenerates — slow, only needed when native deps/config actually change.

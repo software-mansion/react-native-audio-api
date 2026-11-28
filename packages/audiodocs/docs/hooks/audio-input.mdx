@@ -9,6 +9,7 @@ sidebar_position: 1
 A React hook for managing audio input device selection and monitoring available audio input devices. The current input will be available after the first activation of the audio session. Not all connected devices might be listed as available inputs; some might be filtered out as incompatible with the current session configuration.
 
 The `useAudioInput` hook provides an interface for:
+
 - retrieving all available audio input devices
 - getting the currently active input device
 - switching between different input devices
@@ -24,7 +25,7 @@ function useAudioInput(): {
   availableInputs: AudioDeviceInfo[];
   currentInput: AudioDeviceInfo | null;
   selectInput: (device: AudioDeviceInfo | 'default') => Promise<void>;
-}
+};
 ```
 
 ## Usage
@@ -59,11 +60,11 @@ function AudioInputSelector() {
 
 #### Returns an object with the following properties:
 
-| Name | Type | Description |
-| :----: | :----: | :---- |
-| `availableInputs` | [`AudioDeviceInfo[]`](../system/audio-manager.mdx#audiodeviceinfo) | List of available audio input devices under the current device configuration. |
-| `currentInput` | [`AudioDeviceInfo`](../system/audio-manager.mdx#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system. |
-| `selectInput` | `(device: AudioDeviceInfo \| 'default') => Promise<void>` | Selects the given device as the current input; `'default'` hands the choice back to the system. Resolves once done; throws otherwise. |
+|       Name        |                                    Type                                    | Description                                                                                                                           |
+| :---------------: | :------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------ |
+| `availableInputs` |     [`AudioDeviceInfo[]`](../system/audio-manager.mdx#audiodeviceinfo)     | List of available audio input devices under the current device configuration.                                                         |
+|  `currentInput`   | [`AudioDeviceInfo`](../system/audio-manager.mdx#audiodeviceinfo) \| `null` | The currently selected audio input device, or `null` if none is yet selected by the system.                                           |
+|   `selectInput`   |         `(device: AudioDeviceInfo \| 'default') => Promise<void>`          | Selects the given device as the current input; `'default'` hands the choice back to the system. Resolves once done; throws otherwise. |
 
 ## Related
 

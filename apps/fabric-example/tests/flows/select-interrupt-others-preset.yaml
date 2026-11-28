@@ -1,0 +1,7 @@
+executionPrerequisite: Audio I/O Playground is open, scrolled to the top
+steps:
+  - echo: Pick the non-mixable preset, so other audio interrupts the session instead of mixing with it
+  - tap: { id: system-preset }
+  - await: { visible: { id: system-preset-option-Interrupt others } }
+  - tap: { id: system-preset-option-Interrupt others }
+  - await: { text: { in: { id: system-preset }, contains: Interrupt others } }

@@ -34,13 +34,10 @@ struct ClosedSession {
 
 using CloseFileResult = Result<ClosedSession, std::string>;
 
-/// A filled pool buffer on its way to the worker. The default-constructed value (no buffer)
-/// is the offloader's shutdown message, which is what operator== exists for.
+/// A filled pool buffer on its way to the worker.
 struct PendingFileWrite {
   AudioBufferLease buffer;
   int numFrames = 0;
-
-  bool operator==(const PendingFileWrite &) const = default;
 };
 
 struct PlatformFileBackend {

@@ -26,6 +26,9 @@ void BridgeNode::processInputs(const std::vector<const DSPAudioBuffer *> &inputs
   // Get AudioParam's input buffer and fill it with mixed inputs
   auto inputBuffer = param_->getInputBuffer();
   inputBuffer->zero();
+  if (!inputs.empty()) {
+    param_->markModulated();
+  }
 
   for (const DSPAudioBuffer *input : inputs) {
     inputBuffer->sum(*input, ChannelInterpretation::SPEAKERS);

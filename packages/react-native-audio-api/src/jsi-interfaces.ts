@@ -1,6 +1,7 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
   AnalyserOptions,
+  AudioTimestamp,
   AudioBufferSourceOptions,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -94,9 +95,8 @@ export interface IBaseAudioContext {
 export interface IAudioContext extends IBaseAudioContext {
   readonly baseLatency: number;
   readonly outputLatency: number;
-  createMediaElementSource: (
-    mediaElement: IAudioFileSourceNode
-  ) => IMediaElementAudioSourceNode;
+  getOutputTimestamp(): AudioTimestamp;
+  createMediaElementSource: () => IMediaElementAudioSourceNode;
   close(): Promise<undefined>;
   resume(): Promise<undefined>;
   suspend(): Promise<undefined>;
@@ -269,7 +269,6 @@ export interface IAudioFileSourceNode extends IAudioScheduledSourceNode {
   loop: boolean;
   readonly currentTime: number;
   readonly duration: number;
-  readonly routedThroughMediaElement: boolean;
   pause: () => void;
   seekToTime: (seconds: number) => void;
 

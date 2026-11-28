@@ -1,10 +1,13 @@
 import {
+  AudioContext,
   AudioManager,
-  type AudioContext,
-  type AudioRecorder,
+  AudioRecorder,
 } from 'react-native-audio-api';
-import { Platform } from 'react-native';
 
+import { recorderOptions } from '../../singletons';
+import { colors } from '../../styles';
+import type { ScenarioItem, StepItem } from '../../testComponents';
+import { sleep } from '../sleep';
 import {
   appendChannelSamples,
   buildBeepReferencePattern,
@@ -13,15 +16,9 @@ import {
   findPatternAlignment,
   formatMs,
   prepareRecordedSamples,
-  sleep,
+  type BeepPattern,
 } from './helpers';
-import type {
-  LatencySnapshot,
-  LatencyTestScenario,
-  LatencyTestStep,
-  LoopbackAnalysis,
-  WaveformSeries,
-} from './types';
+import type { LoopbackAnalysis, WaveformSeries } from './types';
 
 // Keep the live full-duplex window (mic + speaker both active) as short as
 // possible: the raw loopback path produces an idle buzz, so we only settle the
@@ -32,31 +29,66 @@ const LOOPBACK_TOLERANCE_MS = 120;
 const MIN_CORRELATION = 0.45;
 const PATTERN_WINDOW_PADDING_SECONDS = 0.12;
 
-interface LatencyTestContext {
+/**
+ * The context and recorder of one run. They are created per run instead of
+ * using the app's singletons, so stopping them never cuts off audio another
+ * screen owns, e.g. a Record demo take that continues in the background.
+ */
+export interface LoopbackAudioIO {
   audioContext: AudioContext;
   audioRecorder: AudioRecorder;
 }
 
-function readSnapshot(
-  audioContext: AudioContext,
-  audioRecorder: AudioRecorder
-): LatencySnapshot {
+export function createLoopbackAudioIO(): LoopbackAudioIO {
   return {
-    base: audioContext.baseLatency,
-    output: audioContext.outputLatency,
-    input: audioRecorder.inputLatency,
-    sampleRate: audioContext.sampleRate,
-    contextState: audioContext.state,
-    recorderActive: audioRecorder.isRecording(),
+    audioContext: new AudioContext(),
+    audioRecorder: new AudioRecorder(recorderOptions),
   };
 }
 
-function createScenario(
-  id: string,
-  title: string,
-  startedAt: number,
-  steps: LatencyTestStep[]
-): LatencyTestScenario {
+async function stopLoopbackAudioIO({
+  audioContext,
+  audioRecorder,
+}: LoopbackAudioIO): Promise<void> {
+  audioRecorder.clearOnAudioReady();
+
+  if (audioRecorder.isRecording()) {
+    await audioRecorder.stop();
+  }
+
+  if (audioContext.state === 'running') {
+    await audioContext.suspend();
+  }
+}
+
+/**
+ * Releases a run's audio I/O and deactivates the session the run activated.
+ * Never throws, so the screen always leaves its running state.
+ */
+export async function closeLoopbackAudioIO(io: LoopbackAudioIO): Promise<void> {
+  try {
+    await stopLoopbackAudioIO(io);
+    await io.audioContext.close();
+  } catch (error) {
+    console.warn('LatencyValidation: releasing audio I/O failed', error);
+  }
+
+  try {
+    await AudioManager.setAudioSessionActivity(false);
+  } catch (error) {
+    console.warn('LatencyValidation: session deactivation failed', error);
+  }
+}
+
+function envelopeSeries(
+  label: string,
+  color: string,
+  samples: Float32Array | number[]
+): WaveformSeries {
+  return { label, color, points: downsampleEnvelopeForPlot(samples) };
+}
+
+function createScenario(startedAt: number, steps: StepItem[]): ScenarioItem {
   const status = steps.some((step) => step.status === 'fail')
     ? 'fail'
     : steps.every((step) => step.status === 'skipped')
@@ -64,10 +96,10 @@ function createScenario(
       : 'pass';
 
   return {
-    id,
-    title,
+    id: 'loopback-latency',
+    title: 'Speaker-to-mic loopback check',
     status,
-    durationMs: Date.now() - startedAt,
+    durationLabel: `${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
     steps,
   };
 }
@@ -82,48 +114,17 @@ function buildMethodology(patternBeepCount: number): string[] {
   ];
 }
 
-function buildEmptyPlots(): Pick<
-  LoopbackAnalysis,
-  | 'referencePlot'
-  | 'recordedWindowPlot'
-  | 'overlayPlots'
-  | 'systemShiftOverlayPlots'
-  | 'correlationProfile'
-  | 'bestAlignmentMarkerRatio'
-  | 'systemShiftMarkerRatio'
-> {
-  return {
-    referencePlot: { label: 'Reference envelope', color: '#38ACDD', points: [] },
-    recordedWindowPlot: {
-      label: 'Mic envelope (denoised)',
-      color: '#FFD61E',
-      points: [],
-    },
-    overlayPlots: [],
-    systemShiftOverlayPlots: [],
-    correlationProfile: [],
-    bestAlignmentMarkerRatio: null,
-    systemShiftMarkerRatio: null,
-  };
+function clampRatio(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 function buildAnalysisPlots(params: {
-  referencePattern: ReturnType<typeof buildBeepReferencePattern>;
+  referencePattern: BeepPattern;
   processedRecorded: Float32Array;
   sampleRate: number;
   expectedLagSeconds: number;
   alignment: ReturnType<typeof findPatternAlignment>;
-}): Pick<
-  LoopbackAnalysis,
-  | 'referencePlot'
-  | 'recordedWindowPlot'
-  | 'overlayPlots'
-  | 'systemShiftOverlayPlots'
-  | 'correlationProfile'
-  | 'bestAlignmentMarkerRatio'
-  | 'systemShiftMarkerRatio'
-  | 'recordedDurationSeconds'
-> {
+}): Partial<LoopbackAnalysis> {
   const {
     referencePattern,
     processedRecorded,
@@ -134,9 +135,9 @@ function buildAnalysisPlots(params: {
 
   const patternWindowSeconds =
     referencePattern.durationSeconds + PATTERN_WINDOW_PADDING_SECONDS * 2;
-  const centerLagSamples = alignment?.lagSamples ??
-    Math.round(expectedLagSeconds * sampleRate);
+  const halfWindowSamples = Math.floor((patternWindowSeconds * sampleRate) / 2);
   const expectedLagSamples = Math.round(expectedLagSeconds * sampleRate);
+  const centerLagSamples = alignment?.lagSamples ?? expectedLagSamples;
   const recordedWindow = buildRecordedWindow(
     processedRecorded,
     centerLagSamples,
@@ -149,183 +150,151 @@ function buildAnalysisPlots(params: {
     patternWindowSeconds,
     sampleRate
   );
-  const windowStartSample = Math.max(
-    0,
-    centerLagSamples - Math.floor((patternWindowSeconds * sampleRate) / 2)
-  );
-  const expectedWindowStartSample = Math.max(
-    0,
-    expectedLagSamples - Math.floor((patternWindowSeconds * sampleRate) / 2)
-  );
-
-  const referencePlot: WaveformSeries = {
-    label: 'Reference envelope',
-    color: '#38ACDD',
-    points: downsampleEnvelopeForPlot(referencePattern.samples),
-  };
-
-  const recordedWindowPlot: WaveformSeries = {
-    label: 'Mic envelope (denoised)',
-    color: '#FFD61E',
-    points: downsampleEnvelopeForPlot(recordedWindow),
-  };
-
-  const overlayPlots: WaveformSeries[] =
-    alignment === null
-      ? []
-      : [
-          {
-            label: 'Reference',
-            color: '#38ACDD',
-            points: downsampleEnvelopeForPlot(referencePattern.samples),
-          },
-          {
-            label: 'Matched mic shift',
-            color: '#FF7A7A',
-            points: downsampleEnvelopeForPlot(
-              processedRecorded.slice(
-                alignment.lagSamples,
-                alignment.lagSamples + referencePattern.samples.length
-              )
-            ),
-          },
-        ];
-
-  const systemShiftOverlayPlots: WaveformSeries[] = [
-    {
-      label: 'Reference',
-      color: '#38ACDD',
-      points: downsampleEnvelopeForPlot(referencePattern.samples),
-    },
-    {
-      label: 'System-latency shift',
-      color: '#9BE564',
-      points: downsampleEnvelopeForPlot(
-        processedRecorded.slice(
-          expectedLagSamples,
-          expectedLagSamples + referencePattern.samples.length
+  const markerRatio = (lagSamples: number, windowLength: number) =>
+    windowLength > 0
+      ? clampRatio(
+          (lagSamples - Math.max(0, lagSamples - halfWindowSamples)) /
+            windowLength
         )
-      ),
-    },
-  ];
+      : null;
+  const referenceOverlay = envelopeSeries(
+    'Reference',
+    colors.blue,
+    referencePattern.samples
+  );
+  const shiftedRecording = (lagSamples: number) =>
+    processedRecorded.slice(
+      lagSamples,
+      lagSamples + referencePattern.samples.length
+    );
 
   return {
-    referencePlot,
-    recordedWindowPlot,
-    overlayPlots,
-    systemShiftOverlayPlots,
+    recordedWindowPlot: envelopeSeries(
+      'Mic envelope (denoised)',
+      colors.yellow,
+      recordedWindow
+    ),
+    overlayPlots: alignment
+      ? [
+          referenceOverlay,
+          envelopeSeries(
+            'Matched mic shift',
+            colors.accent,
+            shiftedRecording(alignment.lagSamples)
+          ),
+        ]
+      : [],
+    systemShiftOverlayPlots: [
+      referenceOverlay,
+      envelopeSeries(
+        'System-latency shift',
+        colors.green,
+        shiftedRecording(expectedLagSamples)
+      ),
+    ],
     correlationProfile: alignment?.correlationProfile ?? [],
-    bestAlignmentMarkerRatio:
-      recordedWindow.length > 0
-        ? Math.min(
-            1,
-            Math.max(0, (centerLagSamples - windowStartSample) / recordedWindow.length)
-          )
-        : null,
-    systemShiftMarkerRatio:
-      expectedWindow.length > 0
-        ? Math.min(
-            1,
-            Math.max(
-              0,
-              (expectedLagSamples - expectedWindowStartSample) / expectedWindow.length
-            )
-          )
-        : null,
+    bestAlignmentMarkerRatio: alignment
+      ? markerRatio(centerLagSamples, recordedWindow.length)
+      : null,
+    systemShiftMarkerRatio: markerRatio(
+      expectedLagSamples,
+      expectedWindow.length
+    ),
     recordedDurationSeconds: recordedWindow.length / sampleRate,
   };
 }
 
-function createEmptyAnalysis(
-  scenario: LatencyTestScenario,
-  partial: Partial<LoopbackAnalysis>
+function buildAnalysis(
+  partial: Partial<LoopbackAnalysis> &
+    Pick<LoopbackAnalysis, 'scenario' | 'referencePlot' | 'methodology'>
 ): LoopbackAnalysis {
-  const emptyPlots = buildEmptyPlots();
-
   return {
-    scenario,
-    snapshot: partial.snapshot ?? {
-      base: 0,
-      output: 0,
-      input: 0,
-      sampleRate: 44100,
-      contextState: 'suspended',
-      recorderActive: false,
-    },
-    recordingStartContextTime: partial.recordingStartContextTime ?? 0,
-    playTime: partial.playTime ?? 0,
-    scheduleOffsetSeconds: partial.scheduleOffsetSeconds ?? 0,
-    reportedRoundTripLatency: partial.reportedRoundTripLatency ?? 0,
-    expectedLatencySeconds: partial.expectedLatencySeconds ?? 0,
-    measuredLatencySeconds: partial.measuredLatencySeconds ?? null,
-    correlation: partial.correlation ?? null,
-    deltaMs: partial.deltaMs ?? null,
-    referenceDurationSeconds: partial.referenceDurationSeconds ?? 0,
-    recordedDurationSeconds: partial.recordedDurationSeconds ?? 0,
-    noiseFloor: partial.noiseFloor ?? null,
-    methodology: partial.methodology ?? buildMethodology(5),
-    ...emptyPlots,
+    snapshot: { base: 0, output: 0, input: 0 },
+    scheduleOffsetSeconds: 0,
+    reportedRoundTripLatency: 0,
+    expectedLatencySeconds: 0,
+    measuredLatencySeconds: null,
+    correlation: null,
+    deltaMs: null,
+    referenceDurationSeconds: 0,
+    recordedDurationSeconds: 0,
+    recordedWindowPlot: envelopeSeries(
+      'Mic envelope (denoised)',
+      colors.yellow,
+      []
+    ),
+    overlayPlots: [],
+    systemShiftOverlayPlots: [],
+    correlationProfile: [],
+    bestAlignmentMarkerRatio: null,
+    systemShiftMarkerRatio: null,
+    noiseFloor: null,
     ...partial,
   };
 }
 
-async function runLoopbackLatencyTest(
-  context: LatencyTestContext
+/**
+ * Activates a raw measurement session, plays a beep pattern through the speaker
+ * while recording the microphone, and aligns both. The caller owns `io` and
+ * releases it with {@link closeLoopbackAudioIO}.
+ */
+export async function runLoopbackLatencyTest(
+  io: LoopbackAudioIO
 ): Promise<LoopbackAnalysis> {
   const startedAt = Date.now();
-  const steps: LatencyTestStep[] = [];
-  const { audioContext, audioRecorder } = context;
+  const steps: StepItem[] = [];
+  const { audioContext, audioRecorder } = io;
+  const { sampleRate } = audioContext;
+  const referencePattern = buildBeepReferencePattern(sampleRate);
+  const finish = (partial: Partial<LoopbackAnalysis> = {}) =>
+    buildAnalysis({
+      scenario: createScenario(startedAt, steps),
+      referencePlot: envelopeSeries(
+        'Reference envelope',
+        colors.blue,
+        referencePattern.samples
+      ),
+      referenceDurationSeconds: referencePattern.durationSeconds,
+      methodology: buildMethodology(referencePattern.beepCount),
+      ...partial,
+    });
 
-  await stopLoopbackAudioIO(context);
-  await sleep(100);
+  AudioManager.setSystemOptions({
+    ios: {
+      category: 'playAndRecord',
+      // 'measurement' keeps the signal path raw (no AGC/EQ) so the loopback
+      // delay is accurate, while running the mic+speaker for the shortest
+      // possible window to keep the idle full-duplex buzz to a minimum.
+      mode: 'measurement',
+      options: ['defaultToSpeaker'],
+    },
+  });
+  await AudioManager.setAudioSessionActivity(true);
 
   if (audioContext.state === 'suspended') {
     await audioContext.resume();
   }
 
   const recordingStartContextTime = audioContext.currentTime;
-  let startError: unknown;
   try {
     await audioRecorder.start();
   } catch (error) {
-    startError = error;
-  }
-
-  if (startError !== undefined) {
     steps.push({
       id: 'loopback-recorder-start',
       message: 'Recorder is available for loopback measurement',
       status: 'fail',
-      details:
-        startError instanceof Error ? startError.message : String(startError),
+      details: error instanceof Error ? error.message : String(error),
     });
-
-    return createEmptyAnalysis(
-      createScenario(
-        'loopback-latency',
-        'Speaker-to-mic loopback check',
-        startedAt,
-        steps
-      ),
-      { recordingStartContextTime }
-    );
+    return finish();
   }
 
-  const referencePattern = buildBeepReferencePattern(audioContext.sampleRate);
   const recordedSamples: number[] = [];
-
   const callbackResult = audioRecorder.onAudioReady(
-    {
-      sampleRate: audioContext.sampleRate,
-      bufferLength: 1024,
-      channelCount: 1,
-    },
+    { sampleRate, bufferLength: 1024, channelCount: 1 },
     (event) => {
-      if (!event.buffer) {
-        return;
+      if (event.buffer) {
+        appendChannelSamples(recordedSamples, event.buffer);
       }
-
-      appendChannelSamples(recordedSamples, event.buffer);
     }
   );
 
@@ -336,30 +305,16 @@ async function runLoopbackLatencyTest(
       status: 'fail',
       details: callbackResult.message,
     });
-
-    return createEmptyAnalysis(
-      createScenario(
-        'loopback-latency',
-        'Speaker-to-mic loopback check',
-        startedAt,
-        steps
-      ),
-      {
-        recordingStartContextTime,
-        referenceDurationSeconds: referencePattern.durationSeconds,
-        referencePlot: {
-          label: 'Reference envelope',
-          color: '#38ACDD',
-          points: downsampleEnvelopeForPlot(referencePattern.samples),
-        },
-        methodology: buildMethodology(referencePattern.beepCount),
-      }
-    );
+    return finish();
   }
 
   await sleep(RECORDER_SETTLE_MS);
 
-  const snapshot = readSnapshot(audioContext, audioRecorder);
+  const snapshot = {
+    base: audioContext.baseLatency,
+    output: audioContext.outputLatency,
+    input: audioRecorder.inputLatency,
+  };
   const playTime = audioContext.currentTime + PLAY_LEAD_TIME_S;
   const scheduleOffsetSeconds = playTime - recordingStartContextTime;
   const reportedRoundTripLatency =
@@ -370,7 +325,7 @@ async function runLoopbackLatencyTest(
   const referenceBuffer = audioContext.createBuffer(
     1,
     referencePattern.samples.length,
-    audioContext.sampleRate
+    sampleRate
   );
   referenceBuffer.getChannelData(0).set(referencePattern.samples);
 
@@ -387,80 +342,54 @@ async function runLoopbackLatencyTest(
     PLAY_LEAD_TIME_S + referencePattern.durationSeconds + 0.2;
   await sleep(listenWindowSeconds * 1000);
 
-  audioRecorder.clearOnAudioReady();
-  await stopLoopbackAudioIO(context);
+  await stopLoopbackAudioIO(io);
 
   const { processed, noiseFloor } = prepareRecordedSamples(
     recordedSamples,
-    audioContext.sampleRate
+    sampleRate
   );
-
   const alignment = findPatternAlignment(
     referencePattern.samples,
     processed,
-    audioContext.sampleRate,
+    sampleRate,
     expectedLatencySeconds
   );
-
-  const plotData = buildAnalysisPlots({
-    referencePattern,
-    processedRecorded: processed,
-    sampleRate: audioContext.sampleRate,
-    expectedLagSeconds: expectedLatencySeconds,
-    alignment,
-  });
+  const measurement = {
+    snapshot,
+    scheduleOffsetSeconds,
+    reportedRoundTripLatency,
+    expectedLatencySeconds,
+    noiseFloor,
+    ...buildAnalysisPlots({
+      referencePattern,
+      processedRecorded: processed,
+      sampleRate,
+      expectedLagSeconds: expectedLatencySeconds,
+      alignment,
+    }),
+  };
 
   if (!alignment) {
     steps.push({
       id: 'loopback-pattern-detected',
       message: 'Recorded waveform matches the generated beep pattern',
       status: 'skipped',
-      details: `Captured ${recordedSamples.length} samples (${formatMs(recordedSamples.length / audioContext.sampleRate)}) with noiseFloor=${noiseFloor.toFixed(4)} but could not align the ${referencePattern.beepCount}-beep reference.`,
+      details: `Captured ${recordedSamples.length} samples (${formatMs(recordedSamples.length / sampleRate)}) with noiseFloor=${noiseFloor.toFixed(4)} but could not align the ${referencePattern.beepCount}-beep reference.`,
     });
-
-    return createEmptyAnalysis(
-      createScenario(
-        'loopback-latency',
-        'Speaker-to-mic loopback check',
-        startedAt,
-        steps
-      ),
-      {
-        snapshot,
-        recordingStartContextTime,
-        playTime,
-        scheduleOffsetSeconds,
-        reportedRoundTripLatency,
-        expectedLatencySeconds,
-        referenceDurationSeconds: referencePattern.durationSeconds,
-        recordedDurationSeconds: plotData.recordedDurationSeconds,
-        noiseFloor,
-        methodology: buildMethodology(referencePattern.beepCount),
-        referencePlot: plotData.referencePlot,
-        recordedWindowPlot: plotData.recordedWindowPlot,
-        systemShiftOverlayPlots: plotData.systemShiftOverlayPlots,
-        correlationProfile: plotData.correlationProfile,
-        systemShiftMarkerRatio: plotData.systemShiftMarkerRatio,
-      }
-    );
+    return finish(measurement);
   }
 
   const measuredLatencySeconds = alignment.lagSeconds;
   const deltaMs = (measuredLatencySeconds - expectedLatencySeconds) * 1000;
-  const pass =
-    alignment.correlation >= MIN_CORRELATION &&
-    measuredLatencySeconds >=
-      expectedLatencySeconds - LOOPBACK_TOLERANCE_MS / 1000 &&
-    measuredLatencySeconds <=
-      expectedLatencySeconds + LOOPBACK_TOLERANCE_MS / 1000;
+  const isCorrelated = alignment.correlation >= MIN_CORRELATION;
+  const pass = isCorrelated && Math.abs(deltaMs) <= LOOPBACK_TOLERANCE_MS;
 
   steps.push({
     id: 'loopback-pattern-detected',
     message: 'Recorded waveform matches the generated beep pattern',
-    status: alignment.correlation >= MIN_CORRELATION ? 'pass' : 'fail',
+    status: isCorrelated ? 'pass' : 'fail',
     details: `correlation=${alignment.correlation.toFixed(3)}, coarse=${alignment.coarseCorrelation.toFixed(3)}, alignedAt=${formatMs(measuredLatencySeconds)}, noiseFloor=${noiseFloor.toFixed(4)}`,
   });
-
   steps.push({
     id: 'loopback-latency-match',
     message:
@@ -469,67 +398,10 @@ async function runLoopbackLatencyTest(
     details: `measured=${formatMs(measuredLatencySeconds)}, expected=${formatMs(expectedLatencySeconds)} (schedule ${formatMs(scheduleOffsetSeconds)} + base ${formatMs(snapshot.base)} + output ${formatMs(snapshot.output)} + input ${formatMs(snapshot.input)}), delta=${deltaMs.toFixed(2)} ms`,
   });
 
-  return createEmptyAnalysis(
-    createScenario(
-      'loopback-latency',
-      'Speaker-to-mic loopback check',
-      startedAt,
-      steps
-    ),
-    {
-      snapshot,
-      recordingStartContextTime,
-      playTime,
-      scheduleOffsetSeconds,
-      reportedRoundTripLatency,
-      expectedLatencySeconds,
-      measuredLatencySeconds,
-      correlation: alignment.correlation,
-      deltaMs,
-      referenceDurationSeconds: referencePattern.durationSeconds,
-      recordedDurationSeconds: plotData.recordedDurationSeconds,
-      noiseFloor,
-      methodology: buildMethodology(referencePattern.beepCount),
-      referencePlot: plotData.referencePlot,
-      recordedWindowPlot: plotData.recordedWindowPlot,
-      overlayPlots: plotData.overlayPlots,
-      systemShiftOverlayPlots: plotData.systemShiftOverlayPlots,
-      correlationProfile: plotData.correlationProfile,
-      bestAlignmentMarkerRatio: plotData.bestAlignmentMarkerRatio,
-      systemShiftMarkerRatio: plotData.systemShiftMarkerRatio,
-    }
-  );
-}
-
-export async function runLatencyValidationSuite(
-  context: LatencyTestContext
-): Promise<LoopbackAnalysis> {
-  return runLoopbackLatencyTest(context);
-}
-
-export async function stopLoopbackAudioIO(
-  context: LatencyTestContext
-): Promise<void> {
-  const { audioContext, audioRecorder } = context;
-
-  audioRecorder.clearOnAudioReady();
-  audioRecorder.disconnect();
-
-  if (audioRecorder.isRecording()) {
-    await audioRecorder.stop();
-  }
-
-  if (audioContext.state === 'running') {
-    await audioContext.suspend();
-  }
-
-  if (Platform.OS !== 'web') {
-    await AudioManager.setAudioSessionActivity(false);
-  }
-}
-
-export async function cleanupLatencyValidation(
-  context: LatencyTestContext
-): Promise<void> {
-  await stopLoopbackAudioIO(context);
+  return finish({
+    ...measurement,
+    measuredLatencySeconds,
+    correlation: alignment.correlation,
+    deltaMs,
+  });
 }

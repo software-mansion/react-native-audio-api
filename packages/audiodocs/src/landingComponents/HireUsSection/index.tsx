@@ -1,5 +1,5 @@
 import { JSX, useEffect } from 'react';
-import {HireUsSection} from '@swmansion/t-rex-ui'
+import { HireUsSection } from '@swmansion/t-rex-ui';
 import './styles.module.css';
 
 const HireUsSectionWrapper = ({
@@ -9,7 +9,7 @@ const HireUsSectionWrapper = ({
   content?: string | JSX.Element;
   href: string;
 }) => {
-   const resolvedContent = content || (
+  const resolvedContent = content || (
     <>
       We’re a software company built around improving developer experience and
       bringing innovative clients' ideas to life. We're pushing boundaries and
@@ -21,19 +21,23 @@ const HireUsSectionWrapper = ({
     </>
   );
 
-   // TODO: Remove this hack after we add support for custom button text in the HireUsSection component
-   // Optional TODO: Contribute to t-rex-ui to add support for custom button text and remove this hack
-   useEffect(() => {
-    const btn = document.querySelector("[class*='hireUsSection'] [class*='homepageButtonLink'] > [class*='homepageButton']");
+  // TODO: Remove this hack after we add support for custom button text in the HireUsSection component
+  // Optional TODO: Contribute to t-rex-ui to add support for custom button text and remove this hack
+  useEffect(() => {
+    const btn = document.querySelector(
+      "[class*='hireUsSection'] [class*='homepageButtonLink'] > [class*='homepageButton']"
+    );
     if (btn) {
-      const textNode = Array.from(btn.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+      const textNode = Array.from(btn.childNodes).find(
+        (n) => n.nodeType === Node.TEXT_NODE
+      );
       if (textNode) {
         textNode.textContent = "Let's talk";
       }
     }
   }, []);
 
-    return <HireUsSection content={resolvedContent} href={href} />
+  return <HireUsSection content={resolvedContent} href={href} />;
 };
 
 export default HireUsSectionWrapper;

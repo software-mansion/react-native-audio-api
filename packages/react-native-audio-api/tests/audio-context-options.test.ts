@@ -1,3 +1,9 @@
+import { NotSupportedError } from '../src/errors';
+import type {
+  IAudioContext,
+  IOfflineAudioContext,
+} from '../src/jsi-interfaces';
+
 let mockDeviceBufferDuration = 0.01;
 
 jest.mock('react-native', () => ({
@@ -22,12 +28,6 @@ jest.mock('../src/core/BaseAudioContext', () => {
   };
 });
 
-import { NotSupportedError } from '../src/errors';
-import type {
-  IAudioContext,
-  IOfflineAudioContext,
-} from '../src/jsi-interfaces';
-
 describe('AudioContext options', () => {
   const createAudioContext = globalThis.createAudioContext;
 
@@ -41,10 +41,12 @@ describe('AudioContext options', () => {
     const AudioContext = require('../src/core/AudioContext')
       .default as typeof import('../src/core/AudioContext').default;
 
-    new AudioContext({
-      sampleRate: 24000,
-      androidOutputProfile: 'voiceCommunication',
-    });
+    expect(
+      new AudioContext({
+        sampleRate: 24000,
+        androidOutputProfile: 'voiceCommunication',
+      })
+    ).toBeInstanceOf(AudioContext);
 
     expect(globalThis.createAudioContext).toHaveBeenCalledWith(
       24000,
@@ -64,7 +66,7 @@ describe('AudioContext renderSizeHint', () => {
     globalThis.createAudioContext = jest.fn(() => ({}) as IAudioContext);
     const AudioContext = require('../src/core/AudioContext')
       .default as typeof import('../src/core/AudioContext').default;
-    new AudioContext(options);
+    expect(new AudioContext(options)).toBeInstanceOf(AudioContext);
     return (globalThis.createAudioContext as jest.Mock).mock.calls[0][3];
   };
 
@@ -130,12 +132,14 @@ describe('OfflineAudioContext renderSizeHint', () => {
     const OfflineAudioContext = require('../src/core/OfflineAudioContext')
       .default as typeof import('../src/core/OfflineAudioContext').default;
 
-    new OfflineAudioContext({
-      numberOfChannels: 1,
-      length: 44100,
-      sampleRate: 44100,
-      renderSizeHint: 'hardware',
-    });
+    expect(
+      new OfflineAudioContext({
+        numberOfChannels: 1,
+        length: 44100,
+        sampleRate: 44100,
+        renderSizeHint: 'hardware',
+      })
+    ).toBeInstanceOf(OfflineAudioContext);
 
     expect(globalThis.createOfflineAudioContext).toHaveBeenCalledWith(
       1,
@@ -143,5 +147,17 @@ describe('OfflineAudioContext renderSizeHint', () => {
       44100,
       128
     );
+  });
+
+  it('returns the native output timestamp unchanged', () => {
+    const timestamp = { contextTime: 1.25, performanceTime: 98765.4 };
+    const nativeContext = {
+      getOutputTimestamp: jest.fn(() => timestamp),
+    } as unknown as IAudioContext;
+    globalThis.createAudioContext = jest.fn(() => nativeContext);
+    const AudioContext = require('../src/core/AudioContext')
+      .default as typeof import('../src/core/AudioContext').default;
+
+    expect(new AudioContext().getOutputTimestamp()).toEqual(timestamp);
   });
 });

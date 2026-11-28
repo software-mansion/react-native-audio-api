@@ -12,41 +12,41 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 
 ### Coverage table
 
-| Interface | Status | Remarks |
-| :---: | :---: | :---- |
-| AnalyserNode | ✅ |
-| AudioBuffer | ✅ |
-| AudioBufferSourceNode | ✅ |
-| AudioDestinationNode | ✅ |
-| AudioListener | ✅ |
-| AudioNode | ✅ |
-| AudioParam | ✅ |
-| AudioScheduledSourceNode | ✅ |
-| BiquadFilterNode | ✅ |
-| ChannelMergerNode | ✅ |
-| ChannelSplitterNode | ✅ |
-| ConstantSourceNode | ✅ |
-| ConvolverNode | ✅ |
-| DelayNode | ✅ |
-| GainNode | ✅ |
-| IIRFilterNode | ✅  |
-| MediaElementAudioSourceNode | ✅ | Full <audio /> spec is still in a development phase, however most important functionalities are implemented. |
-| OfflineAudioContext | ✅ |
-| OscillatorNode | ✅ |
-| PeriodicWave | ✅ |
-| StereoPannerNode | ✅ |
-| WaveShaperNode | ✅ |
-| AudioContext | 🚧 | Available props and methods: `baseLatency`, `outputLatency`, `close`, `suspend`, `resume`. `renderSizeHint` accepts `'default'`, `'hardware'` (resolved once, when the context is created) or a number. |
-| BaseAudioContext | 🚧 | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `renderQuantumSize`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
-| PannerNode | 🚧 | Equal-power spatialization, distance models, and cone gain. `panningModel` is `'equalpower'` only (`'HRTF'` not exposed yet). |
-| AudioSinkInfo | ❌ |
-| AudioWorklet | ❌ |
-| AudioWorkletGlobalScope | ❌ |
-| AudioWorkletNode | ❌ |
-| AudioWorkletProcessor | ❌ |
-| DynamicsCompressorNode | ❌ |
-| MediaStreamAudioDestinationNode | ❌ |
-| MediaStreamAudioSourceNode | ❌ |
+|            Interface            | Status | Remarks                                                                                                                                                                                                                       |
+| :-----------------------------: | :----: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|          AnalyserNode           |   ✅   |
+|           AudioBuffer           |   ✅   |
+|      AudioBufferSourceNode      |   ✅   |
+|      AudioDestinationNode       |   ✅   |
+|          AudioListener          |   ✅   |
+|            AudioNode            |   ✅   |
+|           AudioParam            |   ✅   |
+|    AudioScheduledSourceNode     |   ✅   |
+|        BiquadFilterNode         |   ✅   |
+|        ChannelMergerNode        |   ✅   |
+|       ChannelSplitterNode       |   ✅   |
+|       ConstantSourceNode        |   ✅   |
+|          ConvolverNode          |   ✅   |
+|            DelayNode            |   ✅   |
+|            GainNode             |   ✅   |
+|          IIRFilterNode          |   ✅   |
+|   MediaElementAudioSourceNode   |   ✅   | Full <audio /> spec is still in a development phase, however most important functionalities are implemented.                                                                                                                  |
+|       OfflineAudioContext       |   ✅   |
+|         OscillatorNode          |   ✅   |
+|          PeriodicWave           |   ✅   |
+|        StereoPannerNode         |   ✅   |
+|         WaveShaperNode          |   ✅   |
+|          AudioContext           |   🚧   | Available props and methods: `baseLatency`, `outputLatency`, `getOutputTimestamp`, `close`, `suspend`, `resume`. `renderSizeHint` accepts `'default'`, `'hardware'` (resolved once, when the context is created) or a number. |
+|        BaseAudioContext         |   🚧   | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `renderQuantumSize`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes                         |
+|           PannerNode            |   🚧   | Equal-power spatialization, distance models, and cone gain. `panningModel` is `'equalpower'` only (`'HRTF'` not exposed yet).                                                                                                 |
+|          AudioSinkInfo          |   ❌   |
+|          AudioWorklet           |   ❌   |
+|     AudioWorkletGlobalScope     |   ❌   |
+|        AudioWorkletNode         |   ❌   |
+|      AudioWorkletProcessor      |   ❌   |
+|     DynamicsCompressorNode      |   ❌   |
+| MediaStreamAudioDestinationNode |   ❌   |
+|   MediaStreamAudioSourceNode    |   ❌   |
 
 ### Description
 
@@ -55,7 +55,6 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 🚧 - Partially implemented
 
 ❌ - Not yet available
-
 
 :::info
 If you have a use case for any of not yet available interfaces,
@@ -95,28 +94,470 @@ _Last updated: 2026-11-05._
     </tr>
   </thead>
   <tbody>
-    <tr><td>AnalyserNode</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>138/139 (99.3%)</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>138/139 (99.3%)</td></tr>
-    <tr><td>AudioBuffer</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>142/142 (100.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>142/142 (100.0%)</td></tr>
-    <tr><td>AudioBufferSourceNode</td><td style={{ backgroundColor: 'hsl(102, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>221/259 (85.3%)</td><td style={{ backgroundColor: 'hsl(102, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>221/259 (85.3%)</td></tr>
-    <tr><td>AudioContext</td><td style={{ backgroundColor: 'hsl(62, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>58/113 (51.3%)</td><td style={{ backgroundColor: 'hsl(62, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>58/113 (51.3%)</td></tr>
-    <tr><td>AudioDestinationNode</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/1 (0.0%)</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/1 (0.0%)</td></tr>
-    <tr><td>AudioNode</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>261/264 (98.9%)</td><td style={{ backgroundColor: 'hsl(119, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>261/264 (98.9%)</td></tr>
-    <tr><td>AudioParam</td><td style={{ backgroundColor: 'hsl(95, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>680/863 (78.8%)</td><td style={{ backgroundColor: 'hsl(95, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>680/863 (78.8%)</td></tr>
-    <tr><td>BiquadFilterNode</td><td style={{ backgroundColor: 'hsl(115, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>275/288 (95.5%)</td><td style={{ backgroundColor: 'hsl(115, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>275/288 (95.5%)</td></tr>
-    <tr><td>ChannelMergerNode</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>30/30 (100.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>30/30 (100.0%)</td></tr>
-    <tr><td>ChannelSplitterNode</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>7/7 (100.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>7/7 (100.0%)</td></tr>
-    <tr><td>ConstantSourceNode</td><td style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>64/66 (97.0%)</td><td style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>64/66 (97.0%)</td></tr>
-    <tr><td>ConvolverNode</td><td style={{ backgroundColor: 'hsl(86, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>182/255 (71.4%)</td><td style={{ backgroundColor: 'hsl(86, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>182/255 (71.4%)</td></tr>
-    <tr><td>DelayNode</td><td style={{ backgroundColor: 'hsl(115, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>127/132 (96.2%)</td><td style={{ backgroundColor: 'hsl(115, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>127/132 (96.2%)</td></tr>
-    <tr><td>GainNode</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>15/15 (100.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>15/15 (100.0%)</td></tr>
-    <tr><td>IIRFilterNode</td><td style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>87/116 (75.0%)</td><td style={{ backgroundColor: 'hsl(90, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>87/116 (75.0%)</td></tr>
-    <tr><td>MediaElementAudioSourceNode</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/7 (0.0%)</td><td style={{ backgroundColor: 'hsl(0, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>0/7 (0.0%)</td></tr>
-    <tr><td>OfflineAudioContext</td><td style={{ backgroundColor: 'hsl(61, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>35/69 (50.7%)</td><td style={{ backgroundColor: 'hsl(61, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>35/69 (50.7%)</td></tr>
-    <tr><td>OscillatorNode</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>104/104 (100.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>104/104 (100.0%)</td></tr>
-    <tr><td>PeriodicWave</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>33/33 (100.0%)</td><td style={{ backgroundColor: 'hsl(120, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>33/33 (100.0%)</td></tr>
-    <tr><td>StereoPannerNode</td><td style={{ backgroundColor: 'hsl(101, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>102/121 (84.3%)</td><td style={{ backgroundColor: 'hsl(101, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>102/121 (84.3%)</td></tr>
-    <tr><td>WaveShaperNode</td><td style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>82/85 (96.5%)</td><td style={{ backgroundColor: 'hsl(116, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}>82/85 (96.5%)</td></tr>
-    <tr><td><strong>Total</strong></td><td style={{ backgroundColor: 'hsl(102, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}><strong>2643/3109 (85.0%)</strong></td><td style={{ backgroundColor: 'hsl(102, 85%, 72%)', color: '#1c1e21', textAlign: 'right' }}><strong>2643/3109 (85.0%)</strong></td></tr>
+    <tr>
+      <td>AnalyserNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(119, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        138/139 (99.3%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(119, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        138/139 (99.3%)
+      </td>
+    </tr>
+    <tr>
+      <td>AudioBuffer</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        142/142 (100.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        142/142 (100.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>AudioBufferSourceNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(102, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        221/259 (85.3%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(102, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        221/259 (85.3%)
+      </td>
+    </tr>
+    <tr>
+      <td>AudioContext</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(62, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        58/113 (51.3%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(62, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        58/113 (51.3%)
+      </td>
+    </tr>
+    <tr>
+      <td>AudioDestinationNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(0, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        0/1 (0.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(0, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        0/1 (0.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>AudioNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(119, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        261/264 (98.9%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(119, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        261/264 (98.9%)
+      </td>
+    </tr>
+    <tr>
+      <td>AudioParam</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(95, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        680/863 (78.8%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(95, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        680/863 (78.8%)
+      </td>
+    </tr>
+    <tr>
+      <td>BiquadFilterNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(115, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        275/288 (95.5%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(115, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        275/288 (95.5%)
+      </td>
+    </tr>
+    <tr>
+      <td>ChannelMergerNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        30/30 (100.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        30/30 (100.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>ChannelSplitterNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        7/7 (100.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        7/7 (100.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>ConstantSourceNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(116, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        64/66 (97.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(116, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        64/66 (97.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>ConvolverNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(86, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        182/255 (71.4%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(86, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        182/255 (71.4%)
+      </td>
+    </tr>
+    <tr>
+      <td>DelayNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(115, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        127/132 (96.2%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(115, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        127/132 (96.2%)
+      </td>
+    </tr>
+    <tr>
+      <td>GainNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        15/15 (100.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        15/15 (100.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>IIRFilterNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(90, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        87/116 (75.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(90, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        87/116 (75.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>MediaElementAudioSourceNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(0, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        0/7 (0.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(0, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        0/7 (0.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>OfflineAudioContext</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(61, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        35/69 (50.7%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(61, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        35/69 (50.7%)
+      </td>
+    </tr>
+    <tr>
+      <td>OscillatorNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        104/104 (100.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        104/104 (100.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>PeriodicWave</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        33/33 (100.0%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(120, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        33/33 (100.0%)
+      </td>
+    </tr>
+    <tr>
+      <td>StereoPannerNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(101, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        102/121 (84.3%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(101, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        102/121 (84.3%)
+      </td>
+    </tr>
+    <tr>
+      <td>WaveShaperNode</td>
+      <td
+        style={{
+          backgroundColor: 'hsl(116, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        82/85 (96.5%)
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(116, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        82/85 (96.5%)
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Total</strong>
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(102, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        <strong>2643/3109 (85.0%)</strong>
+      </td>
+      <td
+        style={{
+          backgroundColor: 'hsl(102, 85%, 72%)',
+          color: '#1c1e21',
+          textAlign: 'right',
+        }}
+      >
+        <strong>2643/3109 (85.0%)</strong>
+      </td>
+    </tr>
   </tbody>
 </table>
 

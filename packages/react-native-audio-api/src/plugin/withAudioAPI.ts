@@ -46,11 +46,9 @@ const withDefaultOptions = (options: Partial<Options>): Options => {
 
 const withBackgroundAudio: ConfigPlugin = (config) => {
   return withInfoPlist(config, (iosConfig) => {
-    iosConfig.modResults.UIBackgroundModes = [
-      ...Array.from(
-        new Set([...(iosConfig.modResults.UIBackgroundModes ?? []), 'audio'])
-      ),
-    ];
+    iosConfig.modResults.UIBackgroundModes = Array.from(
+      new Set([...(iosConfig.modResults.UIBackgroundModes ?? []), 'audio'])
+    );
 
     return iosConfig;
   });
@@ -125,7 +123,7 @@ const writeBuildOptionsToPackageJson = (
   const source: string = fs.readFileSync(packageJsonPath, 'utf8');
   const packageJson = JSON.parse(source);
 
-  const section = { ...(packageJson[pkg.name] ?? {}) };
+  const section = { ...packageJson[pkg.name] };
   for (const key of BUILD_OPTION_KEYS) {
     const value = options[key];
     if (value === undefined) {

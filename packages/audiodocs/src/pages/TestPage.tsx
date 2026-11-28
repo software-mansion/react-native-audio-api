@@ -1,13 +1,13 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode } from 'react';
 
-import { Container, Spacer } from "@site/src/ui/Layout";
-import SliderInput from "@site/src/ui/SliderInput";
+import { Container, Spacer } from '@site/src/ui/Layout';
+import SliderInput from '@site/src/ui/SliderInput';
 import Layout from '@theme/Layout';
 
-import FrequencyResponseGraph from "../examples/Biquad/FrequencyResponseGraph";
+import FrequencyResponseGraph from '../examples/Biquad/FrequencyResponseGraph';
 
 const TestPage: React.FC = () => {
-  if (process.env.NODE_ENV !== "development") {
+  if (process.env.NODE_ENV !== 'development') {
     return null;
   }
 
@@ -32,7 +32,6 @@ const TestPage: React.FC = () => {
         </Section>
 
         <Spacer.Vertical size={128} />
-
       </Container>
     </Layout>
   );

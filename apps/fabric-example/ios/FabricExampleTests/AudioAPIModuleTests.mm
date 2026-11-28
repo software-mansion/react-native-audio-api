@@ -28,8 +28,8 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
 
 @interface FakeAudioAPIModuleEngine : AudioEngine
 
-@property(nonatomic, assign) NSInteger onSessionDeactivatedCallCount;
-@property(nonatomic, strong) NSMutableArray<NSString *> *eventLog;
+@property (nonatomic, assign) NSInteger onSessionDeactivatedCallCount;
+@property (nonatomic, strong) NSMutableArray<NSString *> *eventLog;
 
 @end
 
@@ -53,10 +53,10 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
 
 @interface FakeAudioAPIModuleSessionManager : AudioSessionManager
 
-@property(nonatomic, assign) NSInteger setActiveCallCount;
-@property(nonatomic, assign) NSInteger markInactiveCallCount;
-@property(nonatomic, assign) BOOL lastSetActiveValue;
-@property(nonatomic, strong) NSMutableArray<NSString *> *eventLog;
+@property (nonatomic, assign) NSInteger setActiveCallCount;
+@property (nonatomic, assign) NSInteger markInactiveCallCount;
+@property (nonatomic, assign) BOOL lastSetActiveValue;
+@property (nonatomic, strong) NSMutableArray<NSString *> *eventLog;
 
 @end
 
@@ -95,10 +95,10 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
 
 @interface AudioAPIModuleTests : XCTestCase
 
-@property(nonatomic, strong) AudioAPIModule *module;
-@property(nonatomic, strong) FakeAudioAPIModuleEngine *fakeAudioEngine;
-@property(nonatomic, strong) FakeAudioAPIModuleSessionManager *fakeSessionManager;
-@property(nonatomic, strong) NSMutableArray<NSString *> *eventLog;
+@property (nonatomic, strong) AudioAPIModule *module;
+@property (nonatomic, strong) FakeAudioAPIModuleEngine *fakeAudioEngine;
+@property (nonatomic, strong) FakeAudioAPIModuleSessionManager *fakeSessionManager;
+@property (nonatomic, strong) NSMutableArray<NSString *> *eventLog;
 
 @end
 
@@ -141,16 +141,16 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   NSMutableArray<NSString *> *eventLog = self.eventLog;
 
   [self.module setAudioSessionActivity:enabled
-                               resolve:^(id result) {
-                                 AppendAudioModuleEvent(eventLog, @"resolve");
-                                 eventsAtResolve = CopyAudioModuleEvents(eventLog);
-                                 XCTAssertNil(result);
-                                 [resolveExpectation fulfill];
-                               }
-                                reject:^(NSString *code, NSString *message, NSError *error) {
-                                  rejectionCode = code;
-                                  [resolveExpectation fulfill];
-                                }];
+      resolve:^(id result) {
+        AppendAudioModuleEvent(eventLog, @"resolve");
+        eventsAtResolve = CopyAudioModuleEvents(eventLog);
+        XCTAssertNil(result);
+        [resolveExpectation fulfill];
+      }
+      reject:^(NSString *code, NSString *message, NSError *error) {
+        rejectionCode = code;
+        [resolveExpectation fulfill];
+      }];
 
   [self waitForExpectations:@[ resolveExpectation ] timeout:1.0];
 
@@ -167,8 +167,8 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   self.fakeAudioEngine.state = AudioEngineStateInterrupted;
 
   NSString *rejectionCode = nil;
-  NSArray<NSString *> *eventsAtResolve =
-      [self invokeSetAudioSessionActivity:NO rejectionCodeOut:&rejectionCode];
+  NSArray<NSString *> *eventsAtResolve = [self invokeSetAudioSessionActivity:NO
+                                                            rejectionCodeOut:&rejectionCode];
 
   XCTAssertNil(rejectionCode);
   XCTAssertEqual(self.fakeSessionManager.setActiveCallCount, 1);
@@ -178,8 +178,7 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   XCTAssertEqual(self.fakeAudioEngine.state, AudioEngineStatePaused);
   XCTAssertFalse(self.fakeSessionManager.isActive);
   XCTAssertEqualObjects(
-      eventsAtResolve,
-      (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
+      eventsAtResolve, (@[ @"setActive", @"markInactive", @"onSessionDeactivated", @"resolve" ]));
 }
 
 - (void)testSetAudioSessionActivityFalseDoesNotPauseWhenAlreadyInactive
@@ -188,8 +187,8 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   self.fakeAudioEngine.state = AudioEngineStateInterrupted;
 
   NSString *rejectionCode = nil;
-  NSArray<NSString *> *eventsAtResolve =
-      [self invokeSetAudioSessionActivity:NO rejectionCodeOut:&rejectionCode];
+  NSArray<NSString *> *eventsAtResolve = [self invokeSetAudioSessionActivity:NO
+                                                            rejectionCodeOut:&rejectionCode];
 
   XCTAssertNil(rejectionCode);
   XCTAssertEqual(self.fakeSessionManager.setActiveCallCount, 1);
@@ -208,8 +207,8 @@ static NSArray<NSString *> *CopyAudioModuleEvents(NSMutableArray<NSString *> *ev
   self.fakeAudioEngine.state = AudioEngineStateInterrupted;
 
   NSString *rejectionCode = nil;
-  NSArray<NSString *> *eventsAtResolve =
-      [self invokeSetAudioSessionActivity:NO rejectionCodeOut:&rejectionCode];
+  NSArray<NSString *> *eventsAtResolve = [self invokeSetAudioSessionActivity:NO
+                                                            rejectionCodeOut:&rejectionCode];
 
   XCTAssertNil(rejectionCode);
   XCTAssertEqual(self.fakeSessionManager.setActiveCallCount, 1);

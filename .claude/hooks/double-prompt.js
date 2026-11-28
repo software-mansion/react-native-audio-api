@@ -4,7 +4,9 @@
 
 let data = '';
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => { data += chunk; });
+process.stdin.on('data', (chunk) => {
+  data += chunk;
+});
 process.stdin.on('end', () => {
   try {
     const input = JSON.parse(data);

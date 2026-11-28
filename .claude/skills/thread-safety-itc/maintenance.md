@@ -4,12 +4,12 @@
 
 Review this skill when `pre-push-update` reports changes in:
 
-| Path | What to check |
-|---|---|
-| `common/cpp/audioapi/events/**` | New event types, handler patterns, `AudioEvent` enum |
-| `common/cpp/audioapi/utils/SpscChannel.hpp` | Lock-free queue API changes |
-| `common/cpp/audioapi/utils/CrossThreadEventScheduler.hpp` | Scheduler API changes — update decision table |
-| `common/cpp/audioapi/core/AudioNode.*` | Audio thread contract changes |
-| `common/cpp/audioapi/core/utils/AudioGraphManager.*` | Graph mutation queue changes |
-| `common/cpp/audioapi/core/utils/AudioFileWriter.*` | The "reacting to audio without blocking on it" pattern: rotation decided in the worker task, the callbacks-outside-the-lock rule, the never-join-while-holding rule, the injected `PlatformFileBackend` test seam |
-| Any new cross-thread primitive in `utils/` | Document in the decision table |
+| Path                                                      | What to check                                                                                                                                                                                                     |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `common/cpp/audioapi/events/**`                           | New event types, handler patterns, `AudioEvent` enum                                                                                                                                                              |
+| `common/cpp/audioapi/utils/SpscChannel.hpp`               | Lock-free queue API changes                                                                                                                                                                                       |
+| `common/cpp/audioapi/utils/CrossThreadEventScheduler.hpp` | Scheduler API changes — update decision table                                                                                                                                                                     |
+| `common/cpp/audioapi/core/AudioNode.*`                    | Audio thread contract changes                                                                                                                                                                                     |
+| `common/cpp/audioapi/core/utils/AudioGraphManager.*`      | Graph mutation queue changes                                                                                                                                                                                      |
+| `common/cpp/audioapi/core/utils/AudioFileWriter.*`        | The "reacting to audio without blocking on it" pattern: rotation decided in the worker task, the callbacks-outside-the-lock rule, the never-join-while-holding rule, the injected `PlatformFileBackend` test seam |
+| Any new cross-thread primitive in `utils/`                | Document in the decision table                                                                                                                                                                                    |

@@ -9,8 +9,13 @@
 #include <jni.h>
 #include <sched.h>
 
+#include <time.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -29,6 +34,14 @@ PerformanceMode performanceModeFor(AudioContextLatencyHint latencyHint) {
       return PerformanceMode::PowerSaving;
   }
   return PerformanceMode::LowLatency;
+}
+
+/// Exclusive bypasses the mixer and its effects (echo-cancellation reference included).
+SharingMode sharingModeFor(AudioContextLatencyHint latencyHint, AndroidOutputProfile profile) {
+  return latencyHint == AudioContextLatencyHint::INTERACTIVE &&
+          profile != AndroidOutputProfile::VoiceCommunication
+      ? SharingMode::Exclusive
+      : SharingMode::Shared;
 }
 
 /// About one second of 128-frame callbacks at 48 kHz.
@@ -60,7 +73,7 @@ AndroidAudioPlayer::AndroidAudioPlayer(
 bool AndroidAudioPlayer::openAudioStreamLocked() {
   AudioStreamBuilder builder;
 
-  builder.setSharingMode(SharingMode::Exclusive)
+  builder.setSharingMode(sharingModeFor(latencyHint_, outputProfile_))
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(performanceModeFor(latencyHint_))
@@ -97,6 +110,8 @@ bool AndroidAudioPlayer::rebuildStreamLocked() {
 }
 
 bool AndroidAudioPlayer::startStreamLocked() {
+  streamStartedAtNs_ = steadyClockNowNs();
+  markStarted();
   const bool started = mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK;
   isRunning_.store(started, std::memory_order_release);
   return started;
@@ -176,6 +191,8 @@ bool AndroidAudioPlayer::isRunningLocked() const {
 
 DataCallbackResult
 AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
+  const CurrentRenderScope renderScope(currentRenders_);
+
   if (!isInitialized_.load(std::memory_order_acquire)) {
     return DataCallbackResult::Continue;
   }
@@ -186,7 +203,26 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
 
   keepAudioThreadOnOneCore();
 
-  const CurrentRenderScope renderScope(currentRenders_);
+  // Oboe counts a device write into getFramesWritten() only after the device callback returns.
+  const auto framesWritten = oboeStream->getFramesWritten();
+  if (framesWritten != lastFramesWritten_) {
+    // Oboe's block adapter holds back less than one block of what we rendered for the previous
+    // write. Anything else means the position jumped (new stream, AAudio skipping an underrun).
+    const auto framesHeldByAdapter = streamFramesDelivered_ - framesWritten;
+    if (framesHeldByAdapter < 0 || framesHeldByAdapter >= renderQuantumSize_) {
+      streamFramesDelivered_ = framesWritten;
+    }
+    lastFramesWritten_ = framesWritten;
+  }
+
+  if (isRunning_.load(std::memory_order_acquire)) {
+    publishOutputAnchor(
+        {.contextFrame = renderedFrames_,
+         .hostTimeNs = steadyClockNowNs(),
+         .streamFrame = streamFramesDelivered_,
+         .isValid = true});
+  }
+  streamFramesDelivered_ += numFrames;
 
   auto *buffer = static_cast<float *>(audioData);
   int processedFrames = 0;
@@ -327,8 +363,38 @@ double AndroidAudioPlayer::getBaseLatency() const {
   return static_cast<double>(renderQuantumSize_) / static_cast<double>(sampleRate_);
 }
 
+std::optional<OutputPresentation> AndroidAudioPlayer::getOutputPresentation() {
+  // Held across the anchor read: recovery swaps mStream_ and calls markStarted under it, so a
+  // start-count match also means the anchor came from the current mStream_.
+  std::scoped_lock lock(streamMutex_);
+  const auto anchor = latestOutputAnchor();
+  if (!anchor) {
+    return std::nullopt;
+  }
+
+  // A device timestamp from before the start is AAudio's stale pre-pause report.
+  if (isRunningLocked()) {
+    const auto presented = mStream_->getTimestamp(CLOCK_MONOTONIC);
+    if (presented && presented.value().timestamp >= streamStartedAtNs_) {
+      return OutputPresentation{
+          .contextFrame = anchor->contextFrame + (presented.value().position - anchor->streamFrame),
+          .presentationTimeNs = presented.value().timestamp};
+    }
+  }
+
+  const auto outputLatencyNs =
+      static_cast<std::int64_t>(std::llround(getOutputLatencyLocked() * 1e9));
+  return OutputPresentation{
+      .contextFrame = anchor->contextFrame,
+      .presentationTimeNs = anchor->hostTimeNs + outputLatencyNs};
+}
+
 double AndroidAudioPlayer::getOutputLatency() const {
   std::scoped_lock lock(streamMutex_);
+  return getOutputLatencyLocked();
+}
+
+double AndroidAudioPlayer::getOutputLatencyLocked() const {
   if (mStream_ == nullptr || !isInitialized_.load(std::memory_order_acquire) ||
       !isRunningLocked()) {
     return 0.0;

@@ -1,27 +1,13 @@
 import React, { FC } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from 'react-native';
 
-import { colors, layout } from '../styles';
+import { Card } from '../components';
+import { typography } from '../styles';
 
-interface EmptyStateProps {
-  message: string;
-}
-
-const EmptyState: FC<EmptyStateProps> = ({ message }) => (
-  <View style={styles.emptyCard}>
-    <Text style={styles.emptyText}>{message}</Text>
-  </View>
+const EmptyState: FC<{ message: string }> = ({ message }) => (
+  <Card>
+    <Text style={typography.hint}>{message}</Text>
+  </Card>
 );
-
-const styles = StyleSheet.create({
-  emptyCard: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: layout.radius,
-    padding: 12,
-  },
-  emptyText: {
-    color: colors.gray,
-  },
-});
 
 export default EmptyState;

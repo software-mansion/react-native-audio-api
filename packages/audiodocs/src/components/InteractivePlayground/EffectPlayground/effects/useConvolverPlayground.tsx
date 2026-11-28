@@ -20,13 +20,25 @@ interface ConvolverParams {
   wet: number;
 }
 
-const initialState: ConvolverParams = { duration: 2, decay: 3, normalize: true, wet: 0.6 };
+const initialState: ConvolverParams = {
+  duration: 2,
+  decay: 3,
+  normalize: true,
+  wet: 0.6,
+};
 
-/** Sliders emit many values per second; rebuilding the impulse for each one would stutter. */
+/**
+ * Sliders emit many values per second; rebuilding the impulse for each one
+ * would stutter.
+ */
 const IMPULSE_REBUILD_DELAY_MS = 80;
 const ENVELOPE_CHART_POINTS = 120;
 
-function createImpulseResponse(ctx: AudioContext, duration: number, decay: number): AudioBuffer {
+function createImpulseResponse(
+  ctx: AudioContext,
+  duration: number,
+  decay: number
+): AudioBuffer {
   const length = Math.max(1, Math.round(ctx.sampleRate * duration));
   const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
 
@@ -40,7 +52,10 @@ function createImpulseResponse(ctx: AudioContext, duration: number, decay: numbe
   return impulse;
 }
 
-function impulseChanged(previous: ConvolverParams, next: ConvolverParams): boolean {
+function impulseChanged(
+  previous: ConvolverParams,
+  next: ConvolverParams
+): boolean {
   return (
     previous.duration !== next.duration ||
     previous.decay !== next.decay ||
@@ -116,13 +131,20 @@ export function useConvolverPlayground() {
     return points;
   }, [decay]);
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createConvolverEffect,
-    params,
-    mixesDrySignal: true,
-    initialSource: 'voice',
-    effectNodes: [{ label: 'ConvolverNode', sublabel: `impulse · ${duration.toFixed(2)} s` }],
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createConvolverEffect,
+      params,
+      mixesDrySignal: true,
+      initialSource: 'voice',
+      effectNodes: [
+        {
+          label: 'ConvolverNode',
+          sublabel: `impulse · ${duration.toFixed(2)} s`,
+        },
+      ],
+    }
+  );
 
   const code = buildEffectCode({
     sampleVariable,
@@ -165,12 +187,33 @@ function createImpulseResponse(duration: number, decay: number) {
         unit="s"
         onChange={setDuration}
       />
-      <SliderInput label="Decay" value={decay} min={0.5} max={8} step={0.1} onChange={setDecay} />
-      <SliderInput label="Wet level" value={wet} min={0} max={1} step={0.01} onChange={setWet} />
-      <Switch ariaLabel="Normalize impulse response" checked={normalize} onChange={setNormalize} rightLabel="Normalize (LOUD warning)" />
+      <SliderInput
+        label="Decay"
+        value={decay}
+        min={0.5}
+        max={8}
+        step={0.1}
+        onChange={setDecay}
+      />
+      <SliderInput
+        label="Wet level"
+        value={wet}
+        min={0}
+        max={1}
+        step={0.01}
+        onChange={setWet}
+      />
+      <Switch
+        ariaLabel="Normalize impulse response"
+        checked={normalize}
+        onChange={setNormalize}
+        rightLabel="Normalize (LOUD warning)"
+      />
       <div className={styles.chartBlock}>
         <CurveChart values={envelope} yMin={0} yMax={1} height={90} />
-        <p className={styles.chartCaption}>Impulse response envelope over its duration</p>
+        <p className={styles.chartCaption}>
+          Impulse response envelope over its duration
+        </p>
       </div>
     </div>
   );

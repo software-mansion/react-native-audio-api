@@ -48,6 +48,11 @@ class AndroidAudioPlayer : public AudioPlayer,
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
 
+  /// Maps the stream position Oboe reports as presented (`getTimestamp`) onto context frames.
+  /// Without a device timestamp (OpenSL ES, or right after start) it assumes the last callback's
+  /// first frame plays one output latency after that callback ran.
+  [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
+
   DataCallbackResult onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames)
       override;
 
@@ -64,12 +69,22 @@ class AndroidAudioPlayer : public AudioPlayer,
   AndroidOutputProfile outputProfile_;
   /// Audio thread only. Counts down to the next check that the callback thread is still pinned.
   uint32_t callbacksUntilAffinityCheck_{0};
+  /// `steady_clock` time of the last `startStreamLocked`; guarded by `streamMutex_`.
+  std::int64_t streamStartedAtNs_ = 0;
+  /// Stream position of the next frame `onAudioReady` renders. On API 30 and lower Oboe splits
+  /// one device write into several fixed-size callbacks, which all see the same
+  /// `getFramesWritten()`. Audio Thread only.
+  std::int64_t streamFramesDelivered_ = 0;
+  /// `getFramesWritten()` seen by the previous callback; a change marks a new device write.
+  /// Audio Thread only.
+  std::int64_t lastFramesWritten_ = -1;
 
   bool openAudioStreamLocked();
   bool rebuildStreamLocked();
   bool startStreamLocked();
   void cleanupLocked();
   [[nodiscard]] bool isRunningLocked() const;
+  [[nodiscard]] double getOutputLatencyLocked() const;
 
   /// Pins the audio thread to the core it runs on
   void keepAudioThreadOnOneCore();

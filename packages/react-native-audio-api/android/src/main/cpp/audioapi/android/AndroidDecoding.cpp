@@ -174,7 +174,7 @@ void onAsyncError(
 decoding::DecoderResult attachMemoryExtractorViaTempFile(
     AMediaExtractor *extractor,
     FilePtr &tempFile,
-    const std::vector<uint8_t> &data) {
+    const decoding::EncodedBytes &data) {
   tempFile.reset(tmpfile());
   if (tempFile == nullptr || fwrite(data.data(), 1, data.size(), tempFile.get()) != data.size()) {
     return Err("AndroidDecoder::open: temp file write failed");
@@ -199,7 +199,7 @@ decoding::DecoderResult attachMemoryExtractorViaTempFile(
 struct AndroidDecoderState {
   // Declaration order matters: destroy codec before extractor; keep encoded
   // bytes / temp file / data source alive until the extractor is torn down.
-  std::vector<uint8_t> encodedMemory;
+  decoding::EncodedBytes encodedMemory;
   MemoryDataSourceContext memorySourceContext{};
   FilePtr tempFile;
   AndroidMemoryDataSource dataSource;
@@ -729,7 +729,7 @@ decoding::DecoderResult settleCodecOutputFormat(AndroidDecoderState &state) {
 
 decoding::DecoderResult attachMemoryExtractor(
     AndroidDecoderState &state,
-    std::vector<uint8_t> data) {
+    decoding::EncodedBytes data) {
   state.extractor.reset(AMediaExtractor_new());
   if (state.extractor == nullptr) {
     return Err("AndroidDecoder::open: AMediaExtractor_new failed");

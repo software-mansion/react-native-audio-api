@@ -2,8 +2,8 @@
 sidebar_position: 5
 ---
 
-import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import AudioNodeMethodsTable from "@site/src/components/AudioNodeMethodsTable"
+import AudioNodePropsTable from '@site/src/components/AudioNodePropsTable';
+import AudioNodeMethodsTable from '@site/src/components/AudioNodeMethodsTable';
 import { Optional, ReadOnly } from '@site/src/components/Badges';
 import InteractivePlayground from '@site/src/components/InteractivePlayground';
 import { useDelayPlayground } from '@site/src/components/InteractivePlayground/EffectPlayground/effects/useDelayPlayground';
@@ -31,10 +31,10 @@ constructor(context: BaseAudioContext, options?: DelayOptions)
 
 Inherits all properties from [`AudioNodeOptions`](../core/audio-node.mdx#audionodeoptions).
 
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
-| `maxDelayTime` <Optional /> | `number` | `1.0` | Maximum amount of time, in seconds, to buffer delayed values. Must be greater than `0` and less than `180`, otherwise the constructor throws `NotSupportedError`. |
-| `delayTime` <Optional /> | `number` | `0.0` | Initial value for [`delayTime`](./delay-node.mdx#properties). |
+|          Parameter          |   Type   | Default |                                                                                                                                                                   |
+| :-------------------------: | :------: | :-----: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxDelayTime` <Optional /> | `number` |  `1.0`  | Maximum amount of time, in seconds, to buffer delayed values. Must be greater than `0` and less than `180`, otherwise the constructor throws `NotSupportedError`. |
+|  `delayTime` <Optional />   | `number` |  `0.0`  | Initial value for [`delayTime`](./delay-node.mdx#properties).                                                                                                     |
 
 You can also create a `DelayNode` via the [`BaseAudioContext.createDelay(maxDelayTime?: number)`](../core/base-audio-context.mdx#createdelay) factory method, which uses default values when called without arguments.
 
@@ -42,11 +42,17 @@ You can also create a `DelayNode` via the [`BaseAudioContext.createDelay(maxDela
 
 Inherits all properties from [`AudioNode`](../core/audio-node.mdx#properties).
 
-<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode="max" channelInterpretation="speakers" />
+<AudioNodePropsTable
+  numberOfInputs={1}
+  numberOfOutputs={1}
+  channelCount={2}
+  channelCountMode="max"
+  channelInterpretation="speakers"
+/>
 
-| Name | Type | Description |
-| :----: | :----: | :-------- |
-| `delayTime`| <ReadOnly /> [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing value of time shift to apply. |
+|    Name     |                         Type                         | Description                                                                                                  |
+| :---------: | :--------------------------------------------------: | :----------------------------------------------------------------------------------------------------------- |
+| `delayTime` | <ReadOnly /> [`AudioParam`](../core/audio-param.mdx) | [`k-rate`](../core/audio-param.mdx#a-rate-vs-k-rate) `AudioParam` representing value of time shift to apply. |
 
 :::warning
 In the Web Audio API spec `delayTime` is an `a-rate` param.
@@ -63,9 +69,11 @@ Inherits all methods from [`AudioNode`](../core/audio-node.mdx#methods).
 ## Remarks
 
 #### `maxDelayTime`
+
 - Default value is `1.0`.
 - Nominal range is `0.0` - `180.0`.
 
 #### `delayTime`
+
 - Default value is `0.0`.
 - Nominal range is `0.0` - `maxDelayTime`.

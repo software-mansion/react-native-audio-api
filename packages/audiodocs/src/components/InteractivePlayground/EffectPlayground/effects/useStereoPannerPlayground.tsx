@@ -24,7 +24,10 @@ function describePan(pan: number): string {
   return pan < 0 ? 'left' : 'right';
 }
 
-const createStereoPannerEffect: EffectFactory<StereoPannerParams> = (ctx, { pan }) => {
+const createStereoPannerEffect: EffectFactory<StereoPannerParams> = (
+  ctx,
+  { pan }
+) => {
   const panner = ctx.createStereoPanner();
   panner.pan.value = pan;
 
@@ -40,12 +43,19 @@ export function useStereoPannerPlayground() {
   const [pan, setPan] = useState(initialState.pan);
   const params = useMemo<StereoPannerParams>(() => ({ pan }), [pan]);
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createStereoPannerEffect,
-    params,
-    initialSource: 'voice',
-    effectNodes: [{ label: 'StereoPannerNode', sublabel: `pan · ${pan.toFixed(2)} (${describePan(pan)})` }],
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createStereoPannerEffect,
+      params,
+      initialSource: 'voice',
+      effectNodes: [
+        {
+          label: 'StereoPannerNode',
+          sublabel: `pan · ${pan.toFixed(2)} (${describePan(pan)})`,
+        },
+      ],
+    }
+  );
 
   const code = buildEffectCode({
     sampleVariable,
@@ -60,7 +70,14 @@ panner.connect(ctx.destination);`,
   const controls = (
     <div className={styles.controlsPanel}>
       {commonControls}
-      <SliderInput label="Pan" value={pan} min={-1} max={1} step={0.01} onChange={setPan} />
+      <SliderInput
+        label="Pan"
+        value={pan}
+        min={-1}
+        max={1}
+        step={0.01}
+        onChange={setPan}
+      />
     </div>
   );
 

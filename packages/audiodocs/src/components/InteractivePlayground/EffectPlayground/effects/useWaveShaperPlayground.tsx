@@ -20,7 +20,11 @@ interface WaveShaperParams {
   oversample: OverSampleType;
 }
 
-const initialState: WaveShaperParams = { drive: 4, shape: 'soft', oversample: '4x' };
+const initialState: WaveShaperParams = {
+  drive: 4,
+  shape: 'soft',
+  oversample: '4x',
+};
 
 const CURVE_SAMPLES = 1024;
 
@@ -35,7 +39,10 @@ const OVERSAMPLE_OPTIONS: Array<{ value: OverSampleType; label: string }> = [
   { value: '4x', label: '4x' },
 ];
 
-function makeSoftClipCurve(drive: number, samples = CURVE_SAMPLES): Float32Array<ArrayBuffer> {
+function makeSoftClipCurve(
+  drive: number,
+  samples = CURVE_SAMPLES
+): Float32Array<ArrayBuffer> {
   const curve = new Float32Array(samples);
   const normalization = Math.tanh(drive);
   for (let i = 0; i < samples; i++) {
@@ -45,7 +52,10 @@ function makeSoftClipCurve(drive: number, samples = CURVE_SAMPLES): Float32Array
   return curve;
 }
 
-function makeHardClipCurve(drive: number, samples = CURVE_SAMPLES): Float32Array<ArrayBuffer> {
+function makeHardClipCurve(
+  drive: number,
+  samples = CURVE_SAMPLES
+): Float32Array<ArrayBuffer> {
   const curve = new Float32Array(samples);
   for (let i = 0; i < samples; i++) {
     const x = (i / (samples - 1)) * 2 - 1;
@@ -54,15 +64,22 @@ function makeHardClipCurve(drive: number, samples = CURVE_SAMPLES): Float32Array
   return curve;
 }
 
-function createCurve({ shape, drive }: WaveShaperParams): Float32Array<ArrayBuffer> {
+function createCurve({
+  shape,
+  drive,
+}: WaveShaperParams): Float32Array<ArrayBuffer> {
   return shape === 'soft' ? makeSoftClipCurve(drive) : makeHardClipCurve(drive);
 }
 
 /**
- * `WaveShaperNode.curve` can only be assigned once, so every curve change swaps in a fresh node
- * between two pass-through gains that keep the chain's wiring untouched.
+ * `WaveShaperNode.curve` can only be assigned once, so every curve change swaps
+ * in a fresh node between two pass-through gains that keep the chain's wiring
+ * untouched.
  */
-const createWaveShaperEffect: EffectFactory<WaveShaperParams> = (ctx, params) => {
+const createWaveShaperEffect: EffectFactory<WaveShaperParams> = (
+  ctx,
+  params
+) => {
   const input = ctx.createGain();
   const output = ctx.createGain();
   let shaper: WaveShaperNode | null = null;
@@ -87,7 +104,10 @@ const createWaveShaperEffect: EffectFactory<WaveShaperParams> = (ctx, params) =>
     input,
     output,
     update: (next) => {
-      if (next.shape !== appliedParams.shape || next.drive !== appliedParams.drive) {
+      if (
+        next.shape !== appliedParams.shape ||
+        next.drive !== appliedParams.drive
+      ) {
         rebuild(next);
         return;
       }
@@ -127,19 +147,32 @@ function makeHardClipCurve(drive: number, samples = ${CURVE_SAMPLES}) {
 export function useWaveShaperPlayground() {
   const [drive, setDrive] = useState(initialState.drive);
   const [shape, setShape] = useState<CurveShape>(initialState.shape);
-  const [oversample, setOversample] = useState<OverSampleType>(initialState.oversample);
+  const [oversample, setOversample] = useState<OverSampleType>(
+    initialState.oversample
+  );
 
-  const params = useMemo<WaveShaperParams>(() => ({ drive, shape, oversample }), [drive, shape, oversample]);
+  const params = useMemo<WaveShaperParams>(
+    () => ({ drive, shape, oversample }),
+    [drive, shape, oversample]
+  );
   const curve = useMemo(() => createCurve(params), [params]);
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createWaveShaperEffect,
-    params,
-    initialSource: 'music',
-    effectNodes: [{ label: 'WaveShaperNode', sublabel: `${shape} clip · drive ${drive.toFixed(1)}` }],
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createWaveShaperEffect,
+      params,
+      initialSource: 'music',
+      effectNodes: [
+        {
+          label: 'WaveShaperNode',
+          sublabel: `${shape} clip · drive ${drive.toFixed(1)}`,
+        },
+      ],
+    }
+  );
 
-  const curveFactory = shape === 'soft' ? 'makeSoftClipCurve' : 'makeHardClipCurve';
+  const curveFactory =
+    shape === 'soft' ? 'makeSoftClipCurve' : 'makeHardClipCurve';
 
   const code = buildEffectCode({
     sampleVariable,
@@ -156,8 +189,21 @@ shaper.connect(ctx.destination);`,
   const controls = (
     <div className={styles.controlsPanel}>
       {commonControls}
-      <FilterList<CurveShape> ariaLabel="Curve shape" label="Curve" options={SHAPE_OPTIONS} value={shape} onChange={setShape} />
-      <SliderInput label="Drive" value={drive} min={1} max={12} step={0.1} onChange={setDrive} />
+      <FilterList<CurveShape>
+        ariaLabel="Curve shape"
+        label="Curve"
+        options={SHAPE_OPTIONS}
+        value={shape}
+        onChange={setShape}
+      />
+      <SliderInput
+        label="Drive"
+        value={drive}
+        min={1}
+        max={12}
+        step={0.1}
+        onChange={setDrive}
+      />
       <FilterList<OverSampleType>
         ariaLabel="Oversample"
         label="Oversample"
@@ -167,7 +213,10 @@ shaper.connect(ctx.destination);`,
       />
       <div className={styles.chartBlock}>
         <CurveChart values={curve} showIdentity />
-        <p className={styles.chartCaption}>Transfer curve: input sample on the x axis, output sample on the y axis</p>
+        <p className={styles.chartCaption}>
+          Transfer curve: input sample on the x axis, output sample on the y
+          axis
+        </p>
       </div>
     </div>
   );

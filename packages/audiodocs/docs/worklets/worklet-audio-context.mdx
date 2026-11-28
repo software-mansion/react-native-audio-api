@@ -17,11 +17,11 @@ Use it when you need a self-contained graph for worklet-based analysis or proces
 
 ## When to use it
 
-| Context | Output | Render driver | Typical use |
-| :--- | :--- | :--- | :--- |
-| [`AudioContext`](../core/audio-context.mdx) | Device speakers / headphones | System audio callback | Playback, recording, effects |
-| [`WorkletAudioContext`](./worklet-audio-context.mdx) | Internal sink (discarded) | Software timer on a worker thread | Worklet visualization, isolated processing |
-| [`OfflineAudioContext`](../core/offline-audio-context.mdx) | [`AudioBuffer`](../sources/audio-buffer.mdx) | Renders as fast as possible | Offline bounce / export |
+| Context                                                    | Output                                       | Render driver                     | Typical use                                |
+| :--------------------------------------------------------- | :------------------------------------------- | :-------------------------------- | :----------------------------------------- |
+| [`AudioContext`](../core/audio-context.mdx)                | Device speakers / headphones                 | System audio callback             | Playback, recording, effects               |
+| [`WorkletAudioContext`](./worklet-audio-context.mdx)       | Internal sink (discarded)                    | Software timer on a worker thread | Worklet visualization, isolated processing |
+| [`OfflineAudioContext`](../core/offline-audio-context.mdx) | [`AudioBuffer`](../sources/audio-buffer.mdx) | Renders as fast as possible       | Offline bounce / export                    |
 
 Unlike [`OfflineAudioContext`](../core/offline-audio-context.mdx), `WorkletAudioContext` advances in **real time** at the context sample rate. Unlike [`AudioContext`](../core/audio-context.mdx), it does not compete for the hardware audio session.
 
@@ -44,14 +44,14 @@ constructor(options?: WorkletAudioContextOptions)
 
 ### `WorkletAudioContextOptions`
 
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
+|         Parameter         |   Type   |                                                  Default                                                  |                                            |
+| :-----------------------: | :------: | :-------------------------------------------------------------------------------------------------------: | :----------------------------------------- |
 | `sampleRate` <Optional /> | `number` | [`AudioManager.getDevicePreferredSampleRate()`](../system/audio-manager.mdx#getdevicepreferredsamplerate) | Sample rate for all nodes in this context. |
 
 #### Errors
 
-| Error type | Description |
-| :---: | :---- |
+|     Error type      | Description                                                                                                        |
+| :-----------------: | :----------------------------------------------------------------------------------------------------------------- |
 | `NotSupportedError` | `react-native-audio-worklets` is not installed, or `sampleRate` is outside the supported range [`3000`, `768000`]. |
 
 ## Example

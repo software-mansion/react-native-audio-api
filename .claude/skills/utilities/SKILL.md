@@ -31,6 +31,8 @@ Constructors copy data — `AudioArray` always owns its buffer.
 
 Holds N channels of `AudioArrayBuffer`. Handles up/down-mixing automatically on `sum()` and `copy()`.
 
+`sum()` and `copy()` between different channel counts apply the speaker mixing gains (4 → 2 halves, 4 → 1 quarters). When the extra channels are a node's own intermediate results and not a speaker layout (`ConvolverNode` true stereo), sum channel by channel with `getChannel(i)->sum(...)`.
+
 Key operations: `getChannel(index)`, `getSharedChannel(index)`, `zero()`, `sum(source, interpretation)`, `copy(source)`, `deinterleaveFrom(float*, frames)`, `interleaveTo(float*, frames)`, `normalize()`, `scale(float)`.
 
 Channel layout constants: `ChannelType` (namespace scope, shared by every alignment): `MONO=0`, `LEFT=0`, `RIGHT=1`, `CENTER=2`, `LFE=3`, `SURROUND_LEFT=4`, `SURROUND_RIGHT=5`.
@@ -63,6 +65,7 @@ float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 `AudioArray` subclass acting as a circular queue for streaming audio. **Not thread-safe** — use only from one thread.
 
 Key operations:
+
 - `push_back(AudioArray&, size)` / `push_back(float*, size)` — write frames
 - `pop_front(AudioArray&, size)` / `pop_front(float*, size)` — read oldest frames
 - `pop_back(AudioArray&, size, offset)` — read newest frames
@@ -254,7 +257,7 @@ For full API see [api.md](api.md#audioutilshpp--inline-dsp-math).
 
 ### `AudioBufferPool.hpp` — preallocated planar buffers by pointer
 
-`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, dropping it anywhere returns the buffer, and a null lease is the shutdown message, so the message struct needs a defaulted `operator==`. Not `shared_ptr`: its control block would allocate on the audio thread.
+`AudioBufferPool<N>` owns N `AudioBuffer`s and hands them out as `AudioBufferLease`s, a `unique_ptr` whose deleter returns the buffer to the pool through a lock-free `SlotFreeList` (any thread, never blocks, no allocation). Use it wherever the audio thread fills a buffer for a worker (`AudioFileWriter`, `AudioRecorderCallback`): the lease travels through the `TaskOffloader` message by move, and dropping it anywhere returns the buffer. Not `shared_ptr`: its control block would allocate on the audio thread.
 
 ---
 
@@ -290,10 +293,10 @@ call `analyze()`/`setFFTSize()` from a single thread.
 ```ts
 import { clamp, toFloat32Array, assertFiniteSequence } from './utils';
 
-clamp(value, min, max)                         // clamp a number to [min, max]
-toFloat32Array(values)                         // number[] → Float32Array (passthrough if already)
-toFloat32Array(undefined)                      // → undefined (overload)
-assertFiniteSequence(values, errorMessage)     // throws TypeError if any value is non-finite
+clamp(value, min, max); // clamp a number to [min, max]
+toFloat32Array(values); // number[] → Float32Array (passthrough if already)
+toFloat32Array(undefined); // → undefined (overload)
+assertFiniteSequence(values, errorMessage); // throws TypeError if any value is non-finite
 ```
 
 Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `assertFiniteSequence` in options validators (e.g. PeriodicWave `real`/`imag`).
@@ -301,11 +304,15 @@ Use `toFloat32Array` when accepting `number[] | Float32Array` options. Use `asse
 ### `paths.ts`
 
 ```ts
-import { isRemoteSource, isBase64Source, isDataBlobString } from './utils/paths';
+import {
+  isRemoteSource,
+  isBase64Source,
+  isDataBlobString,
+} from './utils/paths';
 
-isRemoteSource(url)      // true if starts with http:// or https://
-isBase64Source(data)     // true if 'data:audio/...;base64,...'
-isDataBlobString(data)   // true if starts with 'blob:'
+isRemoteSource(url); // true if starts with http:// or https://
+isBase64Source(data); // true if 'data:audio/...;base64,...'
+isDataBlobString(data); // true if starts with 'blob:'
 ```
 
 Use before passing a URL/path to decoder or streaming APIs to determine the source type.
@@ -317,14 +324,14 @@ Use before passing a URL/path to decoder or streaming APIs to determine the sour
 ```ts
 import FilePreset from './utils/filePresets';
 
-FilePreset.Low        // 22050 Hz, 48kbps,  16-bit
-FilePreset.Medium     // 44100 Hz, 128kbps, 16-bit
-FilePreset.High       // 48000 Hz, 192kbps, 24-bit
-FilePreset.Lossless   // 48000 Hz, 320kbps, 24-bit, FLAC L8
+FilePreset.Low; // 22050 Hz, 48kbps,  16-bit
+FilePreset.Medium; // 44100 Hz, 128kbps, 16-bit
+FilePreset.High; // 48000 Hz, 192kbps, 24-bit
+FilePreset.Lossless; // 48000 Hz, 320kbps, 24-bit, FLAC L8
 ```
 
 Use when configuring `AudioRecorder` file output instead of building `FilePresetType` objects manually.
 
 ---
 
-*Maintenance: see [maintenance.md](maintenance.md).*
+_Maintenance: see [maintenance.md](maintenance.md)._

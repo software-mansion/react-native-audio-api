@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import AudioBufferSourceExample from "./AudioBufferSourceExample";
-import SliderInput from "@site/src/ui/SliderInput";
-import Switch from "@site/src/ui/Switch";
-import styles from "../styles.module.css";
+import React, { useState } from 'react';
+import AudioBufferSourceExample from './AudioBufferSourceExample';
+import SliderInput from '@site/src/ui/SliderInput';
+import Switch from '@site/src/ui/Switch';
+import styles from '../styles.module.css';
 
 const initialState = {
   playbackRate: 1.0,
@@ -109,7 +109,7 @@ source.start();`;
     code,
     controls,
     example: AudioBufferSourceExample,
-    title: "Now Playing: example-music-01.mp3",
+    title: 'Now Playing: example-music-01.mp3',
     props: {
       playbackRate,
       detune,

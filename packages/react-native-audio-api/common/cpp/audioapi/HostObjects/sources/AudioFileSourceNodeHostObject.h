@@ -24,7 +24,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_PROPERTY_GETTER_DECL(loop);
   JSI_PROPERTY_GETTER_DECL(currentTime);
   JSI_PROPERTY_GETTER_DECL(duration);
-  JSI_PROPERTY_GETTER_DECL(routedThroughMediaElement);
 
   JSI_PROPERTY_SETTER_DECL(volume);
   JSI_PROPERTY_SETTER_DECL(playbackRate);
@@ -36,10 +35,6 @@ class AudioFileSourceNodeHostObject : public AudioScheduledSourceNodeHostObject 
   JSI_HOST_FUNCTION_DECL(pause);
   JSI_HOST_FUNCTION_DECL(seekToStart);
   JSI_HOST_FUNCTION_DECL(seekToTime);
-
-  [[nodiscard]] AudioFileSourceNode *audioFileSourceNode() const noexcept {
-    return audioFileSourceNode_;
-  }
 
   [[nodiscard]] size_t getMemoryPressure() const override {
     // Interleaved decode scratch (RQ * channels) + file/streaming state.

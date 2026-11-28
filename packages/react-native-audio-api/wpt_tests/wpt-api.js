@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * Slim Web Audio API surface for the Node WPT harness.
- * Only spec-defined classes are exported — no RN extensions
- * (recorder, decoder, worklet nodes, etc.).
+ * Slim Web Audio API surface for the Node WPT harness. Only spec-defined
+ * classes are exported — no RN extensions (recorder, decoder, worklet nodes,
+ * etc.).
  */
 
 const path = require('node:path');
@@ -55,7 +55,7 @@ for (const name of WEB_AUDIO_CLASSES) {
       continue;
     }
     throw new Error(
-      `Failed to load ${name} for WPT (${error.message}). Run yarn build first.`,
+      `Failed to load ${name} for WPT (${error.message}). Run pnpm build first.`,
       { cause: error }
     );
   }

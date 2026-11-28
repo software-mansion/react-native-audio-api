@@ -1,50 +1,12 @@
-name: WPT Tests
+name: WPT tests
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
-
-# Superseded runs are cancelled so that only the newest commit's report reaches the comment.
-concurrency:
-  group: wpt-tests-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
-  changes:
-    name: Detect engine changes
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      wpt: ${{ github.event_name != 'pull_request' || steps.filter.outputs.wpt == 'true' }}
-    steps:
-      - name: Path filter
-        id: filter
-        if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            wpt:
-              - 'packages/react-native-audio-api/common/**'
-              - 'packages/react-native-audio-api/src/**'
-              - 'packages/react-native-audio-api/wpt_tests/**'
-              - 'packages/react-native-audio-api/scripts/build.sh'
-              - 'packages/react-native-audio-api/package.json'
-              - 'package.json'
-              - 'yarn.lock'
-              - '.yarnrc.yml'
-              - '.nvmrc'
-              - '.github/actions/**'
-              - '.github/workflows/wpt-tests.yml'
-
   wpt-run:
-    name: WPT run (${{ matrix.side }})
-    needs: changes
-    if: needs.changes.outputs.wpt == 'true'
-    runs-on: ubuntu-latest
+    name: Run (${{ matrix.side }})
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -66,18 +28,28 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.ref.outputs.ref }}
 
-      - name: Checkout with Node
-        uses: ./.github/actions/checkout-with-node
+      # Inline steps, not ./.github/actions/setup-env: the base side checks out the base
+      # branch, which may not have that action or may have an older version of it.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
-      - name: Setup Yarn
-        uses: ./.github/actions/setup-yarn
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Setup CMake
-        uses: ./.github/actions/setup-cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.0.x'
 
       - name: Run WPT CI report
         working-directory: packages/react-native-audio-api
@@ -90,9 +62,9 @@ jobs:
           # Prefer the dedicated script when present (head / post-merge).
           # Fall back for older base revisions that lack wpt:ci-report / --allow-failures.
           if node -e "const p=require('./package.json'); process.exit(p.scripts?.['wpt:ci-report'] ? 0 : 1)"; then
-            yarn wpt:ci-report
+            pnpm wpt:ci-report
           else
-            yarn wpt:build
+            pnpm wpt:build
             set +e
             node ./wpt_tests/wpt/wpt-harness.mjs --report-json "$REPORT_PATH"
             set -e
@@ -101,36 +73,36 @@ jobs:
           test -f "$REPORT_PATH"
 
       - name: Upload WPT report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-${{ matrix.side }}
           path: packages/react-native-audio-api/wpt_tests/results/latest.json
           if-no-files-found: error
 
   wpt-compare:
-    name: WPT compare
-    # Runs even when wpt-run failed, so the PR still gets a report comment explaining why.
-    if: >
-      !cancelled() &&
-      needs.changes.outputs.wpt == 'true'
-    needs: [changes, wpt-run]
-    runs-on: ubuntu-latest
+    name: Compare
+    # Runs even when wpt-run failed, so the report can say why.
+    if: ${{ !cancelled() }}
+    needs: wpt-run
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: ./.github/actions/checkout-with-node
+      - name: Setup Node
+        uses: ./.github/actions/setup-env
+        with:
+          install: 'false'
 
       - name: Download base report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: wpt-base
           path: wpt-reports/base
 
       - name: Download head report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: wpt-head
@@ -138,39 +110,38 @@ jobs:
 
       - name: Compare WPT results
         id: compare
-        # A regression must not skip the upload below; the job fails in its last step instead.
+        # A regression still uploads the report; the last step fails the job.
         continue-on-error: true
         working-directory: packages/react-native-audio-api
         run: >
           node ./wpt_tests/wpt/wpt-compare.mjs
           --baseline ../../wpt-reports/base/latest.json
           --candidate ../../wpt-reports/head/latest.json
-          --markdown-out ../../wpt-comment/report.md
+          --markdown-out ../../pr-report/wpt/report.md
           --baseline-label "${{ github.event.pull_request.base.sha || 'main' }}"
           --candidate-label "${{ github.event.pull_request.head.sha || github.sha }}"
 
-      - name: Assemble PR comment payload
+      # Reports an error when the comparison produced no report.
+      - name: Write the fallback report
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p wpt-comment
-          echo "${{ github.event.pull_request.number }}" > wpt-comment/pr-number.txt
-          if [ ! -s wpt-comment/report.md ]; then
+          mkdir -p pr-report/wpt
+          if [ ! -s pr-report/wpt/report.md ]; then
             {
               echo '## WPT non-regression comparison'
               echo
-              echo '**ERROR** — the comparison did not produce a report; the test run itself likely failed.'
-            } > wpt-comment/report.md
+              echo '**ERROR**: the comparison produced no report, so the test run itself likely failed.'
+            } > pr-report/wpt/report.md
           fi
 
-      - name: Upload PR comment payload
+      - name: Upload the report
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-pr-report
         with:
-          name: wpt-comment
-          path: wpt-comment/
-          if-no-files-found: error
+          name: wpt
+          path: pr-report
 
       - name: Fail on WPT regression
         if: steps.compare.outcome != 'success' || needs.wpt-run.result != 'success'

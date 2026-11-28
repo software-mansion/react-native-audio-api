@@ -411,4 +411,245 @@ TEST_F(AudioBufferSourceNodeTest, ConnectedSourceStillEndsThroughRenderPath) {
   processGraph(); // `ended` must not fire a second time
 }
 
+/// Spec: `duration` in start(when, offset, duration) counts buffer content, not context time.
+TEST_F(AudioBufferSourceNodeTest, StartDurationCountsBufferTimeAtPlaybackRate) {
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.playbackRate = 2.0f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+
+  auto buffer = makeSilentBuffer(8 * QUANTUM);
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+
+  // 3.5 quanta of buffer content: 1.75 quanta of output at 2x.
+  constexpr size_t DURATION_FRAMES = 3 * QUANTUM + QUANTUM / 2;
+  node->start(0.0, 0.0, static_cast<double>(DURATION_FRAMES) / SAMPLE_RATE);
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  size_t played = 0;
+  for (int q = 0; q < 3; ++q) {
+    context->processGraph(out.get(), QUANTUM);
+    for (float sample : out->getChannel(0)->span()) {
+      played += sample != 0.0f ? 1 : 0;
+    }
+  }
+
+  EXPECT_EQ(played, DURATION_FRAMES / 2);
+  EXPECT_TRUE(node->isFinished());
+}
+
+/// Spec: with loop on, `duration` still counts buffer content, across loop iterations.
+TEST_F(AudioBufferSourceNodeTest, StartDurationCountsBufferTimeAcrossLoops) {
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.playbackRate = 2.0f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+  node->setLoop(true);
+
+  auto buffer = makeSilentBuffer(QUANTUM);
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+
+  // Three and a half passes over the one-quantum buffer: 1.75 quanta of output at 2x.
+  constexpr size_t DURATION_FRAMES = 3 * QUANTUM + QUANTUM / 2;
+  node->start(0.0, 0.0, static_cast<double>(DURATION_FRAMES) / SAMPLE_RATE);
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  size_t played = 0;
+  for (int q = 0; q < 3; ++q) {
+    context->processGraph(out.get(), QUANTUM);
+    for (float sample : out->getChannel(0)->span()) {
+      played += sample != 0.0f ? 1 : 0;
+    }
+  }
+
+  EXPECT_EQ(played, DURATION_FRAMES / 2);
+  EXPECT_TRUE(node->isFinished());
+}
+
+/// Spec: with pitch correction on, `duration` still counts buffer content.
+TEST_F(AudioBufferSourceNodeTest, StartDurationCountsBufferTimeWithPitchCorrection) {
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.pitchCorrection = true;
+  baseOptions.playbackRate = 2.0f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+  auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
+      static_cast<size_t>(WsolaTimeStretcher::MAX_PLAYBACK_RATE * QUANTUM),
+      1,
+      static_cast<float>(SAMPLE_RATE));
+  node->initStretch(1, static_cast<float>(SAMPLE_RATE), playbackRateBuffer);
+  node->setBuffer(makeSilentBuffer(8 * QUANTUM), makeOutputBuffer());
+
+  constexpr size_t DURATION_FRAMES = 3 * QUANTUM + QUANTUM / 2;
+  node->start(0.0, 0.0, static_cast<double>(DURATION_FRAMES) / SAMPLE_RATE);
+
+  for (int q = 0; q < 3; ++q) {
+    processGraph();
+  }
+
+  EXPECT_DOUBLE_EQ(node->getCurrentPosition(), static_cast<double>(DURATION_FRAMES) / SAMPLE_RATE);
+}
+
+/// Spec: start() keeps `duration` for a buffer assigned later, and counts that buffer's content.
+TEST_F(AudioBufferSourceNodeTest, StartDurationCountsContentOfBufferAssignedAfterStart) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  auto *node = addNode(makeNodeWithoutBuffer());
+
+  constexpr size_t DURATION_FRAMES = QUANTUM + QUANTUM / 2;
+  node->start(0.0, 0.0, static_cast<double>(DURATION_FRAMES) / BUFFER_SAMPLE_RATE);
+
+  auto buffer =
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE));
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  size_t played = 0;
+  for (int q = 0; q < 4; ++q) {
+    context->processGraph(out.get(), QUANTUM);
+    for (float sample : out->getChannel(0)->span()) {
+      played += sample != 0.0f ? 1 : 0;
+    }
+  }
+
+  // The buffer runs at half the context rate, so each buffer frame lasts two output frames.
+  EXPECT_EQ(played, 2 * DURATION_FRAMES);
+  EXPECT_TRUE(node->isFinished());
+}
+
+/// Spec: `duration` is compared against unrounded buffer time, so a fractional frame counts.
+TEST_F(AudioBufferSourceNodeTest, StartDurationKeepsFractionalBufferFrames) {
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.playbackRate = 0.25f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+
+  auto buffer = makeSilentBuffer(8 * QUANTUM);
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+
+  constexpr double DURATION_FRAMES = 1.5;
+  node->start(0.0, 0.0, DURATION_FRAMES / SAMPLE_RATE);
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  context->processGraph(out.get(), QUANTUM);
+  size_t played = 0;
+  for (float sample : out->getChannel(0)->span()) {
+    played += sample != 0.0f ? 1 : 0;
+  }
+
+  EXPECT_EQ(played, 6U);
+}
+
+/// A buffer at half the context rate feeds WSOLA one buffer frame per two output frames.
+TEST_F(AudioBufferSourceNodeTest, PitchCorrectionReadsBufferAtItsOwnSampleRate) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  BaseAudioBufferSourceOptions baseOptions;
+  baseOptions.pitchCorrection = true;
+  baseOptions.playbackRate = 2.0f;
+  auto *node = addNode(
+      std::make_unique<TestableAudioBufferSourceNode>(
+          context, AudioBufferSourceOptions(baseOptions)));
+  auto playbackRateBuffer = std::make_shared<DSPAudioBuffer>(
+      static_cast<size_t>(WsolaTimeStretcher::MAX_PLAYBACK_RATE * QUANTUM),
+      1,
+      static_cast<float>(SAMPLE_RATE));
+  node->initStretch(1, static_cast<float>(SAMPLE_RATE), playbackRateBuffer);
+  node->setBuffer(
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE)),
+      makeOutputBuffer());
+  node->start(0.0);
+
+  constexpr int QUANTA = 3;
+  for (int q = 0; q < QUANTA; ++q) {
+    processGraph();
+  }
+
+  // Each quantum stretches 2 * QUANTUM output-rate frames, which is QUANTUM buffer frames.
+  EXPECT_DOUBLE_EQ(
+      node->getCurrentPosition(), static_cast<double>(QUANTA * QUANTUM) / BUFFER_SAMPLE_RATE);
+}
+
+/// Spec: loop points are buffer time, so they become frames at the buffer's sample rate.
+TEST_F(AudioBufferSourceNodeTest, LoopPointsUseBufferSampleRate) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  auto *node = addNode(makeNodeWithoutBuffer());
+  node->setLoop(true);
+  constexpr size_t LOOP_END_FRAMES = 3 * QUANTUM / 8;
+  node->setLoopEnd(static_cast<double>(LOOP_END_FRAMES) / BUFFER_SAMPLE_RATE);
+  node->setBuffer(
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE)),
+      makeOutputBuffer());
+  node->start(0.0);
+
+  processGraph();
+
+  // One quantum reads QUANTUM / 2 buffer frames, wrapping once past the loop end.
+  constexpr size_t EXPECTED_FRAMES = QUANTUM / 2 - LOOP_END_FRAMES;
+  EXPECT_DOUBLE_EQ(
+      node->getCurrentPosition(), static_cast<double>(EXPECTED_FRAMES) / BUFFER_SAMPLE_RATE);
+}
+
+/// Spec: start() keeps `offset` for a buffer assigned later, and counts it in that buffer's time.
+TEST_F(AudioBufferSourceNodeTest, StartOffsetAppliesToBufferAssignedAfterStart) {
+  static constexpr int BUFFER_SAMPLE_RATE = SAMPLE_RATE / 2;
+  auto *node = addNode(makeNodeWithoutBuffer());
+
+  constexpr size_t OFFSET_FRAMES = 2 * QUANTUM;
+  node->start(0.0, static_cast<double>(OFFSET_FRAMES) / BUFFER_SAMPLE_RATE);
+  node->setBuffer(
+      std::make_shared<AudioBuffer>(8 * QUANTUM, 1, static_cast<float>(BUFFER_SAMPLE_RATE)),
+      makeOutputBuffer());
+
+  EXPECT_DOUBLE_EQ(
+      node->getCurrentPosition(), static_cast<double>(OFFSET_FRAMES) / BUFFER_SAMPLE_RATE);
+}
+
+/// Spec: a `duration` of zero plays no buffer content.
+TEST_F(AudioBufferSourceNodeTest, StartWithZeroDurationPlaysNothing) {
+  auto *node = addNode(makeNodeWithoutBuffer());
+  auto buffer = makeSilentBuffer(8 * QUANTUM);
+  for (auto &sample : buffer->getChannel(0)->span()) {
+    sample = 1.0f;
+  }
+  node->setBuffer(buffer, makeOutputBuffer());
+  node->start(0.0, 0.0, 0.0);
+
+  auto out = std::make_shared<DSPAudioBuffer>(QUANTUM, 1, static_cast<float>(SAMPLE_RATE));
+  context->processGraph(out.get(), QUANTUM);
+  for (float sample : out->getChannel(0)->span()) {
+    EXPECT_EQ(sample, 0.0f);
+  }
+  EXPECT_TRUE(node->isFinished());
+}
+
+/// `loop` passed to the constructor must loop like the setter does.
+TEST_F(AudioBufferSourceNodeTest, LoopFromConstructorOptionsKeepsPlayingPastBufferEnd) {
+  AudioBufferSourceOptions options{BaseAudioBufferSourceOptions()};
+  options.loop = true;
+  auto *node = addNode(std::make_unique<TestableAudioBufferSourceNode>(context, options));
+  node->setBuffer(makeSilentBuffer(2 * QUANTUM), makeOutputBuffer());
+  node->start(0.0);
+
+  for (size_t q = 0; q < NUM_QUANTA; ++q) {
+    processGraph();
+  }
+
+  EXPECT_TRUE(node->isPlaying());
+}
+
 // NOLINTEND

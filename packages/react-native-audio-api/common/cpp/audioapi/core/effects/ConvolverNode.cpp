@@ -5,8 +5,8 @@
 #include <audioapi/utils/AudioArray.hpp>
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -22,7 +22,7 @@ ConvolverNode::ConvolverNode(
 
 void ConvolverNode::setBuffer(
     const std::shared_ptr<AudioBuffer> &buffer,
-    std::vector<std::unique_ptr<Convolver>> convolvers,
+    std::vector<std::shared_ptr<Convolver>> convolvers,
     const std::shared_ptr<ConvolverThreadPool> &threadPool,
     const std::shared_ptr<DSPAudioBuffer> &intermediateBuffer,
     float scaleFactor) {
@@ -78,6 +78,10 @@ float ConvolverNode::calculateNormalizationScale(const std::shared_ptr<AudioBuff
   power = 1 / power;
   power *= std::pow(10, GAIN_CALIBRATION * 0.05f);
   power *= gainCalibrationSampleRate_ / buffer->getSampleRate();
+  // True-stereo compensation, as in Chrome.
+  if (numberOfChannels == 4) {
+    power *= 0.5f;
+  }
 
   return power;
 }
@@ -100,7 +104,18 @@ void ConvolverNode::processNode(int framesToProcess) {
   intermediateBuffer_->zero();
   performConvolution(audioBuffer_, framesToProcess);
   audioBuffer_->zero();
-  audioBuffer_->sum(*intermediateBuffer_);
+  if (intermediateBuffer_->getNumberOfChannels() == 4) {
+    // outputChannelMap_ puts the left terms in 0 and 2 and the right terms in 1 and 3,
+    // so channel % busChannels folds them at unity; a mono bus averages the pair.
+    const size_t busChannels = audioBuffer_->getNumberOfChannels();
+    const float gain = busChannels == 1 ? 0.5f : 1.0f;
+    for (size_t channel = 0; channel < 4; ++channel) {
+      audioBuffer_->getChannel(channel % busChannels)
+          ->sum(*intermediateBuffer_->getChannel(channel), 0, 0, framesToProcess, gain);
+    }
+  } else {
+    audioBuffer_->sum(*intermediateBuffer_);
+  }
 
   for (int i = 0; i < audioBuffer_->getNumberOfChannels(); ++i) {
     audioBuffer_->getChannel(i)->scale(scaleFactor_);
@@ -117,20 +132,11 @@ int ConvolverNode::computeTailFrames() const {
 void ConvolverNode::performConvolution(
     const std::shared_ptr<DSPAudioBuffer> &processingBuffer,
     int framesToProcess) {
-  // 32 bits keeps each task within the pool's fixed task storage.
-  const auto frames = static_cast<uint32_t>(framesToProcess);
-  const bool hasThreadPool = threadPool_ != nullptr;
+  const auto frames = static_cast<size_t>(framesToProcess);
   if (processingBuffer->getNumberOfChannels() == 1) {
     for (int i = 0; i < convolvers_.size(); ++i) {
-      if (hasThreadPool) {
-        threadPool_->schedule([this, &processingBuffer, i, frames] {
-          convolvers_[i]->process(
-              *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i), frames);
-        });
-      } else {
-        convolvers_[i]->process(
-            *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i), frames);
-      }
+      convolvers_[i]->process(
+          *processingBuffer->getChannel(0), *intermediateBuffer_->getChannel(i), frames);
     }
   } else if (processingBuffer->getNumberOfChannels() == 2) {
     if (convolvers_.size() == 2) {
@@ -141,23 +147,28 @@ void ConvolverNode::performConvolution(
       outputChannelMap_ = {0, 3, 2, 1};
     }
     for (int i = 0; i < convolvers_.size(); ++i) {
-      if (hasThreadPool) {
-        threadPool_->schedule([this, &processingBuffer, i, frames] {
-          convolvers_[i]->process(
-              *processingBuffer->getChannel(inputChannelMap_[i]),
-              *intermediateBuffer_->getChannel(outputChannelMap_[i]),
-              frames);
-        });
-      } else {
-        convolvers_[i]->process(
-            *processingBuffer->getChannel(inputChannelMap_[i]),
-            *intermediateBuffer_->getChannel(outputChannelMap_[i]),
-            frames);
-      }
+      convolvers_[i]->process(
+          *processingBuffer->getChannel(inputChannelMap_[i]),
+          *intermediateBuffer_->getChannel(outputChannelMap_[i]),
+          frames);
     }
   }
-  if (hasThreadPool) {
-    threadPool_->wait();
+  scheduleTails();
+}
+
+void ConvolverNode::scheduleTails() {
+  if (threadPool_ == nullptr) {
+    return;
+  }
+  for (const auto &convolver : convolvers_) {
+    const std::optional<size_t> completedBlock = convolver->takeCompletedTailBlock();
+    if (!completedBlock.has_value()) {
+      continue;
+    }
+    // A full queue means the workers are starved; the tail is then simply never published
+    // and process() computes it inline when that block comes up.
+    (void)threadPool_->trySchedule(
+        [convolver, block = *completedBlock] { convolver->computeTail(block); });
   }
 }
 } // namespace audioapi

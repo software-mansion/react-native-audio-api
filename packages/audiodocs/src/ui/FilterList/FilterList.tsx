@@ -30,19 +30,34 @@ const FilterList = <T extends string>({
 }: FilterListProps<T>) => {
   const labelId = useId();
 
-  const handleSelectChange = useCallback((event: SelectChangeEvent<string>) => {
-    onChange(event.target.value as T);
-  }, [onChange]);
+  const handleSelectChange = useCallback(
+    (event: SelectChangeEvent<string>) => {
+      onChange(event.target.value as T);
+    },
+    [onChange]
+  );
 
   return (
-    <div className={className ? `${styles.container} ${className}` : styles.container}>
-      <div className={styles.buttonList} role="radiogroup" aria-label={ariaLabel}>
+    <div
+      className={
+        className ? `${styles.container} ${className}` : styles.container
+      }
+    >
+      <div
+        className={styles.buttonList}
+        role="radiogroup"
+        aria-label={ariaLabel}
+      >
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={option.value === value ? `${styles.button} ${styles.buttonActive}` : styles.button}
+            className={
+              option.value === value
+                ? `${styles.button} ${styles.buttonActive}`
+                : styles.button
+            }
             aria-pressed={option.value === value}
           >
             {option.label}
@@ -67,7 +82,11 @@ const FilterList = <T extends string>({
             }}
           >
             {options.map((option) => (
-              <MenuItem key={option.value} value={option.value} className={styles.menuItem}>
+              <MenuItem
+                key={option.value}
+                value={option.value}
+                className={styles.menuItem}
+              >
                 {option.label}
               </MenuItem>
             ))}

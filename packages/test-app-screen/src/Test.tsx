@@ -236,7 +236,8 @@ const Test: FC = () => {
         paddingTop: 200,
         backgroundColor: 'black',
         height: '100%',
-      }}>
+      }}
+    >
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <Text style={{ color: 'white' }}>{testingInfo}</Text>
       </View>

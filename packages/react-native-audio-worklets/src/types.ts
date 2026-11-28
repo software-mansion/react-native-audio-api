@@ -23,8 +23,8 @@ export interface WorkletNodeOptions {
  *
  *   - **Time-domain:** down-mixed mono PCM of length `bufferLength`.
  *   - **Frequency-domain:** linear magnitude spectrum of length `bufferLength`
- *       (internal FFT size is `bufferLength * 2`; same window + FFT path as
- *       `AnalyserNode`, with `smoothingTimeConstant` applied at runtime).
+ *     (internal FFT size is `bufferLength * 2`; same window + FFT path as
+ *     `AnalyserNode`, with `smoothingTimeConstant` applied at runtime).
  */
 export type WorkletNodeCallback = (audioData: Float32Array) => void;
 

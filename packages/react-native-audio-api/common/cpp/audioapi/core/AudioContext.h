@@ -4,6 +4,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
 #include <audioapi/core/types/AudioContextOptions.h>
+#include <audioapi/core/types/AudioTimestamp.h>
 #include <audioapi/events/AudioEvent.h>
 #include <audioapi/events/EventCaller.hpp>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
@@ -26,9 +27,9 @@ class AudioContext : public BaseAudioContext {
   ~AudioContext() override;
   DELETE_COPY_AND_MOVE(AudioContext);
 
-  void close(const std::shared_ptr<ContextStateResolver> &promise);
-  bool resume(const std::shared_ptr<ContextStateResolver> &promise);
-  bool suspend(const std::shared_ptr<ContextStateResolver> &promise);
+  void close(std::unique_ptr<ContextStateResolver> promise);
+  bool resume(std::unique_ptr<ContextStateResolver> promise);
+  bool suspend(std::unique_ptr<ContextStateResolver> promise);
   bool start();
 
   /// @brief Initializes native audio player and assigns the audio destination node to the context.
@@ -43,6 +44,12 @@ class AudioContext : public BaseAudioContext {
   /// @brief Returns the output latency of the audio context in seconds.
   /// @returns The output latency in seconds.
   [[nodiscard]] double getOutputLatency() const;
+
+  /// @brief Spec `getOutputTimestamp()`: the context time of the sample leaving the output device
+  /// now, and now on the `performance.now()` clock. Both are zero before the first rendered block
+  /// or where the platform cannot tell.
+  /// @note JS Thread only.
+  [[nodiscard]] AudioTimestamp getOutputTimestamp() const;
 
   /// @brief Called when the audio stream failed to rebuild.
   /// @note This method is called when the audio stream fails.

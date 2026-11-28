@@ -4,7 +4,11 @@ import React, { useCallback } from 'react';
 import AudioManager from '@site/src/audio/AudioManager';
 import useIsPlaying from '@site/src/audio/useIsPlaying';
 import { downSampleLog } from '@site/src/audio/utils';
-import { clearCanvas, drawSpectroLines, getBarWidth } from '@site/src/canvasUtils';
+import {
+  clearCanvas,
+  drawSpectroLines,
+  getBarWidth,
+} from '@site/src/canvasUtils';
 
 import Canvas, { CanvasContext } from '../Canvas';
 
@@ -13,7 +17,7 @@ const minFrequency = 80;
 
 interface SpectrogramRenderingContext {
   analyser: AnalyserNode;
-  fftOutput: Uint8Array;
+  fftOutput: Uint8Array<ArrayBuffer>;
   barWidth: number;
   bucketCount: number;
   totalBarHeight: number;
@@ -22,80 +26,106 @@ interface SpectrogramRenderingContext {
   slowBucketsSeeds: number[];
 }
 
-
 const Spectrogram: React.FC = () => {
   const { colorMode } = useColorMode();
   const isPlaying = useIsPlaying();
 
-  const prepareRenderingContext = useCallback(({ canvas, ctx }: CanvasContext): SpectrogramRenderingContext => {
-    const analyser = AudioManager.analyser;
-    const fftOutput = new Uint8Array(analyser.frequencyBinCount);
-    const bucketCount = 64;
+  const prepareRenderingContext = useCallback(
+    ({ canvas }: CanvasContext): SpectrogramRenderingContext => {
+      const analyser = AudioManager.analyser;
+      const fftOutput = new Uint8Array(analyser.frequencyBinCount);
+      const bucketCount = 64;
 
-    const barWidth = getBarWidth(canvas.width, bucketCount, barSpacing);
-    const totalBarHeight = canvas.height;
+      const barWidth = getBarWidth(canvas.width, bucketCount, barSpacing);
+      const totalBarHeight = canvas.height;
 
-    const finalBucketCount = Math.floor(canvas.width / (barWidth + barSpacing));
-    const bucketShift = 4;
+      const finalBucketCount = Math.floor(
+        canvas.width / (barWidth + barSpacing)
+      );
+      const bucketShift = 4;
 
-    let slowPhase = 0;
-    let slowBuckets = new Array(finalBucketCount + 2 * bucketShift).fill(0);
-    let slowBucketsSeeds = new Array(finalBucketCount + 2 * bucketShift).fill(0).map(() => Math.random());
+      const slowPhase = 0;
+      const slowBuckets = Array.from(
+        { length: finalBucketCount + 2 * bucketShift },
+        () => 0
+      );
+      const slowBucketsSeeds = Array.from(
+        { length: finalBucketCount + 2 * bucketShift },
+        () => Math.random()
+      );
 
-    return {
-      analyser,
-      fftOutput,
-      bucketCount: finalBucketCount,
-      totalBarHeight,
-      barWidth,
-      slowPhase,
-      slowBuckets,
-      slowBucketsSeeds,
-    };
-  }, []);
+      return {
+        analyser,
+        fftOutput,
+        bucketCount: finalBucketCount,
+        totalBarHeight,
+        barWidth,
+        slowPhase,
+        slowBuckets,
+        slowBucketsSeeds,
+      };
+    },
+    []
+  );
 
-  const onDraw = useCallback(({ canvas, ctx }: CanvasContext, renderingContext: SpectrogramRenderingContext) => {
-    const { analyser, fftOutput, bucketCount, totalBarHeight, barWidth, slowPhase, slowBuckets, slowBucketsSeeds } = renderingContext;
+  const onDraw = useCallback(
+    (
+      { canvas, ctx }: CanvasContext,
+      renderingContext: SpectrogramRenderingContext
+    ) => {
+      const {
+        analyser,
+        fftOutput,
+        bucketCount,
+        totalBarHeight,
+        barWidth,
+        slowBuckets,
+        slowBucketsSeeds,
+      } = renderingContext;
 
-    analyser.getByteFrequencyData(fftOutput);
+      analyser.getByteFrequencyData(fftOutput);
 
-    const drawingBuckets = downSampleLog(
-      fftOutput,
-      bucketCount + 2 * 4,
-      AudioManager.aCtx.sampleRate,
-      minFrequency
-    );
+      const drawingBuckets = downSampleLog(
+        fftOutput,
+        bucketCount + 2 * 4,
+        AudioManager.aCtx.sampleRate,
+        minFrequency
+      );
 
-    clearCanvas(canvas, ctx);
-    let barsToDraw = drawingBuckets;
+      clearCanvas(canvas, ctx);
+      let barsToDraw = drawingBuckets;
 
-    if (!isPlaying) {
-      renderingContext.slowPhase += 0.01;
-      renderingContext.slowBuckets.forEach((_, i) => {
-        renderingContext.slowBuckets[i] = 2 * (60 + 40 * Math.sin(renderingContext.slowPhase + i * 0.05) * slowBucketsSeeds[i]);
-      });
+      if (!isPlaying) {
+        renderingContext.slowPhase += 0.01;
+        renderingContext.slowBuckets.forEach((_, i) => {
+          renderingContext.slowBuckets[i] =
+            2 *
+            (60 +
+              40 *
+                Math.sin(renderingContext.slowPhase + i * 0.05) *
+                slowBucketsSeeds[i]);
+        });
 
-      barsToDraw = slowBuckets;
-    }
+        barsToDraw = slowBuckets;
+      }
 
-    drawSpectroLines(
-      ctx,
-      barsToDraw,
-      bucketCount,
-      4,
-      totalBarHeight,
-      barWidth,
-      barSpacing,
-      colorMode,
-    );
-  }, [isPlaying, colorMode]);
+      drawSpectroLines(
+        ctx,
+        barsToDraw,
+        bucketCount,
+        4,
+        totalBarHeight,
+        barWidth,
+        barSpacing,
+        colorMode
+      );
+    },
+    [isPlaying, colorMode]
+  );
 
   return (
-    <Canvas
-      onDraw={onDraw}
-      prepareRenderingContext={prepareRenderingContext}
-    />
+    <Canvas onDraw={onDraw} prepareRenderingContext={prepareRenderingContext} />
   );
-}
+};
 
 export default Spectrogram;

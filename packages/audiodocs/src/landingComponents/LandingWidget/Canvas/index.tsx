@@ -10,11 +10,16 @@ export interface CanvasContext {
 interface CanvasProps<RenderingContext> {
   height?: number;
   prepareRenderingContext?: (canvasContext: CanvasContext) => RenderingContext;
-  onDraw?: (canvasContext: CanvasContext, renderingContext: RenderingContext) => void
+  onDraw?: (
+    canvasContext: CanvasContext,
+    renderingContext: RenderingContext
+  ) => void;
   className?: string;
 }
 
-const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<RenderingContext>(
+const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<
+  RenderingContext,
+>(
   props: CanvasProps<RenderingContext>,
   ref: React.ForwardedRef<HTMLCanvasElement>
 ) {
@@ -23,13 +28,16 @@ const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<R
   const canvasContextRef = useRef<CanvasContext | null>(null);
   const renderingContextRef = useRef<RenderingContext | null>(null);
 
-  const setCanvasRef = useCallback((element: HTMLCanvasElement | null) => {
-    if (typeof ref === 'function') {
-      ref(element);
-    } else if (ref) {
-      ref.current = element;
-    }
-  }, [ref]);
+  const setCanvasRef = useCallback(
+    (element: HTMLCanvasElement | null) => {
+      if (typeof ref === 'function') {
+        ref(element);
+      } else if (ref) {
+        ref.current = element;
+      }
+    },
+    [ref]
+  );
 
   const stopDrawing = useCallback(() => {
     if (drawingRef.current !== null) {
@@ -38,33 +46,42 @@ const Canvas = forwardRef<HTMLCanvasElement, CanvasProps<any>>(function Canvas<R
     }
   }, []);
 
-  const startDrawing = useCallback((canvasContext: CanvasContext) => {
-    stopDrawing();
+  const startDrawing = useCallback(
+    (canvasContext: CanvasContext) => {
+      stopDrawing();
 
-    if (!onDraw) {
-      return;
-    }
-
-    canvasContextRef.current = canvasContext;
-    renderingContextRef.current = prepareRenderingContext
-      ? prepareRenderingContext(canvasContext)
-      : ({} as RenderingContext);
-
-    const draw = () => {
-      if (!canvasContextRef.current) {
+      if (!onDraw) {
         return;
       }
 
-      onDraw(canvasContextRef.current, renderingContextRef.current as RenderingContext);
+      canvasContextRef.current = canvasContext;
+      renderingContextRef.current = prepareRenderingContext
+        ? prepareRenderingContext(canvasContext)
+        : ({} as RenderingContext);
+
+      const draw = () => {
+        if (!canvasContextRef.current) {
+          return;
+        }
+
+        onDraw(
+          canvasContextRef.current,
+          renderingContextRef.current as RenderingContext
+        );
+        drawingRef.current = requestAnimationFrame(draw);
+      };
+
       drawingRef.current = requestAnimationFrame(draw);
-    };
+    },
+    [onDraw, prepareRenderingContext, stopDrawing]
+  );
 
-    drawingRef.current = requestAnimationFrame(draw);
-  }, [onDraw, prepareRenderingContext, stopDrawing]);
-
-  const handleResponsiveCanvasDraw = useCallback(({ canvas, context }: ResponsiveCanvasDrawParams) => {
-    startDrawing({ canvas, ctx: context });
-  }, [startDrawing]);
+  const handleResponsiveCanvasDraw = useCallback(
+    ({ canvas, context }: ResponsiveCanvasDrawParams) => {
+      startDrawing({ canvas, ctx: context });
+    },
+    [startDrawing]
+  );
 
   useEffect(() => {
     return () => {

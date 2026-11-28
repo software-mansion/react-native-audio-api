@@ -1,5 +1,5 @@
-import AudioManager from "../audio/AudioManager";
-import { Point } from "./types";
+import AudioManager from '../audio/AudioManager';
+import { Point } from './types';
 
 const frequencies = [32, 100, 1000, 10000, 16000];
 const minFreq = frequencies[0];
@@ -13,7 +13,12 @@ interface ResponsePoint {
   posX: number;
 }
 
-export default function getEqualizerResponse(x: number, maxWidth: number, y: number, maxHeight: number): Point[] {
+export default function getEqualizerResponse(
+  x: number,
+  maxWidth: number,
+  y: number,
+  maxHeight: number
+): Point[] {
   const numPoints = 200;
   const responsePoints: ResponsePoint[] = [];
 
@@ -27,7 +32,7 @@ export default function getEqualizerResponse(x: number, maxWidth: number, y: num
 
     let totalMagnitude = 1;
 
-    AudioManager.equalizer.bands.forEach(band => {
+    AudioManager.equalizer.bands.forEach((band) => {
       band.getFrequencyResponse(singleFreq, singleMag, singlePhase);
       totalMagnitude *= singleMag[0];
     });
@@ -39,18 +44,18 @@ export default function getEqualizerResponse(x: number, maxWidth: number, y: num
       posX = x + maxWidth + 3;
     } else {
       const normalizedPos = i / (numPoints - 1);
-      posX = x + (normalizedPos * maxWidth);
+      posX = x + normalizedPos * maxWidth;
     }
 
     responsePoints.push({
       frequency,
       magnitude: totalMagnitude,
-      posX
+      posX,
     });
   }
 
-  return responsePoints.map(point => ({
+  return responsePoints.map((point) => ({
     x: point.posX,
-    y: y + maxHeight / 2 - (Math.log10(point.magnitude) * 12 * maxHeight / 24)
+    y: y + maxHeight / 2 - (Math.log10(point.magnitude) * 12 * maxHeight) / 24,
   }));
 }

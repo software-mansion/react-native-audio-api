@@ -41,6 +41,16 @@ set_source_files_properties(
   COMPILE_FLAGS "-O3 -D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability"
 )
 
+# Decoding is throughput-bound even in Debug builds, so the in-process MiniAudio path stays
+# optimized like the MediaCodec one above.
+set_source_files_properties(
+  "${COMMON_CPP_DIR}/audioapi/utils/MiniaudioImplementation.cpp"
+  "${COMMON_CPP_DIR}/audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.c"
+  "${COMMON_CPP_DIR}/audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.c"
+  PROPERTIES
+  COMPILE_FLAGS "-O3"
+)
+
 # APerformanceHint (API 33) is weak-linked and guarded the same way.
 set_source_files_properties(
   "${ANDROID_CPP_DIR}/audioapi/android/ThroughputHintSession.cpp"

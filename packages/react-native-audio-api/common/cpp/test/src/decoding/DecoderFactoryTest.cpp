@@ -30,10 +30,10 @@ void writeWavFile(const std::string &path, const std::vector<float> &frames) {
   test::writeFloatWavFile(path, frames, sampleRate, channelCount);
 }
 
-std::vector<uint8_t> readFileBytes(const std::string &path) {
+decoding::EncodedBytes readFileBytes(const std::string &path) {
   std::ifstream input(path, std::ios::binary);
   EXPECT_TRUE(input.is_open());
-  return std::vector<uint8_t>(
+  return decoding::EncodedBytes(
       std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
 }
 
@@ -99,8 +99,21 @@ TEST(DecoderFactoryTest, RejectsUnsupportedLocalFile) {
   EXPECT_EQ(result.unwrap_err(), "Cannot open local file: unsupported or invalid audio format");
 }
 
+TEST(DecoderFactoryTest, RejectsExistingNonAudioLocalFile) {
+  const std::string path = testFilePath("decoder-factory-not-audio.txt");
+  {
+    std::ofstream output(path, std::ios::binary);
+    output << std::string(4096, 'x');
+  }
+
+  auto result = decoding::createDecoder(decoding::LocalFileSource{.path = path, .sampleRate = 0});
+  EXPECT_TRUE(result.is_err());
+
+  removeFile(path);
+}
+
 TEST(DecoderFactoryTest, OpensRawPcmSource) {
-  std::vector<uint8_t> pcmBytes(2);
+  decoding::EncodedBytes pcmBytes(2);
   pcmBytes[0] = 0x00;
   pcmBytes[1] = 0x00;
 

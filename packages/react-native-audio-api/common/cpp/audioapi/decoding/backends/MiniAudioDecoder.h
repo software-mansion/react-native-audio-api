@@ -6,9 +6,7 @@
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
-#include <vector>
 
 namespace audioapi::decoding::miniaudio {
 
@@ -32,9 +30,12 @@ class MiniAudioDecoder : public AudioDecoderBackend {
 
  private:
   void teardownDecoder();
+  /// Drops a decoder whose ma_decoder_init_* failed. Init has already released what it
+  /// acquired, so uninit would close that file a second time.
+  void discardFailedDecoder();
 
   std::unique_ptr<ma_decoder> decoder_;
-  std::vector<uint8_t> memoryCopy_;
+  EncodedBytes memoryCopy_;
 };
 
 } // namespace audioapi::decoding::miniaudio

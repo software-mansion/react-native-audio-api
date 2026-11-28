@@ -1,5 +1,5 @@
-import { frequencies } from "../audio/Equalizer";
-import AudioManager from "../audio/AudioManager";
+import { frequencies } from '../audio/Equalizer';
+import AudioManager from '../audio/AudioManager';
 
 const minFreq = frequencies[0].frequency;
 const maxFreq = frequencies[frequencies.length - 1].frequency;
@@ -26,7 +26,7 @@ export default function drawEQControlPoints(
 
       const logFreq = Math.log10(frequency);
       const normalizedPos = (logFreq - logMin) / (logMax - logMin);
-      let posX = x + (normalizedPos * width);
+      let posX = x + normalizedPos * width;
 
       if (index === 0) {
         posX += 96;
@@ -41,7 +41,7 @@ export default function drawEQControlPoints(
       }
 
       const normalizedGain = gainValue / 12;
-      const posY = y + height / 2 - (normalizedGain * height / 2);
+      const posY = y + height / 2 - (normalizedGain * height) / 2;
 
       ctx.beginPath();
       ctx.arc(posX, posY, halfSize, 0, Math.PI * 2);

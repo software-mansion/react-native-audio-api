@@ -6,7 +6,19 @@
   "type": "commonjs",
   "main": "index.ts",
   "devDependencies": {
-    "react-native": "0.82.0",
-    "react-native-audio-api": "^0.9.3"
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "react-native": "catalog:",
+    "react-native-audio-api": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-audio-api": "*"
+  },
+  "scripts": {
+    "check": "bash ../../scripts/run-steps.sh lint typecheck",
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit"
   }
 }

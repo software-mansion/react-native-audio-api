@@ -5,7 +5,7 @@ import { colors } from '../styles';
 import { statusTextColors } from './statusStyles';
 import type { StepItem } from './types';
 
-interface StepRowProps {
+export interface StepRowProps {
   step: StepItem;
 }
 
@@ -40,12 +40,12 @@ const styles = StyleSheet.create({
     minWidth: 44,
   },
   stepMessage: {
-    color: colors.white,
+    color: colors.textPrimary,
     flex: 1,
     fontSize: 13,
   },
   stepDetails: {
-    color: colors.gray,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 17,
     paddingLeft: 56,

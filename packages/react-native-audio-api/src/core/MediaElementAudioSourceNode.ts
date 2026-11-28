@@ -1,5 +1,4 @@
 import AudioNode from './AudioNode';
-import AudioParam from './AudioParam';
 import type AudioContext from './AudioContext';
 import { IAudioContext } from '../jsi-interfaces';
 import type { AudioTagHandle, InternalAudioTagHandle } from '../Audio/types';
@@ -9,59 +8,28 @@ export interface MediaElementAudioSourceOptions {
   mediaElement: AudioTagHandle;
 }
 
+/**
+ * Routes an `<Audio>` tag into the audio graph. From the moment this node is
+ * created the tag is heard only through it: an unconnected or disconnected node
+ * leaves the tag silent while it keeps playing, as the Web Audio API specifies.
+ * A tag can be taken over by one node only.
+ */
 export default class MediaElementAudioSourceNode extends AudioNode {
   readonly mediaElement: AudioTagHandle;
 
   constructor(context: AudioContext, options: MediaElementAudioSourceOptions) {
-    const internalHandle = options.mediaElement as InternalAudioTagHandle;
-    const fileSourceNode = internalHandle.getFileSourceNode();
-    if (fileSourceNode === null) {
-      throw new InvalidStateError(
-        'Audio tag source is not ready yet. Wait for onLoad before creating MediaElementAudioSourceNode.'
-      );
-    }
-    if (fileSourceNode.routedThroughMediaElement) {
+    const audioTag = options.mediaElement as InternalAudioTagHandle;
+    if (audioTag.getMediaElementSource() !== null) {
       throw new InvalidStateError(
         'Audio tag source is already routed through MediaElementAudioSourceNode.'
       );
     }
-    const node = (context.context as IAudioContext).createMediaElementSource(
-      fileSourceNode
+
+    super(
+      context,
+      (context.context as IAudioContext).createMediaElementSource()
     );
-    fileSourceNode.disconnect(undefined);
-    super(context, node);
     this.mediaElement = options.mediaElement;
-  }
-
-  public override disconnect(): void;
-  public override disconnect(output: number): void;
-  public override disconnect(
-    destination: AudioNode,
-    output?: number,
-    input?: number
-  ): void;
-
-  public override disconnect(destination: AudioParam, output?: number): void;
-  public override disconnect(
-    destinationOrOutput?: AudioNode | AudioParam | number,
-    output?: number,
-    input?: number
-  ): void {
-    if (destinationOrOutput === undefined) {
-      super.disconnect();
-    } else if (typeof destinationOrOutput === 'number') {
-      super.disconnect(destinationOrOutput);
-    } else if (destinationOrOutput instanceof AudioParam) {
-      super.disconnect(destinationOrOutput, output);
-    } else {
-      super.disconnect(destinationOrOutput, output, input);
-    }
-
-    const fileSourceNode = (
-      this.mediaElement as InternalAudioTagHandle
-    ).getFileSourceNode();
-    if (fileSourceNode !== null && !fileSourceNode.routedThroughMediaElement) {
-      fileSourceNode.connect(this.context.context.destination);
-    }
+    audioTag.setMediaElementSource(this);
   }
 }

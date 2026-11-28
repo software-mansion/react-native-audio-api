@@ -18,18 +18,18 @@ constructor(options?: AudioContextOptions)
 
 ### `AudioContextOptions`
 
-| Parameter | Type | Default | |
-| :---: | :---: | :----: | :---- |
-| `sampleRate` <Optional /> | `number` | - | The preferred sample rate for the context. |
-| `latencyHint` <Optional /> | `'interactive' \| 'balanced' \| 'playback'` | `'interactive'` | What the context should optimize its output stream for. `interactive` requests the lowest latency the platform offers; `balanced` and `playback` trade output latency for a deeper buffer, which favours glitch-free sustained playback. |
-| `androidOutputProfile` <Optional /> | `'media'` \| `'voiceCommunication'` | `'media'` | How Android classifies the context's output stream, which decides its volume stream, routing and audio processing. `'media'` plays as music. `'voiceCommunication'` marks it as speech in a call, so Android applies its call routing and echo cancellation; use it for interactive voice calls. |
-| `renderSizeHint` <Optional /> | `'default'` \| `'hardware'` \| `number` | `'default'` | Number of sample-frames the graph renders per [render quantum](./base-audio-context.mdx#rendering-the-audio-graph). `'default'` is `128`. `'hardware'` uses the length of the device's output callback, read once when the context is created and converted to the context's sample rate; it falls back to `128` when the platform does not report one. A number is used as-is and may be any integer from `1` to `6 × sampleRate` (six seconds of audio), including sizes that are not a power of two. The size in use is reported by [`renderQuantumSize`](./base-audio-context.mdx#properties). |
+|              Parameter              |                    Type                     |     Default     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| :---------------------------------: | :-----------------------------------------: | :-------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|      `sampleRate` <Optional />      |                  `number`                   |        -        | The preferred sample rate for the context.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+|     `latencyHint` <Optional />      | `'interactive' \| 'balanced' \| 'playback'` | `'interactive'` | What the context should optimize its output stream for. `interactive` requests the lowest latency the platform offers; `balanced` and `playback` trade output latency for a deeper buffer, which favours glitch-free sustained playback.                                                                                                                                                                                                                                                                                                                                                           |
+| `androidOutputProfile` <Optional /> |     `'media'` \| `'voiceCommunication'`     |    `'media'`    | How Android classifies the context's output stream, which decides its volume stream, routing and audio processing. `'media'` plays as music. `'voiceCommunication'` marks it as speech in a call, so Android applies its call routing and echo cancellation; use it for interactive voice calls.                                                                                                                                                                                                                                                                                                   |
+|    `renderSizeHint` <Optional />    |   `'default'` \| `'hardware'` \| `number`   |   `'default'`   | Number of sample-frames the graph renders per [render quantum](./base-audio-context.mdx#rendering-the-audio-graph). `'default'` is `128`. `'hardware'` uses the length of the device's output callback, read once when the context is created and converted to the context's sample rate; it falls back to `128` when the platform does not report one. A number is used as-is and may be any integer from `1` to `6 × sampleRate` (six seconds of audio), including sizes that are not a power of two. The size in use is reported by [`renderQuantumSize`](./base-audio-context.mdx#properties). |
 
 #### Errors
 
-| Error type | Description |
-| :---: | :---- |
-| `NotSupportedError` | `sampleRate` is outside the supported range [`3000`, `768000`]. |
+|     Error type      | Description                                                                                                 |
+| :-----------------: | :---------------------------------------------------------------------------------------------------------- |
+| `NotSupportedError` | `sampleRate` is outside the supported range [`3000`, `768000`].                                             |
 | `NotSupportedError` | `renderSizeHint` is neither `'default'`, `'hardware'`, nor an integer in the range [`1`, `6 × sampleRate`]. |
 
 :::tip Benchmark before changing `renderSizeHint`
@@ -44,13 +44,12 @@ Keep the default unless a measurement tells you otherwise. The render quantum si
 
 ## Properties
 
-| Name | Type | Description | |
-| :----: | :----: | :-------- | :-: |
-| `baseLatency` | `number` | Processing latency in seconds incurred by the `AudioContext` passing audio from the `AudioDestinationNode` to the audio subsystem. Does not include hardware output latency or audio graph processing time. Equals the render callback duration (`callbackFrames / sampleRate`). Returns `0` when the context is not running. | <ReadOnly /> |
+|      Name       |   Type   | Description                                                                                                                                                                                                                                                                                                                                                                      |              |
+| :-------------: | :------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------: |
+|  `baseLatency`  | `number` | Processing latency in seconds incurred by the `AudioContext` passing audio from the `AudioDestinationNode` to the audio subsystem. Does not include hardware output latency or audio graph processing time. Equals the render callback duration (`callbackFrames / sampleRate`). Returns `0` when the context is not running.                                                    | <ReadOnly /> |
 | `outputLatency` | `number` | Estimated output latency in seconds — the interval between when the audio system is given a buffer and when the first sample is played by the output device. Can change when the audio route changes; re-query before sync-sensitive work. Returns `0` when the context is not running. On iOS backed by `AVAudioSession.outputLatency`; on Android sampled via Oboe timestamps. | <ReadOnly /> |
 
 Inherits all properties from [`BaseAudioContext`](./base-audio-context.mdx#properties).
-
 
 ## Methods
 
@@ -60,11 +59,42 @@ Inherits all methods from [`BaseAudioContext`](./base-audio-context.mdx#methods)
 
 Creates [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx), routing media playback into the audio graph.
 
-| Parameter | Type | Description |
-| :---: | :---: | :---- |
+|   Parameter    |                                                        Type                                                         | Description                                                                                                                                   |
+| :------------: | :-----------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mediaElement` | `HTMLMediaElement` (web) \| [`AudioTagHandle`](../sources/audio-tag.mdx#ref-handle-audiotaghandle-methods) (native) | Media element to route into the graph. On native, wait for [`onLoad`](../sources/audio-tag.mdx#props-audioprops) on `<Audio>` before calling. |
 
 #### Returns [`MediaElementAudioSourceNode`](../sources/media-element-audio-source-node.mdx).
+
+### `getOutputTimestamp`
+
+Returns the context time of the sample leaving the output device now, together with now on the `performance.now()` clock. Use it to line audio up with anything else timed by `performance.now()`: animations, network messages, other devices.
+
+The pair is measured on the audio thread from the platform's own presentation timestamps, so output latency is already included and it is not limited to the render-quantum steps `currentTime` moves in. Both values are `0` until the context has rendered its first block, and again after each `resume()` until it renders the first block of the resumed run. While the context is suspended the values stop advancing.
+
+```tsx
+await audioContext.resume();
+
+// Until the resumed context renders its first block both values are 0, which would map onto the wrong time.
+let timestamp = audioContext.getOutputTimestamp();
+while (timestamp.performanceTime === 0) {
+  await new Promise(requestAnimationFrame);
+  timestamp = audioContext.getOutputTimestamp();
+}
+const { contextTime, performanceTime } = timestamp;
+
+// The context time at which a sound is heard at `perfMs` (a performance.now() value):
+const heardAt = (perfMs: number) =>
+  contextTime + (perfMs - performanceTime) / 1000;
+
+oscillator.start(heardAt(performance.now() + 500)); // heard ~500 ms from now
+```
+
+#### Returns `AudioTimestamp`.
+
+|       Name        |   Type   | Description                                                                                             |
+| :---------------: | :------: | :------------------------------------------------------------------------------------------------------ |
+|   `contextTime`   | `number` | Seconds, on the [`currentTime`](./base-audio-context.mdx#properties) axis. Never exceeds `currentTime`. |
+| `performanceTime` | `number` | Milliseconds, on the `performance.now()` axis.                                                          |
 
 ### `close`
 
@@ -92,7 +122,6 @@ Inherits [`onstatechange`](./base-audio-context.mdx#onstatechange) from [`BaseAu
 ### `onerror`
 
 Sets (or removes, when `null` is assigned) a callback fired when the live output stream fails natively and cannot keep rendering — for example after the audio device disconnects or the OS audio service dies while the context is running.
-
 
 Typical recovery is to call [`resume`](./audio-context.mdx#resume) from the handler (or recreate the context). A short delay before `resume` gives the OS audio server time to recover from some errors, e.g. hardware errors, and prevents rapid retry loops.
 

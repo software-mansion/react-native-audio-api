@@ -144,9 +144,9 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
       2.0f, // NOLINT(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
       detune / static_cast<float>(SEMITONES_PER_OCTAVE));
 
-  const float bufferPlaybackRate = rate >= 0.0f ? rate : -rate;
   const bool stopTimeReached = isStopScheduled();
-  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, bufferPlaybackRate, false);
+  // WSOLA applies the speed, so the source reads forward at its natural rate.
+  runBufferProcessor(playbackRateBuffer_, startOffset, offsetLength, 1.0f, false);
 
   // The source ran dry (as opposed to stop() time arriving), but the stretcher still
   // holds audio. The processor has already zero-filled the rest of the input, so keep

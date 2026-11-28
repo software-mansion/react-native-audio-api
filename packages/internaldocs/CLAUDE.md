@@ -5,12 +5,12 @@ Docusaurus 3 site. Docs are MDX in `docs/`. Not published; run locally.
 ## Commands
 
 ```bash
-yarn start   # dev server
-yarn build   # production build
-yarn serve   # serve the built site
+pnpm start   # dev server
+pnpm build   # production build
+pnpm serve   # serve the built site
 ```
 
-From the monorepo root: `yarn docs:internal` / `yarn docs:internal:build`.
+From the monorepo root: `pnpm docs:internal` / `pnpm docs:internal:build`.
 
 ## What belongs here
 
@@ -36,7 +36,7 @@ A plan, WIP write-up, or research note lives in its topic folder. Tag it with on
 ---
 sidebar_position: 1
 sidebar_custom_props:
-  tags: [plan, wip]    # plan, wip, research — any combination
+  tags: [plan, wip] # plan, wip, research — any combination
 ---
 ```
 

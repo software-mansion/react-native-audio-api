@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import type { AudioContext, GainNode } from 'react-native-audio-api';
+import type { AudioContext, PannerNode } from 'react-native-audio-api';
 
 import FilterList from '@site/src/ui/FilterList';
 import SliderInput from '@site/src/ui/SliderInput';
@@ -35,27 +35,23 @@ const distanceModelOptions: Array<{ value: DistanceModel; label: string }> = [
   { value: 'exponential', label: 'Exponential' },
 ];
 
-/**
- * The web wrapper bundled with the docs predates PannerNode, so the playground builds the browser
- * node directly and splices it between two wrapper gains that the chain can connect to.
- */
-interface BrowserBackedContext {
-  context: globalThis.AudioContext;
-}
-
-interface BrowserBackedNode {
-  node: globalThis.AudioNode;
-}
-
-function browserNodeOf(node: GainNode): globalThis.AudioNode {
-  return (node as unknown as BrowserBackedNode).node;
-}
-
-function applyPannerParams(panner: globalThis.PannerNode, params: PannerParams, ctx: AudioContext): void {
+function applyPannerParams(
+  panner: PannerNode,
+  params: PannerParams,
+  ctx: AudioContext
+): void {
   panner.distanceModel = params.distanceModel;
   panner.rolloffFactor = params.rolloffFactor;
-  panner.positionX.setTargetAtTime(params.positionX, ctx.currentTime, POSITION_SMOOTHING_SECONDS);
-  panner.positionZ.setTargetAtTime(params.positionZ, ctx.currentTime, POSITION_SMOOTHING_SECONDS);
+  panner.positionX.setTargetAtTime(
+    params.positionX,
+    ctx.currentTime,
+    POSITION_SMOOTHING_SECONDS
+  );
+  panner.positionZ.setTargetAtTime(
+    params.positionZ,
+    ctx.currentTime,
+    POSITION_SMOOTHING_SECONDS
+  );
 }
 
 function describePosition(x: number, z: number): string {
@@ -65,10 +61,7 @@ function describePosition(x: number, z: number): string {
 }
 
 const createPannerEffect: EffectFactory<PannerParams> = (ctx, params) => {
-  const input = ctx.createGain();
-  const output = ctx.createGain();
-  const browserContext = (ctx as unknown as BrowserBackedContext).context;
-  const panner = browserContext.createPanner();
+  const panner = ctx.createPanner();
 
   panner.panningModel = 'equalpower';
   panner.maxDistance = MAX_DISTANCE;
@@ -76,26 +69,23 @@ const createPannerEffect: EffectFactory<PannerParams> = (ctx, params) => {
   panner.positionZ.value = params.positionZ;
   applyPannerParams(panner, params, ctx);
 
-  browserNodeOf(input).connect(panner);
-  panner.connect(browserNodeOf(output));
-
   return {
-    input,
-    output,
+    input: panner,
+    output: panner,
     update: (next) => applyPannerParams(panner, next, ctx),
-    dispose: () => {
-      input.disconnect();
-      panner.disconnect();
-      output.disconnect();
-    },
+    dispose: () => panner.disconnect(),
   };
 };
 
 export function usePannerPlayground() {
   const [positionX, setPositionX] = useState(initialState.positionX);
   const [positionZ, setPositionZ] = useState(initialState.positionZ);
-  const [distanceModel, setDistanceModel] = useState<DistanceModel>(initialState.distanceModel);
-  const [rolloffFactor, setRolloffFactor] = useState(initialState.rolloffFactor);
+  const [distanceModel, setDistanceModel] = useState<DistanceModel>(
+    initialState.distanceModel
+  );
+  const [rolloffFactor, setRolloffFactor] = useState(
+    initialState.rolloffFactor
+  );
   const params = useMemo<PannerParams>(
     () => ({ positionX, positionZ, distanceModel, rolloffFactor }),
     [positionX, positionZ, distanceModel, rolloffFactor]
@@ -103,17 +93,19 @@ export function usePannerPlayground() {
 
   const distance = Math.hypot(positionX, positionZ);
 
-  const { chain, header, commonControls, sampleVariable } = useEffectPlayground({
-    createEffect: createPannerEffect,
-    params,
-    initialSource: 'voice',
-    effectNodes: [
-      {
-        label: 'PannerNode',
-        sublabel: `${distance.toFixed(1)} m · ${describePosition(positionX, positionZ)}`,
-      },
-    ],
-  });
+  const { chain, header, commonControls, sampleVariable } = useEffectPlayground(
+    {
+      createEffect: createPannerEffect,
+      params,
+      initialSource: 'voice',
+      effectNodes: [
+        {
+          label: 'PannerNode',
+          sublabel: `${distance.toFixed(1)} m · ${describePosition(positionX, positionZ)}`,
+        },
+      ],
+    }
+  );
 
   const code = buildEffectCode({
     sampleVariable,

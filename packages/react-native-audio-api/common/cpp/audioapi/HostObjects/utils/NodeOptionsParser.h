@@ -347,7 +347,7 @@ inline AudioFileSourceOptions parseAudioFileSourceOptions(
       auto arrayBuffer = sourceObj.getArrayBuffer(runtime);
       auto *data = arrayBuffer.data(runtime);
       auto size = arrayBuffer.size(runtime);
-      options.data = std::vector<uint8_t>(data, data + size);
+      options.data = decoding::EncodedBytes(data, data + size);
       // In-memory sources decode via OS / miniaudio — never FFmpeg.
       options.requiresFFmpeg = false;
     }

@@ -43,7 +43,7 @@ Result withDecoderFromSource(
 decoding::EncodedMemorySource
 makeEncodedMemorySource(const void *data, size_t size, int sampleRate) {
   return decoding::EncodedMemorySource{
-      .data = std::vector<uint8_t>(
+      .data = decoding::EncodedBytes(
           static_cast<const uint8_t *>(data), static_cast<const uint8_t *>(data) + size),
       .sampleRate = sampleRate};
 }

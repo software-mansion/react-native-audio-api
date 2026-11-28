@@ -1,0 +1,66 @@
+packages:
+  - packages/react-native-audio-api
+  - packages/react-native-audio-worklets
+  - packages/custom-node-generator
+  - packages/audiodocs
+  - packages/internaldocs
+  - packages/docs-theme
+  - packages/test-app-screen
+  - apps/common-app
+  - apps/fabric-example
+
+# 1 Week gate
+minimumReleaseAge: 10080
+# TEMPORARY: segmented-control shipped 2.5.8 to 2.6.0 within days after two
+# years without a release (2.6.0 vetted by hand: built by GitHub Actions with
+# provenance, no install scripts). Remove once 2.6.0 is older than the gate.
+minimumReleaseAgeExclude:
+  - '@react-native-segmented-control/segmented-control'
+
+overrides:
+  typescript: 7.0.2
+  # needed as swm/t-rex-ui pins docusaurus at 3.9.2 which is not compatible with webpack >=
+  webpack: 5.101.3
+  # webpack does not load entry module and skips d3-transitions which throws on higher versions
+  d3: 7.9.0
+
+catalog:
+  '@babel/core': '^7.25.2'
+  '@babel/preset-env': '^7.25.3'
+  '@babel/runtime': '^7.25.0'
+  '@commitlint/config-conventional': '17.0.2'
+  '@evilmartians/lefthook': '^1.5.0'
+  '@react-native-community/cli': '20.2.0'
+  '@react-native-community/cli-platform-android': '20.2.0'
+  '@react-native-community/cli-platform-ios': '20.2.0'
+  '@react-native/babel-preset': '0.88.0'
+  '@react-native/jest-preset': '0.88.0'
+  '@react-native/metro-config': '0.88.0'
+  '@react-native/typescript-config': '0.88.0'
+  '@types/jest': '^29.5.13'
+  '@types/node': '^18.0.0'
+  '@types/react': '^19.2.0'
+  '@types/react-test-renderer': '^19.1.0'
+  '@types/semver': '7.7.1'
+  commitlint: '17.0.2'
+  jest: '^29.7.0'
+  react: '19.3.0'
+  react-dom: '19.3.0'
+  react-native: '0.88.0'
+  react-native-builder-bob: '0.33.1'
+  react-native-reanimated: '4.7.1'
+  react-native-svg: '15.15.4'
+  react-native-worklets: '0.13.0'
+  react-test-renderer: '19.3.0'
+  typescript: '7.0.2'
+
+# Allow postinstall for git hooks registration
+allowBuilds:
+  '@evilmartians/lefthook': true
+  esbuild: true
+  core-js: false
+  core-js-pure: false
+
+tasks:
+  check:
+    dependsOn: ['^build', 'build']

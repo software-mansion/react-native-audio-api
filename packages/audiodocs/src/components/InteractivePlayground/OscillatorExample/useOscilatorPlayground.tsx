@@ -1,23 +1,23 @@
-import FilterList from "@site/src/ui/FilterList";
-import SliderInput from "@site/src/ui/SliderInput";
-import React, { useState } from "react";
-import { OscillatorType } from "react-native-audio-api";
+import FilterList from '@site/src/ui/FilterList';
+import SliderInput from '@site/src/ui/SliderInput';
+import React, { useState } from 'react';
+import { OscillatorType } from 'react-native-audio-api';
 
-import styles from "../styles.module.css";
-import OscillatorExample from "./OscillatorExample";
+import styles from '../styles.module.css';
+import OscillatorExample from './OscillatorExample';
 
 const initialState = {
-  type: "sine" as OscillatorType,
+  type: 'sine' as OscillatorType,
   frequency: 440,
   detune: 0,
   volume: 0.5,
 };
 
 const oscillatorTypes: OscillatorType[] = [
-  "sine",
-  "square",
-  "sawtooth",
-  "triangle",
+  'sine',
+  'square',
+  'sawtooth',
+  'triangle',
 ];
 
 const oscillatorTypeOptions = oscillatorTypes.map((oscType) => ({
@@ -89,7 +89,7 @@ oscillator.start();`;
     code,
     controls,
     example: OscillatorExample,
-    title: "Oscillator Node",
+    title: 'Oscillator Node',
     props: {
       type,
       frequency,

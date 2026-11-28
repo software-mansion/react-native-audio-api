@@ -6,12 +6,12 @@ const { createRequire } = require('node:module');
 
 /**
  * Root of the react-native-audio-api package whose JS build the WPT harness
- * loads. Defaults to the workspace package; set RN_AUDIO_API_APP_ROOT to an
- * app directory to test the version installed in its node_modules:
+ * loads. Defaults to the workspace package; set RN_AUDIO_API_APP_ROOT to an app
+ * directory to test the version installed in its node_modules:
  *
- *   RN_AUDIO_API_APP_ROOT=/path/to/app yarn wpt:only
+ * RN_AUDIO_API_APP_ROOT=/path/to/app pnpm wpt:only
  *
- * @returns {string} absolute path to the package root
+ * @returns {string} Absolute path to the package root
  */
 function resolvePackageRoot() {
   const appRoot = process.env.RN_AUDIO_API_APP_ROOT;
@@ -33,7 +33,7 @@ function resolvePackageRoot() {
   if (packageRoot === workspaceRoot) {
     throw new Error(
       `RN_AUDIO_API_APP_ROOT=${appRoot} resolves react-native-audio-api to the ` +
-        'workspace package itself. Pin a published version in the app and run yarn install.'
+        'workspace package itself. Pin a published version in the app and run pnpm install.'
     );
   }
   if (!fs.existsSync(path.join(packageRoot, 'lib', 'commonjs'))) {

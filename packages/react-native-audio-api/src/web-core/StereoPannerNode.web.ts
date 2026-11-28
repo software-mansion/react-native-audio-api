@@ -1,7 +1,7 @@
 import { StereoPannerOptions } from '../types';
 import AudioNode from './AudioNode.web';
 import AudioParam from './AudioParam.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 
 export default class StereoPannerNode extends AudioNode {
   readonly pan: AudioParam;

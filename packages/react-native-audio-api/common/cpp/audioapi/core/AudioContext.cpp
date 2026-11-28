@@ -1,6 +1,8 @@
 #include <audioapi/core/AudioContext.h>
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
+#include <audioapi/core/utils/OutputTimestamp.h>
+#include <audioapi/events/AudioEventProducer.h>
 
 #include <memory>
 #include <thread>
@@ -70,13 +72,14 @@ bool AudioContext::tryStartDriver() {
   return false;
 }
 
-void AudioContext::close(const std::shared_ptr<ContextStateResolver> &promise) {
+void AudioContext::close(std::unique_ptr<ContextStateResolver> promise) {
   if (getState() == ContextState::CLOSED) {
     promise->reject("Cannot close a closed audio context.");
     return;
   }
 
   stopDriver();
+  getAudioEventProducer()->release();
   promise->resolve();
 }
 
@@ -93,7 +96,7 @@ void AudioContext::stopDriver() {
   audioPlayer_->cleanup();
 }
 
-bool AudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) {
+bool AudioContext::resume(std::unique_ptr<ContextStateResolver> promise) {
   if (getState() == ContextState::CLOSED) {
     promise->reject("Cannot resume a closed audio context.");
     return false;
@@ -125,7 +128,7 @@ bool AudioContext::resume(const std::shared_ptr<ContextStateResolver> &promise) 
   return result;
 }
 
-bool AudioContext::suspend(const std::shared_ptr<ContextStateResolver> &promise) {
+bool AudioContext::suspend(std::unique_ptr<ContextStateResolver> promise) {
   // Control-message body: no locking (see `close`).
   if (getState() == ContextState::CLOSED) {
     promise->reject("Cannot suspend a closed audio context.");
@@ -173,6 +176,24 @@ double AudioContext::getBaseLatency() const {
   }
 
   return audioPlayer_->getBaseLatency();
+}
+
+AudioTimestamp AudioContext::getOutputTimestamp() const {
+  if (audioPlayer_ == nullptr) {
+    return {};
+  }
+
+  const auto presentation = audioPlayer_->getOutputPresentation();
+  if (!presentation) {
+    return {};
+  }
+
+  return outputTimestampAt(
+      *presentation,
+      getSampleRate(),
+      getCurrentSampleFrame(),
+      audioPlayer_->isRunning(),
+      audioPlayer_->presentationClockNowNs());
 }
 
 double AudioContext::getOutputLatency() const {

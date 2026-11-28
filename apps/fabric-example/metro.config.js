@@ -1,5 +1,6 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
+const { withNanoIcons } = require('react-native-nano-icons/metro');
 
 const monorepoRoot = path.resolve(__dirname, '../..');
 const appsRoot = path.resolve(monorepoRoot, 'apps');
@@ -29,6 +30,15 @@ const config = {
           type: 'sourceFile',
         };
       }
+      // Babel adds @babel/runtime imports to workspace packages compiled from source.
+      // They sit outside the app's node_modules, so resolve the helpers from the app.
+      if (moduleName.startsWith('@babel/runtime/')) {
+        return context.resolveRequest(
+          { ...context, originModulePath: path.join(__dirname, 'index.js') },
+          moduleName,
+          platform
+        );
+      }
       return context.resolveRequest(context, moduleName, platform);
     },
   },
@@ -56,4 +66,4 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(defaultConfig, config);
+module.exports = withNanoIcons(mergeConfig(defaultConfig, config));

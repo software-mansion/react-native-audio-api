@@ -89,10 +89,10 @@ class ConvolverNodeRenderQuantumTest : public ::testing::Test {
       ConvolverNodeHarness &node,
       const std::shared_ptr<AudioBuffer> &ir,
       size_t blockSize = kConvolverBlock) {
-    std::vector<std::unique_ptr<Convolver>> convolvers;
+    std::vector<std::shared_ptr<Convolver>> convolvers;
     for (size_t ch = 0; ch < ir->getNumberOfChannels(); ++ch) {
       AudioArray channel(*ir->getChannel(ch));
-      convolvers.push_back(std::make_unique<Convolver>());
+      convolvers.push_back(std::make_shared<Convolver>());
       convolvers.back()->init(blockSize, channel, ir->getSize());
     }
     auto intermediate = std::make_shared<DSPAudioBuffer>(

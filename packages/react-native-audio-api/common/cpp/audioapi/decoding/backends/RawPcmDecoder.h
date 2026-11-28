@@ -2,6 +2,7 @@
 
 #include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/decoding/backends/AudioDecoderBackend.h>
+#include <audioapi/utils/AlignedAllocator.hpp>
 #include <audioapi/utils/Macros.h>
 
 #include <cstddef>
@@ -32,7 +33,7 @@ class RawPcmDecoder : public AudioDecoderBackend {
       int channelCount,
       bool interleaved);
 
-  std::vector<float> interleavedPcm_;
+  std::vector<float, AlignedAllocator<float>> interleavedPcm_;
 };
 
 } // namespace audioapi::decoding::raw_pcm

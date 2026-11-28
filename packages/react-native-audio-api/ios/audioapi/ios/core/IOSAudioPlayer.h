@@ -33,13 +33,24 @@ class IOSAudioPlayer : public AudioPlayer {
   [[nodiscard]] double getBaseLatency() const override;
   [[nodiscard]] double getOutputLatency() const override;
 
+  /// The host time CoreAudio attaches to a buffer is when its first frame leaves the I/O
+  /// unit; the session's `outputLatency` covers the rest of the way to the speaker.
+  [[nodiscard]] std::optional<OutputPresentation> getOutputPresentation() override;
+
+  /// Mach uptime: the clock React Native's `performance.now()` reads on iOS, and the one
+  /// CoreAudio stamps buffers with. libc++ `steady_clock` (`CLOCK_MONOTONIC_RAW`) keeps counting
+  /// while the device sleeps, so it runs ahead of both by the total sleep since boot.
+  [[nodiscard]] std::int64_t presentationClockNowNs() const override;
+
  private:
   void clearPendingSaved();
   /// @note Audio Thread only
   /// Always pulls the graph in steps of `renderQuantumSize_`; if the system
   /// buffer size is not a multiple of it, the unused tail of the last quantum
   /// is kept (at most one quantum) and played at the start of the next callback.
-  void deliverOutputBuffers(AudioBufferList *outputData, int numFrames);
+  /// Publishes the context frame of the buffer's first sample against `timestamp`'s host time.
+  void
+  deliverOutputBuffers(AudioBufferList *outputData, int numFrames, const AudioTimeStamp *timestamp);
 
   /// Builds the native player and points its render and stream-failure blocks at this object.
   /// Runs as a member initializer, before the members below exist: the blocks only capture

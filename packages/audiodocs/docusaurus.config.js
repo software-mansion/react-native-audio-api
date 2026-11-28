@@ -130,8 +130,7 @@ const config = {
           position: 'right',
         },
         {
-          'href':
-            'https://github.com/software-mansion/react-native-audio-api',
+          'href': 'https://github.com/software-mansion/react-native-audio-api',
           'label': 'GitHub',
           'position': 'right',
           'aria-label': 'GitHub repository',
@@ -161,7 +160,8 @@ const config = {
       },
     },
   },
-    clientModules: [
+  clientModules: [
+    require.resolve('./src/polyfills/audioListenerParams.ts'),
     require.resolve('./src/wasm-loader.js'),
   ],
 
@@ -207,6 +207,19 @@ const config = {
             module: {
               rules: [
                 {
+                  // RN packages (e.g. reanimated) ship ESM with extensionless imports of
+                  // platform-split files, which strict ESM rejects.
+                  test: /\.m?js$/,
+                  resolve: { fullySpecified: false },
+                },
+                {
+                  // The 1.0 web entry re-exports `BaseAudioContext`, which is a type-only
+                  // interface and compiles to an empty module.
+                  test: /\.js$/,
+                  include: /node_modules[\\/]react-native-audio-api[\\/]/,
+                  parser: { reexportExportsPresence: false },
+                },
+                {
                   test: /\.txt$/,
                   type: 'asset/source',
                 },
@@ -233,7 +246,9 @@ const config = {
                     options: {
                       presets: [
                         '@babel/preset-react',
-                        { plugins: ['@babel/plugin-proposal-class-properties'] },
+                        {
+                          plugins: ['@babel/plugin-proposal-class-properties'],
+                        },
                       ],
                     },
                   },

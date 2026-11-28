@@ -26,13 +26,9 @@ namespace audioapi {
 class IAudioEventHandlerRegistry;
 
 /// A filled pool buffer plus frame count — the only thing that crosses to the worker thread.
-/// The default-constructed value (no buffer) is the offloader's shutdown message, which is
-/// what operator== exists for.
 struct PendingCallbackFrames {
   AudioBufferLease buffer;
   int numFrames = 0;
-
-  bool operator==(const PendingCallbackFrames &) const = default;
 };
 
 /// Delivers recorded audio to a JS `onAudioReady` callback, resampling and remixing from

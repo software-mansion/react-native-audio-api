@@ -408,14 +408,10 @@ void AudioFileWriter::writeAudioData(const float *const *channels, int numFrames
     std::memcpy(slot->getChannel(channel)->begin(), channels[channel], frames * sizeof(float));
   }
   // Never blocks: the channel has room for every buffer the pool can hand out.
-  offloader_->getSender()->send(
-      PendingFileWrite{.buffer = std::move(slot), .numFrames = numFrames});
+  offloader_->send(PendingFileWrite{.buffer = std::move(slot), .numFrames = numFrames});
 }
 
 void AudioFileWriter::runWriterTask(PendingFileWrite pending) {
-  if (pending.buffer == nullptr) {
-    return;
-  }
   const int numFrames = pending.numFrames;
 
   std::string encodeError;

@@ -1,16 +1,18 @@
-import React, { FC, useCallback, useEffect, useState, useRef } from 'react';
-import { Alert, Text, View } from 'react-native';
+import React, { FC, useEffect, useRef, useState } from 'react';
+import { Alert, StyleSheet, Text } from 'react-native';
 import {
   AudioBuffer,
-  AudioManager,
-  useAudioInput,
   AudioBufferSourceNode,
+  AudioManager,
+  IOSMode,
+  IOSOption,
+  useAudioInput,
 } from 'react-native-audio-api';
 
-import { Button, Container, Select } from '../../components';
-import { colors } from '../../styles';
-
+import { Button, Card, Container, Select } from '../../components';
 import { audioContext, audioRecorder } from '../../singletons';
+import { typography } from '../../styles';
+import { activatePlaybackSession } from '../../utils/audio';
 
 enum Status {
   Idle = 'Idle',
@@ -19,46 +21,88 @@ enum Status {
   Playback = 'Playback',
 }
 
+const REPLAY_RECORDING_MS = 5000;
+
+async function verifyPermissions() {
+  const recordingPermission = await AudioManager.requestRecordingPermissions();
+  const notificationPermission =
+    await AudioManager.requestNotificationPermissions();
+
+  if (
+    recordingPermission === 'Granted' &&
+    notificationPermission === 'Granted'
+  ) {
+    return true;
+  }
+
+  Alert.alert(
+    'Insufficient permissions!',
+    'You need to grant audio recording permissions to use this feature.'
+  );
+  return false;
+}
+
+async function activateRecordingSession(mode: IOSMode, options: IOSOption[]) {
+  AudioManager.setSystemOptions({
+    ios: { category: 'playAndRecord', mode, options },
+  });
+
+  try {
+    await AudioManager.setAudioSessionActivity(true);
+    return true;
+  } catch (error) {
+    console.error('Failed to activate audio session:', error);
+    Alert.alert(
+      'Audio Session Error',
+      'Failed to activate audio session for recording.'
+    );
+    return false;
+  }
+}
+
+async function startRecorder() {
+  try {
+    await audioRecorder.start();
+    return true;
+  } catch (error) {
+    Alert.alert(
+      'Recording Error',
+      `Failed to start recording: ${(error as Error).message}`
+    );
+    return false;
+  }
+}
+
 const Record: FC = () => {
   const { availableInputs, currentInput, selectInput } = useAudioInput();
 
   const [status, setStatus] = useState<Status>(Status.Idle);
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
   const sourceNodesRef = useRef<AudioBufferSourceNode[]>([]);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * The recorder and context are app-wide singletons the Recorder demo also
+   * uses, so unmounting only stops what this screen started.
+   */
+  const ownsRecorderRef = useRef(false);
 
-  const verifyPermissions = async () => {
-    const recPerm = await AudioManager.requestRecordingPermissions();
-    const notPerm = await AudioManager.requestNotificationPermissions();
+  const scheduleTimeout = (callback: () => void, delayMs: number) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(callback, delayMs);
+  };
 
-    return recPerm === 'Granted' && notPerm === 'Granted';
+  const releaseReplaySources = () => {
+    sourceNodesRef.current.forEach((source) => source.disconnect());
+    sourceNodesRef.current = [];
   };
 
   const startEcho = async () => {
-    const hasPermission = await verifyPermissions();
-    if (!hasPermission) {
-      Alert.alert(
-        'Insufficient permissions!',
-        'You need to grant audio recording permissions to use this feature.'
-      );
-      return;
-    }
-
-    AudioManager.setSystemOptions({
-      ios: {
-        category: 'playAndRecord',
-        mode: 'voiceChat',
-        options: ['allowBluetoothHFP'],
-      },
-    });
-
-    try {
-      await AudioManager.setAudioSessionActivity(true);
-    } catch (error) {
-      console.error('Failed to activate audio session:', error);
-      Alert.alert(
-        'Audio Session Error',
-        'Failed to activate audio session for recording.'
-      );
+    if (
+      !(await verifyPermissions()) ||
+      !(await activateRecordingSession('voiceChat', ['allowBluetoothHFP']))
+    ) {
       return;
     }
 
@@ -75,57 +119,32 @@ const Record: FC = () => {
     }
 
     audioRecorder.connect(audioContext, audioContext.destination);
+    ownsRecorderRef.current = true;
 
-    try {
-      await audioRecorder.start();
-    } catch (error) {
-      Alert.alert(
-        'Recording Error',
-        `Failed to start recording: ${(error as Error).message}`
-      );
-      return;
+    if (await startRecorder()) {
+      setStatus(Status.LiveEcho);
     }
-
-    setStatus(Status.LiveEcho);
   };
 
-  /// This stops only the recording, not the audio context
+  /** Stops the recording and suspends the shared context, without closing it. */
   const stopEcho = async () => {
     await audioRecorder.stop();
     audioContext.suspend();
 
     audioRecorder.disconnect();
+    ownsRecorderRef.current = false;
     setStatus(Status.Idle);
     await AudioManager.setAudioSessionActivity(false);
   };
 
   const startRecordForReplay = async () => {
-    const hasPermission = await verifyPermissions();
-
-    if (!hasPermission) {
-      Alert.alert(
-        'Insufficient permissions!',
-        'You need to grant audio recording permissions to use this feature.'
-      );
-      return;
-    }
-
-    AudioManager.setSystemOptions({
-      ios: {
-        category: 'playAndRecord',
-        mode: 'default',
-        options: ['allowBluetoothA2DP', 'allowBluetoothHFP'],
-      },
-    });
-
-    try {
-      await AudioManager.setAudioSessionActivity(true);
-    } catch (error) {
-      console.error('Failed to activate audio session:', error);
-      Alert.alert(
-        'Audio Session Error',
-        'Failed to activate audio session for recording.'
-      );
+    if (
+      !(await verifyPermissions()) ||
+      !(await activateRecordingSession('default', [
+        'allowBluetoothA2DP',
+        'allowBluetoothHFP',
+      ]))
+    ) {
       return;
     }
 
@@ -137,10 +156,7 @@ const Record: FC = () => {
         channelCount: 1,
         bufferLength: 4096,
       },
-      (event) => {
-        const { buffer, numFrames } = event;
-
-        console.log('Audio recorder buffer ready:', buffer.duration, numFrames);
+      ({ buffer }) => {
         setCapturedBuffers((prevBuffers) => [...prevBuffers, buffer]);
       }
     );
@@ -153,37 +169,25 @@ const Record: FC = () => {
       return;
     }
 
-    try {
-      await audioRecorder.start();
-    } catch (error) {
-      Alert.alert(
-        'Recording Error',
-        `Failed to start recording: ${(error as Error).message}`
-      );
+    ownsRecorderRef.current = true;
+    if (!(await startRecorder())) {
       return;
     }
 
     setStatus(Status.Recording);
 
-    setTimeout(async () => {
+    scheduleTimeout(async () => {
       audioRecorder.stop();
       audioRecorder.clearOnAudioReady();
+      ownsRecorderRef.current = false;
       await AudioManager.setAudioSessionActivity(false);
       setStatus(Status.Idle);
-    }, 5000);
+    }, REPLAY_RECORDING_MS);
   };
 
   const onStartReplay = async () => {
-    AudioManager.setSystemOptions({
-      ios: {
-        category: 'playback',
-        mode: 'default',
-        options: [],
-      },
-    });
-
     try {
-      await AudioManager.setAudioSessionActivity(true);
+      await activatePlaybackSession();
     } catch (error) {
       console.error('Failed to activate audio session:', error);
       Alert.alert(
@@ -197,8 +201,9 @@ const Record: FC = () => {
       await audioContext.resume();
     }
 
-    const tNow = audioContext.currentTime;
-    let nextStartAt = tNow + 1;
+    releaseReplaySources();
+    const replayStart = audioContext.currentTime;
+    let nextStartAt = replayStart + 1;
 
     capturedBuffers.forEach((buffer) => {
       const source = audioContext.createBufferSource();
@@ -211,73 +216,82 @@ const Record: FC = () => {
 
     setStatus(Status.Playback);
 
-    setTimeout(
+    scheduleTimeout(
       async () => {
+        releaseReplaySources();
         await audioContext.suspend();
         await AudioManager.setAudioSessionActivity(false);
         setStatus(Status.Idle);
       },
-      (nextStartAt - tNow) * 1000
+      (nextStartAt - replayStart) * 1000
     );
   };
 
-  const onSelect = useCallback(
-    async (id: string) => {
-      const input = availableInputs.find((d) => d.id === id);
+  const onSelect = async (id: string) => {
+    const input = availableInputs.find((d) => d.id === id);
 
-      if (!input) {
-        return;
-      }
+    if (!input) {
+      return;
+    }
 
-      try {
-        await selectInput(input);
-      } catch (error) {
-        // Android refuses a switch while a recorder is running, and either
-        // platform refuses a device that went away between listing and picking.
-        Alert.alert('Input Device Error', `${error}`);
-      }
-    },
-    [availableInputs, selectInput]
-  );
+    try {
+      await selectInput(input);
+    } catch (error) {
+      // Android refuses a switch while a recorder is running, and either
+      // platform refuses a device that went away between listing and picking.
+      Alert.alert('Input Device Error', String(error));
+    }
+  };
 
   useEffect(() => {
     return () => {
-      void audioRecorder.stop();
-      sourceNodesRef.current.forEach((source) => {
-        source.disconnect();
-      });
-      sourceNodesRef.current = [];
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      sourceNodesRef.current.forEach((source) => source.disconnect());
+
+      if (ownsRecorderRef.current) {
+        audioRecorder.stop();
+        audioRecorder.clearOnAudioReady();
+        audioRecorder.disconnect();
+      }
     };
   }, []);
 
   return (
-    <Container style={{ gap: 40 }}>
-      <View style={{ alignItems: 'center' }}>
-        <Text style={{ color: colors.white, fontSize: 20 }}>
-          Status: {status}
-        </Text>
-      </View>
-      <View>
-        <Select
-          value={currentInput?.id || ''}
-          onChange={onSelect}
-          options={availableInputs.map((d) => d.id) || []}
-        />
-      </View>
-      <View style={{ alignItems: 'center', gap: 10 }}>
-        <Text style={{ color: colors.white, fontSize: 16 }}>Echo</Text>
+    <Container style={styles.content}>
+      <Text style={styles.status}>Status: {status}</Text>
+      <Select
+        value={currentInput?.id ?? ''}
+        onChange={onSelect}
+        options={availableInputs.map((d) => d.id)}
+      />
+      <Card style={styles.section}>
+        <Text style={typography.sectionTitle}>Echo</Text>
         <Button title="Start Recording" onPress={startEcho} />
         <Button title="Stop Recording" onPress={stopEcho} />
-      </View>
-      <View style={{ alignItems: 'center', gap: 10, paddingTop: 40 }}>
-        <Text style={{ color: colors.white, fontSize: 16 }}>
-          Record & replay
-        </Text>
+      </Card>
+      <Card style={styles.section}>
+        <Text style={typography.sectionTitle}>Record & replay</Text>
         <Button title="Record for Replay" onPress={startRecordForReplay} />
         <Button title="Replay" onPress={onStartReplay} />
-      </View>
+      </Card>
     </Container>
   );
 };
 
 export default Record;
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 24,
+  },
+  status: {
+    ...typography.sectionTitle,
+    textAlign: 'center',
+  },
+  section: {
+    alignItems: 'center',
+    gap: 12,
+  },
+});

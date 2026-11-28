@@ -2,6 +2,7 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/decoding/AudioDecoding.h>
+#include <audioapi/events/AudioEventProducer.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/CircularArray.hpp>
@@ -29,6 +30,10 @@ BaseAudioContext::BaseAudioContext(
           std::make_unique<utils::DisposerImpl<DISPOSER_PAYLOAD_SIZE>>(AUDIO_SCHEDULER_CAPACITY)),
       graph_(std::make_shared<utils::graph::Graph>(AUDIO_SCHEDULER_CAPACITY, disposer_.get())),
       deferredEvents_(audioEventHandlerRegistry, audioEventProducer_) {}
+
+BaseAudioContext::~BaseAudioContext() {
+  audioEventProducer_->release();
+}
 
 void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
   destination_ = destination;

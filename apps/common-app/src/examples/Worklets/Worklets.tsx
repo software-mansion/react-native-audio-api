@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
 import {
   WorkletNode,
   WorkletProcessingNode,
@@ -14,8 +13,9 @@ import Animated, {
   withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
-import { Button, Container, Switch } from '../../components';
-import { colors } from '../../styles';
+import { Button, Card, Container, Switch } from '../../components';
+import { colors, typography } from '../../styles';
+import { useAudioContext } from '../../utils/audio';
 
 const HEAVY_JS_ITERATIONS = 4_000_000;
 
@@ -68,12 +68,14 @@ function VisualizerBar({
 }
 
 function Worklets() {
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioContext = useAudioContext();
   const workletSourceRef = useRef<WorkletSourceNode | null>(null);
   const workletProcessingRef = useRef<WorkletProcessingNode | null>(null);
   const workletNodeRef = useRef<WorkletNode | null>(null);
   const heavyWorkAccRef = useRef(0);
-  const jsWorkloadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jsWorkloadTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [heavyJsLoad, setHeavyJsLoad] = useState(false);
@@ -84,15 +86,14 @@ function Worklets() {
   const bar3 = useSharedValue(0);
   const bar4 = useSharedValue(0);
 
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
+  useEffect(
+    () => () => {
+      workletSourceRef.current?.disconnect();
+      workletProcessingRef.current?.disconnect();
+      workletNodeRef.current?.disconnect();
+    },
+    []
+  );
 
   useEffect(() => {
     if (!heavyJsLoad) {
@@ -116,16 +117,21 @@ function Worklets() {
   }, [heavyJsLoad]);
 
   const start = () => {
-    const ctx = audioContextRef.current;
-    if (isPlaying || !ctx) {
+    if (isPlaying) {
       return;
     }
 
-    const sampleRate = ctx.sampleRate;
+    const sampleRate = audioContext.sampleRate;
 
     workletSourceRef.current = new WorkletSourceNode(
-      ctx,
-      (audioData, outputChannelCount, framesToProcess, currentTime, startOffset) => {
+      audioContext,
+      (
+        audioData,
+        outputChannelCount,
+        framesToProcess,
+        currentTime,
+        startOffset
+      ) => {
         'worklet';
 
         const frequency = 440;
@@ -141,7 +147,7 @@ function Worklets() {
     );
 
     workletProcessingRef.current = new WorkletProcessingNode(
-      ctx,
+      audioContext,
       (
         inputData,
         outputData,
@@ -152,8 +158,7 @@ function Worklets() {
       ) => {
         'worklet';
 
-        const tremolo =
-          0.75 + 0.25 * Math.sin(2 * Math.PI * 2 * currentTime);
+        const tremolo = 0.75 + 0.25 * Math.sin(2 * Math.PI * 2 * currentTime);
 
         for (let ch = 0; ch < outputChannelCount; ch++) {
           const input = inputData[Math.min(ch, inputChannelCount - 1)]!;
@@ -167,7 +172,7 @@ function Worklets() {
     );
 
     workletNodeRef.current = new WorkletNode(
-      ctx,
+      audioContext,
       (audioData: Float32Array) => {
         'worklet';
 
@@ -193,12 +198,12 @@ function Worklets() {
 
     workletSourceRef.current.connect(workletProcessingRef.current);
     workletProcessingRef.current.connect(workletNodeRef.current);
-    workletNodeRef.current.connect(ctx.destination);
+    workletNodeRef.current.connect(audioContext.destination);
 
     workletSourceRef.current.start();
 
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
     }
 
     setIsPlaying(true);
@@ -226,11 +231,8 @@ function Worklets() {
   const barAmplitudes = [bar0, bar1, bar2, bar3, bar4];
 
   return (
-    <Container>
-      <Text style={{ ...styles.title, color: colors.white }}>
-        Audio Worklets Visualizer
-      </Text>
-      <Text style={{ ...styles.subtitle, color: colors.white }}>
+    <Container style={styles.content}>
+      <Text style={styles.subtitle}>
         WorkletSource → WorkletProcessing → WorkletNode → destination
       </Text>
 
@@ -239,13 +241,13 @@ function Worklets() {
         <Switch value={heavyJsLoad} onValueChange={setHeavyJsLoad} />
       </View>
 
-      <View style={{ ...styles.visualizer, backgroundColor: colors.white }}>
+      <Card style={styles.visualizer}>
         <View style={styles.barsContainer}>
           {barAmplitudes.map((amplitude, index) => (
             <VisualizerBar key={index} amplitude={amplitude} index={index} />
           ))}
         </View>
-      </View>
+      </Card>
 
       <View style={styles.buttonsContainer}>
         <Button onPress={start} title="Start Playing" disabled={isPlaying} />
@@ -256,35 +258,27 @@ function Worklets() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
+  content: {
+    gap: 24,
   },
   subtitle: {
-    fontSize: 14,
-    marginBottom: 24,
+    ...typography.hint,
     textAlign: 'center',
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
     paddingHorizontal: 8,
   },
   toggleLabel: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: 14,
   },
   visualizer: {
     height: 250,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginVertical: 16,
-    borderRadius: 10,
-    padding: 20,
   },
   barsContainer: {
     flexDirection: 'row',

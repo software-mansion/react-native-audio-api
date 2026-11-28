@@ -151,10 +151,7 @@ void installOfflineBindings(
       PropNameID::forAscii(runtime, "createOfflineAudioContext"),
       3,
       [eventRegistry, callInvoker](
-          Runtime &rt,
-          const Value & /* thisValue */,
-          const Value *args,
-          size_t count) -> Value {
+          Runtime &rt, const Value & /* thisValue */, const Value *args, size_t count) -> Value {
         int numberOfChannels = 1;
         size_t length = 0;
         float sampleRate = 0.0f;
@@ -179,11 +176,7 @@ void installOfflineBindings(
       runtime,
       PropNameID::forAscii(runtime, "createAudioBuffer"),
       3,
-      [](
-          Runtime &rt,
-          const Value & /* thisValue */,
-          const Value *args,
-          size_t count) -> Value {
+      [](Runtime &rt, const Value & /* thisValue */, const Value *args, size_t count) -> Value {
         if (count < 3 || !args[0].isNumber() || !args[1].isNumber() || !args[2].isNumber()) {
           throwTypeError(
               rt,
@@ -210,10 +203,7 @@ void installAudioContextBinding(
       PropNameID::forAscii(runtime, "createAudioContext"),
       2,
       [eventRegistry, callInvoker](
-          Runtime &rt,
-          const Value & /* thisValue */,
-          const Value *args,
-          size_t count) -> Value {
+          Runtime &rt, const Value & /* thisValue */, const Value *args, size_t count) -> Value {
         if (count < 1 || !args[0].isNumber()) {
           throwTypeError(rt, "createAudioContext(sampleRate) requires a numeric sampleRate.");
         }
@@ -222,8 +212,8 @@ void installAudioContextBinding(
 
         auto latencyHint = AudioContextLatencyHint::INTERACTIVE;
         if (count > 1 && args[1].isString()) {
-          latencyHint = audioapi::js_enum_parser::latencyHintFromString(
-              args[1].getString(rt).utf8(rt));
+          latencyHint =
+              audioapi::js_enum_parser::latencyHintFromString(args[1].getString(rt).utf8(rt));
         }
 
         auto hostObject = std::make_shared<AudioContextHostObject>(
@@ -257,9 +247,7 @@ void installAudioEventEmitter(
     const std::shared_ptr<IAudioEventHandlerRegistry> &eventRegistry) {
   auto eventEmitter = std::make_shared<AudioEventHandlerRegistryHostObject>(eventRegistry);
   runtime.global().setProperty(
-      runtime,
-      "AudioEventEmitter",
-      Object::createFromHostObject(runtime, eventEmitter));
+      runtime, "AudioEventEmitter", Object::createFromHostObject(runtime, eventEmitter));
 }
 
 } // namespace

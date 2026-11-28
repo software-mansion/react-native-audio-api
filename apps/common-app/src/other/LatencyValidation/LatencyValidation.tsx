@@ -1,60 +1,77 @@
-import React, { FC, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet } from 'react-native';
-import { AudioManager } from 'react-native-audio-api';
+import React, { FC, RefObject, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import { AudioManager, AudioRecorder } from 'react-native-audio-api';
 
 import { Container } from '../../components';
-import { audioContext, audioRecorder } from '../../singletons';
-import { TestUI, type ControlAction } from '../../testComponents';
-import { formatTimestamp } from './helpers';
+import * as TestUI from '../../testComponents';
 import {
-  cleanupLatencyValidation,
-  runLatencyValidationSuite,
+  closeLoopbackAudioIO,
+  createLoopbackAudioIO,
+  runLoopbackLatencyTest,
+  type LoopbackAudioIO,
 } from './latencyTests';
 import LoopbackAnalysisPanel from './LoopbackAnalysisPanel';
 import type { LoopbackAnalysis } from './types';
 
-type RunnerState = 'idle' | 'running';
+const READY_MESSAGE = 'Ready to run the speaker-to-mic loopback latency check.';
 
-const LatencyValidation: FC = () => {
-  const isMountedRef = useRef(true);
-  const [runnerState, setRunnerState] = useState<RunnerState>('idle');
-  const [currentStep, setCurrentStep] = useState(
-    'Ready to run the speaker-to-mic loopback latency check.'
-  );
-  const [analysis, setAnalysis] = useState<LoopbackAnalysis | null>(null);
-  const [liveLog, setLiveLog] = useState<string[]>([]);
-
-  const appendLog = (message: string) => {
-    if (!isMountedRef.current) {
-      return;
-    }
-
-    setLiveLog((previous) => [
-      ...previous,
-      `${formatTimestamp(Date.now())} ${message}`,
-    ]);
+const verdictMessages: Record<LoopbackAnalysis['scenario']['status'], string> =
+  {
+    pass: 'Analysis complete: aligned waveform matches the reported latencies.',
+    skipped:
+      'Analysis complete: microphone capture did not contain a matchable beep pattern.',
+    fail: 'Analysis complete: waveform alignment exists but latency delta is outside tolerance.',
   };
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      cleanupLatencyValidation({ audioContext, audioRecorder }).catch(
-        (error) => {
-          console.warn('LatencyValidation cleanup failed', error);
-        }
-      );
-    };
-  }, []);
+/**
+ * Releases the running test's audio I/O. Both the run and an unmount call it,
+ * and only the first one closes it.
+ */
+async function releaseRunIO(ioRef: RefObject<LoopbackAudioIO | null>) {
+  const io = ioRef.current;
+  ioRef.current = null;
+  if (io) {
+    await closeLoopbackAudioIO(io);
+  }
+}
+
+const LatencyValidation: FC = () => {
+  const runIORef = useRef<LoopbackAudioIO | null>(null);
+  const {
+    isMountedRef,
+    runnerState,
+    setRunnerState,
+    currentStep,
+    showStep,
+    liveLog,
+    appendLog,
+    clearLog,
+  } = TestUI.useRunLog<'idle' | 'running'>('idle', READY_MESSAGE);
+  const [analysis, setAnalysis] = useState<LoopbackAnalysis | null>(null);
+
+  useEffect(
+    () => () => {
+      releaseRunIO(runIORef);
+    },
+    []
+  );
 
   const runTest = async () => {
     if (runnerState === 'running') {
       return;
     }
 
+    // The run reconfigures and finally deactivates the shared audio session,
+    // which would end another screen's recording.
+    if (AudioRecorder.isRecordingOngoing()) {
+      showStep('Another recording is in progress. Stop it, then run again.');
+      return;
+    }
+
     setRunnerState('running');
     setAnalysis(null);
-    setLiveLog([]);
-    setCurrentStep('Preparing audio session...');
+    clearLog();
+    showStep('Preparing audio session...');
     appendLog('Starting speaker-to-mic loopback check.');
 
     try {
@@ -63,29 +80,11 @@ const LatencyValidation: FC = () => {
         throw new Error('Recording permission was not granted.');
       }
 
-      if (Platform.OS !== 'web') {
-        AudioManager.setSystemOptions({
-          ios: {
-            category: 'playAndRecord',
-            // 'measurement' keeps the signal path raw (no AGC/EQ) so the loopback
-            // delay is accurate, while running the mic+speaker for the shortest
-            // possible window to keep the idle full-duplex buzz to a minimum.
-            mode: 'measurement',
-            options: ['defaultToSpeaker'],
-          },
-        });
-        await AudioManager.setAudioSessionActivity(true);
-      }
-
-      setCurrentStep(
-        'Playing beep pattern and analyzing microphone capture...'
-      );
+      showStep('Playing beep pattern and analyzing microphone capture...');
       appendLog('Reference pattern scheduled. Recording microphone input.');
 
-      const result = await runLatencyValidationSuite({
-        audioContext,
-        audioRecorder,
-      });
+      runIORef.current = createLoopbackAudioIO();
+      const result = await runLoopbackLatencyTest(runIORef.current);
 
       if (!isMountedRef.current) {
         return;
@@ -95,45 +94,23 @@ const LatencyValidation: FC = () => {
       appendLog(
         `Captured ${result.recordedWindowPlot.points.length > 0 ? 'microphone' : 'no'} waveform points for visualization.`
       );
-
-      if (result.scenario.status === 'pass') {
-        setCurrentStep(
-          'Analysis complete: aligned waveform matches the reported latencies.'
-        );
-      } else if (result.scenario.status === 'skipped') {
-        setCurrentStep(
-          'Analysis complete: microphone capture did not contain a matchable beep pattern.'
-        );
-      } else {
-        setCurrentStep(
-          'Analysis complete: waveform alignment exists but latency delta is outside tolerance.'
-        );
-      }
-
+      showStep(verdictMessages[result.scenario.status]);
       appendLog(`Test finished with status=${result.scenario.status}.`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown validation error';
-      setCurrentStep(`Loopback check failed: ${message}`);
+      showStep(`Loopback check failed: ${message}`);
       appendLog(`Test failed: ${message}`);
     } finally {
-      await cleanupLatencyValidation({ audioContext, audioRecorder });
-
-      if (isMountedRef.current) {
-        setRunnerState('idle');
-      }
+      await releaseRunIO(runIORef);
+      setRunnerState('idle');
     }
   };
 
-  const resetTest = async () => {
-    if (runnerState === 'running') {
-      return;
-    }
-
+  const resetTest = () => {
     setAnalysis(null);
-    setLiveLog([]);
-    setCurrentStep('Ready to run the speaker-to-mic loopback latency check.');
-    await cleanupLatencyValidation({ audioContext, audioRecorder });
+    clearLog();
+    showStep(READY_MESSAGE);
   };
 
   if (Platform.OS === 'web') {
@@ -147,58 +124,34 @@ const LatencyValidation: FC = () => {
     );
   }
 
-  const controlActions: ControlAction[] = [
-    {
-      title: 'Run Test',
-      onPress: () => {
-        runTest();
-      },
-      disabled: runnerState === 'running',
-      width: 120,
-    },
-    {
-      title: 'Reset',
-      onPress: () => {
-        resetTest();
-      },
-      disabled: runnerState === 'running',
-      width: 90,
-    },
-  ];
+  const isRunning = runnerState === 'running';
 
   return (
-    <Container disablePadding>
-      <TestUI.Header
-        title="Latency Validation"
-        subtitle="Visual loopback analysis: generated beep pattern, microphone capture, aligned overlay, and correlation search."
+    <TestUI.TestLayout
+      description="Visual loopback analysis: generated beep pattern, microphone capture, aligned overlay, and correlation search."
+      currentStep={currentStep}
+      actions={[
+        {
+          title: 'Run Test',
+          onPress: runTest,
+          disabled: isRunning,
+          minWidth: 120,
+        },
+        {
+          title: 'Reset',
+          onPress: resetTest,
+          disabled: isRunning,
+          minWidth: 90,
+        },
+      ]}
+    >
+      <LoopbackAnalysisPanel analysis={analysis} />
+      <TestUI.LiveLog
+        entries={liveLog}
+        emptyMessage="Live log will appear here while the test runs."
       />
-      <TestUI.CurrentStepCard message={currentStep} />
-      <TestUI.ControlBar actions={controlActions} />
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <LoopbackAnalysisPanel analysis={analysis} />
-        <TestUI.LiveLog
-          entries={liveLog}
-          emptyMessage="Live log will appear here while the test runs."
-        />
-      </ScrollView>
-    </Container>
+    </TestUI.TestLayout>
   );
 };
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    gap: 12,
-    paddingBottom: 32,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});
 
 export default LatencyValidation;

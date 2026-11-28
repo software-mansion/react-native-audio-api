@@ -1,5 +1,5 @@
 import AudioNode from './AudioNode.web';
-import BaseAudioContext from './BaseAudioContext.web';
+import type BaseAudioContext from './BaseAudioContext.web';
 import { WaveShaperOptions } from '../types';
 import { toFloat32Array } from '../utils';
 import { validateWaveShaperCurve } from '../utils/validation';

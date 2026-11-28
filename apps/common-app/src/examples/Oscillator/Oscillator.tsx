@@ -1,23 +1,32 @@
-import React, { useRef, useState, useEffect, FC } from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
-import {
-  AudioContext,
+import React, { FC, useRef, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import type {
   GainNode,
   OscillatorNode,
+  OscillatorType,
   StereoPannerNode,
 } from 'react-native-audio-api';
-import type { OscillatorType } from 'react-native-audio-api';
 
-import { Container, Slider, Spacer, Button } from '../../components';
-import { layout, colors } from '../../styles';
+import {
+  Button,
+  Container,
+  SegmentedControl,
+  Slider,
+  type SegmentedControlOption,
+} from '../../components';
+import { useAudioContext } from '../../utils/audio';
 
 const INITIAL_FREQUENCY = 440;
 const INITIAL_DETUNE = 0;
 const INITIAL_GAIN = 1.0;
 const INITIAL_PAN = 0;
-const OSCILLATOR_TYPES = ['sine', 'square', 'sawtooth', 'triangle'] as const;
 
-const labelWidth = 80;
+const oscillatorTypeOptions: SegmentedControlOption<OscillatorType>[] = [
+  { value: 'sine', label: 'Sine' },
+  { value: 'square', label: 'Square' },
+  { value: 'sawtooth', label: 'Saw' },
+  { value: 'triangle', label: 'Triangle' },
+];
 
 const Oscillator: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -27,35 +36,55 @@ const Oscillator: FC = () => {
   const [pan, setPan] = useState(INITIAL_PAN);
   const [oscillatorType, setOscillatorType] = useState<OscillatorType>('sine');
 
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioContext = useAudioContext();
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const panRef = useRef<StereoPannerNode | null>(null);
 
-  const setup = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
+  const start = () => {
+    const oscillator = audioContext.createOscillator();
+    oscillator.frequency.value = frequency;
+    oscillator.detune.value = detune;
+    oscillator.type = oscillatorType;
+
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = gain;
+
+    const panner = audioContext.createStereoPanner();
+    panner.pan.value = pan;
+
+    oscillator
+      .connect(gainNode)
+      .connect(panner)
+      .connect(audioContext.destination);
+    oscillator.start(0);
+
+    oscillatorRef.current = oscillator;
+    gainRef.current = gainNode;
+    panRef.current = panner;
+  };
+
+  const stop = () => {
+    oscillatorRef.current?.stop(0);
+    oscillatorRef.current?.disconnect();
+    gainRef.current?.disconnect();
+    panRef.current?.disconnect();
+    oscillatorRef.current = null;
+    gainRef.current = null;
+    panRef.current = null;
+  };
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      stop();
+    } else {
+      start();
     }
-
-    oscillatorRef.current = audioContextRef.current.createOscillator();
-    oscillatorRef.current.frequency.value = frequency;
-    oscillatorRef.current.detune.value = detune;
-    oscillatorRef.current.type = oscillatorType;
-
-    gainRef.current = audioContextRef.current.createGain();
-    gainRef.current.gain.value = gain;
-
-    panRef.current = audioContextRef.current.createStereoPanner();
-    panRef.current.pan.value = pan;
-
-    oscillatorRef.current.connect(gainRef.current);
-    gainRef.current.connect(panRef.current);
-    panRef.current.connect(audioContextRef.current.destination);
+    setIsPlaying(!isPlaying);
   };
 
   const handleGainChange = (newValue: number) => {
     setGain(newValue);
-
     if (gainRef.current) {
       gainRef.current.gain.value = newValue;
     }
@@ -63,7 +92,6 @@ const Oscillator: FC = () => {
 
   const handlePanChange = (newValue: number) => {
     setPan(newValue);
-
     if (panRef.current) {
       panRef.current.pan.value = newValue;
     }
@@ -71,7 +99,6 @@ const Oscillator: FC = () => {
 
   const handleFrequencyChange = (newValue: number) => {
     setFrequency(newValue);
-
     if (oscillatorRef.current) {
       oscillatorRef.current.frequency.value = newValue;
     }
@@ -79,21 +106,9 @@ const Oscillator: FC = () => {
 
   const handleDetuneChange = (newValue: number) => {
     setDetune(newValue);
-
     if (oscillatorRef.current) {
       oscillatorRef.current.detune.value = newValue;
     }
-  };
-
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      oscillatorRef.current?.stop(0);
-    } else {
-      setup();
-      oscillatorRef.current?.start(0);
-    }
-
-    setIsPlaying((prev) => !prev);
   };
 
   const handleOscillatorTypeChange = (type: OscillatorType) => {
@@ -103,20 +118,9 @@ const Oscillator: FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
-
   return (
-    <Container centered>
+    <Container style={styles.content}>
       <Button onPress={handlePlayPause} title={isPlaying ? 'Pause' : 'Play'} />
-      <Spacer.Vertical size={49} />
       <Slider
         label="Gain"
         value={gain}
@@ -124,9 +128,7 @@ const Oscillator: FC = () => {
         min={0.0}
         max={1.0}
         step={0.01}
-        minLabelWidth={labelWidth}
       />
-      <Spacer.Vertical size={20} />
       <Slider
         label="Pan"
         value={pan}
@@ -134,9 +136,7 @@ const Oscillator: FC = () => {
         min={-1}
         max={1}
         step={0.1}
-        minLabelWidth={labelWidth}
       />
-      <Spacer.Vertical size={20} />
       <Slider
         label="Frequency"
         value={frequency}
@@ -144,9 +144,7 @@ const Oscillator: FC = () => {
         min={120}
         max={1200}
         step={10}
-        minLabelWidth={labelWidth}
       />
-      <Spacer.Vertical size={20} />
       <Slider
         label="Detune"
         value={detune}
@@ -154,63 +152,20 @@ const Oscillator: FC = () => {
         min={0}
         step={1}
         max={100}
-        minLabelWidth={labelWidth}
       />
-      <Spacer.Vertical size={40} />
-      <View style={styles.oscillatorTypeContainer}>
-        {OSCILLATOR_TYPES.map((type: OscillatorType) => (
-          <Pressable
-            key={type}
-            style={({ pressed }) => [
-              styles.oscillatorButton,
-              pressed
-                ? styles.pressedOscillatorButton
-                : type === oscillatorType
-                  ? styles.activeOscillatorButton
-                  : styles.inactiveOscillatorButton,
-            ]}
-            onPress={() => handleOscillatorTypeChange(type)}>
-            <Text
-              style={[
-                styles.oscillatorButtonText,
-                type === oscillatorType && styles.activeOscillatorButtonText,
-              ]}>
-              {type}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedControl
+        options={oscillatorTypeOptions}
+        value={oscillatorType}
+        onChange={handleOscillatorTypeChange}
+      />
     </Container>
   );
 };
 
 const styles = StyleSheet.create({
-  oscillatorTypeContainer: {
-    flexDirection: 'row',
-  },
-  oscillatorButton: {
-    padding: layout.spacing,
-    marginHorizontal: 5,
-    borderWidth: 1,
-    borderRadius: layout.radius,
-  },
-  activeOscillatorButton: {
-    backgroundColor: colors.main,
-    borderColor: colors.main,
-  },
-  pressedOscillatorButton: {
-    backgroundColor: `${colors.main}88`,
-    borderColor: colors.main,
-  },
-  inactiveOscillatorButton: {
-    borderColor: colors.border,
-  },
-  oscillatorButtonText: {
-    color: colors.white,
-    textTransform: 'capitalize',
-  },
-  activeOscillatorButtonText: {
-    color: colors.white,
+  content: {
+    justifyContent: 'center',
+    gap: 24,
   },
 });
 
