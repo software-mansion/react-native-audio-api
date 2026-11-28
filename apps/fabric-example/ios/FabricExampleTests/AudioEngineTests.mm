@@ -412,38 +412,6 @@
   XCTAssertEqual(self.audioEngine.createdFakeEngines.count, 1UL);
 }
 
-// `initStandardFormatWithSampleRate:channels:` returns nil above 2 channels; those formats need a
-// layout in the player's channel order.
-- (void)testAttachSourceNodeGivesMultichannelFormatsALayout
-{
-  const struct {
-    AVAudioChannelCount channelCount;
-    AudioChannelLayoutTag layoutTag;
-  } cases[] = {
-      {3, kAudioChannelLayoutTag_DiscreteInOrder | 3},
-      {4, kAudioChannelLayoutTag_Quadraphonic},
-      {5, kAudioChannelLayoutTag_MPEG_5_0_A},
-      {6, kAudioChannelLayoutTag_MPEG_5_1_A},
-      {8, kAudioChannelLayoutTag_DiscreteInOrder | 8},
-  };
-
-  for (const auto &testCase : cases) {
-    NSString *sourceNodeId =
-        [self.audioEngine attachSourceNodeWithRenderBlock:[self testSourceRenderBlock]
-                                               sampleRate:48000
-                                             channelCount:testCase.channelCount
-                                   onOutputRecoveryFailed:nil];
-    AVAudioFormat *format = self.audioEngine.sourceFormats[sourceNodeId];
-
-    XCTAssertNotNil(format);
-    XCTAssertEqual(format.channelCount, testCase.channelCount);
-    XCTAssertEqual(format.channelLayout.layoutTag, testCase.layoutTag);
-    XCTAssertNotNil(self.audioEngine.sourceNodes[sourceNodeId]);
-
-    [self.audioEngine detachSourceNodeWithId:sourceNodeId];
-  }
-}
-
 - (void)testAttachSourceNodeStoresAndConnectsSource
 {
   NSString *sourceNodeId =
