@@ -154,6 +154,10 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
       buffer->copy(*audioNode->getOutputBuffer(), 0, 0, numFrames);
     }
   }
+  // A node breaking a cycle rendered ahead of its inputs, which exist only now.
+  for (auto &&[node, inputs] : graph_->iterCycleBreaking()) {
+    node.processAfterGraph(inputs, numFrames);
+  }
 
   currentSampleFrame_.fetch_add(numFrames, std::memory_order_release);
 #ifdef DEBUG

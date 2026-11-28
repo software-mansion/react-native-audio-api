@@ -463,6 +463,62 @@ TEST_F(AudioGraphTest, TopoSort_ComplexDAG) {
 // Successive process calls — interleaved add & compact
 // =====================================================================
 
+TEST_F(AudioGraphTest, TopoSort_NodeOnACycleIgnoresItsInputs) {
+  // Feedback delay: 0 = source, 1 = delay, 2 = gain, 3 = destination.
+  // source -> delay -> gain -> delay, delay -> destination. HostGraph marks
+  // the delay as lying on a cycle, so only its outgoing edges order it.
+  auto breaker = std::make_unique<CycleBreakerMockNode>();
+  breaker->setBreaksCycle(true);
+  std::vector<std::shared_ptr<NodeHandle>> h = {
+      makeHandleWithNode(),
+      std::make_shared<NodeHandle>(std::move(breaker)),
+      makeHandleWithNode(),
+      makeHandleWithNode(),
+  };
+  for (size_t i = 0; i < h.size(); i++) {
+    graph.addNode(h[i]);
+    graph[*h[i]].test_node_identifier__ = i;
+  }
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[2]));
+  graph.pool().push(graph[*h[2]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[3]].input_head, graph.indexOf(*h[1]));
+
+  graph.markDirty();
+  graph.sortAndCompact();
+
+  ASSERT_EQ(graph.size(), 4u);
+  EXPECT_LT(posOf(1), posOf(2));
+  EXPECT_LT(posOf(1), posOf(3));
+}
+
+TEST_F(AudioGraphTest, Compaction_OrphanedCycleIsRemoved) {
+  // 0 <-> 1 feed each other and nothing else feeds them.
+  auto h = addNodes(2, /*withAudioNode=*/true);
+  graph.pool().push(graph[*h[0]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph[*h[0]].orphaned = true;
+  graph[*h[1]].orphaned = true;
+
+  graph.sortAndCompact();
+
+  EXPECT_EQ(graph.size(), 0u);
+}
+
+TEST_F(AudioGraphTest, Compaction_OrphanedCycleWithALiveInputStays) {
+  // 0 <-> 1 feed each other, and the live node 2 still feeds 0.
+  auto h = addNodes(3, /*withAudioNode=*/true);
+  graph.pool().push(graph[*h[0]].input_head, graph.indexOf(*h[1]));
+  graph.pool().push(graph[*h[1]].input_head, graph.indexOf(*h[0]));
+  graph.pool().push(graph[*h[0]].input_head, graph.indexOf(*h[2]));
+  graph[*h[0]].orphaned = true;
+  graph[*h[1]].orphaned = true;
+
+  graph.sortAndCompact();
+
+  EXPECT_EQ(graph.size(), 3u);
+}
+
 TEST_F(AudioGraphTest, Process_AddAndRemoveInterleaved) {
   auto h0 = makeHandleWithNode();
   auto h1 = makeHandleWithNode();

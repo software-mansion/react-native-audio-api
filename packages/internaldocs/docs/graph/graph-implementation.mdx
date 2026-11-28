@@ -45,7 +45,7 @@ flowchart LR
     H["NodeHandle<br/>audioNode: unique_ptr&lt;GraphObject&gt;<br/>index_: uint32 (private)"]
   end
   subgraph audio["audio thread"]
-    AN["AudioGraph::Vertex<br/>input_head / link_head<br/>orphaned"]
+    AN["AudioGraph::Vertex<br/>input_head<br/>orphaned"]
   end
   HN --> H
   AN --> H
@@ -76,8 +76,8 @@ The audio thread decides _when_ (a node may be a ghost for a long time if it is 
 struct HostVertex {
   std::vector<HostVertex *> inputs;      // reversed edges
   std::vector<HostVertex *> outputs;     // forward edges
-  std::vector<HostVertex *> linkedNodes; // processable-state links, see below
   TraversalState traversalState;        // DFS visit stamp
+  bool breaksCycle;                         // copy of GraphObject::breaksCycle_, see "Cycles"
   ChannelLayoutState channelLayout;     // pending channel-count negotiation
   std::shared_ptr<NodeHandle> handle;
   bool ghost = false;
@@ -90,8 +90,8 @@ serializes the JS thread against the GC finalizer thread, which also calls `remo
 
 ### Validation
 
-`addEdge(from, to)` rejects, in this order: a node that is not in the graph, a ghost on either end, an edge that already exists, and a cycle.
-The cycle check is `hasPath(to, from)`: a DFS over `outputs` that would find a path from `to` back to `from`. Instead of a visited set, each
+`addEdge(from, to)` rejects, in this order: a node that is not in the graph, a ghost on either end, an edge that already exists, and a cycle that
+runs through no cycle breaker (see "Cycles" below). The cycle check is `hasPath(to, from)`: a DFS over `outputs` that would find a path from `to` back to `from` and that does not enter cycle breakers. Instead of a visited set, each
 node carries a `term` stamp and the graph has a monotonically increasing counter, so a traversal marks a node visited by writing the current
 term and no per-traversal storage is cleared. The DFS uses an explicit stack (`std::vector`), which allocates, and that is fine on the JS thread.
 
@@ -147,7 +147,6 @@ ghosts are collected as a side effect of the next node going away rather than on
 struct Vertex {
   std::shared_ptr<NodeHandle> handle;
   std::uint32_t input_head = kNull;   // head of this node's input list in the pool
-  std::uint32_t link_head  = kNull;   // head of this node's processable-link list
   std::uint32_t topo_out_degree : 31; // scratch, toposort
   unsigned      will_be_deleted : 1;  // scratch, compaction
   std::int32_t  target_place : 31;    // scratch, where the node moves to; ready-stack link during the sort
@@ -299,7 +298,9 @@ The mark pass walks left to right:
 | Gain | `[0 = Osc]` → `[]` (Osc is marked)    | yes      | yes, now     | yes              | **yes** |
 | Dest | `[1 = Gain]` → `[]` (Gain is marked)  | no       |              |                  | no      |
 
-`Gain` was only removable because `Osc` was handled first, which is why this pass needs the array sorted. Then the survivors get their targets
+`Gain` was only removable because `Osc` goes too. The pass starts by assuming every orphaned node goes and withdraws the ones that have a
+surviving input or refuse, repeating until nothing changes. On a sorted chain one sweep settles it; the repeat is what lets a feedback loop,
+whose nodes only wait on each other, be removed as a whole. Then the survivors get their targets
 (`Dest → 0`), the deleted nodes free their (already empty) lists, the remap finds nothing left to rewrite, and the shift moves `Dest` to position 0. Positions 1 and 2 get their handles nulled and the vector is resized to 1.
 
 ```mermaid
@@ -315,21 +316,36 @@ flowchart LR
 
 The two released handles are what `HostGraph::collectDisposedNodes` will find on the JS side.
 
-### Processable state and links
+### Processable state
 
 Not every node in the array should render. Which ones do is decided once per quantum, after compaction. A node is in one of three states:
 _always processable_ for the pull roots (the destination, an analyser), _not processable_, or _conditionally processable_ for nodes that are
 pulled this quantum only. The settle is a reachability walk: starting from every node that is not _not processable_ on entry (the roots), it
-promotes each dependency from _not_ to _conditional_ and continues from the nodes it just promoted. A node's dependencies are its audio
-inputs plus its **links** (below). The walk is a depth-first traversal that borrows `target_place` as an embedded stack, the same trick the
+promotes each audio input from _not_ to _conditional_ and continues from the nodes it just promoted. The walk is a depth-first traversal that borrows `target_place` as an embedded stack, the same trick the
 toposort uses for its ready set, and it uses the state itself as the visited marker: a node is pushed only on its _not_ to _conditional_
 transition, so every node and every list is visited once and the pass is O(V+E). A conditional node flips itself back to _not_ after it
 renders, so the cone is re-derived from the roots every quantum with no global reset.
 
-Because the walk is reachability and not an array scan, it does not care where a dependency sits in the array. That is what lets links share
-the loop with inputs. Some nodes have to be rendered together without an audio edge between them; the delay node's reader and writer share a
-ring buffer and are the example. A link is a one-way entry in the second per-node list (`link_head`). Links take no part in the toposort and
-carry no audio, so a link target may sit at a higher index than the node that pulls it, which an index-ordered scan would have to revisit.
+Because the walk is reachability and not an array scan, it does not care where an input sits in the array. That matters for a node that
+lies on a cycle, which is placed before its inputs (next section).
+
+### Cycles
+
+The graph accepts a cycle only when it runs through a **cycle breaker**: a graph object whose `canBreakCycle()` returns true, which today is
+the `DelayNode`. A delay is one ordinary vertex. Nothing else in the graph knows about delays.
+
+- **Host side.** `addEdge` rejects a cycle that avoids every breaker. After every edge change `markCycleBreakers()` finds each breaker that can
+  reach itself, and the event for that change carries the breakers whose answer changed. The audio thread therefore sees the flag
+  (`GraphObject::breaksCycle_`) change together with the edges.
+- **Toposort.** It skips the input edges of a node with `breaksCycle_` set. Every accepted cycle contains such a node, so the remaining edges
+  form a DAG and one Kahn pass places every node. The flagged node ends up before its inputs.
+- **Rendering.** A flagged node renders in two steps. At its position `process()` calls `processReader()`, where it produces output
+  without inputs (the delay reads its ring). After the whole graph has rendered, `BaseAudioContext::processGraph` calls
+  `processAfterGraph()` on the flagged nodes, which hands them their inputs (the delay writes them into its ring, at least one render quantum
+  ahead). That second step must not touch the output buffer: two delays feeding each other read each other's output in it.
+
+Outside a cycle the delay writes and reads in one `processNode`, so a delay shorter than a render quantum is exact. Inside a cycle the
+output of a quantum is produced before its inputs exist, which is the spec's minimum delay of one render quantum.
 
 ```mermaid
 flowchart LR
@@ -413,7 +429,7 @@ sequenceDiagram
 
 `Graph` owns two SPSC channels into the audio thread, one per producing thread:
 
-- **Channel A**, JS thread producer: `addNode`, `addEdge`, `removeEdge`, `removeAllEdges`, `linkNodes`, channel renegotiation and grow events.
+- **Channel A**, JS thread producer: `addNode`, `addEdge`, `removeEdge`, `removeAllEdges`, channel renegotiation and grow events.
 - **Channel B**, GC finalizer producer: `removeNode` only, because `HostNode` destructors run on the JS GC thread.
 
 A single-producer channel keeps its order, but two channels have no order between them. That matters for exactly one pair of messages: a

@@ -125,6 +125,12 @@ class Graph {
     return audioGraph.iter();
   }
 
+  /// @brief The processable nodes that break a cycle (see AudioGraph::iterCycleBreaking).
+  /// @note Should be called only from the audio thread, after the iter() pass.
+  [[nodiscard]] auto iterCycleBreaking() {
+    return audioGraph.iterCycleBreaking();
+  }
+
   // ── Main-thread API ────────────────────────────────────────────────────
 
   /// @brief Adds a new node to the graph and returns a pointer to it.
@@ -141,16 +147,9 @@ class Graph {
   /// the ghost is collected after AudioGraph releases its shared_ptr.
   Res removeNode(HostVertex *node);
 
-  /// @brief Adds a directed edge from → to. Rejects cycles and duplicates.
+  /// @brief Adds a directed edge from → to. Rejects duplicates and cycles that
+  /// run through no cycle breaker.
   Res addEdge(HostVertex *from, HostVertex *to);
-
-  /// @brief Links two nodes so that `to` follows the processable state of
-  /// `from` (one-way), for nodes that share processing semantics but not an
-  /// audio edge (e.g. DelayReader → DelayWriter, which communicate through a
-  /// ring buffer). Records the link on both the host graph (for cleanup) and
-  /// the audio graph (a `link_head` entry consumed by
-  /// AudioGraph::settleProcessableState()). Idempotent.
-  void linkNodes(HostVertex *from, HostVertex *to);
 
   /// @brief Removes a directed edge from → to.
   Res removeEdge(HostVertex *from, HostVertex *to);

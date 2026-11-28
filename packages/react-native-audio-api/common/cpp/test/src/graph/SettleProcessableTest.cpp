@@ -145,7 +145,7 @@ TEST_F(SettleProcessableTest, TailNodeDoesNotReactivateUpstream) {
   EXPECT_EQ(count, 1u); // only the tail node
 }
 
-// ── Wrapper fixture: exercise Graph::linkNodes + settle via process() ───────
+// ── Wrapper fixture: exercise settle through Graph::process() ───────────────
 class SettleLinkTest : public ::testing::Test {
  protected:
   using HostVertex = HostGraph::HostVertex;
@@ -157,13 +157,21 @@ class SettleLinkTest : public ::testing::Test {
     graph = std::make_shared<Graph>(4096, &disposer_);
   }
 
+  /// Mirrors BaseAudioContext::processGraph.
   void processAll() {
     graph->processEvents();
     graph->process();
+    graph->advanceUnpulledNodes(currentSampleFrame_);
     for (auto &&[node, inputs] : graph->iter()) {
       node.process(inputs, audioapi::RENDER_QUANTUM_SIZE);
     }
+    for (auto &&[node, inputs] : graph->iterCycleBreaking()) {
+      node.processAfterGraph(inputs, audioapi::RENDER_QUANTUM_SIZE);
+    }
+    currentSampleFrame_ += audioapi::RENDER_QUANTUM_SIZE;
   }
+
+  std::size_t currentSampleFrame_ = 0;
 
   size_t iterCount() {
     size_t count = 0;
@@ -176,76 +184,29 @@ class SettleLinkTest : public ::testing::Test {
   }
 };
 
-// A processable-link (DelayReader -> DelayWriter analogue) pulls the link
-// target and, transitively, the target's own audio inputs — even though there
-// is no audio edge between reader and writer.
-TEST_F(SettleLinkTest, LinkPullsTargetAndItsInputs) {
+// A node on a cycle sits before its inputs in the array. The settle pass must
+// still reach them, otherwise nothing feeding a DelayNode in a feedback loop
+// would render.
+TEST_F(SettleLinkTest, NodeOnACyclePullsItsInputs) {
   auto seedNode = std::make_unique<MockNode>();
   seedNode->setProcessable(); // ALWAYS seed (destination analogue)
   auto *consumer = graph->addNode(std::move(seedNode));
 
-  auto *reader = graph->addNode(std::make_unique<MockNode>());
-  auto *writer = graph->addNode(std::make_unique<MockNode>());
+  auto *breaker = graph->addNode(std::make_unique<CycleBreakerMockNode>());
+  auto *feedback = graph->addNode(std::make_unique<MockNode>());
   auto *source = graph->addNode(std::make_unique<MockNode>());
 
-  // Audio edges: source -> writer, reader -> consumer.
-  ASSERT_TRUE(graph->addEdge(source, writer).is_ok());
-  ASSERT_TRUE(graph->addEdge(reader, consumer).is_ok());
-  // Processable link reader -> writer (no audio edge).
-  graph->linkNodes(reader, writer);
-
-  processAll();
-
-  // After a full quantum only the ALWAYS consumer remains in iter().
-  EXPECT_EQ(iterCount(), 1u);
-}
-
-// The writer is an audio sink, so the toposort places it after the reader
-// that links to it. The settle pass must still reach the writer's own
-// inputs, otherwise the source upstream of a DelayNode never renders.
-TEST_F(SettleLinkTest, LinkTargetSortedAfterHolderStillPullsItsInputs) {
-  auto seedNode = std::make_unique<MockNode>();
-  seedNode->setProcessable();
-  auto *consumer = graph->addNode(std::move(seedNode));
-
-  auto *reader = graph->addNode(std::make_unique<MockNode>());
-  auto *writer = graph->addNode(std::make_unique<MockNode>());
-  auto *source = graph->addNode(std::make_unique<MockNode>());
-
-  ASSERT_TRUE(graph->addEdge(source, writer).is_ok());
-  ASSERT_TRUE(graph->addEdge(reader, consumer).is_ok());
-  graph->linkNodes(reader, writer);
+  ASSERT_TRUE(graph->addEdge(source, breaker).is_ok());
+  ASSERT_TRUE(graph->addEdge(breaker, feedback).is_ok());
+  ASSERT_TRUE(graph->addEdge(feedback, breaker).is_ok());
+  ASSERT_TRUE(graph->addEdge(breaker, consumer).is_ok());
 
   graph->processEvents();
   graph->process();
 
   // Mid-quantum, before process() flips CONDITIONAL nodes back to idle:
-  // consumer, reader, writer and source must all be scheduled to render.
+  // consumer, breaker, feedback and source must all be scheduled to render.
   EXPECT_EQ(iterCount(), 4u);
-}
-
-// Disconnecting the reader from the seed tears the linked writer (and its
-// inputs) back down.
-TEST_F(SettleLinkTest, LinkDeactivatesOnDisconnect) {
-  auto seedNode = std::make_unique<MockNode>();
-  seedNode->setProcessable();
-  auto *consumer = graph->addNode(std::move(seedNode));
-
-  auto *reader = graph->addNode(std::make_unique<MockNode>());
-  auto *writer = graph->addNode(std::make_unique<MockNode>());
-  auto *source = graph->addNode(std::make_unique<MockNode>());
-
-  ASSERT_TRUE(graph->addEdge(source, writer).is_ok());
-  ASSERT_TRUE(graph->addEdge(reader, consumer).is_ok());
-  graph->linkNodes(reader, writer);
-  processAll();
-  ASSERT_EQ(iterCount(), 1u);
-
-  ASSERT_TRUE(graph->removeEdge(reader, consumer).is_ok());
-  processAll();
-
-  // Only the ALWAYS seed remains processable after the quantum completes.
-  EXPECT_EQ(iterCount(), 1u);
 }
 
 // disable() is sticky: a finished source connected to a processable consumer

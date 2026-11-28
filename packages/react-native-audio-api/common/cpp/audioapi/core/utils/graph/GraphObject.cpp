@@ -30,10 +30,20 @@ const AudioNode *GraphObject::asAudioNode() const {
   return nullptr;
 }
 
+bool GraphObject::canBreakCycle() const {
+  return false;
+}
+
 void GraphObject::processInputs(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames) {
   // Default: do nothing. Subclasses override for actual processing.
   (void)inputs;
   (void)numFrames;
 }
+
+void GraphObject::processReader(int /*numFrames*/) {}
+
+void GraphObject::processWriter(
+    const std::vector<const DSPAudioBuffer *> & /*inputs*/,
+    int /*numFrames*/) {}
 
 } // namespace audioapi::utils::graph

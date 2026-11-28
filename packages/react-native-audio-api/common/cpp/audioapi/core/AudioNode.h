@@ -132,6 +132,23 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
     setOutputBuffer(buffer);
   }
 
+  /// @brief Storage besides the negotiated buffer that must be as wide as it (f.e. DelayNode's
+  /// delay ring), resized for `numberOfChannels`. The graph builds it next to the negotiated
+  /// buffer and installs both in the same event. Default: the node keeps no such storage.
+  /// @note JS Thread only
+  [[nodiscard]] virtual std::shared_ptr<AudioBuffer> buildNegotiatedStorage(
+      size_t /*numberOfChannels*/) {
+    return nullptr;
+  }
+
+  /// @brief Installs storage from buildNegotiatedStorage().
+  /// @return the replaced storage, to be disposed off the audio thread.
+  /// @note Audio Thread only
+  virtual std::shared_ptr<AudioBuffer> exchangeNegotiatedStorage(
+      std::shared_ptr<AudioBuffer> storage) {
+    return storage;
+  }
+
   /// @brief Number of channels this node emits toward AudioDestinationNode.
   /// Default: nullopt, the output is as wide as the inputs are mixed to. Sources
   /// present `outputChannelNumber_`; StereoPanner always outputs stereo.
@@ -278,7 +295,7 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
   /// frame counter starts from a fresh, up-to-date value.
   ///
   /// Default 0 — overriders are tail-bearing nodes (Biquad, Convolver,
-  /// DelayWriter). The implementation may read audio-thread-owned state
+  /// Delay). The implementation may read audio-thread-owned state
   /// (filter coefficients, IR length, max delay).
   ///
   /// @note Audio Thread only.
@@ -303,9 +320,9 @@ class AudioNode : public utils::graph::GraphObject, public std::enable_shared_fr
 
   virtual void processNode(int) = 0;
 
- private:
-  /// @brief Drives `tailState_` for one render quantum. Called from
-  /// `processInputs` only when `requiresTailProcessing_` is true.
+  /// @brief Drives `tailState_` for one render quantum. Call once per quantum
+  /// with the inputs of that quantum, and only when `requiresTailProcessing_`
+  /// is true. `processInputs` does it for a node that renders in one step.
   void updateTailStateForQuantum(const std::vector<const DSPAudioBuffer *> &inputs, int numFrames);
 };
 

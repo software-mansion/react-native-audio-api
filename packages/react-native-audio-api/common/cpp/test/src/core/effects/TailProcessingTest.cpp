@@ -3,8 +3,6 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/DelayNode.h>
-#include <audioapi/core/effects/delay/DelayLine.h>
-#include <audioapi/core/effects/delay/DelayWriter.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -173,50 +171,38 @@ TEST_F(TailProcessingTest, BiquadFilterTailLengthFollowsCoefficients) {
   EXPECT_LE(tail, static_cast<int>(0.5f * kSampleRate));
 }
 
-// ─── DelayWriter ──────────────────────────────────────────────────────────
+// ─── DelayNode ────────────────────────────────────────────────────────────
 
-TEST_F(TailProcessingTest, DelayWriterTailEqualsMaxDelayInFrames) {
+TEST_F(TailProcessingTest, DelayDeclaresTailProcessing) {
   DelayOptions opts{};
   opts.maxDelayTime = 0.25f;
   auto delayNode = std::make_shared<DelayNode>(context, opts);
 
-  // The DelayNode's writer is tail-bearing; query computeTailFrames via the
-  // public AudioNode contract by reaching through `delayWriter_`.
-  auto *writer = static_cast<DelayWriter *>(delayNode->delayWriter_.get());
-
-  // We can't call computeTailFrames directly (protected), but we can verify
-  // requiresTailProcessing is on and exercise the state machine via the
-  // base-class hooks instead. The numerical equivalence of the tail length
-  // is covered by the DrainsTail test below.
-  EXPECT_TRUE(writer->requiresTailProcessing());
+  EXPECT_TRUE(delayNode->requiresTailProcessing());
 }
 
-TEST_F(TailProcessingTest, DelayWriterDrainsTailAfterInputSilences) {
+TEST_F(TailProcessingTest, DelayDrainsTailAfterInputSilences) {
   DelayOptions opts{};
   opts.maxDelayTime = (10.0f * kQuantum) / kSampleRate; // 10 quanta of tail
-  auto delayNode = std::make_shared<DelayNode>(context, opts);
-
-  // Re-create the writer as a TailHarness so we can poke its private state.
-  // The writer just needs the same DelayLine; share it.
-  TailHarness<DelayWriter> writer(context, opts, delayNode->delayLine_);
+  TailHarness<DelayNode> delay(context, opts);
 
   auto nonSilent = makeBuffer(/*nonZero=*/true);
   auto silent = makeBuffer(/*nonZero=*/false);
 
-  writer.runQuantum({nonSilent.get()});
-  ASSERT_EQ(writer.tailState(), AudioNode::TailState::ACTIVE);
+  delay.runQuantum({nonSilent.get()});
+  ASSERT_EQ(delay.tailState(), AudioNode::TailState::ACTIVE);
 
   // First silent quantum starts the countdown of ~10 quanta.
-  writer.runQuantum({silent.get()});
-  ASSERT_EQ(writer.tailState(), AudioNode::TailState::SIGNALLED_TO_STOP);
-  EXPECT_GT(writer.tailFramesRemaining(), 0);
-  EXPECT_LE(writer.tailFramesRemaining(), 10 * kQuantum);
+  delay.runQuantum({silent.get()});
+  ASSERT_EQ(delay.tailState(), AudioNode::TailState::SIGNALLED_TO_STOP);
+  EXPECT_GT(delay.tailFramesRemaining(), 0);
+  EXPECT_LE(delay.tailFramesRemaining(), 10 * kQuantum);
 
-  for (int q = 0; q < 64 && writer.tailState() != AudioNode::TailState::FINISHED; ++q) {
-    writer.runQuantum({silent.get()});
+  for (int q = 0; q < 64 && delay.tailState() != AudioNode::TailState::FINISHED; ++q) {
+    delay.runQuantum({silent.get()});
   }
-  EXPECT_EQ(writer.tailState(), AudioNode::TailState::FINISHED);
-  EXPECT_TRUE(writer.canBeDestructed());
+  EXPECT_EQ(delay.tailState(), AudioNode::TailState::FINISHED);
+  EXPECT_TRUE(delay.canBeDestructed());
 }
 
 // ─── ConvolverNode ────────────────────────────────────────────────────────

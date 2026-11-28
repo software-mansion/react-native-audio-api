@@ -166,6 +166,24 @@ class AlignedAudioBuffer {
     return shared;
   }
 
+  /// @brief Creates a buffer with @p numberOfChannels channels whose leading channels share this
+  /// buffer's storage and whose extra channels are fresh silence, so a channel-count change keeps
+  /// the samples of every channel both layouts have without copying them.
+  [[nodiscard]] std::shared_ptr<AlignedAudioBuffer> withNumberOfChannels(
+      size_t numberOfChannels) const {
+    auto resized = std::make_shared<AlignedAudioBuffer>();
+    resized->numberOfChannels_ = numberOfChannels;
+    resized->sampleRate_ = sampleRate_;
+    resized->size_ = size_;
+    resized->channels_.reserve(numberOfChannels);
+    for (size_t i = 0; i < numberOfChannels; ++i) {
+      resized->channels_.emplace_back(
+          i < channels_.size() ? channels_[i]
+                               : std::make_shared<AlignedAudioArrayBuffer<Alignment>>(size_));
+    }
+    return resized;
+  }
+
   /// @brief Gives channel @p index fresh storage holding a copy of its current samples.
   /// Every handle previously obtained through getSharedChannel() keeps the old storage
   /// alive but no longer points to this buffer, so writes through it can't reach here anymore.

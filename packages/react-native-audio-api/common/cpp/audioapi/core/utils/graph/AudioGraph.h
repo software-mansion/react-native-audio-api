@@ -30,12 +30,6 @@ class AudioGraph {
 
     std::shared_ptr<NodeHandle> handle = nullptr; // owned handle bridging to HostGraph
     std::uint32_t input_head = InputPool::kNull;  // head of input linked list in pool_
-    /// Head of the processable-link linked list in pool_. These are NOT audio
-    /// edges: they mark other nodes whose processable state must follow this
-    /// node's (e.g. DelayReader -> DelayWriter, which communicate through a
-    /// ring buffer rather than a graph edge). Links do not participate in the
-    /// topological sort, only in settleProcessableState().
-    std::uint32_t link_head = InputPool::kNull;
 
     std::uint32_t topo_out_degree : 31 = 0; // scratch — Kahn's out-degree counter
     unsigned will_be_deleted : 1 = 0;       // scratch — marked for compaction removal
@@ -134,6 +128,10 @@ class AudioGraph {
   /// @note Using this iterator after modifying the graph is undefined behavior.
   [[nodiscard]] auto iter();
 
+  /// @brief The processable nodes that break a cycle, with their inputs
+  /// (see `GraphObject::canBreakCycle`).
+  [[nodiscard]] auto iterCycleBreaking();
+
   /// @brief Returns a reference to the input pool used for edge storage.
   [[nodiscard]] InputPool &pool();
   [[nodiscard]] const InputPool &pool() const;
@@ -176,15 +174,14 @@ class AudioGraph {
   /// quantum.
   ///
   /// A node renders this quantum when it is reachable from a seed by walking
-  /// dependencies (audio inputs and processable links) backwards. Seeds are
+  /// audio inputs backwards. Seeds are
   /// the nodes whose state is not NOT_PROCESSABLE on entry: the
   /// ALWAYS_PROCESSABLE pull roots (AudioDestinationNode, AnalyserNode, ...).
   /// The walk is a depth-first traversal seeded from those roots, with
   /// `processableState_` doubling as the visited marker: a node is pushed
   /// only on its NOT -> CONDITIONAL transition, so every node and every
-  /// dependency list is visited at most once. The traversal does not depend
-  /// on the topological order, which is what lets links (whose targets may
-  /// sit anywhere in the array) share the loop with inputs.
+  /// input list is visited at most once. The traversal does not depend on the
+  /// topological order: a node that breaks a cycle sits before its inputs.
   ///
   /// Uses `target_place` as an embedded stack, the same way kahn_toposort()
   /// does; it is restored to -1 for every node before returning.
@@ -199,38 +196,39 @@ class AudioGraph {
   /// @note Audio Thread only
   void settleProcessableState();
 
-  /// @brief Gives every node that will not be rendered this quantum its
-  /// `advanceWithoutRender` tick. Call after settleProcessableState() so the
+  /// @brief Records which nodes render this quantum and gives every other node
+  /// its `advanceWithoutRender` tick. Call after settleProcessableState() so the
   /// processable set is final, and before the forward iter() pass.
   /// Allocation-free.
   /// @note Audio Thread only
   void advanceUnpulledNodes(std::size_t currentSampleFrame);
 
  private:
-  std::vector<Vertex> nodes;     // always kept topologically sorted
+  /// Topologically sorted, except that a node breaking a cycle
+  /// (`GraphObject::breaksCycle_`) is placed regardless of its inputs.
+  std::vector<Vertex> nodes;
   InputPool pool_;               // pool backing all input linked lists
   bool topo_order_dirty = false; // set by markDirty(), cleared by sortAndCompact()
 
   /// @brief Flags nodes for compaction (`will_be_deleted`), then scrubs every
-  /// dependency list entry that points at a flagged node. Flagging cascades in
-  /// one left-to-right pass because the array is topologically sorted.
+  /// input list entry that points at a flagged node.
   void markDeletions();
 
-  /// @brief Rewrites every index stored in the input and link lists through
+  /// @brief Rewrites every index stored in the input lists through
   /// `target_place`. Call after targets are assigned and before nodes move.
   void remapListsToTargetIndex();
 
-  /// @brief Invokes `fn(head)` for each list head that holds dependencies of
-  /// `node`: the audio inputs and the processable links. Dependencies are
-  /// what a processable node pulls into processing; only the input list
-  /// additionally carries audio and orders the toposort.
-  template <typename Fn>
-  static void forEachDependencyList(Vertex &node, Fn fn) {
-    fn(node.input_head);
-    fn(node.link_head);
-  }
+  /// @brief `GraphObject::breaksCycle_` of `node`, false for a handle that
+  /// carries no graph object (tests).
+  [[nodiscard]] static bool breaksCycle(const Vertex &node);
 
-  /// @brief In-place Kahn's toposort (sources first, sinks last).
+  /// @brief The processable nodes accepted by `filter`, as iter() entries.
+  template <typename Filter>
+  [[nodiscard]] auto entries(Filter filter);
+
+  /// @brief In-place Kahn's toposort (sources first, sinks last). Skips the
+  /// input edges of every node that breaks a cycle. HostGraph accepts a cycle
+  /// only through such a node, so the remaining edges always form a DAG.
   ///
   /// Uses `target_place` as an embedded linked-list stack for the
   /// ready set, and cycle-sort for the final permutation.
@@ -241,9 +239,12 @@ class AudioGraph {
   void kahn_toposort();
 };
 
-inline auto AudioGraph::iter() {
-  return nodes |
-      std::views::filter([](const Vertex &n) { return n.handle->audioNode->isProcessable(); }) |
+template <typename Filter>
+auto AudioGraph::entries(Filter filter) {
+  return nodes | std::views::filter([filter](const Vertex &n) {
+           const GraphObject &graphObject = *n.handle->audioNode;
+           return graphObject.isProcessable() && filter(graphObject);
+         }) |
       std::views::transform([this](Vertex &node) {
            return Entry{
                .graphObject = *node.handle->audioNode,
@@ -253,6 +254,14 @@ inline auto AudioGraph::iter() {
                          }),
            };
          });
+}
+
+inline auto AudioGraph::iter() {
+  return entries([](const GraphObject &) { return true; });
+}
+
+inline auto AudioGraph::iterCycleBreaking() {
+  return entries([](const GraphObject &graphObject) { return graphObject.breaksCycle_; });
 }
 
 } // namespace audioapi::utils::graph

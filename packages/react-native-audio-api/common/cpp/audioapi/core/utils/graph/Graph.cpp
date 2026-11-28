@@ -122,13 +122,6 @@ Graph::Res Graph::addEdge(HostVertex *from, HostVertex *to) {
   });
 }
 
-void Graph::linkNodes(HostVertex *from, HostVertex *to) {
-  if (auto event = hostGraph.linkNodes(from, to)) {
-    sendPoolGrowIfNeeded();
-    eventSender_.send(std::move(*event));
-  }
-}
-
 Graph::Res Graph::removeEdge(HostVertex *from, HostVertex *to) {
   // collectDisposedNodes();
   return hostGraph.removeEdge(from, to).map([&](AGEvent event) {
@@ -160,9 +153,7 @@ void Graph::collectDisposedNodes() {
 }
 
 void Graph::sendPoolGrowIfNeeded() {
-  // The pool backs both audio-edge input lists and processable-link lists, so
-  // both must be counted to keep audio-thread pushes allocation-free.
-  auto slots = static_cast<std::uint32_t>(hostGraph.edgeCount() + hostGraph.linkCount());
+  auto slots = static_cast<std::uint32_t>(hostGraph.edgeCount());
   // slots > poolCapacity_ / 2 || (poolCapacity_ == 0 && slots > 0) left for clarity
   if (slots > poolCapacity_ / 2) {
     std::uint32_t newCap = slots * 2;
