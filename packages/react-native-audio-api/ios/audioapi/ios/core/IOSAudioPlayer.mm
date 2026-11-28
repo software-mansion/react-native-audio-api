@@ -94,7 +94,8 @@ IOSAudioPlayer::IOSAudioPlayer(
           latencyHint),
       preferredIOBufferFrames_(preferredIOBufferFramesFor(latencyHint))
 {
-  adoptOutputChannelCount(DEFAULT_CHANNEL_COUNT);
+  renderBuffer_ =
+      std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, DEFAULT_CHANNEL_COUNT, sampleRate_);
 
   IOSAudioPlayer *player = this;
   // The engine keeps this block until the node is detached and may call it after the player is
@@ -105,13 +106,13 @@ IOSAudioPlayer::IOSAudioPlayer(
       const AudioTimeStamp *timestamp,
       AVAudioFrameCount frameCount,
       AudioBufferList *outputData) {
+    if (outputData->mNumberBuffers != DEFAULT_CHANNEL_COUNT) {
+      return kAudioServicesBadPropertySizeError;
+    }
+
     if (!isRunning->load(std::memory_order_acquire)) {
       zeroOutput(outputData, static_cast<int>(frameCount));
       return kAudioServicesNoError;
-    }
-
-    if (outputData->mNumberBuffers != player->renderBuffer_->getNumberOfChannels()) {
-      return kAudioServicesBadPropertySizeError;
     }
 
     player->deliverOutputBuffers(outputData, static_cast<int>(frameCount), timestamp);
@@ -133,27 +134,10 @@ IOSAudioPlayer::~IOSAudioPlayer()
   cleanup();
 }
 
-int IOSAudioPlayer::adoptOutputChannelCount(int routeChannelCount)
-{
-  const auto channelCount = routeChannelCount > 0 ? std::min(routeChannelCount, MAX_CHANNEL_COUNT)
-                                                  : DEFAULT_CHANNEL_COUNT;
-
-  if (renderBuffer_ == nullptr ||
-      std::cmp_not_equal(renderBuffer_->getNumberOfChannels(), channelCount)) {
-    renderBuffer_ =
-        std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate_);
-    pendingSaved_ =
-        std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate_);
-    pendingSavedCount_ = 0;
-  }
-
-  return channelCount;
-}
-
 void IOSAudioPlayer::clearPendingSaved()
 {
   pendingSavedCount_ = 0;
-  pendingSaved_->zero();
+  pendingSaved_.zero();
 }
 
 void IOSAudioPlayer::deliverOutputBuffers(
@@ -174,8 +158,6 @@ void IOSAudioPlayer::deliverOutputBuffers(
     return;
   }
 
-  const int channelCount = static_cast<int>(renderBuffer_->getNumberOfChannels());
-
   if (timestamp != nullptr && (timestamp->mFlags & kAudioTimeStampHostTimeValid) != 0) {
     // Frames left over from the previous quantum play first; they were rendered but not delivered.
     publishOutputAnchor(
@@ -192,15 +174,15 @@ void IOSAudioPlayer::deliverOutputBuffers(
       const int fromPending = std::min(need, pendingSavedCount_);
 
       // populate output with pendingSaved
-      for (int ch = 0; ch < channelCount; ++ch) {
+      for (int ch = 0; ch < DEFAULT_CHANNEL_COUNT; ++ch) {
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
-        const float *src = (*pendingSaved_)[ch].begin();
+        const float *src = pendingSaved_[ch].begin();
         std::memcpy(dst, src, fromPending * sizeof(float));
 
         // move the remaining samples to the beginning of the pendingSaved buffer
         const int remain = pendingSavedCount_ - fromPending;
         if (remain > 0) {
-          float *buf = (*pendingSaved_)[ch].begin();
+          float *buf = pendingSaved_[ch].begin();
           std::memmove(buf, buf + fromPending, remain * sizeof(float));
         }
       }
@@ -215,7 +197,7 @@ void IOSAudioPlayer::deliverOutputBuffers(
     // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;
     if (stillNeed >= RENDER_QUANTUM_SIZE) {
-      for (int ch = 0; ch < channelCount; ++ch) {
+      for (int ch = 0; ch < DEFAULT_CHANNEL_COUNT; ++ch) {
         auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, RENDER_QUANTUM_SIZE * sizeof(float));
@@ -224,12 +206,12 @@ void IOSAudioPlayer::deliverOutputBuffers(
     } else {
       // when output will be sliced, copy the remaining frames to pendingSaved
       const int tail = RENDER_QUANTUM_SIZE - stillNeed;
-      for (int ch = 0; ch < channelCount; ++ch) {
+      for (int ch = 0; ch < DEFAULT_CHANNEL_COUNT; ++ch) {
         auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, stillNeed * sizeof(float));
       }
-      pendingSaved_->copy(*renderBuffer_, stillNeed, 0, tail);
+      pendingSaved_.copy(*renderBuffer_, stillNeed, 0, tail);
       pendingSavedCount_ = tail;
       outPos += stillNeed;
     }
@@ -269,11 +251,9 @@ bool IOSAudioPlayer::start()
   // you will need to start and stop player very frequently
   [audioEngine stopIfNecessary];
   if (sourceNodeId_ == nil) {
-    const int channelCount =
-        adoptOutputChannelCount(static_cast<int>([sessionManager outputChannelCount]));
     sourceNodeId_ = [audioEngine attachSourceNodeWithRenderBlock:renderBlock_
                                                       sampleRate:sampleRate_
-                                                    channelCount:channelCount
+                                                    channelCount:DEFAULT_CHANNEL_COUNT
                                           onOutputRecoveryFailed:onStreamFail_];
   }
 

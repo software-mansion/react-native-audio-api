@@ -50,11 +50,6 @@ class IOSAudioPlayer : public AudioPlayer {
   [[nodiscard]] std::int64_t presentationClockNowNs() const override;
 
  private:
-  /// Sizes `renderBuffer_` and `pendingSaved_` for the route's output channels, falling back to
-  /// stereo when it reports none. Returns the count used.
-  /// @note Only while no source node is attached, so nothing renders through the buffers.
-  int adoptOutputChannelCount(int routeChannelCount);
-
   void clearPendingSaved();
   /// @note Audio Thread only
   /// Always pulls the graph in steps of RENDER_QUANTUM_SIZE; if the system
@@ -74,7 +69,7 @@ class IOSAudioPlayer : public AudioPlayer {
   std::atomic<bool> flushOverflowNextPull_{false};
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).
   int pendingSavedCount_{0};
-  std::unique_ptr<DSPAudioBuffer> pendingSaved_;
+  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, DEFAULT_CHANNEL_COUNT, sampleRate_};
 };
 
 } // namespace audioapi

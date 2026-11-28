@@ -73,7 +73,7 @@ bool AndroidAudioPlayer::openAudioStreamLocked() {
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(performanceModeFor(latencyHint_))
-      ->setChannelCount(oboe::kUnspecified)
+      ->setChannelCount(DEFAULT_CHANNEL_COUNT)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
       ->setDataCallback(shared_from_this())

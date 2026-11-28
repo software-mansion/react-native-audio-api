@@ -648,9 +648,4 @@ static NSString *const RecordingDisabledMessage =
   return self.audioSession.IOBufferDuration;
 }
 
-- (NSInteger)outputChannelCount
-{
-  return self.audioSession.outputNumberOfChannels;
-}
-
 @end

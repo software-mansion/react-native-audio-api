@@ -57,7 +57,7 @@ class IOSAudioPlayer : public AudioPlayer {
   NSString *sourceNodeId_;
   std::atomic<bool> flushOverflowNextPull_;
   int pendingSavedCount_;
-  std::unique_ptr<DSPAudioBuffer> pendingSaved_;
+  DSPAudioBuffer pendingSaved_;
 };
 
 } // namespace audioapi
@@ -68,7 +68,6 @@ class IOSAudioPlayer : public AudioPlayer {
 @property (nonatomic, strong) NSError *ensureActiveFailure;
 @property (nonatomic, assign) NSInteger ensureActiveCallCount;
 @property (nonatomic, assign) BOOL lastEnsureActiveForce;
-@property (nonatomic, assign) NSInteger fakeOutputChannelCount;
 
 @end
 
@@ -99,11 +98,6 @@ class IOSAudioPlayer : public AudioPlayer {
   }
 
   return self.ensureActiveResult;
-}
-
-- (NSInteger)outputChannelCount
-{
-  return self.fakeOutputChannelCount;
 }
 
 @end
@@ -356,47 +350,6 @@ static std::unique_ptr<TestableIOSAudioPlayer> makePlayer()
 
   assertStartLikeOperation(false);
   assertStartLikeOperation(true);
-}
-
-- (void)testStartAttachesWithTheRouteOutputChannelCount
-{
-  auto player = makePlayer();
-  self.sessionManager.fakeOutputChannelCount = 6;
-
-  XCTAssertTrue(player->start());
-
-  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 6U);
-  XCTAssertEqual(player->getAudioBuffer()->getNumberOfChannels(), 6UL);
-}
-
-- (void)testStartFallsBackToStereoWhenTheRouteReportsNoChannels
-{
-  auto player = makePlayer();
-  self.sessionManager.fakeOutputChannelCount = 0;
-
-  XCTAssertTrue(player->start());
-
-  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 2U);
-  XCTAssertEqual(player->getAudioBuffer()->getNumberOfChannels(), 2UL);
-}
-
-- (void)testRestartAfterRouteChangeRendersTheNewChannelCount
-{
-  auto player = makePlayer();
-  self.sessionManager.fakeOutputChannelCount = 1;
-  XCTAssertTrue(player->start());
-  player->stop();
-
-  self.sessionManager.fakeOutputChannelCount = 8;
-  XCTAssertTrue(player->start());
-
-  XCTAssertEqual(self.audioEngine.lastAttachedChannelCount, 8U);
-  TestAudioOutput output(8, 128, -1.0f);
-  BOOL isSilence = NO;
-  AudioTimeStamp timestamp = {};
-  XCTAssertEqual(
-      player->renderBlock()(&isSilence, &timestamp, 128, output.bufferList()),
-      kAudioServicesNoError);
 }
 
 - (void)testStartReturnsFalseWhenSessionActivationFails
