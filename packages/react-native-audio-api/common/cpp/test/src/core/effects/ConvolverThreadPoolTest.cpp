@@ -65,8 +65,6 @@ TEST_F(ConvolverThreadPoolTest, PoolIsPerContext) {
 
 TEST_F(ConvolverThreadPoolTest, ReassigningBufferKeepsTheSharedPoolAlive) {
   auto context = makeContext();
-  auto destination = std::make_shared<AudioDestinationNode>(context);
-  context->initialize(destination.get());
 
   auto pool = context->getConvolverThreadPool();
   auto node = std::make_shared<ConvolverNode>(context, ConvolverOptions());

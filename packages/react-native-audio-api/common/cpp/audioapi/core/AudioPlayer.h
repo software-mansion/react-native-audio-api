@@ -27,17 +27,21 @@ class AudioPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
       std::mutex *driverMutex,
       AudioContextLatencyHint latencyHint)
       : renderAudio_(renderAudio),
         sampleRate_(sampleRate),
         currentRenders_(currentRenders),
-        context_(std::move(context)),
         driverMutex_(driverMutex),
         latencyHint_(latencyHint) {}
   DELETE_COPY_AND_MOVE(AudioPlayer);
   virtual ~AudioPlayer() = default;
+
+  /// @brief Hands over the owning context, which stream-failure callbacks lock. The context calls
+  /// this once, in `tryStartDriver()`, before the first stream opens.
+  void bindContext(const std::weak_ptr<AudioContext> &context) {
+    context_ = context;
+  }
 
   virtual bool start() = 0;
   virtual void stop() = 0;
@@ -137,7 +141,6 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile outputProfile);

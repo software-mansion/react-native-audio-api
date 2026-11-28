@@ -168,18 +168,14 @@ void NodeAudioPlayer::run() {
 std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
-    int channelCount,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile /*outputProfile*/) {
   return std::make_shared<NodeAudioPlayer>(
       renderAudio,
       sampleRate,
-      channelCount,
       currentRenders,
-      std::move(context),
       driverMutex,
       latencyHint);
 }

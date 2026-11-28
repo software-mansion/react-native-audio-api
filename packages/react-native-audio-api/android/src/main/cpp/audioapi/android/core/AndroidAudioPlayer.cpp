@@ -53,17 +53,10 @@ AndroidAudioPlayer::AndroidAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile outputProfile)
-    : AudioPlayer(
-          renderAudio,
-          sampleRate,
-          currentRenders,
-          std::move(context),
-          driverMutex,
-          latencyHint),
+    : AudioPlayer(renderAudio, sampleRate, currentRenders, driverMutex, latencyHint),
       outputProfile_(outputProfile) {}
 
 bool AndroidAudioPlayer::openAudioStreamLocked() {
@@ -421,18 +414,11 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile outputProfile) {
   return std::make_shared<AndroidAudioPlayer>(
-      renderAudio,
-      sampleRate,
-      currentRenders,
-      std::move(context),
-      driverMutex,
-      latencyHint,
-      outputProfile);
+      renderAudio, sampleRate, currentRenders, driverMutex, latencyHint, outputProfile);
 }
 
 } // namespace audioapi

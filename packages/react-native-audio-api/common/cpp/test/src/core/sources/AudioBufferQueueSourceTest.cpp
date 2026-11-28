@@ -73,7 +73,6 @@ GraphQueueSource makeGraphQueueSource(
   auto graph = context->getGraph();
 
   auto *destinationHostNode = graph->addNode(std::make_unique<AudioDestinationNode>(context));
-  context->initialize(nodeOf<AudioDestinationNode>(destinationHostNode));
 
   auto *sourceHostNode = graph->addNode(
       std::make_unique<AudioBufferQueueSourceNode>(context, BaseAudioBufferSourceOptions()));
@@ -99,7 +98,6 @@ class AudioBufferQueueSourceTest : public ::testing::Test {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
     destination = std::make_shared<AudioDestinationNode>(context);
-    context->initialize(destination.get());
   }
 
   /// Renders one quantum from `node` directly into its own output buffer and
@@ -204,8 +202,6 @@ TEST_F(AudioBufferQueueSourceTest, FullGraphRenderPreservesPaceAndSilence) {
   // The destination must live in the graph so processGraph() renders through
   // it and copies its output buffer back.
   auto *destinationHostNode = graph->addNode(std::make_unique<AudioDestinationNode>(stereoContext));
-  auto *destinationNode = nodeOf<AudioDestinationNode>(destinationHostNode);
-  stereoContext->initialize(destinationNode);
 
   // Mono queue source -> stereo destination, exactly like the production graph.
   auto *sourceHostNode = graph->addNode(

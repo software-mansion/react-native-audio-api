@@ -32,7 +32,6 @@ class IOSAudioPlayer : public AudioPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
       std::mutex *driverMutex,
       AudioContextLatencyHint latencyHint);
   ~IOSAudioPlayer() override;
@@ -53,7 +52,6 @@ class IOSAudioPlayer : public AudioPlayer {
  protected:
   int preferredIOBufferFrames_;
   AVAudioSourceNodeRenderBlock renderBlock_;
-  OnOutputRecoveryFailedBlock onStreamFail_;
   NSString *sourceNodeId_;
   std::atomic<bool> flushOverflowNextPull_;
   int pendingSavedCount_;
@@ -207,7 +205,6 @@ class TestableIOSAudioPlayer : public IOSAudioPlayer {
             renderAudio,
             sampleRate,
             currentRendersStorage_,
-            std::weak_ptr<AudioContext>{},
             nullptr,
             AudioContextLatencyHint::INTERACTIVE)
   {

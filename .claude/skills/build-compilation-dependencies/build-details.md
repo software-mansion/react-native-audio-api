@@ -276,7 +276,6 @@ Tests compile the package's own `common/cpp` sources. react-native's headers com
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/audioapi/HostObjects/.*\\.cpp$")  # no JSI in tests
 list(APPEND RNAUDIOAPI_SRC ".../HostObjects/utils/JsEnumParser.cpp")           # the one exception
 list(FILTER RNAUDIOAPI_SRC EXCLUDE REGEX ".*/AudioThreadGuard\\.cpp$")         # compiled into each test executable
-list(REMOVE_ITEM RNAUDIOAPI_SRC ... "AudioContext.cpp")                        # needs real audio I/O
 list(REMOVE_ITEM RNAUDIOAPI_SRC ... "FfmpegDecoder.cpp")                       # FFmpeg disabled in tests
 ```
 
@@ -324,7 +323,6 @@ class MyNodeTest : public ::testing::Test {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});
-    context->initialize();
   }
 };
 ```
@@ -350,4 +348,4 @@ class TestableGainNode : public GainNode {
 
 1. Create `test/src/core/<category>/MyNodeTest.cpp`
 2. `GLOB_RECURSE test_src "src/*.cpp"` picks it up automatically — no CMakeLists edit needed.
-3. Verify `context->initialize()` is called in `SetUp()` if your node needs the context to be running.
+3. To render through `processGraph`, add an `AudioDestinationNode` to the context's graph; it is the context output (`isContextOutput()`), no registration call needed. `AudioContext.cpp` is compiled, but no platform player is: `src/core/AudioContextTest.cpp` defines `createPlatformAudioPlayer()` with a fake player.

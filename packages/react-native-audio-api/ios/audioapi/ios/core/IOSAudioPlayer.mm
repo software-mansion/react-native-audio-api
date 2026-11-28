@@ -82,16 +82,9 @@ IOSAudioPlayer::IOSAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint)
-    : AudioPlayer(
-          renderAudio,
-          sampleRate,
-          currentRenders,
-          std::move(context),
-          driverMutex,
-          latencyHint),
+    : AudioPlayer(renderAudio, sampleRate, currentRenders, driverMutex, latencyHint),
       preferredIOBufferFrames_(preferredIOBufferFramesFor(latencyHint))
 {
   renderBuffer_ =
@@ -118,15 +111,6 @@ IOSAudioPlayer::IOSAudioPlayer(
     player->deliverOutputBuffers(outputData, static_cast<int>(frameCount), timestamp);
     return kAudioServicesNoError;
   };
-
-  std::mutex *driverMutexForCallback = driverMutex_;
-  std::weak_ptr<AudioContext> weakContext = context_;
-  onStreamFail_ = ^{
-    // Called only once the context, which owns this player, is locked alive.
-    reportStreamFailToContext(driverMutexForCallback, weakContext, [player] {
-      return player->isRunning_->load(std::memory_order_acquire) && !player->isRunning();
-    });
-  };
 }
 
 IOSAudioPlayer::~IOSAudioPlayer()
@@ -152,7 +136,7 @@ void IOSAudioPlayer::deliverOutputBuffers(
     clearPendingSaved();
   }
 
-  // if not running, set output to 0
+  // If not running, output silence.
   if (!isRunning_->load(std::memory_order_acquire)) {
     zeroOutput(outputData, numFrames);
     return;
@@ -251,10 +235,18 @@ bool IOSAudioPlayer::start()
   // you will need to start and stop player very frequently
   [audioEngine stopIfNecessary];
   if (sourceNodeId_ == nil) {
+    std::mutex *driverMutex = driverMutex_;
+    std::weak_ptr<AudioContext> weakContext = context_;
+    IOSAudioPlayer *player = this;
+    OnOutputRecoveryFailedBlock onStreamFail = ^{
+      reportStreamFailToContext(driverMutex, weakContext, [player] {
+        return player->isRunning_->load(std::memory_order_acquire) && !player->isRunning();
+      });
+    };
     sourceNodeId_ = [audioEngine attachSourceNodeWithRenderBlock:renderBlock_
                                                       sampleRate:sampleRate_
                                                     channelCount:DEFAULT_CHANNEL_COUNT
-                                          onOutputRecoveryFailed:onStreamFail_];
+                                          onOutputRecoveryFailed:onStreamFail];
   }
 
   if (![audioEngine startIfNecessary:nil]) {
@@ -307,7 +299,6 @@ void IOSAudioPlayer::cleanup()
 {
   stop();
   renderBlock_ = nil;
-  onStreamFail_ = nil;
   renderBuffer_ = nullptr;
 }
 
@@ -354,13 +345,12 @@ std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile /*outputProfile*/)
 {
   return std::make_shared<IOSAudioPlayer>(
-      renderAudio, sampleRate, currentRenders, std::move(context), driverMutex, latencyHint);
+      renderAudio, sampleRate, currentRenders, driverMutex, latencyHint);
 }
 
 } // namespace audioapi

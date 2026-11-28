@@ -10,7 +10,16 @@ namespace audioapi {
 
 class NodeAudioPlayer final : public AudioPlayer {
  public:
-  using AudioPlayer::AudioPlayer;
+  NodeAudioPlayer(
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+      float sampleRate,
+      std::atomic<uint32_t> &currentRenders,
+      std::mutex *driverMutex,
+      AudioContextLatencyHint latencyHint)
+      : AudioPlayer(renderAudio, sampleRate, currentRenders, driverMutex, latencyHint) {
+    renderBuffer_ =
+        std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, DEFAULT_CHANNEL_COUNT, sampleRate);
+  }
   ~NodeAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(NodeAudioPlayer);

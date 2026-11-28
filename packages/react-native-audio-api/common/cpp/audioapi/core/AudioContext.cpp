@@ -19,6 +19,16 @@ AudioContext::AudioContext(
       androidOutputProfile_(androidOutputProfile),
       isInitialized_(false),
       onErrorEvent_(audioEventHandlerRegistry) {
+  // The render callback can hold a raw `this`: it runs only on the stream's I/O thread, and
+  // `~AudioContext` stops the stream and waits in `waitForRenderQuiescence()` for every render to
+  // return before any member is destroyed, so no render outlives the context.
+  audioPlayer_ = createPlatformAudioPlayer(
+      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
+      getSampleRate(),
+      currentRenders_,
+      &driverMutex_,
+      latencyHint_,
+      androidOutputProfile_);
   // Context starts SUSPENDED with no audio-thread consumer. Let the producer
   // drain the channels itself until start()/resume() hands draining to the
   // audio callback (same pattern as OfflineAudioContext before rendering).
@@ -32,18 +42,6 @@ AudioContext::~AudioContext() {
   }
 }
 
-void AudioContext::initialize(const AudioDestinationNode *destination) {
-  BaseAudioContext::initialize(destination);
-  audioPlayer_ = createPlatformAudioPlayer(
-      [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
-      getSampleRate(),
-      currentRenders_,
-      std::static_pointer_cast<AudioContext>(shared_from_this()),
-      &driverMutex_,
-      latencyHint_,
-      androidOutputProfile_);
-}
-
 bool AudioContext::tryStartDriver() {
   assertDriverMutexHeld();
 
@@ -53,6 +51,13 @@ bool AudioContext::tryStartDriver() {
 
   if (isInitialized_.load(std::memory_order_acquire)) {
     return false;
+  }
+
+  if (!isPlayerBound_) {
+    // Once, before the first stream opens. Rebinding after a failure would write the `weak_ptr`
+    // while the failed stream's error thread may still be reading it.
+    audioPlayer_->bindContext(std::static_pointer_cast<AudioContext>(shared_from_this()));
+    isPlayerBound_ = true;
   }
 
   getGraph()->disableProducerSelfDrain();
@@ -168,18 +173,10 @@ bool AudioContext::isDriverRunning() const {
 }
 
 double AudioContext::getBaseLatency() const {
-  if (audioPlayer_ == nullptr) {
-    return 0.0;
-  }
-
   return audioPlayer_->getBaseLatency();
 }
 
 AudioTimestamp AudioContext::getOutputTimestamp() const {
-  if (audioPlayer_ == nullptr) {
-    return {};
-  }
-
   const auto presentation = audioPlayer_->getOutputPresentation();
   if (!presentation) {
     return {};
@@ -194,10 +191,6 @@ AudioTimestamp AudioContext::getOutputTimestamp() const {
 }
 
 double AudioContext::getOutputLatency() const {
-  if (audioPlayer_ == nullptr) {
-    return 0.0;
-  }
-
   return audioPlayer_->getOutputLatency();
 }
 

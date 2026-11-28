@@ -24,7 +24,6 @@ class AndroidAudioPlayer : public AudioPlayer,
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
       std::mutex *driverMutex,
       AudioContextLatencyHint latencyHint,
       AndroidOutputProfile outputProfile);

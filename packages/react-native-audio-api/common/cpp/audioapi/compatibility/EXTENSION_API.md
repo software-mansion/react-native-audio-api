@@ -107,7 +107,7 @@ obvious in the podspec:
 | `audioapi::AudioNode`                                                         | Base class for custom `AudioNode` implementations                                                    |
 | `audioapi::AudioScheduledSourceNodeHostObject`                                | HostObject base for scheduled source nodes (`start`/`stop`/`onended`)                                |
 | `audioapi::AudioScheduledSourceNode`                                          | Base class for scheduled sources (e.g. worklet generators)                                           |
-| `audioapi::AudioDestinationNode`                                              | Destination passed to `BaseAudioContext::initialize` overrides                                       |
+| `audioapi::AudioDestinationNode`                                              | A context's destination; `processGraph` mixes every `isContextOutput()` node into the render buffer |
 | `audioapi::AudioEventHandlerRegistryHostObject`                               | Host object behind the global `AudioEventEmitter`; gives access to the event registry                |
 | `audioapi::typedAudioNode<NodeT>()` (via `HostObjects/TypedAudioNodePtr.hpp`) | Downcast a HostObject's graph node to its concrete `AudioNode` type                                  |
 | `AudioScheduledSourceNodeOptions` (via `types/NodeOptions.h`)                 | Options for scheduled source HostObjects                                                             |

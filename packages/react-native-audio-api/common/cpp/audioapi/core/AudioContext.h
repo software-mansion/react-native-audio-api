@@ -31,11 +31,6 @@ class AudioContext : public BaseAudioContext {
   bool suspend(std::unique_ptr<ContextStateResolver> promise);
   bool start();
 
-  /// @brief Initializes native audio player and assigns the audio destination node to the context.
-  /// @param destination The audio destination node to be associated with the context.
-  /// @note This method must be called before the audio context can be used for processing audio.
-  void initialize(const AudioDestinationNode *destination) final;
-
   /// @brief Returns the base latency of the audio context in seconds.
   /// @returns The base latency in seconds.
   [[nodiscard]] double getBaseLatency() const;
@@ -57,13 +52,16 @@ class AudioContext : public BaseAudioContext {
   void assignOnErrorCallbackId(uint64_t callbackId);
 
  private:
-  std::shared_ptr<AudioPlayer> audioPlayer_;
   AudioContextLatencyHint latencyHint_;
   AndroidOutputProfile androidOutputProfile_;
   std::atomic<bool> isInitialized_{false};
   /// Audio I/O callback thread increments around each platform render callback;
   /// control thread waits on suspend/close.
   std::atomic<uint32_t> currentRenders_{0};
+  std::shared_ptr<AudioPlayer> audioPlayer_;
+  /// Whether `audioPlayer_` holds this context for stream-failure reporting. Guarded by
+  /// `driverMutex_`.
+  bool isPlayerBound_ = false;
 
   EventCaller<AudioEvent::CONTEXT_ERROR> onErrorEvent_;
 

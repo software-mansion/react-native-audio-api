@@ -22,7 +22,6 @@ class IOSAudioPlayer : public AudioPlayer {
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
       std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
       std::mutex *driverMutex,
       AudioContextLatencyHint latencyHint);
   ~IOSAudioPlayer() override;
@@ -62,7 +61,6 @@ class IOSAudioPlayer : public AudioPlayer {
   /// In frames of the session's own rate, which may differ from the context's.
   int preferredIOBufferFrames_;
   AVAudioSourceNodeRenderBlock renderBlock_;
-  OnOutputRecoveryFailedBlock onStreamFail_;
   /// The attached source node's id; nil while detached.
   NSString *sourceNodeId_;
   /// Set from main thread on start/resume; consumed on audio thread to drop stale pending audio.
