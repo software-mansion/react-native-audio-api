@@ -13,6 +13,12 @@
 
 namespace r8b {
 
+/// Input-rate zero frames pushed per step to flush the output r8brain holds back.
+constexpr int DRAIN_STEP_FRAMES = 256;
+/// Bounds that flush at 16384 input frames; r8brain holds back a few thousand at most
+/// (about 2400 at 16 -> 48 kHz).
+constexpr int DRAIN_MAX_STEPS = 64;
+
 class BaseResampler {
  public:
   BaseResampler(const BaseResampler &) = delete;

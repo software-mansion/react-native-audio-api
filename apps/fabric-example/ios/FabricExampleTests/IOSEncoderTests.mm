@@ -224,3 +224,119 @@ static const float kTolerance = 1e-5f;
 }
 
 @end
+
+/// A converter holds back a latency's worth of frames; the encoder must flush them when the input
+/// rate changes and at close, so the file holds exactly inputFrames * fileRate / inputRate frames
+/// for every input segment.
+@interface IOSEncoderLengthTests : XCTestCase
+@end
+
+struct EncoderInputSegment {
+  float sampleRate;
+  int channelCount;
+  int frames;
+};
+
+@implementation IOSEncoderLengthTests
+
+- (AVAudioFramePosition)fileLengthAfterEncoding:(const std::vector<EncoderInputSegment> &)segments
+{
+  NSString *path =
+      [NSTemporaryDirectory() stringByAppendingPathComponent:@"ios-encoder-length-test.wav"];
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+
+  constexpr size_t maxFramesPerBuffer = 4096;
+  auto streamFormatOf = [](const EncoderInputSegment &segment) {
+    return StreamFormat{
+        .layout = {.sampleRate = segment.sampleRate, .channelCount = segment.channelCount},
+        .maxFramesPerBuffer = maxFramesPerBuffer};
+  };
+
+  @autoreleasepool {
+    ios::encoder::IOSEncoder encoder(
+        EncoderSettings{
+            .fileLayout = {.sampleRate = 48000, .channelCount = 2},
+            .encoding =
+                AudioFileProperties::EncodingConfig{
+                    .format = AudioFileProperties::FileFormat::WAV,
+                    .bitRate = 0,
+                    .bitDepth = AudioFileProperties::BitDepth::Bit32,
+                    .flacCompressionLevel = 0,
+                    .iosAudioQuality = AudioFileProperties::IOSAudioQuality::High,
+                },
+        });
+    auto openResult = encoder.open(
+        streamFormatOf(segments.front()),
+        encoder_capabilities::specForFormat(AudioFileProperties::FileFormat::WAV),
+        path.UTF8String);
+    XCTAssertTrue(
+        openResult.is_ok(), @"%s", openResult.is_err() ? openResult.unwrap_err().c_str() : "");
+
+    for (size_t i = 0; i < segments.size(); ++i) {
+      const EncoderInputSegment &segment = segments[i];
+      if (i > 0 &&
+          (segment.sampleRate != segments[i - 1].sampleRate ||
+           segment.channelCount != segments[i - 1].channelCount)) {
+        auto changeResult = encoder.changeInputFormat(streamFormatOf(segment));
+        XCTAssertTrue(
+            changeResult.is_ok(),
+            @"%s",
+            changeResult.is_err() ? changeResult.unwrap_err().c_str() : "");
+      }
+      audioapi::AudioBuffer input(segment.frames, segment.channelCount, segment.sampleRate);
+      for (int channel = 0; channel < segment.channelCount; ++channel) {
+        for (int frame = 0; frame < segment.frames; ++frame) {
+          (*input.getChannel(channel))[frame] = 0.3f * std::sin(0.05f * static_cast<float>(frame));
+        }
+      }
+      XCTAssertTrue(encoder.encode(input, segment.frames).is_ok());
+    }
+    XCTAssertTrue(encoder.close().is_ok());
+  }
+
+  NSError *error = nil;
+  AVAudioFile *file = [[AVAudioFile alloc] initForReading:[NSURL fileURLWithPath:path]
+                                                    error:&error];
+  XCTAssertNil(error);
+  const AVAudioFramePosition length = file.length;
+  file = nil;
+  [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+  return length;
+}
+
+- (void)testSameRateInputIsWrittenFrameForFrame
+{
+  const std::vector<EncoderInputSegment> segments{{48000, 2, 1000}};
+
+  XCTAssertEqual([self fileLengthAfterEncoding:segments], 1000);
+}
+
+- (void)testResampledInputKeepsTheTailTheConverterHeldBack
+{
+  const std::vector<EncoderInputSegment> segments{{16000, 1, 4000}};
+
+  XCTAssertEqual([self fileLengthAfterEncoding:segments], 12000);
+}
+
+- (void)testChannelChangesKeepEveryFrame
+{
+  std::vector<EncoderInputSegment> segments;
+  for (int i = 0; i < 40; ++i) {
+    segments.push_back({16000, i % 2 == 0 ? 1 : 2, 160});
+  }
+
+  XCTAssertEqual([self fileLengthAfterEncoding:segments], 40 * 480);
+}
+
+- (void)testRateChangesKeepEveryFrame
+{
+  std::vector<EncoderInputSegment> segments;
+  for (int i = 0; i < 20; ++i) {
+    segments.push_back(
+        i % 2 == 0 ? EncoderInputSegment{16000, 1, 160} : EncoderInputSegment{44100, 1, 441});
+  }
+
+  XCTAssertEqual([self fileLengthAfterEncoding:segments], 20 * 480);
+}
+
+@end

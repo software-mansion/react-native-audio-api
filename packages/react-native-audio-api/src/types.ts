@@ -165,39 +165,73 @@ export interface AudioRecorderOptions {
   iosVoiceProcessing?: boolean;
 }
 
-export interface AudioRecorderFileOptions {
-  channelCount?: number;
-  rotateIntervalBytes?: number;
-
+/**
+ * Options of {@link encodeAudioData}. The recorder's
+ * {@link AudioRecorderFileOptions} extends them with its recording-only
+ * fields.
+ */
+export interface AudioEncoderOptions {
+  /** Defaults to {@link FileFormat.M4A}. */
   format?: FileFormat;
+  /**
+   * Sample rate (at most 48000 Hz) and encoding quality of the file. Defaults
+   * to `FilePreset.High`; for `encodeAudioData`, with the first buffer's sample
+   * rate, capped at 48000 Hz.
+   */
   preset?: FilePresetType;
+  /**
+   * Of the file, 1 or 2. Defaults to 2 for the recorder and to the first
+   * buffer's channel count, capped at 2, for `encodeAudioData`.
+   */
+  channelCount?: number;
 
+  /** Defaults to {@link FileDirectory.Cache}. */
   directory?: FileDirectory;
+  /** Defaults to `'AudioAPI'`. */
   subDirectory?: string;
 
   /**
    * Names the output file outright — no timestamp is added, so supply whatever
    * identity you need (a session id, your own timestamp). Left unset, the
-   * library generates `recording_<timestamp>` instead.
+   * library generates `recording_<timestamp>` for the recorder and
+   * `encoded_<timestamp>` for `encodeAudioData`.
    *
    * Give a bare name: no extension (it follows from `format`), no path
-   * separators and no `..`. With `rotateIntervalBytes` set, `_001`, `_002`, …
-   * are appended, because one recording then spans several files.
+   * separators and no `..`.
    *
    * An existing file of the same name is overwritten, with a warning in the
-   * native log, so make the name unique per recording yourself.
+   * native log, so make the name unique yourself.
    */
   fileName?: string;
+}
+
+export interface AudioRecorderFileOptions extends AudioEncoderOptions {
+  /**
+   * Splits the recording into files of about this size. `_001`, `_002`, … are
+   * then appended to the file name, because one recording spans several files.
+   */
+  rotateIntervalBytes?: number;
 
   androidFlushIntervalMs?: number;
 }
 
-export interface FileInfo {
-  paths: string[];
-  /** The size of the recorded file (in MB). */
+/** What {@link FileInfo} and {@link EncodedFileInfo} share. */
+export interface AudioFileStats {
+  /** The size of the written file or files (in MB). */
   size: number;
-  /** The duration of the recording (in seconds). */
+  /** The duration of the audio (in seconds). */
   duration: number;
+}
+
+/** What `AudioRecorder.stop()` produced: one file, or several when rotating. */
+export interface FileInfo extends AudioFileStats {
+  paths: string[];
+}
+
+/** The one file {@link encodeAudioData} wrote. */
+export interface EncodedFileInfo extends AudioFileStats {
+  /** A `file://` URI. */
+  path: string;
 }
 
 export type ProcessorMode = 'processInPlace' | 'processThrough';

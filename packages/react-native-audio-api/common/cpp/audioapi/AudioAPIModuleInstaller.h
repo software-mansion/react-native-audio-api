@@ -7,6 +7,7 @@
 #endif
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/AudioDecoderHostObject.h>
+#include <audioapi/HostObjects/utils/AudioEncoderHostObject.h>
 #include <audioapi/HostObjects/utils/AudioFileUtilsHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/AudioContext.h>
@@ -41,6 +42,7 @@ class AudioAPIModuleInstaller {
         getCreateOfflineAudioContextFunction(jsiRuntime, jsCallInvoker, audioEventHandlerRegistry);
     auto createAudioBuffer = getCreateAudioBufferFunction(jsiRuntime);
     auto createAudioDecoder = getCreateAudioDecoderFunction(jsiRuntime, jsCallInvoker);
+    auto createAudioEncoder = getCreateAudioEncoderFunction(jsiRuntime, jsCallInvoker);
     auto createAudioFileUtils = getCreateAudioFileUtilsFunction(jsiRuntime, jsCallInvoker);
     auto isRecordingOngoing = getIsRecordingOngoingFunction(jsiRuntime);
     auto consumeLastRecordingResult = getConsumeLastRecordingResultFunction(jsiRuntime);
@@ -51,6 +53,7 @@ class AudioAPIModuleInstaller {
         *jsiRuntime, "createOfflineAudioContext", createOfflineAudioContext);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioBuffer", createAudioBuffer);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioDecoder", createAudioDecoder);
+    jsiRuntime->global().setProperty(*jsiRuntime, "createAudioEncoder", createAudioEncoder);
     jsiRuntime->global().setProperty(*jsiRuntime, "createAudioFileUtils", createAudioFileUtils);
     jsiRuntime->global().setProperty(*jsiRuntime, "isRecordingOngoing", isRecordingOngoing);
     jsiRuntime->global().setProperty(
@@ -195,17 +198,7 @@ class AudioAPIModuleInstaller {
             return jsi::Value::null();
           }
 
-          auto jsResult = jsi::Object(runtime);
-          auto pathsArray = jsi::Array(runtime, result->paths.size());
-          for (size_t i = 0; i < result->paths.size(); ++i) {
-            pathsArray.setValueAtIndex(
-                runtime, i, jsi::String::createFromUtf8(runtime, result->paths[i]));
-          }
-          jsResult.setProperty(runtime, "paths", pathsArray);
-          jsResult.setProperty(runtime, "size", result->size);
-          jsResult.setProperty(runtime, "duration", result->duration);
-
-          return jsi::Value(std::move(jsResult));
+          return result->toJSIValue(runtime);
         });
   }
 
@@ -224,6 +217,24 @@ class AudioAPIModuleInstaller {
           auto audioDecoderHostObject =
               std::make_shared<AudioDecoderHostObject>(&runtime, jsCallInvoker);
           return jsi::Object::createFromHostObject(runtime, audioDecoderHostObject);
+        });
+  }
+
+  static jsi::Function getCreateAudioEncoderFunction(
+      jsi::Runtime *jsiRuntime,
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
+    return jsi::Function::createFromHostFunction(
+        *jsiRuntime,
+        jsi::PropNameID::forAscii(*jsiRuntime, "createAudioEncoder"),
+        0,
+        [jsCallInvoker](
+            jsi::Runtime &runtime,
+            const jsi::Value &thisValue,
+            const jsi::Value *args,
+            size_t count) -> jsi::Value {
+          auto audioEncoderHostObject =
+              std::make_shared<AudioEncoderHostObject>(&runtime, jsCallInvoker);
+          return jsi::Object::createFromHostObject(runtime, audioEncoderHostObject);
         });
   }
 

@@ -49,10 +49,7 @@ JSI_HOST_FUNCTION_IMPL(AudioFileUtilsHostObject, concatAudioFiles) {
         auto result = audioapi::concatAudioFiles(inputPaths, outputPath);
 
         if (result.is_err()) {
-          return [result = std::move(result)](
-                     jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-            return result.unwrap_err();
-          };
+          return rejectWith(std::move(result).unwrap_err());
         }
 
         return [result = std::move(result)](

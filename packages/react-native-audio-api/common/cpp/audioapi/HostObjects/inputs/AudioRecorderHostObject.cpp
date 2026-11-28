@@ -62,12 +62,6 @@ PromiseResolver resolveWithUndefined() {
   };
 }
 
-PromiseResolver rejectWith(std::string message) {
-  return [message = std::move(message)](jsi::Runtime &) -> std::variant<jsi::Value, std::string> {
-    return message;
-  };
-}
-
 } // namespace
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -94,19 +88,10 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
       return rejectWith(result.unwrap_err());
     }
 
-    return [info =
-                result.unwrap()](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
-      auto pathsArray = jsi::Array(runtime, info.paths.size());
-      for (size_t i = 0; i < info.paths.size(); ++i) {
-        pathsArray.setValueAtIndex(runtime, i, jsi::String::createFromUtf8(runtime, info.paths[i]));
-      }
-
-      auto fileInfo = jsi::Object(runtime);
-      fileInfo.setProperty(runtime, "paths", pathsArray);
-      fileInfo.setProperty(runtime, "size", info.size);
-      fileInfo.setProperty(runtime, "duration", info.duration);
-      return jsi::Value(std::move(fileInfo));
-    };
+    return
+        [info = result.unwrap()](jsi::Runtime &runtime) -> std::variant<jsi::Value, std::string> {
+          return info.toJSIValue(runtime);
+        };
   });
 }
 

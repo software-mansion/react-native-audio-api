@@ -45,6 +45,13 @@ export function concatAudioFiles(
   return Promise.reject(new Error('concatAudioFiles is not supported on web.'));
 }
 
+export function encodeAudioData(
+  _input: unknown,
+  _options?: unknown
+): Promise<never> {
+  return Promise.reject(new Error('encodeAudioData is not supported on web.'));
+}
+
 export type {
   OscillatorType,
   ChannelCountMode,

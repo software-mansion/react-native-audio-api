@@ -239,18 +239,22 @@ OscillatorNodeHostObject::OscillatorNodeHostObject(...) {
 ### Primitives
 
 ```cpp
-float v       = static_cast<float>(args[0].getNumber());
-double d      = args[0].getNumber();
-int i         = static_cast<int>(args[0].getNumber());
-bool b        = args[0].getBool();
-std::string s = args[0].getString(runtime).utf8(runtime);
+float v       = static_cast<float>(args[0].asNumber());
+double d      = args[0].asNumber();
+int i         = static_cast<int>(args[0].asNumber());
+bool b        = args[0].asBool();
+std::string s = args[0].asString(runtime).utf8(runtime);
 ```
+
+`asX()` throws on a wrong type, but not always the same exception: `asNumber()` / `asBool()` throw `jsi::JSINativeException`, `asString()` / `asObject()` throw `jsi::JSError`. A C++ `catch (const jsi::JSError &)` therefore misses the first two; JS sees an `Error` either way. `getX()` only `assert`s, so in release a wrong type reads garbage (and `getHostObject<T>` on the wrong object is undefined behaviour, while `asHostObject<T>` throws). Use `getX()` only right after an `isX()` check on the same value. Don't add `isX()` + `JSError` guards in front of `asX()`. Most existing HostObjects still use `getX()`.
 
 ### Optional arguments — check count first
 
+`args` holds exactly `count` values; reading `args[count]` is out of bounds, and `asX()` cannot catch it.
+
 ```cpp
 // args[2] is optional, default -1
-double duration = (count > 2 && !args[2].isUndefined()) ? args[2].getNumber() : -1.0;
+double duration = (count > 2 && !args[2].isUndefined()) ? args[2].asNumber() : -1.0;
 ```
 
 Use `jsiutils::argToString(runtime, args, count, index, defaultValue)` for optional string args.
@@ -363,6 +367,8 @@ That bookkeeping — copy-on-write against playing nodes, tracking exposed views
 `AudioBufferSourceNodeHostObject` holds the assigned `AudioBufferHostObject` and hands samples to the audio thread in exactly one place, `acquireBufferContent`, which runs on `start()` and on a `setBuffer()` made after start. A `setBuffer()` before start only records the buffer and publishes its channel count; the node reads nothing until acquire, so every JS write made in between is played and nothing has to track content versions. `SharedAudioBuffer::acquireContent` both cuts off the live views and returns the storage-sharing buffer the node plays.
 
 `AudioBufferQueueSourceNodeHostObject::enqueueBuffer` reuses the same mechanism: a buffer of the queue's width is shared through `SharedAudioBuffer::acquireContent` instead of copied, only a buffer of another width is mixed into a private copy, and the TS wrapper calls `invalidateChannelDataCache` after every enqueue. The stretcher is configured inline on the JS thread by the host base `initStretch`, once per node and with no audio event: the audio thread touches it only once the node has content, and the first content is always scheduled behind that call. Audio events are `FatFunction<72, …>`; a handle, a node pointer, two `shared_ptr`s and one scalar already fill the slot, so derive what you can on the audio thread (the queue event reads the width off its content) instead of capturing it.
+
+`AudioEncoderHostObject::encode` (`encodeAudioData`) is the off-thread reader of the same kind: it calls `acquireContent` on every input buffer on the JS thread before `createAsyncPromise`, so the worker reads a snapshot no JS write can race, and `src/core/AudioEncoder.ts` calls `invalidateChannelDataCache` right after the native call. Any new API that reads an `AudioBuffer` off the JS thread follows this pair rather than deep-copying or capturing `getSamples()`.
 
 ### External memory pressure
 

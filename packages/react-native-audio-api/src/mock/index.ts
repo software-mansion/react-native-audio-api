@@ -7,6 +7,7 @@ import type {
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
+  EncodedFileInfo,
   FileInfo,
   FilePresetType,
   OfflineAudioContextOptions,
@@ -1197,6 +1198,25 @@ const concatAudioFiles = (
   return Promise.resolve(outputPath);
 };
 
+const encodeAudioData = (
+  input: AudioBufferMock | AudioBufferMock[],
+  _options?: unknown
+): Promise<EncodedFileInfo> => {
+  if (Array.isArray(input) && input.length === 0) {
+    return Promise.reject(
+      new AudioApiErrorMock(
+        'encodeAudioData requires at least one AudioBuffer.'
+      )
+    );
+  }
+
+  return Promise.resolve({
+    path: 'file:///mock/AudioAPI/encoded.m4a',
+    size: 0,
+    duration: 0,
+  });
+};
+
 class AudioManagerMock {
   static getDevicePreferredSampleRate(): number {
     return 44100;
@@ -1371,6 +1391,7 @@ export {
   concatAudioFiles,
   decodeAudioData,
   decodePCMInBase64,
+  encodeAudioData,
   getAudioDuration,
   setMockSystemVolume,
   useSystemVolume,
@@ -1472,6 +1493,7 @@ export default {
   getAudioDuration,
   changePlaybackSpeed,
   concatAudioFiles,
+  encodeAudioData,
   useSystemVolume,
   setMockSystemVolume,
 

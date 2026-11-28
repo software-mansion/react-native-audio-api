@@ -46,6 +46,9 @@ class AndroidEncoder : public AudioEncoder {
   /// stay planar, and the backend interleaves while it quantizes.
   std::string encodeConverted(const AudioBuffer &input, int numFrames);
 
+  /// Encodes the frames the resampler still holds back; a no-op without one.
+  [[nodiscard]] Result<NoneType, std::string> drainResampler();
+
   std::unique_ptr<IEncoderBackend> backend_;
 
   /// What the backend encodes at; the input differs from it only when conversion_ is set.

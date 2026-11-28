@@ -6,6 +6,7 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/Path.h>
 
 #include <memory>
 #include <string>
@@ -353,7 +354,7 @@ Result<FileInfo, std::string> AudioRecorder::finalizeSideEffects(DetachedSideEff
     outputFileSize = session.sizeMB;
     outputDuration = session.durationSec;
     for (const auto &filePath : session.filePaths) {
-      sideEffects.fileUris.push_back("file://" + filePath);
+      sideEffects.fileUris.push_back(path::toFileUrl(filePath));
     }
   }
 

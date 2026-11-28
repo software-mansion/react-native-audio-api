@@ -1,0 +1,185 @@
+---
+sidebar_position: 2
+sidebar_label: Encoding
+---
+
+import { MobileOnly, Optional } from '@site/src/components/Badges';
+
+# Encoding <MobileOnly />
+
+You can encode [`AudioBuffer`](../sources/audio-buffer.mdx)s into an audio file without creating an
+`AudioContext` using the exported [`encodeAudioData`](#encodeaudiodata) function.
+
+This is useful with the buffers delivered by
+[`AudioRecorder.onAudioReady`](../inputs/audio-recorder.mdx): collect them while
+recording, then write them as one compressed file (for example M4A or Opus) that is cheaper to
+upload than raw PCM.
+
+:::warning
+`encodeAudioData` is not supported on web.
+:::
+
+## Supported formats
+
+Encoding uses the same system encoders as [`AudioRecorder`](../inputs/audio-recorder.mdx) file
+output. Each platform exposes a different set of them, making format support platform-specific. The table below lists which [`FileFormat`](../inputs/audio-recorder.mdx#fileformat)s each platform can encode:
+
+| `FileFormat` | Container / codec    | iOS | Android |
+| :----------- | :------------------- | :-: | :-----: |
+| `Wav`        | WAV / PCM            | ✅  |   ✅    |
+| `M4A`        | M4A / AAC-LC         | ✅  |   ✅    |
+| `Flac`       | FLAC / FLAC          | ✅  |   ✅    |
+| `OpusOgg`    | OGG / Opus           | ✅  |   ✅    |
+| `Adts`       | ADTS / AAC-LC        | ✅  |   ✅    |
+| `Caf`        | CAF / PCM            | ✅  |   ❌    |
+| `Aiff`       | AIFF / PCM           | ✅  |   ❌    |
+| `Alac`       | M4A / Apple Lossless | ✅  |   ❌    |
+| `Ulaw`       | WAV / µ-law          | ✅  |   ❌    |
+| `Alaw`       | WAV / a-law          | ✅  |   ❌    |
+| `OpusWebm`   | WebM / Opus          | ❌  |   ✅    |
+| `VorbisWebm` | WebM / Vorbis        | ❌  |   ✅    |
+
+:::caution
+The file's sample rate is at most 48000 Hz and its channel count 1 or 2. Inputs beyond that are
+resampled and mixed down: left unset, `preset.sampleRate` and `channelCount` default to the first
+buffer's, capped at those limits. 48000 Hz is the highest rate the iOS and Android system
+encoders accept, so an explicit `preset.sampleRate` above it is rejected: `encodeAudioData`
+rejects and the recorder's [`enableFileOutput`](../inputs/audio-recorder.mdx#enablefileoutput)
+throws. `OpusOgg` is the exception to the sample-rate default, as the Opus note below explains.
+:::
+
+:::caution Platform support
+Selecting a format the current platform cannot encode (for example `Caf` on Android or `OpusWebm`
+on iOS) fails with a descriptive error: `encodeAudioData` rejects and the recorder's
+`enableFileOutput` throws. If a device lacks a system encoder for the requested format, the error
+comes when the file is opened: `encodeAudioData` rejects and the recorder's start returns it. Use
+`Wav`, `M4A`, `Flac`, `Adts`, or `OpusOgg` for the widest cross-platform support.
+:::
+
+:::tip Adts and Flac
+Both `Adts` and `Flac` files stay decodable after an app crash, but only the former is lossy.
+`Adts` accepts only the sample rates the device's AAC encoder supports: 8000, 11025, 12000, 16000,
+22050, 24000, 32000, 44100 and 48000 Hz with the iOS and Android system encoders.
+:::
+
+:::note Opus
+Opus always codes at 48 kHz, so `OpusOgg` files are 48000 Hz on both platforms whatever
+`preset.sampleRate` asks for and whatever the input's rate is; the encoder resamples. The
+recorded-buffer example below, for instance, writes 16000 Hz chunks into a 48000 Hz file. `bitRate` applies (96 kbps when it is `0`), `bitDepth` does not.
+
+`OpusOgg` is encoded by the package's bundled static libraries. With them disabled through
+[`disableStaticExternalLibs`](../other/build-time-flags.mdx#disablestaticexternallibs), it is
+unavailable on iOS, and on Android it falls back to the system muxer, which writes OGG on Android
+14 and later.
+:::
+
+## Methods
+
+### `encodeAudioData`
+
+Encodes one or more buffers, back to back, into a single audio file.
+
+|       Parameter        |                     Type                      | Description                                                                           |
+| :--------------------: | :-------------------------------------------: | :------------------------------------------------------------------------------------ |
+|        `input`         |        `AudioBuffer \| AudioBuffer[]`         | Buffers to encode, in output order. They may differ in sample rate and channel count. |
+| `options` <Optional /> | [`AudioEncoderOptions`](#audioencoderoptions) | Format, quality, file layout and location. Every field is optional.                   |
+
+#### Returns `Promise<EncodedFileInfo>`.
+
+The promise resolves with an [`EncodedFileInfo`](#encodedfileinfo). A failed encode leaves no file
+behind.
+
+Buffers with different sample rates or channel counts can be mixed in one call: each is resampled
+and up- or down-mixed to the file's layout. When the sample rate changes between two buffers, the
+encoder's resampler is rebuilt, which can drop a few milliseconds of audio at that boundary.
+
+The samples are captured when you call `encodeAudioData`: changes you make to the buffers
+afterwards do not reach the file.
+
+### `AudioEncoderOptions`
+
+The same file options as the recorder's [`AudioRecorderFileOptions`](../inputs/audio-recorder.mdx#audiorecorderfileoptions), without the recording-only `rotateIntervalBytes` and `androidFlushIntervalMs`.
+
+|     Option     |                              Type                               |                                                 Default                                                 | Description                                                                                                                                                                                       |
+| :------------: | :-------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|    `format`    |     [`FileFormat`](../inputs/audio-recorder.mdx#fileformat)     |                                            `FileFormat.M4A`                                             | Container and codec of the file.                                                                                                                                                                  |
+|    `preset`    | [`FilePresetType`](../inputs/audio-recorder.mdx#filepresettype) | `FilePreset.High` at the first buffer's sample rate, capped at 48000 Hz (always 48000 Hz for `OpusOgg`) | Sample rate (at most 48000 Hz), bit rate, bit depth, FLAC compression level and iOS quality — the same presets as the recorder. Each buffer is resampled when its rate differs from the preset's. |
+| `channelCount` |                            `number`                             |                                first buffer's channel count, capped at 2                                | `1` or `2`. Each buffer is up- or down-mixed with the Web Audio mixing rules when it differs — pass `1` to halve the size of a stereo recording.                                                  |
+|  `directory`   |                         `FileDirectory`                         |                                          `FileDirectory.Cache`                                          | App directory the file is written to.                                                                                                                                                             |
+| `subDirectory` |                            `string`                             |                                              `'AudioAPI'`                                               | Folder inside `directory`.                                                                                                                                                                        |
+|   `fileName`   |                            `string`                             |                                          `encoded_<timestamp>`                                          | Bare file name: no extension (it follows from `format`), path separators or `..`. An existing file of that name is overwritten.                                                                   |
+
+### `EncodedFileInfo`
+
+```tsx
+interface EncodedFileInfo {
+  path: string;
+  size: number;
+  duration: number;
+}
+```
+
+- `path` - The written file, as a `file://` URI.
+- `size` - The file size (in MB).
+- `duration` - The audio duration (in seconds).
+
+`size` and `duration` come from `AudioFileStats`, which the recorder's
+[`FileInfo`](../inputs/audio-recorder.mdx#fileinfo) shares; that one lists `paths`, since a
+rotating recording writes several files.
+
+<details>
+<summary>Example usage with recorded buffers</summary>
+
+```tsx
+import {
+  AudioBuffer,
+  AudioRecorder,
+  FileFormat,
+  encodeAudioData,
+} from 'react-native-audio-api';
+
+const audioRecorder = new AudioRecorder();
+const chunks: AudioBuffer[] = [];
+
+audioRecorder.onAudioReady(
+  { sampleRate: 16000, bufferLength: 1600, channelCount: 1 },
+  ({ buffer }) => {
+    chunks.push(buffer);
+  }
+);
+
+// Start and stop the recorder as usual, then:
+async function upload() {
+  const { path, size } = await encodeAudioData(chunks, {
+    format: FileFormat.OpusOgg,
+    fileName: 'voice-note',
+  });
+
+  // send `path` (`size` MB) to your server
+}
+```
+
+</details>
+
+<details>
+<summary>Example usage with a decoded buffer</summary>
+
+```tsx
+import {
+  FileFormat,
+  FilePreset,
+  decodeAudioData,
+  encodeAudioData,
+} from 'react-native-audio-api';
+
+const buffer = await decodeAudioData('/path/to/input.wav');
+
+// Re-encode as mono AAC at 22050 Hz.
+const { path } = await encodeAudioData(buffer, {
+  format: FileFormat.M4A,
+  preset: { ...FilePreset.Medium, sampleRate: 22050 },
+  channelCount: 1,
+});
+```
+
+</details>

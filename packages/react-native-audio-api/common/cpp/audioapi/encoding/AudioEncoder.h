@@ -43,6 +43,8 @@ class AudioEncoder {
   virtual ~AudioEncoder() = default;
   DELETE_COPY_AND_MOVE(AudioEncoder);
 
+  /// A failed open leaves no file behind: a file the encoder already created or truncated is
+  /// removed, and one at @p filePath that it never touched stays as it was.
   virtual OpenEncoderResult open(
       const StreamFormat &inputFormat,
       const EncoderOutputSpec &outputSpec,

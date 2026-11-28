@@ -1,5 +1,6 @@
 #include <audioapi/utils/Path.h>
 #include <gtest/gtest.h>
+#include <string>
 
 using namespace audioapi;
 
@@ -9,6 +10,19 @@ TEST(PathTest, NormalizesFileUrls) {
 
 TEST(PathTest, KeepsFilesystemPaths) {
   EXPECT_EQ(path::normalizeFilePath("/tmp/audio%20segment.m4a"), "/tmp/audio segment.m4a");
+}
+
+TEST(PathTest, FileUrlsRoundTripToTheSamePath) {
+  EXPECT_EQ(path::toFileUrl("/tmp/take%20one.wav"), "file:///tmp/take%2520one.wav");
+  EXPECT_EQ(path::toFileUrl("/tmp/take one.wav"), "file:///tmp/take%20one.wav");
+  for (const std::string original :
+       {"/tmp/take%20one.wav", "/tmp/take one.wav", "/tmp/AudioAPI/rec_1.m4a"}) {
+    EXPECT_EQ(path::normalizeFilePath(path::toFileUrl(original)), original);
+  }
+}
+
+TEST(PathTest, KeepsOrdinaryPathsReadableInFileUrls) {
+  EXPECT_EQ(path::toFileUrl("/tmp/AudioAPI/rec_1.m4a"), "file:///tmp/AudioAPI/rec_1.m4a");
 }
 
 TEST(PathTest, KeepsMalformedPercentEscapes) {

@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
-#include <cstring>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <vector>
 
@@ -13,13 +13,13 @@ namespace audioapi::path {
 
 namespace {
 
-constexpr const char *FILE_URL_PREFIX = "file://";
+constexpr std::string_view FILE_URL_PREFIX = "file://";
 constexpr int HEX_BASE = 16;
 constexpr size_t PERCENT_ESCAPE_HEX_DIGITS = 2;
 
 } // namespace
 
-std::string lowercaseExtension(const std::string &path) {
+std::string lowercaseExtension(std::string_view path) {
   std::string extension = std::filesystem::path(path).extension().string();
   if (extension.empty()) {
     return extension;
@@ -32,21 +32,21 @@ std::string lowercaseExtension(const std::string &path) {
   return extension;
 }
 
-bool hasExtension(const std::string &path, const std::vector<std::string> &extensions) {
+bool hasExtension(std::string_view path, const std::vector<std::string> &extensions) {
   return std::ranges::find(extensions, lowercaseExtension(path)) != extensions.end();
 }
 
-bool hasNonFileProtocol(const std::string &path) {
+bool hasNonFileProtocol(std::string_view path) {
   const auto colon = path.find(':');
-  if (colon == std::string::npos) {
+  if (colon == std::string_view::npos) {
     return false;
   }
 
   const auto firstSlash = path.find('/');
-  return firstSlash == std::string::npos || colon < firstSlash;
+  return firstSlash == std::string_view::npos || colon < firstSlash;
 }
 
-std::string percentDecode(const std::string &path) {
+std::string percentDecode(std::string_view path) {
   std::string decoded;
   decoded.reserve(path.size());
 
@@ -72,12 +72,33 @@ std::string percentDecode(const std::string &path) {
   return decoded;
 }
 
-std::string normalizeFilePath(const std::string &path) {
+std::string normalizeFilePath(std::string_view path) {
   if (path.starts_with(FILE_URL_PREFIX)) {
-    return percentDecode(path.substr(std::strlen(FILE_URL_PREFIX)));
+    return percentDecode(path.substr(FILE_URL_PREFIX.size()));
   }
 
   return percentDecode(path);
+}
+
+std::string toFileUrl(std::string_view path) {
+  constexpr std::string_view HEX_DIGITS = "0123456789ABCDEF";
+  constexpr std::string_view UNESCAPED_PUNCTUATION = "/-._~";
+  std::string url{FILE_URL_PREFIX};
+  url.reserve(url.size() + path.size());
+
+  for (const unsigned char c : path) {
+    if (std::isalnum(c) != 0 ||
+        UNESCAPED_PUNCTUATION.find(static_cast<char>(c)) != std::string_view::npos) {
+      url.push_back(static_cast<char>(c));
+      continue;
+    }
+
+    url.push_back('%');
+    url.push_back(HEX_DIGITS[c / HEX_BASE]);
+    url.push_back(HEX_DIGITS[c % HEX_BASE]);
+  }
+
+  return url;
 }
 
 } // namespace audioapi::path

@@ -9,34 +9,24 @@ import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   AudioRecorderOptions,
-  FileDirectory,
-  FileFormat,
   FileInfo,
   Result,
 } from '../types';
 // Imported for {@link concatAudioFiles} in enableFileOutput docs.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSDoc link target
 import { concatAudioFiles } from './AudioFileUtils';
-import FilePreset from '../utils/filePresets';
+import { withDefaultEncoderOptions } from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import type AudioNode from './AudioNode';
 import type BaseAudioContext from './BaseAudioContext';
 
-// Enforces default file output options, making sure that all properties are
-// defined for the contract with native code.
 function withDefaultFileOptions(
   inOptions: AudioRecorderFileOptions
 ): Required<AudioRecorderFileOptions> {
   return {
-    directory: FileDirectory.Cache,
-    subDirectory: 'AudioAPI',
-    fileName: '',
-    channelCount: 2,
-    format: FileFormat.M4A,
-    preset: FilePreset.High,
-    androidFlushIntervalMs: 500,
-    rotateIntervalBytes: 0,
-    ...inOptions,
+    ...withDefaultEncoderOptions(inOptions),
+    androidFlushIntervalMs: inOptions.androidFlushIntervalMs ?? 500,
+    rotateIntervalBytes: inOptions.rotateIntervalBytes ?? 0,
   };
 }
 

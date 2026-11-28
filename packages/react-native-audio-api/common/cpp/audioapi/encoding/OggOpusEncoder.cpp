@@ -40,10 +40,6 @@ constexpr size_t MAX_PACKET_BYTES = 4000;
 /// completed second (RFC 7845 §4 recommends at most one second of audio per page).
 constexpr int PACKETS_PER_FORCED_PAGE = 50;
 constexpr int RESAMPLE_MAX_IN_FRAMES = 4096;
-/// Zero frames pushed per step while draining the resampler's group delay at close().
-constexpr int RESAMPLER_DRAIN_STEP_FRAMES = 256;
-/// Bounds the drain loop; r8brain's delay is a few hundred frames, far below this.
-constexpr int RESAMPLER_DRAIN_MAX_STEPS = 64;
 
 constexpr size_t OPUS_HEAD_BYTES = 19;
 constexpr unsigned char OPUS_HEAD_VERSION = 1;
@@ -99,6 +95,7 @@ struct EncoderState {
     }
     ogg.close();
     remixer = ChannelRemixer();
+    inputSampleRate = 0.0F;
     resampler.reset();
     resampled.reset();
     silence.reset();
@@ -240,10 +237,10 @@ Result<NoneType, std::string> drainResampler(EncoderState &state) {
       static_cast<double>(state.resamplerInputFrames) * OPUS_SAMPLE_RATE / state.inputSampleRate));
 
   for (int step = 0;
-       step < RESAMPLER_DRAIN_MAX_STEPS && state.resamplerOutputFrames < expectedOutputFrames;
+       step < r8b::DRAIN_MAX_STEPS && state.resamplerOutputFrames < expectedOutputFrames;
        ++step) {
     const int produced =
-        state.resampler->process(*state.silence, RESAMPLER_DRAIN_STEP_FRAMES, *state.resampled);
+        state.resampler->process(*state.silence, r8b::DRAIN_STEP_FRAMES, *state.resampled);
     if (produced <= 0) {
       continue;
     }
@@ -395,26 +392,35 @@ Result<NoneType, std::string> OggOpusEncoder::prepareConversion(const StreamForm
   }
 
   EncoderState &state = *state_;
-  state.resampler.reset();
-  state.resampled.reset();
-  state.maxInputFrames = std::max<size_t>(inputFormat.maxFramesPerBuffer, 1);
-  state.inputSampleRate = inputLayout.sampleRate;
-  state.resamplerInputFrames = 0;
-  state.resamplerOutputFrames = 0;
+  // The resampler runs after the remix, on file channels, so a channel-only change keeps it.
+  if (inputLayout.sampleRate != state.inputSampleRate) {
+    // Replacing the resampler would drop the group delay it still holds back. Drained first, so
+    // a failure leaves the encoder on its previous input format.
+    auto drainResult = drainResampler(state);
+    if (drainResult.is_err()) {
+      return drainResult;
+    }
+    state.resampler.reset();
+    state.resampled.reset();
+    state.inputSampleRate = inputLayout.sampleRate;
+    state.resamplerInputFrames = 0;
+    state.resamplerOutputFrames = 0;
 
-  state.remixer = ChannelRemixer(
-      inputLayout.channelCount, state.channelCount, state.maxInputFrames, inputLayout.sampleRate);
-  if (inputLayout.sampleRate != static_cast<float>(OPUS_SAMPLE_RATE)) {
-    state.resampler = std::make_unique<r8b::MultiChannelResampler>(
-        inputLayout.sampleRate, OPUS_SAMPLE_RATE, state.channelCount, RESAMPLE_MAX_IN_FRAMES);
-    state.resampled = std::make_unique<AudioBuffer>(
-        static_cast<size_t>(std::max(1, state.resampler->getMaxOutLen())),
-        state.channelCount,
-        static_cast<float>(OPUS_SAMPLE_RATE));
-    state.silence = std::make_unique<AudioBuffer>(
-        RESAMPLER_DRAIN_STEP_FRAMES, state.channelCount, inputLayout.sampleRate);
+    if (inputLayout.sampleRate != static_cast<float>(OPUS_SAMPLE_RATE)) {
+      state.resampler = std::make_unique<r8b::MultiChannelResampler>(
+          inputLayout.sampleRate, OPUS_SAMPLE_RATE, state.channelCount, RESAMPLE_MAX_IN_FRAMES);
+      state.resampled = std::make_unique<AudioBuffer>(
+          static_cast<size_t>(std::max(1, state.resampler->getMaxOutLen())),
+          state.channelCount,
+          static_cast<float>(OPUS_SAMPLE_RATE));
+      state.silence = std::make_unique<AudioBuffer>(
+          r8b::DRAIN_STEP_FRAMES, state.channelCount, inputLayout.sampleRate);
+    }
   }
 
+  state.maxInputFrames = std::max<size_t>(inputFormat.maxFramesPerBuffer, 1);
+  state.remixer = ChannelRemixer(
+      inputLayout.channelCount, state.channelCount, state.maxInputFrames, inputLayout.sampleRate);
   inputFormat_ = inputFormat;
   return Ok(None);
 }

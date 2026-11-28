@@ -15,6 +15,7 @@ import { probeDuration } from '../core/AudioFileUtils';
 import { NotSupportedError } from '../errors';
 import { NativeAudioAPIModule } from '../specs';
 import { isFfmpegEnabled } from '../utils/flags';
+import { resolveLocalFilePath } from '../utils/paths';
 import { base64ToArrayBuffer } from '../utils';
 import {
   isRemoteHttpUrl,
@@ -184,7 +185,7 @@ export function useAudioSourceLoader({
           await NativeAudioAPIModule.readAndroidReleaseAssetBytesAsBase64(path);
         sourceRef.current = base64ToArrayBuffer(base64Payload);
       } else if (path.startsWith('file://')) {
-        sourceRef.current = path.replace('file://', '');
+        sourceRef.current = resolveLocalFilePath(path);
       } else {
         sourceRef.current = path;
       }

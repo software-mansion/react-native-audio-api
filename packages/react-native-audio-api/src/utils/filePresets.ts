@@ -1,5 +1,8 @@
 import {
+  AudioEncoderOptions,
   BitDepth,
+  FileDirectory,
+  FileFormat,
   FilePresetType,
   FlacCompressionLevel,
   IOSAudioQuality,
@@ -45,3 +48,18 @@ const FilePreset = {
 } as const;
 
 export default FilePreset;
+
+// Enforces default file output options, making sure that all properties are
+// defined for the contract with native code.
+export function withDefaultEncoderOptions(
+  inOptions: AudioEncoderOptions
+): Required<AudioEncoderOptions> {
+  return {
+    directory: inOptions.directory ?? FileDirectory.Cache,
+    subDirectory: inOptions.subDirectory ?? 'AudioAPI',
+    fileName: inOptions.fileName ?? '',
+    channelCount: inOptions.channelCount ?? 2,
+    format: inOptions.format ?? FileFormat.M4A,
+    preset: inOptions.preset ?? FilePreset.High,
+  };
+}

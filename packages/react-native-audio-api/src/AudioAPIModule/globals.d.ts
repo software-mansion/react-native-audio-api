@@ -1,6 +1,7 @@
 import type {
   IAudioContext,
   IAudioDecoder,
+  IAudioEncoder,
   IAudioEventEmitter,
   IAudioFileUtils,
   IAudioRecorder,
@@ -40,6 +41,8 @@ declare global {
   ) => IAudioBuffer;
 
   var createAudioDecoder: () => IAudioDecoder;
+
+  var createAudioEncoder: () => IAudioEncoder;
 
   var createAudioFileUtils: () => IAudioFileUtils;
 
