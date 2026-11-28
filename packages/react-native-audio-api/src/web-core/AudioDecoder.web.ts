@@ -1,7 +1,13 @@
 import { AudioApiError } from '../errors';
-import { AudioDurationInput, DecodeDataInput } from '../types';
+import {
+  AudioDecodeStreamOptions,
+  AudioDurationInput,
+  DecodeDataInput,
+} from '../types';
 import { base64ToArrayBuffer } from '../utils';
+import { assertValidDecodeStreamSampleRate } from '../utils/validation';
 import AudioBuffer from './AudioBuffer.web';
+import AudioDecodeStream from './AudioDecodeStream.web';
 import OfflineAudioContext from './OfflineAudioContext.web';
 
 const MAX_INT16_VALUE = 32768.0;
@@ -55,10 +61,13 @@ export default class AudioDecoder {
     sampleRate: number,
     fetchOptions?: RequestInit
   ): Promise<AudioBuffer> {
-    const arrayBuffer = await fetch(url, fetchOptions).then((res) =>
-      res.arrayBuffer()
-    );
-    return this.decodeFromArrayBuffer(arrayBuffer, sampleRate);
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      throw new AudioApiError(
+        `Failed to download audio data: HTTP ${response.status}`
+      );
+    }
+    return this.decodeFromArrayBuffer(await response.arrayBuffer(), sampleRate);
   }
 
   public async decodeAudioDataInstance(
@@ -77,6 +86,20 @@ export default class AudioDecoder {
     }
 
     return audioBuffer;
+  }
+
+  public async openDecodeStreamInstance(
+    input: DecodeDataInput,
+    options: AudioDecodeStreamOptions = {}
+  ): Promise<AudioDecodeStream> {
+    assertValidDecodeStreamSampleRate(options.sampleRate);
+
+    const decoded = await this.decodeAudioDataInstance(
+      input,
+      options.sampleRate,
+      options.fetchOptions
+    );
+    return new AudioDecodeStream(decoded);
   }
 
   public async decodePCMInBase64Instance(
@@ -215,6 +238,13 @@ export async function decodeAudioData(
     sampleRate,
     fetchOptions
   );
+}
+
+export async function openAudioDecodeStream(
+  input: DecodeDataInput,
+  options?: AudioDecodeStreamOptions
+): Promise<AudioDecodeStream> {
+  return AudioDecoder.getInstance().openDecodeStreamInstance(input, options);
 }
 
 export async function decodePCMInBase64(

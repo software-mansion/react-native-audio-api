@@ -29,7 +29,9 @@ export {
   decodeAudioData,
   decodePCMInBase64,
   getAudioDuration,
+  openAudioDecodeStream,
 } from './web-core/AudioDecoder.web';
+export { default as AudioDecodeStream } from './web-core/AudioDecodeStream.web';
 
 export * from './web-core/custom';
 

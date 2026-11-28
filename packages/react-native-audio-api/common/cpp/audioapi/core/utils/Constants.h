@@ -14,6 +14,7 @@ inline constexpr int RENDER_QUANTUM_SIZE = 128;
 inline constexpr size_t MAX_FFT_SIZE = 32768;
 inline constexpr int MAX_CHANNEL_COUNT = 32;
 inline constexpr float DEFAULT_SAMPLE_RATE = 44100.0f;
+inline constexpr float MAX_SAMPLE_RATE = 768000.0f;
 inline constexpr int OCTAVE_RANGE = 1200;
 inline constexpr int SEMITONES_PER_OCTAVE = 12;
 inline constexpr int BIQUAD_GAIN_DB_FACTOR = 40;

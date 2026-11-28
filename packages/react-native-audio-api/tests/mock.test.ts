@@ -277,6 +277,47 @@ describe('React Native Audio API Mocks', () => {
   });
 
   describe('Utility Functions', () => {
+    it('should open a decode stream at the requested sample rate', async () => {
+      const stream = await MockAPI.openAudioDecodeStream(new ArrayBuffer(8), {
+        sampleRate: 22050,
+      });
+
+      expect(stream.sampleRate).toBe(22050);
+      await expect(stream.read(30000)).resolves.toMatchObject({
+        length: 22050,
+        sampleRate: 22050,
+      });
+    });
+
+    it('should reject a decode stream at an invalid sample rate', async () => {
+      await expect(
+        MockAPI.openAudioDecodeStream(new ArrayBuffer(8), {
+          sampleRate: Number.NaN,
+        })
+      ).rejects.toThrow('sampleRate must be a number');
+    });
+
+    it('should hand out a decode stream in chunks until it ends', async () => {
+      const stream = await MockAPI.openAudioDecodeStream(new ArrayBuffer(8));
+
+      expect(stream.sampleRate).toBe(44100);
+      expect(stream.numberOfChannels).toBe(2);
+      expect(stream.duration).toBe(1);
+
+      const first = await stream.read(40000);
+      const last = await stream.read(40000);
+
+      expect(first?.length).toBe(40000);
+      expect(last?.length).toBe(4100);
+      await expect(stream.read(40000)).resolves.toBeNull();
+
+      await stream.seek(0.5);
+      expect((await stream.read(40000))?.length).toBe(22050);
+
+      stream.close();
+      await expect(stream.read(40000)).rejects.toThrow('closed decode stream');
+    });
+
     it('should decode audio data', async () => {
       const arrayBuffer = new ArrayBuffer(1024);
       const buffer = await MockAPI.decodeAudioData(arrayBuffer);
