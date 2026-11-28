@@ -84,8 +84,8 @@ class AudioScheduledSourceNode : public AudioNode {
   [[nodiscard]] std::optional<size_t> getOutputChannelNumber() const override;
 
  protected:
-  double startTime_;
-  double stopTime_;
+  std::optional<double> startTime_;
+  std::optional<double> stopTime_;
 
   PlaybackState playbackState_;
 
