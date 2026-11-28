@@ -3,7 +3,7 @@
 
 MAIN_DOWNLOAD_URL="https://github.com/software-mansion-labs/rn-audio-libs/releases/download"
 # Package.swift pins the same tag for its SwiftPM binary targets; bump both together.
-TAG="v4.0.0"
+TAG="v5.0.0"
 FFMPEG_HEADERS_ARCHIVE="include_ffmpeg.zip"
 STATIC_LIB_NAMES=(
     "libopusfile"
@@ -43,7 +43,9 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Use a temporary directory for downloads, ensuring it exists
+# Use a temporary directory for downloads, ensuring it exists. Every run shares it and deletes it
+# at the end, and both platforms extract include_ffmpeg: two runs at once in the same package
+# folder (iOS and Android built together) can fail each other. Rerun one at a time.
 TEMP_DOWNLOAD_DIR="${SCRIPT_DIR}/audioapi-binaries-temp"
 mkdir -p "$TEMP_DOWNLOAD_DIR"
 
@@ -62,6 +64,10 @@ fi
 JNILIBS_DESTINATION="${PROJECT_ROOT}/android/src/main"
 NORMAL_DESTINATION="${PROJECT_ROOT}/common/cpp/audioapi/external"
 XCFRAMEWORKS_DESTINATION="${NORMAL_DESTINATION}/xcframeworks"
+# One file per extracted archive, holding the release tag it came from. Present files from an
+# older tag are replaced, so bumping TAG updates a checkout that already has binaries. The
+# stamps sit outside the extracted folders: jniLibs/ holds nothing but Gradle's native libs.
+TAG_STAMP_DIR="${NORMAL_DESTINATION}/.prebuilt-tags"
 
 DOWNLOAD_NAMES=()
 if [ "$PLATFORM" == "android" ]; then
@@ -132,6 +138,15 @@ artifacts_present() {
     return 0
 }
 
+# The archive is extracted and came from the pinned release.
+archive_is_current() {
+    local extracted_name="$1"
+    local final_check_path="$2"
+
+    artifacts_present "$extracted_name" "$final_check_path" &&
+        [ "$(cat "${TAG_STAMP_DIR}/${extracted_name}" 2>/dev/null)" == "$TAG" ]
+}
+
 DOWNLOAD_ATTEMPTS=3
 DOWNLOAD_RETRY_DELAY_SECONDS=5
 
@@ -171,11 +186,14 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     fi
     FINAL_CHECK_PATH="${OUTPUT_DIR}/${EXTRACTED_NAME}"
 
-    if artifacts_present "$EXTRACTED_NAME" "$FINAL_CHECK_PATH"; then
+    if archive_is_current "$EXTRACTED_NAME" "$FINAL_CHECK_PATH"; then
         continue
     fi
 
-    # If we are here, the artifacts are missing, so we download and unzip.
+    # If we are here, the artifacts are missing or from another release, so we download and unzip.
+    if artifacts_present "$EXTRACTED_NAME" "$FINAL_CHECK_PATH"; then
+        echo "Replacing ${EXTRACTED_NAME}: not downloaded from ${TAG}"
+    fi
     echo "Downloading from: $ARCH_URL"
     if ! download_with_retry "$ARCH_URL" "$ZIP_FILE_PATH"; then
         # The build cannot succeed without these files, so fail here where the cause is
@@ -188,14 +206,16 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
 
     echo "Unzipping ${name} to ${OUTPUT_DIR}"
     mkdir -p "$OUTPUT_DIR"
-    # A stale bundle from an interrupted run would otherwise mix with the fresh one.
-    if [[ "$EXTRACTED_NAME" == *.xcframework ]]; then
-        rm -rf "${OUTPUT_DIR:?}/${EXTRACTED_NAME}"
-    fi
+    # Files from an interrupted run or an older release would otherwise mix with the fresh ones.
+    rm -rf "${FINAL_CHECK_PATH:?}" "${TAG_STAMP_DIR:?}/${EXTRACTED_NAME}"
     unzip -o "$ZIP_FILE_PATH" -d "$OUTPUT_DIR"
 
     # Clean up any __MACOSX directories that may have been created
     rm -rf "${OUTPUT_DIR}/__MACOSX"
+
+    # Stamped last: an extraction that failed halfway is downloaded again on the next run.
+    mkdir -p "$TAG_STAMP_DIR"
+    echo "$TAG" >"${TAG_STAMP_DIR}/${EXTRACTED_NAME}"
 
 done
 
