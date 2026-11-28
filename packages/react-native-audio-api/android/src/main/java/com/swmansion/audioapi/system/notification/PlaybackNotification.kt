@@ -186,9 +186,6 @@ class PlaybackNotification(
   }
 
   override fun show(options: ReadableMap?): Notification {
-    if (options != null) {
-      updateSkipIntervalFromOptions(options)
-    }
     initializeIfNeeded()
     if (options != null) {
       updateInternal(options)
@@ -220,13 +217,13 @@ class PlaybackNotification(
 
   override fun getChannelId(): String = channelId
 
-  private fun updateSkipIntervalFromOptions(info: ReadableMap) {
-    if (info.hasKey("skipInterval")) {
-      skipIntervalSeconds = info.getDouble("skipInterval").toInt()
-      if (isInitialized) {
-        refreshSkipControlIcons()
-      }
-    }
+  /** @return whether the interval changed. JS sends it with every update. */
+  private fun applySkipInterval(info: ReadableMap): Boolean {
+    if (!info.hasKey("skipInterval")) return false
+    val interval = info.getDouble("skipInterval").toInt()
+    if (interval == skipIntervalSeconds) return false
+    skipIntervalSeconds = interval
+    return true
   }
 
   private fun skipForwardIcon(): Int =
@@ -243,18 +240,12 @@ class PlaybackNotification(
       R.drawable.skip_backward
     }
 
-  private fun refreshSkipControlIcons() {
-    if (hasControl(PlaybackStateCompat.ACTION_REWIND) ||
-      hasControl(PlaybackStateCompat.ACTION_FAST_FORWARD)
-    ) {
-      updatePlaybackActionState()
-      updatePlaybackState(playbackStateVal)
-    }
-    updateNotificationsActions()
-  }
-
   private fun updateInternal(info: ReadableMap) {
-    updateSkipIntervalFromOptions(info)
+    if (applySkipInterval(info)) {
+      // Only rebuild the skip icons here. Publishing the playback state now would show the
+      // previous position before this update's elapsedTime is read below.
+      updatePlaybackActionState()
+    }
 
     if (info.hasKey("control") && info.hasKey("enabled")) {
       enableControl(info.getString("control"), info.getBoolean("enabled"))
