@@ -52,20 +52,11 @@ constexpr uint32_t CALLBACKS_BETWEEN_AFFINITY_CHECKS = 375;
 AndroidAudioPlayer::AndroidAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
-    int channelCount,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile outputProfile)
-    : AudioPlayer(
-          renderAudio,
-          sampleRate,
-          channelCount,
-          currentRenders,
-          std::move(context),
-          driverMutex,
-          latencyHint),
+    : AudioPlayer(renderAudio, sampleRate, currentRenders, driverMutex, latencyHint),
       outputProfile_(outputProfile) {}
 
 bool AndroidAudioPlayer::openAudioStreamLocked() {
@@ -75,7 +66,7 @@ bool AndroidAudioPlayer::openAudioStreamLocked() {
       ->setFormat(AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(performanceModeFor(latencyHint_))
-      ->setChannelCount(channelCount_)
+      ->setChannelCount(DEFAULT_CHANNEL_COUNT)
       ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
       ->setFramesPerDataCallback(RENDER_QUANTUM_SIZE)
       ->setDataCallback(shared_from_this())
@@ -96,6 +87,8 @@ bool AndroidAudioPlayer::openAudioStreamLocked() {
     return false;
   }
 
+  renderBuffer_ = std::make_unique<DSPAudioBuffer>(
+      RENDER_QUANTUM_SIZE, mStream_->getChannelCount(), sampleRate_);
   mStream_->setPerformanceHintEnabled(true);
 
   isInitialized_.store(true, std::memory_order_release);
@@ -111,7 +104,7 @@ bool AndroidAudioPlayer::startStreamLocked() {
   streamStartedAtNs_ = steadyClockNowNs();
   markStarted();
   const bool started = mStream_ != nullptr && mStream_->requestStart() == oboe::Result::OK;
-  isRunning_.store(started, std::memory_order_release);
+  isRunning_->store(started, std::memory_order_release);
   return started;
 }
 
@@ -128,7 +121,7 @@ bool AndroidAudioPlayer::start() {
 void AndroidAudioPlayer::stop() {
   std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
-    isRunning_.store(false, std::memory_order_release);
+    isRunning_->store(false, std::memory_order_release);
     lastCallbackFrameCount_.store(0, std::memory_order_release);
     mStream_->requestStop();
   }
@@ -158,7 +151,7 @@ bool AndroidAudioPlayer::resume() {
 void AndroidAudioPlayer::suspend() {
   std::scoped_lock lock(streamMutex_);
   if (mStream_ != nullptr) {
-    isRunning_.store(false, std::memory_order_release);
+    isRunning_->store(false, std::memory_order_release);
     mStream_->requestPause();
   }
 }
@@ -184,7 +177,7 @@ bool AndroidAudioPlayer::isRunning() const {
 
 bool AndroidAudioPlayer::isRunningLocked() const {
   return mStream_ != nullptr && mStream_->getState() == oboe::StreamState::Started &&
-      isRunning_.load(std::memory_order_acquire);
+      isRunning_->load(std::memory_order_acquire);
 }
 
 DataCallbackResult
@@ -213,7 +206,7 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
     lastFramesWritten_ = framesWritten;
   }
 
-  if (isRunning_.load(std::memory_order_acquire)) {
+  if (isRunning_->load(std::memory_order_acquire)) {
     publishOutputAnchor(
         {.contextFrame = renderedFrames_,
          .hostTimeNs = steadyClockNowNs(),
@@ -228,13 +221,14 @@ AndroidAudioPlayer::onAudioReady(AudioStream *oboeStream, void *audioData, int32
   while (processedFrames < numFrames) {
     auto framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
-    if (isRunning_.load(std::memory_order_acquire)) {
+    if (isRunning_->load(std::memory_order_acquire)) {
       renderNormalizedQuantum(framesToProcess);
     } else {
       renderBuffer_->zero();
     }
 
-    float *destination = buffer + (static_cast<ptrdiff_t>(processedFrames * channelCount_));
+    auto *destination =
+        buffer + (static_cast<ptrdiff_t>(processedFrames * renderBuffer_->getNumberOfChannels()));
 
     renderBuffer_->interleaveTo(destination, framesToProcess);
     processedFrames += framesToProcess;
@@ -319,7 +313,7 @@ void AndroidAudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Resu
   }
 
   // Check if the stream was expected to be running when the error occurred
-  const bool wasRunning = isRunning_.load(std::memory_order_acquire);
+  const bool wasRunning = isRunning_->load(std::memory_order_acquire);
 
   // Best effort rebuild; a suspended context keeps the rebuilt stream paused until resume().
   if (error == oboe::Result::ErrorDisconnected && rebuildStreamLocked() &&
@@ -327,7 +321,7 @@ void AndroidAudioPlayer::onErrorAfterClose(oboe::AudioStream *stream, oboe::Resu
     return;
   }
 
-  isRunning_.store(false, std::memory_order_release);
+  isRunning_->store(false, std::memory_order_release);
 
   if (!wasRunning) {
     // Nothing was playing, so there is no failure to report: drop the dead stream
@@ -419,21 +413,12 @@ double AndroidAudioPlayer::getOutputLatencyLocked() const {
 std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
-    int channelCount,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile outputProfile) {
   return std::make_shared<AndroidAudioPlayer>(
-      renderAudio,
-      sampleRate,
-      channelCount,
-      currentRenders,
-      std::move(context),
-      driverMutex,
-      latencyHint,
-      outputProfile);
+      renderAudio, sampleRate, currentRenders, driverMutex, latencyHint, outputProfile);
 }
 
 } // namespace audioapi

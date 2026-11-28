@@ -116,6 +116,10 @@ class GraphObject {
   /// @brief Downcast helper for JS thread communication with AudioNode.
   [[nodiscard]] virtual const AudioNode *asAudioNode() const;
 
+  /// @brief `processGraph` sums this node's output into the context's render buffer, mixed to its
+  /// channel count.
+  [[nodiscard]] virtual bool isContextOutput() const;
+
  protected:
   friend class HostGraph;
   friend class AudioGraph;

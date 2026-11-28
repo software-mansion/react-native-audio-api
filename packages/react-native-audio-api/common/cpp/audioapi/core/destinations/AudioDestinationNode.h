@@ -20,6 +20,10 @@ class AudioDestinationNode : public AudioNode {
     processableState_ = GraphObject::PROCESSABLE_STATE::ALWAYS_PROCESSABLE;
   }
 
+  [[nodiscard]] bool isContextOutput() const final {
+    return true;
+  }
+
  protected:
   // Output normalization (peak limiting) is applied by the real-time audio
   // players (iOS / Android) just before the buffer is handed to the hardware,

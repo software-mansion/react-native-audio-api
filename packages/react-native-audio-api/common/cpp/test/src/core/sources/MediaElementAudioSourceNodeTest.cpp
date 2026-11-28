@@ -97,7 +97,6 @@ class MediaElementAudioSourceNodeTest : public ::testing::Test {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(2, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
     auto destination = std::make_unique<AudioDestinationNode>(context);
-    context->initialize(destination.get());
     graph = context->getGraph().get();
     destinationHostNode = graph->addNode(std::move(destination));
   }

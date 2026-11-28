@@ -26,22 +26,22 @@ class AudioPlayer {
   AudioPlayer(
       const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
       float sampleRate,
-      int channelCount,
       std::atomic<uint32_t> &currentRenders,
-      std::weak_ptr<AudioContext> context,
       std::mutex *driverMutex,
       AudioContextLatencyHint latencyHint)
       : renderAudio_(renderAudio),
-        renderBuffer_(
-            std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, channelCount, sampleRate)),
         sampleRate_(sampleRate),
-        channelCount_(channelCount),
         currentRenders_(currentRenders),
-        context_(std::move(context)),
         driverMutex_(driverMutex),
         latencyHint_(latencyHint) {}
   DELETE_COPY_AND_MOVE(AudioPlayer);
   virtual ~AudioPlayer() = default;
+
+  /// @brief Hands over the owning context, which stream-failure callbacks lock. The context calls
+  /// this once, in `tryStartDriver()`, before the first stream opens.
+  void bindContext(const std::weak_ptr<AudioContext> &context) {
+    context_ = context;
+  }
 
   virtual bool start() = 0;
   virtual void stop() = 0;
@@ -116,14 +116,15 @@ class AudioPlayer {
   }
 
   std::function<void(DSPAudioBuffer *, int)> renderAudio_;
-  std::shared_ptr<DSPAudioBuffer> renderBuffer_;
+  std::unique_ptr<DSPAudioBuffer> renderBuffer_;
   float sampleRate_;
-  int channelCount_;
   std::atomic<uint32_t> &currentRenders_;
   std::weak_ptr<AudioContext> context_;
   /// The owning context's driver mutex; `nullptr` disables stream-failure reporting.
   std::mutex *driverMutex_;
-  std::atomic<bool> isRunning_{false};
+  /// Shared so a platform callback that outlives the player can still read it: it is false for
+  /// good once the player has stopped for the last time.
+  const std::shared_ptr<std::atomic<bool>> isRunning_ = std::make_shared<std::atomic<bool>>(false);
   AudioContextLatencyHint latencyHint_;
   /// Frames pulled from the graph so far. The realtime context renders only through this player,
   /// and `processGraph` advances its frame counter by exactly these frames, so this equals the
@@ -139,9 +140,7 @@ class AudioPlayer {
 std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
-    int channelCount,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile outputProfile);

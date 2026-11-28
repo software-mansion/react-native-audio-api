@@ -27,7 +27,6 @@ class AudioScheduledSourceTest : public ::testing::Test {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(2, 5 * sampleRate, sampleRate, eventRegistry);
     destination = std::make_shared<AudioDestinationNode>(context);
-    context->initialize(destination.get());
   }
 };
 

@@ -102,11 +102,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
   /// @note JS thread only.
   virtual std::shared_ptr<ConvolverThreadPool> getConvolverThreadPool();
 
-  /// @brief Assigns the audio destination node to the context.
-  /// @param destination The audio destination node to be associated with the context.
-  /// @note This method must be called before the audio context can be used for processing audio.
-  virtual void initialize(const AudioDestinationNode *destination);
-
   void processAudioEvents() {
     // Drain JS-thread scheduler first, then the GC-thread scheduler.
     // This preserves causality for the common case where a JS-thread
@@ -180,7 +175,6 @@ class BaseAudioContext : public std::enable_shared_from_this<BaseAudioContext> {
 
  protected:
   std::atomic<std::size_t> currentSampleFrame_{0};
-  const AudioDestinationNode *destination_;
 
   /// Serializes context lifecycle and driver control across the JS thread,
   /// the HostObject's promise lane, and the offline render thread.

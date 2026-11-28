@@ -107,7 +107,7 @@ if(APPLE)
   enable_language(OBJC)
 
   set(IOS_DIR ${COMMON_CPP_DIR}/../../ios)
-  # Podspec compiles both .mm and plain .m (NativeAudioPlayer.m etc). Separate
+  # Podspec compiles both .mm and plain .m (NativeAudioRecorder.m etc). Separate
   # targets: a shared lib would leak CMAKE_CXX_STANDARD's -std=c++20 onto .m,
   # which clang rejects outright for plain Objective-C.
   file(GLOB_RECURSE IOS_MM_SOURCES CONFIGURE_DEPENDS "${IOS_DIR}/audioapi/ios/*.mm")
@@ -205,7 +205,7 @@ if(APPLE)
   set(IOS_EXTRA_INCLUDES
     "${COMMON_CPP_DIR}"
     "${IOS_DIR}"
-    # Xcode's headermap resolves bare `#import <NativeAudioPlayer.h>` via
+    # Xcode's headermap resolves bare `#import <NativeAudioRecorder.h>` via
     # CocoaPods' header_mappings_dir; a plain -I needs the containing folder.
     "${IOS_DIR}/audioapi/ios/core"
     "${IOS_DIR}/audioapi/ios/system"

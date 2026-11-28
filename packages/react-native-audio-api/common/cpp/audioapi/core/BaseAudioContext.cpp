@@ -33,10 +33,6 @@ BaseAudioContext::~BaseAudioContext() {
   audioEventProducer_->release();
 }
 
-void BaseAudioContext::initialize(const AudioDestinationNode *destination) {
-  destination_ = destination;
-}
-
 ContextState BaseAudioContext::getState() const {
   auto state = state_.load(std::memory_order_acquire);
 
@@ -146,12 +142,12 @@ void BaseAudioContext::processGraph(DSPAudioBuffer *buffer, int numFrames) {
   // nodes left out of this quantum still get to see the clock (unpulled sources finish)
   graph_->advanceUnpulledNodes(getCurrentSampleFrame());
 
+  buffer->zero(0, numFrames);
   for (auto &&[node, inputs] : graph_->iter()) {
     node.process(inputs, numFrames);
 
-    // Copy destination output to the final buffer
-    if (auto *audioNode = node.asAudioNode(); audioNode == destination_) {
-      buffer->copy(*audioNode->getOutputBuffer(), 0, 0, numFrames);
+    if (node.isContextOutput()) {
+      buffer->sum(*node.asAudioNode()->getOutputBuffer(), 0, 0, numFrames);
     }
   }
 

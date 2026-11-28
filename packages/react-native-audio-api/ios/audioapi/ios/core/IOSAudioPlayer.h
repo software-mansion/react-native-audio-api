@@ -1,6 +1,7 @@
 #pragma once
 
-#import <audioapi/ios/core/NativeAudioPlayer.h>
+#import <AVFoundation/AVFoundation.h>
+#import <audioapi/ios/system/AudioEngine.h>
 
 #include <audioapi/core/AudioPlayer.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
@@ -17,7 +18,12 @@ namespace audioapi {
 
 class IOSAudioPlayer : public AudioPlayer {
  public:
-  using AudioPlayer::AudioPlayer;
+  IOSAudioPlayer(
+      const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+      float sampleRate,
+      std::atomic<uint32_t> &currentRenders,
+      std::mutex *driverMutex,
+      AudioContextLatencyHint latencyHint);
   ~IOSAudioPlayer() override;
 
   DELETE_COPY_AND_MOVE(IOSAudioPlayer);
@@ -52,17 +58,16 @@ class IOSAudioPlayer : public AudioPlayer {
   void
   deliverOutputBuffers(AudioBufferList *outputData, int numFrames, const AudioTimeStamp *timestamp);
 
-  /// Builds the native player and points its render and stream-failure blocks at this object.
-  /// Runs as a member initializer, before the members below exist: the blocks only capture
-  /// `this` and must not be invoked until construction has finished.
-  NativeAudioPlayer *createNativePlayer();
-
-  NativeAudioPlayer *audioPlayer_ = createNativePlayer();
+  /// In frames of the session's own rate, which may differ from the context's.
+  int preferredIOBufferFrames_;
+  AVAudioSourceNodeRenderBlock renderBlock_;
+  /// The attached source node's id; nil while detached.
+  NSString *sourceNodeId_;
   /// Set from main thread on start/resume; consumed on audio thread to drop stale pending audio.
   std::atomic<bool> flushOverflowNextPull_{false};
   /// Frames valid at the front of each `pendingSaved_[ch]` (0 … RENDER_QUANTUM_SIZE).
   int pendingSavedCount_{0};
-  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, channelCount_, sampleRate_};
+  DSPAudioBuffer pendingSaved_{RENDER_QUANTUM_SIZE, DEFAULT_CHANNEL_COUNT, sampleRate_};
 };
 
 } // namespace audioapi

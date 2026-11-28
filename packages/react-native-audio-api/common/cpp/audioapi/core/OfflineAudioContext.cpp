@@ -158,7 +158,6 @@ void OfflineAudioContext::renderQuantum() {
   int framesToProcess =
       std::min(static_cast<int>(length_ - currentSampleFrame_), RENDER_QUANTUM_SIZE);
 
-  audioBuffer_->zero();
   processGraph(audioBuffer_.get(), framesToProcess);
   resultBuffer_->copy(*audioBuffer_, 0, currentSampleFrame_, framesToProcess);
 

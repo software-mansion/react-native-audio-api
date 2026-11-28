@@ -61,7 +61,6 @@ class AudioBufferSourceNodeTest : public ::testing::Test {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_shared<OfflineAudioContext>(1, 5 * SAMPLE_RATE, SAMPLE_RATE, eventRegistry);
     auto destination = std::make_unique<AudioDestinationNode>(context);
-    context->initialize(destination.get());
     destinationHostNode = context->getGraph()->addNode(std::move(destination));
   }
 

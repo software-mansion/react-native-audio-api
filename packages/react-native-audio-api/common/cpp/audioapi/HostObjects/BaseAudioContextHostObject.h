@@ -2,6 +2,7 @@
 
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/types/ContextState.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/jsi/ContextPromiseResolver.hpp>
 #include <audioapi/jsi/HostObject.h>
 #include <audioapi/jsi/JsiPromise.h>
@@ -24,7 +25,7 @@ class BaseAudioContextHostObject : public HostObject {
       const std::shared_ptr<BaseAudioContext> &context,
       jsi::Runtime *runtime,
       const std::shared_ptr<react::CallInvoker> &callInvoker,
-      int destinationChannelCount = 2);
+      int destinationChannelCount = DEFAULT_CHANNEL_COUNT);
 
   ~BaseAudioContextHostObject() override;
 

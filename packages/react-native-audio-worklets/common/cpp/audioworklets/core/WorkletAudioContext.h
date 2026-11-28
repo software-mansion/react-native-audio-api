@@ -20,8 +20,6 @@ class WorkletAudioContext : public audioapi::BaseAudioContext {
   bool resume();
   bool suspend();
 
-  void initialize(const audioapi::AudioDestinationNode *destination) final;
-
  private:
   std::shared_ptr<audioapi::DSPAudioBuffer> buffer_;
   std::thread worker_;

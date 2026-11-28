@@ -1,6 +1,5 @@
 #include <audioworklets/core/WorkletAudioContext.h>
 
-#include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/types/ContextState.h>
 
 #ifdef ANDROID
@@ -16,18 +15,17 @@ namespace audioworklets {
 WorkletAudioContext::WorkletAudioContext(
     float sampleRate,
     const std::shared_ptr<audioapi::IAudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : audioapi::BaseAudioContext(sampleRate, audioEventHandlerRegistry) {}
+    : audioapi::BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+      buffer_(
+          std::make_shared<audioapi::DSPAudioBuffer>(
+              audioapi::RENDER_QUANTUM_SIZE,
+              audioapi::DEFAULT_CHANNEL_COUNT,
+              sampleRate)) {}
 
 WorkletAudioContext::~WorkletAudioContext() {
   if (getState() != audioapi::ContextState::CLOSED) {
     close();
   }
-}
-
-void WorkletAudioContext::initialize(const audioapi::AudioDestinationNode *destination) {
-  audioapi::BaseAudioContext::initialize(destination);
-  buffer_ = std::make_shared<audioapi::DSPAudioBuffer>(
-      audioapi::RENDER_QUANTUM_SIZE, destination->getChannelCount(), getSampleRate());
 }
 
 void WorkletAudioContext::close() {
@@ -115,9 +113,7 @@ void WorkletAudioContext::run() {
         break;
       }
 
-      if (state_.load(std::memory_order_acquire) == audioapi::ContextState::RUNNING &&
-          buffer_ != nullptr) {
-        buffer_->zero();
+      if (state_.load(std::memory_order_acquire) == audioapi::ContextState::RUNNING) {
         processGraph(buffer_.get(), audioapi::RENDER_QUANTUM_SIZE);
         rendered = true;
       }

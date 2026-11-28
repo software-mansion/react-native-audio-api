@@ -12,6 +12,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/CurrentRenderScope.h>
 #include <audioapi/ios/core/IOSAudioPlayer.h>
+#include <audioapi/ios/system/AudioAPIError.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/ios/system/AudioSessionManager.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -67,38 +68,56 @@ void reportStreamFailToContext(
   ctx->onStreamFail();
 }
 
+void zeroOutput(AudioBufferList *outputData, int numFrames)
+{
+  for (UInt32 channel = 0; channel < outputData->mNumberBuffers; ++channel) {
+    std::memset(
+        outputData->mBuffers[channel].mData, 0, static_cast<size_t>(numFrames) * sizeof(float));
+  }
+}
+
 } // namespace
+
+IOSAudioPlayer::IOSAudioPlayer(
+    const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
+    float sampleRate,
+    std::atomic<uint32_t> &currentRenders,
+    std::mutex *driverMutex,
+    AudioContextLatencyHint latencyHint)
+    : AudioPlayer(renderAudio, sampleRate, currentRenders, driverMutex, latencyHint),
+      preferredIOBufferFrames_(preferredIOBufferFramesFor(latencyHint))
+{
+  renderBuffer_ =
+      std::make_unique<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, DEFAULT_CHANNEL_COUNT, sampleRate_);
+
+  IOSAudioPlayer *player = this;
+  // The engine keeps this block until the node is detached and may call it after the player is
+  // gone, so it reaches the player only while its own copy of `isRunning_` says so.
+  std::shared_ptr<std::atomic<bool>> isRunning = isRunning_;
+  renderBlock_ = ^OSStatus(
+      BOOL * /*isSilence*/,
+      const AudioTimeStamp *timestamp,
+      AVAudioFrameCount frameCount,
+      AudioBufferList *outputData) {
+    if (outputData->mNumberBuffers != DEFAULT_CHANNEL_COUNT) {
+      return kAudioServicesBadPropertySizeError;
+    }
+
+    if (!isRunning->load(std::memory_order_acquire)) {
+      zeroOutput(outputData, static_cast<int>(frameCount));
+      return kAudioServicesNoError;
+    }
+
+    player->deliverOutputBuffers(outputData, static_cast<int>(frameCount), timestamp);
+    return kAudioServicesNoError;
+  };
+}
 
 IOSAudioPlayer::~IOSAudioPlayer()
 {
   cleanup();
 }
 
-NativeAudioPlayer *IOSAudioPlayer::createNativePlayer()
-{
-  RenderAudioBlock renderAudioBlock =
-      ^(AudioBufferList *outputData, int numFrames, const AudioTimeStamp *timestamp) {
-        deliverOutputBuffers(outputData, numFrames, timestamp);
-      };
-
-  NativeAudioPlayer *nativePlayer =
-      [[NativeAudioPlayer alloc] initWithRenderAudio:renderAudioBlock
-                                          sampleRate:sampleRate_
-                                        channelCount:channelCount_
-                             preferredIOBufferFrames:preferredIOBufferFramesFor(latencyHint_)];
-
-  std::mutex *driverMutexForCallback = driverMutex_;
-  std::weak_ptr<AudioContext> weakContext = context_;
-  IOSAudioPlayer *player = this;
-  nativePlayer.onStreamFail = ^{
-    // Called only once the context, which owns this player, is locked alive.
-    reportStreamFailToContext(driverMutexForCallback, weakContext, [player] {
-      return player->isRunning_.load(std::memory_order_acquire) && !player->isRunning();
-    });
-  };
-
-  return nativePlayer;
-}
 void IOSAudioPlayer::clearPendingSaved()
 {
   pendingSavedCount_ = 0;
@@ -117,12 +136,9 @@ void IOSAudioPlayer::deliverOutputBuffers(
     clearPendingSaved();
   }
 
-  // if not running, set output to 0
-  if (!isRunning_.load(std::memory_order_acquire)) {
-    for (int channel = 0; channel < channelCount_; ++channel) {
-      auto *outputChannel = static_cast<float *>(outputData->mBuffers[channel].mData);
-      std::memset(outputChannel, 0, static_cast<size_t>(numFrames) * sizeof(float));
-    }
+  // If not running, output silence.
+  if (!isRunning_->load(std::memory_order_acquire)) {
+    zeroOutput(outputData, numFrames);
     return;
   }
 
@@ -142,7 +158,7 @@ void IOSAudioPlayer::deliverOutputBuffers(
       const int fromPending = std::min(need, pendingSavedCount_);
 
       // populate output with pendingSaved
-      for (int ch = 0; ch < channelCount_; ++ch) {
+      for (int ch = 0; ch < DEFAULT_CHANNEL_COUNT; ++ch) {
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         const float *src = pendingSaved_[ch].begin();
         std::memcpy(dst, src, fromPending * sizeof(float));
@@ -165,7 +181,7 @@ void IOSAudioPlayer::deliverOutputBuffers(
     // normal rendering - take RENDER_QUANTUM_SIZE frames from the graph and copy to output
     const int stillNeed = numFrames - outPos;
     if (stillNeed >= RENDER_QUANTUM_SIZE) {
-      for (int ch = 0; ch < channelCount_; ++ch) {
+      for (int ch = 0; ch < DEFAULT_CHANNEL_COUNT; ++ch) {
         auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, RENDER_QUANTUM_SIZE * sizeof(float));
@@ -174,7 +190,7 @@ void IOSAudioPlayer::deliverOutputBuffers(
     } else {
       // when output will be sliced, copy the remaining frames to pendingSaved
       const int tail = RENDER_QUANTUM_SIZE - stillNeed;
-      for (int ch = 0; ch < channelCount_; ++ch) {
+      for (int ch = 0; ch < DEFAULT_CHANNEL_COUNT; ++ch) {
         auto *src = (*renderBuffer_)[ch].begin();
         float *dst = static_cast<float *>(outputData->mBuffers[ch].mData) + outPos;
         std::memcpy(dst, src, stillNeed * sizeof(float));
@@ -193,53 +209,96 @@ bool IOSAudioPlayer::start()
   }
 
   markStarted();
-  bool success = [audioPlayer_ start];
-  if (success) {
-    flushOverflowNextPull_.store(true, std::memory_order_release);
+
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+  assert(audioEngine != nil);
+
+  // AVAudioEngine adopts a new buffer duration only when it starts, so it is requested first.
+  [sessionManager setPreferredIOBufferFrames:preferredIOBufferFrames_];
+
+  NSError *activationError = nil;
+  if (![sessionManager ensureActive:false error:&activationError]) {
+    [sessionManager resetPreferredIOBufferFrames];
+    [AudioAPIError fail:nil with:[AudioAPIError sessionActivationFailed:activationError]];
+    isRunning_->store(false, std::memory_order_release);
+    return false;
   }
-  isRunning_.store(success, std::memory_order_release);
-  return success;
+
+  // AudioEngine allows us to attach and connect nodes at runtime but with few
+  // limitations in this case if it is the first player and recorder started the
+  // engine we need to restart. It can be optimized by tracking if we haven't
+  // break rules of at runtime modifications from docs
+  // https://developer.apple.com/documentation/avfaudio/avaudioengine?language=objc
+  //
+  // Currently we are restarting because we do not see any significant performance issue and case when
+  // you will need to start and stop player very frequently
+  [audioEngine stopIfNecessary];
+  if (sourceNodeId_ == nil) {
+    std::mutex *driverMutex = driverMutex_;
+    std::weak_ptr<AudioContext> weakContext = context_;
+    IOSAudioPlayer *player = this;
+    OnOutputRecoveryFailedBlock onStreamFail = ^{
+      reportStreamFailToContext(driverMutex, weakContext, [player] {
+        return player->isRunning_->load(std::memory_order_acquire) && !player->isRunning();
+      });
+    };
+    sourceNodeId_ = [audioEngine attachSourceNodeWithRenderBlock:renderBlock_
+                                                      sampleRate:sampleRate_
+                                                    channelCount:DEFAULT_CHANNEL_COUNT
+                                          onOutputRecoveryFailed:onStreamFail];
+  }
+
+  if (![audioEngine startIfNecessary:nil]) {
+    // Leaves no source node attached.
+    stop();
+    return false;
+  }
+
+  flushOverflowNextPull_.store(true, std::memory_order_release);
+  isRunning_->store(true, std::memory_order_release);
+  return true;
 }
 
 void IOSAudioPlayer::stop()
 {
-  isRunning_.store(false, std::memory_order_release);
-  [audioPlayer_ stop];
+  isRunning_->store(false, std::memory_order_release);
+  [[AudioSessionManager sharedInstance] resetPreferredIOBufferFrames];
+
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  if (audioEngine == nil) {
+    return;
+  }
+
+  if (sourceNodeId_ != nil) {
+    [audioEngine detachSourceNodeWithId:sourceNodeId_];
+    sourceNodeId_ = nil;
+  }
+  [audioEngine stopIfPossible];
 }
 
 bool IOSAudioPlayer::resume()
 {
-  if (isRunning()) {
-    return true;
-  }
-
-  markStarted();
-  bool success = [audioPlayer_ resume];
-  if (success) {
-    flushOverflowNextPull_.store(true, std::memory_order_release);
-  }
-  isRunning_.store(success, std::memory_order_release);
-  return success;
+  return start();
 }
 
 void IOSAudioPlayer::suspend()
 {
-  isRunning_.store(false, std::memory_order_release);
-  [audioPlayer_ suspend];
+  stop();
 }
 
 bool IOSAudioPlayer::isRunning() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
 
-  return isRunning_.load(std::memory_order_acquire) && [audioEngine isEngineRunning] &&
+  return isRunning_->load(std::memory_order_acquire) && [audioEngine isEngineRunning] &&
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
 void IOSAudioPlayer::cleanup()
 {
   stop();
-  [audioPlayer_ cleanup];
+  renderBlock_ = nil;
   renderBuffer_ = nullptr;
 }
 
@@ -285,21 +344,13 @@ std::int64_t IOSAudioPlayer::presentationClockNowNs() const
 std::shared_ptr<AudioPlayer> createPlatformAudioPlayer(
     const std::function<void(DSPAudioBuffer *, int)> &renderAudio,
     float sampleRate,
-    int channelCount,
     std::atomic<uint32_t> &currentRenders,
-    std::weak_ptr<AudioContext> context,
     std::mutex *driverMutex,
     AudioContextLatencyHint latencyHint,
     AndroidOutputProfile /*outputProfile*/)
 {
   return std::make_shared<IOSAudioPlayer>(
-      renderAudio,
-      sampleRate,
-      channelCount,
-      currentRenders,
-      std::move(context),
-      driverMutex,
-      latencyHint);
+      renderAudio, sampleRate, currentRenders, driverMutex, latencyHint);
 }
 
 } // namespace audioapi

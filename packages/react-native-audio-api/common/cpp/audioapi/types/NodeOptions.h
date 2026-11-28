@@ -15,13 +15,14 @@
 #include <audioapi/core/types/OscillatorType.h>
 #include <audioapi/core/types/OverSampleType.h>
 #include <audioapi/core/types/PannerTypes.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/decoding/DecoderSource.h>
 #include <audioapi/utils/AudioArray.hpp>
 #include <audioapi/utils/AudioBuffer.hpp>
 
 namespace audioapi {
 struct AudioNodeOptions {
-  int channelCount = 2;
+  int channelCount = DEFAULT_CHANNEL_COUNT;
   /// Number of channels the node emits. Unset means "same as `channelCount`",
   /// which is the right default for every node whose output follows its
   /// negotiated input layout.
