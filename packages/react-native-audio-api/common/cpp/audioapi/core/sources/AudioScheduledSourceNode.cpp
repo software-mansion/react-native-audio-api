@@ -18,8 +18,6 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(
     const std::shared_ptr<BaseAudioContext> &context,
     const AudioScheduledSourceNodeOptions &options)
     : AudioNode(context, options),
-      startTime_(-1.0),
-      stopTime_(-1.0),
       playbackState_(PlaybackState::UNSCHEDULED),
       onEndedEvent_(context->getAudioEventHandlerRegistry(), context->getAudioEventProducer()) {}
 
@@ -41,10 +39,9 @@ void AudioScheduledSourceNode::stop(double when) {
   }
 
   auto context = context_.lock();
-  auto startFrame = dsp::timeToSampleFrame(startTime_, context->getSampleRate());
-  auto stopFrame = dsp::timeToSampleFrame(stopTime_, context->getSampleRate());
+  auto stopFrame = dsp::timeToSampleFrame(when, context->getSampleRate());
   // if stop is requested before start, mark as finished
-  if (stopFrame <= startFrame) {
+  if (startTime_ && stopFrame <= dsp::timeToSampleFrame(*startTime_, context->getSampleRate())) {
     playbackState_ = PlaybackState::FINISHED;
     markEnded();
     AudioNode::disable();
@@ -66,10 +63,10 @@ void AudioScheduledSourceNode::resume(double when) {
     return;
   }
 
-  if (stopTime_ != -1.0) {
+  if (stopTime_) {
     const auto context = context_.lock();
     const auto resumeTime = std::max(when, context ? context->getCurrentTime() : when);
-    if (stopTime_ <= resumeTime) {
+    if (*stopTime_ <= resumeTime) {
       return;
     }
   }
@@ -131,11 +128,11 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     size_t currentSampleFrame) {
   auto firstFrame = currentSampleFrame;
   size_t lastFrame = firstFrame + framesToProcess - 1;
-  size_t startFrame = startTime_ == -1.0
-      ? firstFrame
-      : std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);
-  size_t stopFrame = stopTime_ == -1.0 ? std::numeric_limits<size_t>::max()
-                                       : dsp::timeToSampleFrame(stopTime_, sampleRate);
+  size_t startFrame = startTime_
+      ? std::max(dsp::timeToSampleFrame(*startTime_, sampleRate), firstFrame)
+      : firstFrame;
+  size_t stopFrame = stopTime_ ? dsp::timeToSampleFrame(*stopTime_, sampleRate)
+                               : std::numeric_limits<size_t>::max();
   if (isFinished()) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
@@ -223,11 +220,11 @@ void AudioScheduledSourceNode::disable() {
 }
 
 void AudioScheduledSourceNode::advanceWithoutRender(std::size_t currentSampleFrame) {
-  if (isUnscheduled() || isFinished() || stopTime_ == -1.0) {
+  if (isUnscheduled() || isFinished() || !stopTime_) {
     return;
   }
 
-  const auto stopFrame = dsp::timeToSampleFrame(stopTime_, getContextSampleRate());
+  const auto stopFrame = dsp::timeToSampleFrame(*stopTime_, getContextSampleRate());
   if (stopFrame >= currentSampleFrame) {
     return;
   }

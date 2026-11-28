@@ -46,7 +46,7 @@ AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
 }
 
 void AudioBufferQueueSourceNode::start(double when) {
-  stopTime_ = -1.0;
+  stopTime_.reset();
   AudioScheduledSourceNode::start(when);
 }
 
