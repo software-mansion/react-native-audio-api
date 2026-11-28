@@ -209,6 +209,12 @@ for name in "${DOWNLOAD_NAMES[@]}"; do
     # Files from an interrupted run or an older release would otherwise mix with the fresh ones.
     rm -rf "${FINAL_CHECK_PATH:?}" "${TAG_STAMP_DIR:?}/${EXTRACTED_NAME}"
     unzip -o "$ZIP_FILE_PATH" -d "$OUTPUT_DIR"
+    # unzip exits 1 for warnings only; anything higher (a corrupt zip, a full disk) left files out.
+    if [ $? -gt 1 ]; then
+        echo "Error: Could not extract ${name} into ${OUTPUT_DIR}." >&2
+        rm -rf "${FINAL_CHECK_PATH:?}" "$TEMP_DOWNLOAD_DIR"
+        exit 1
+    fi
 
     # Clean up any __MACOSX directories that may have been created
     rm -rf "${OUTPUT_DIR}/__MACOSX"

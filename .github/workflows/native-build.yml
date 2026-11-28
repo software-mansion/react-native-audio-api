@@ -96,6 +96,7 @@ jobs:
           path: |
             packages/react-native-audio-api/common/cpp/audioapi/external/android
             packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg
+            packages/react-native-audio-api/common/cpp/audioapi/external/.prebuilt-tags
             packages/react-native-audio-api/android/src/main/jniLibs
 
       - name: Setup Java
@@ -146,6 +147,7 @@ jobs:
           path: |
             packages/react-native-audio-api/common/cpp/audioapi/external/xcframeworks
             packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg
+            packages/react-native-audio-api/common/cpp/audioapi/external/.prebuilt-tags
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
