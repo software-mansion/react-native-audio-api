@@ -128,7 +128,7 @@ class FatFunction<N, _FpReturnType(_FpArgs...)> {
   /// @brief Call operator to invoke the stored callable
   /// @param ...args Arguments to pass to the callable
   /// @return The result of the callable invocation
-  _FpReturnType operator()(_FpArgs &&...args) const {
+  _FpReturnType operator()(_FpArgs... args) const {
     if (!invoker_) {
       throw std::bad_function_call();
     }

@@ -4,6 +4,7 @@
 #include <audioapi/core/inputs/RecorderState.h>
 #include <audioapi/utils/Macros.h>
 #include <audioapi/utils/Result.hpp>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -59,11 +60,15 @@ class ActiveRecorderHandle {
   /// including the original error. On success with non-empty paths, stashes a
   /// copy for consumeLastRecordingResult() and clears the slot. Blocks until
   /// the output file is finalized. Because of this, don't call on a UI thread.
-  Result<FileInfo, std::string> stopAndReturnInfo();
+  /// With @p openedGeneration, AudioRecorder::stop() is bound to that input opening.
+  Result<FileInfo, std::string> stopAndReturnInfo(
+      std::optional<uint64_t> openedGeneration = std::nullopt);
 
   /// @brief stopAndReturnInfo() if the slot still holds @p expected; otherwise
   /// returns an error and does not stop the occupant.
-  Result<FileInfo, std::string> stopAndReturnInfo(const std::shared_ptr<AudioRecorder> &expected);
+  Result<FileInfo, std::string> stopAndReturnInfo(
+      const std::shared_ptr<AudioRecorder> &expected,
+      std::optional<uint64_t> openedGeneration = std::nullopt);
 
   /// @brief Stops the occupant (same as stopAndReturnInfo) and returns the
   /// resulting slot state. The stop Result is discarded; file info is still stashed.

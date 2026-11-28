@@ -4,7 +4,6 @@
 
 #include <memory>
 #include <string>
-#include <tuple>
 #include <utility>
 
 namespace audioapi {
@@ -97,14 +96,15 @@ Result<NoneType, std::string> ActiveRecorderHandle::rerouteInput() {
   return recorder->rerouteInput();
 }
 
-Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo() {
+Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo(
+    std::optional<uint64_t> openedGeneration) {
   std::scoped_lock lock(mutex_);
   const std::shared_ptr<AudioRecorder> recorder = recorder_.lock();
   if (!recorder) {
     return Result<FileInfo, std::string>::Err("Recorder is not in recording state.");
   }
 
-  auto result = recorder->stop();
+  auto result = recorder->stop(openedGeneration);
   if (!result.is_ok()) {
     return Result<FileInfo, std::string>::Err(result.unwrap_err());
   }
@@ -118,13 +118,14 @@ Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo() {
 }
 
 Result<FileInfo, std::string> ActiveRecorderHandle::stopAndReturnInfo(
-    const std::shared_ptr<AudioRecorder> &expected) {
+    const std::shared_ptr<AudioRecorder> &expected,
+    std::optional<uint64_t> openedGeneration) {
   std::scoped_lock lock(mutex_);
   if (recorder_.lock() != expected) {
     // if we do not store provided recorder, it meands that it cannot be started, so it is in idle state
     return Result<FileInfo, std::string>::Err("Recorder is not in recording state.");
   }
-  return stopAndReturnInfo();
+  return stopAndReturnInfo(openedGeneration);
 }
 
 RecorderState ActiveRecorderHandle::stopAndReturnState() {

@@ -17,9 +17,9 @@ export default class StressPlaybackController {
   async play(buffer: AudioBuffer, durationSeconds?: number): Promise<void> {
     this.stop();
 
-    if (this.context.state === 'suspended') {
-      await this.context.resume();
-    }
+    // RNAA-585: on iOS, deactivating the session stops a running context's output while its
+    // state still reads 'running', so resume whatever the state says.
+    await this.context.resume();
 
     const source = this.context.createBufferSource({
       pitchCorrection: true,

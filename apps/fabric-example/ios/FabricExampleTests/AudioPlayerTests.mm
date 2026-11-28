@@ -6,7 +6,9 @@
 #import <audioapi/core/AudioPlayer.h>
 #import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/NativeAudioPlayer.h>
-#import <audioapi/ios/core/NativeAudioRecorder.h>
+#import <audioapi/core/inputs/AudioRecorder.h>
+#import <audioapi/ios/core/IOSRecorderInput.h>
+#import <audioapi/utils/AudioRecorderOptions.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/utils/AudioBuffer.hpp>
@@ -71,6 +73,11 @@ class IOSAudioPlayer : public AudioPlayer {
 @end
 
 @implementation FakePlayerAudioSessionManager
+
+- (NSString *)checkRecordingPermissions
+{
+  return @"Granted";
+}
 
 - (instancetype)init
 {
@@ -192,6 +199,19 @@ class IOSAudioPlayer : public AudioPlayer {
   (void)receiverBlock;
   (void)voiceProcessingEnabled;
   (void)onInputNotification;
+}
+
+- (void)detachInputNode
+{
+}
+
+- (void)restartAudioEngine
+{
+}
+
+- (AVAudioFormat *)getLiveInputFormat
+{
+  return [[AVAudioFormat alloc] initStandardFormatWithSampleRate:48000 channels:1];
 }
 
 @end
@@ -514,11 +534,10 @@ struct TestAudioOutput {
   XCTAssertNil(player.sourceNodeId);
 
   self.audioEngine.startIfNecessaryResult = YES;
-  NativeAudioRecorder *recorder = [[NativeAudioRecorder alloc]
-       initWithReceiverBlock:^(const AudioBufferList *inputBuffer, int numFrames) {}
-      voiceProcessingEnabled:NO];
+  auto recorder = std::make_shared<audioapi::AudioRecorder>(
+      nullptr, std::make_shared<audioapi::IOSRecorderInput>(audioapi::AudioRecorderOptions{}));
 
-  XCTAssertTrue([recorder start:nil]);
+  XCTAssertTrue(recorder->start().is_ok());
   XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
   XCTAssertEqual(self.audioEngine.attachedSourceNodeIds.count, 0UL);
   XCTAssertEqual(self.audioEngine.sourceNodeIdsPresentAtLastStart.count, 0UL);
