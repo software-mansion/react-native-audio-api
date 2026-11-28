@@ -340,6 +340,16 @@ describe('React Native Audio API Mocks', () => {
         ).not.toThrow();
       });
 
+      it('should support recording interruption observation', () => {
+        expect(() =>
+          MockAPI.AudioManager.observeRecordingInterruptions(true)
+        ).not.toThrow();
+        expect(MockAPI.AudioManager.isRecordingSilenced()).toBe(false);
+        expect(() =>
+          MockAPI.AudioManager.observeRecordingInterruptions(false)
+        ).not.toThrow();
+      });
+
       it('should support system event listeners', () => {
         const callback = jest.fn();
         const listener = MockAPI.AudioManager.addSystemEventListener(

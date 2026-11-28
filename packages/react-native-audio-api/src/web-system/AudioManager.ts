@@ -16,6 +16,8 @@ class AudioManager implements IAudioManager {
   setSystemOptions = mockSync({});
   disableSessionManagement = mockSync({});
   observeAudioInterruptions = mockSync(true);
+  observeRecordingInterruptions = mockSync({});
+  isRecordingSilenced = mockSync(false);
   activelyReclaimSession = mockSync({});
   observeVolumeChanges = mockSync({});
   addSystemEventListener = mockSync(undefined);

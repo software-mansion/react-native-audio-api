@@ -116,6 +116,8 @@ export interface IAudioManager {
   observeAudioInterruptions(enabled: boolean): void;
   activelyReclaimSession(enabled: boolean): void;
   observeAudioInterruptions(param: AudioFocusType | boolean | null): void;
+  observeRecordingInterruptions(enabled: boolean): void;
+  isRecordingSilenced(): boolean;
   getSystemVolume(): number;
   addSystemEventListener<Name extends SystemEventName>(
     name: Name,

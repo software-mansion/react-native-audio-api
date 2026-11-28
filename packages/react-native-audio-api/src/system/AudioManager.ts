@@ -62,6 +62,26 @@ class AudioManager implements IAudioManager {
   }
 
   /**
+   * Android 29+: emits the `interruption` event when the system silences the
+   * active `AudioRecorder`'s capture (a call, VoIP, the Assistant, another
+   * recorder, the mic privacy toggle) and when it lets go. Requests no audio
+   * focus, so other apps' playback is left alone. No-op on iOS, web and below
+   * Android 29.
+   */
+  observeRecordingInterruptions(enabled: boolean) {
+    NativeAudioAPIModule.observeRecordingInterruptions(enabled);
+  }
+
+  /**
+   * Android 29+: whether the active recorder's capture is silenced right now,
+   * or the interruption that silenced it is a call that's still in progress.
+   * False elsewhere.
+   */
+  isRecordingSilenced(): boolean {
+    return NativeAudioAPIModule.isRecordingSilenced();
+  }
+
+  /**
    * @param enabled - Whether to actively reclaim the session or not
    * @experimental more aggressively try to reactivate the audio session during interruptions.
    * It is subject to change in the future and might be removed.

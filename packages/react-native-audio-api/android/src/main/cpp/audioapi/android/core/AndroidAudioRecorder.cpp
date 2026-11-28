@@ -1,6 +1,7 @@
 #include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/system/NativeInputRouting.h>
+#include <audioapi/android/system/NativeRecorderControl.h>
 
 #include <audioapi/core/inputs/ActiveRecorderHandle.h>
 #include <audioapi/core/utils/AudioFileWriter.h>
@@ -86,6 +87,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
       ->setFormat(oboe::AudioFormat::Float)
       ->setFormatConversionAllowed(true)
       ->setPerformanceMode(oboe::PerformanceMode::None)
+      ->setSessionId(oboe::SessionId::Allocate)
       ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
       ->setDataCallback(shared_from_this())
       ->setErrorCallback(shared_from_this());
@@ -176,7 +178,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::start() {
     // Ended like stop(): the stream opened for this start would otherwise stay open until the
     // next one.
     route_ = nullptr;
-    closeStream();
+    endCapture();
     abandoned = detachSideEffects();
   }
 
@@ -195,6 +197,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::startCapture(
   }
 
   NativeInputRouting::reportCaptureDevice(mStream_->getDeviceId());
+  captureSessionId_ = NativeRecorderControl::publishCaptureSession(mStream_->getSessionId());
 
   auto formatResult = resolveStreamFormat();
 
@@ -255,7 +258,7 @@ Result<FileInfo, std::string> AndroidAudioRecorder::stop() {
     // There is no stream while restartCapture() is between closing the old one and opening
     // the new one; the outputs are finalized all the same. Closing waits for the callback in
     // flight, which only try-locks the output mutexes held here.
-    closeStream();
+    endCapture();
 
     sideEffects = detachSideEffects();
   }
@@ -367,7 +370,7 @@ void AndroidAudioRecorder::cleanup() {
   std::scoped_lock streamLock(streamMutex_);
   state_.store(RecorderState::Idle, std::memory_order_release);
   route_ = nullptr;
-  closeStream();
+  endCapture();
 }
 
 void AndroidAudioRecorder::closeStream() {
@@ -376,6 +379,12 @@ void AndroidAudioRecorder::closeStream() {
     mStream_->close();
     mStream_.reset();
   }
+}
+
+void AndroidAudioRecorder::endCapture() {
+  closeStream();
+  NativeRecorderControl::clearCaptureSession(captureSessionId_);
+  captureSessionId_ = 0;
 }
 
 Result<NoneType, std::string> AndroidAudioRecorder::rerouteInput() {
@@ -460,7 +469,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
 
     if (isIdle()) {
       route_ = nullptr;
-      closeStream();
+      endCapture();
       return;
     }
   }
