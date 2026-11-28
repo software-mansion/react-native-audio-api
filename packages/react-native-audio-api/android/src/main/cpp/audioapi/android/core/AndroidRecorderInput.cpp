@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cassert>
+#include <exception>
 #include <memory>
 #include <optional>
 #include <string>
@@ -48,10 +49,20 @@ AndroidRecorderInput::~AndroidRecorderInput() {
   close();
 }
 
-RouteLease AndroidRecorderInput::acquireRoute() {
+RouteLease AndroidRecorderInput::acquireRoute() noexcept {
+  std::optional<int32_t> deviceId;
+  try {
+    deviceId = NativeInputRouting::acquireInputRoute();
+  } catch (const std::exception &exception) {
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "RN_AUDIOAPI",
+        "Could not acquire the input route: %s",
+        exception.what());
+  }
+
   return RouteLease(
-      new std::optional<int32_t>(NativeInputRouting::acquireInputRoute()),
-      RouteReleaser{&NativeInputRouting::releaseInputRoute});
+      new std::optional<int32_t>(deviceId), RouteReleaser{&NativeInputRouting::releaseInputRoute});
 }
 
 Result<NoneType, std::string> AndroidRecorderInput::open(

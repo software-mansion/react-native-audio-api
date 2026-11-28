@@ -4,14 +4,15 @@
 #include <mach/mach_time.h>
 
 #import <audioapi/core/AudioPlayer.h>
-#import <audioapi/core/utils/Constants.h>
-#import <audioapi/ios/core/NativeAudioPlayer.h>
+#import <audioapi/core/inputs/ActiveRecorderHandle.h>
 #import <audioapi/core/inputs/AudioRecorder.h>
+#import <audioapi/core/utils/Constants.h>
 #import <audioapi/ios/core/IOSRecorderInput.h>
-#import <audioapi/utils/AudioRecorderOptions.h>
+#import <audioapi/ios/core/NativeAudioPlayer.h>
 #import <audioapi/ios/system/AudioEngine.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 #import <audioapi/utils/AudioBuffer.hpp>
+#import <audioapi/utils/AudioRecorderOptions.h>
 
 #include <atomic>
 #include <cmath>
@@ -535,7 +536,9 @@ struct TestAudioOutput {
 
   self.audioEngine.startIfNecessaryResult = YES;
   auto recorder = std::make_shared<audioapi::AudioRecorder>(
-      nullptr, std::make_shared<audioapi::IOSRecorderInput>(audioapi::AudioRecorderOptions{}));
+      nullptr,
+      std::make_shared<audioapi::IOSRecorderInput>(audioapi::AudioRecorderOptions{}),
+      std::make_shared<audioapi::ActiveRecorderHandle>());
 
   XCTAssertTrue(recorder->start().is_ok());
   XCTAssertEqual(self.audioEngine.attachInputNodeCallCount, 1);
