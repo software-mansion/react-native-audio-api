@@ -29,7 +29,10 @@ class Convolver {
 
   Convolver();
   bool init(size_t blockSize, const AudioArray &ir, size_t irLen);
-  void process(const DSPAudioArray &input, DSPAudioArray &output);
+  /// @brief Convolves the first @p framesToProcess frames of @p input into @p output with no
+  /// added latency. @p framesToProcess may differ on every call and need not relate to the block
+  /// size: a call that ends mid-block convolves the partial block as if the rest were silent.
+  void process(const DSPAudioArray &input, DSPAudioArray &output, size_t framesToProcess);
 
   /// @brief Whether the IR is long enough for part of it to be computed ahead of time.
   [[nodiscard]] bool hasTail() const {
@@ -37,7 +40,8 @@ class Convolver {
   }
 
   /// @brief Tail block whose input the latest `process()` call completed, handed out once;
-  /// pass it to `computeTail` on a helper thread right after `process()` returns.
+  /// pass it to `computeTail` on a helper thread right after `process()` returns. A call long
+  /// enough to complete several tail blocks hands out the newest; it rendered the older ones.
   /// @note Audio thread only.
   [[nodiscard]] std::optional<size_t> takeCompletedTailBlock();
 
@@ -87,8 +91,13 @@ class Convolver {
   void initTail(const AudioArray &ir, size_t irLen);
   [[nodiscard]] const aligned_vec_complex &inputSpectrum(size_t block, size_t age) const;
   [[nodiscard]] const aligned_vec_complex &tailInputSpectrum(size_t block, size_t age) const;
+  void accumulateCompletedBlocks();
+  void advanceBlock();
   void accumulateTail(size_t block, aligned_vec_complex &into) const;
-  void renderTail(DSPAudioArray &output);
+  /// @brief Adds the tail to @p frames frames of @p output starting at @p outputStart and
+  /// buffers the same input frames, found at @p windowStart of the head's input window, for the
+  /// tail block being collected.
+  void renderTail(DSPAudioArray &output, size_t outputStart, size_t windowStart, size_t frames);
   void loadTailBlock(size_t block);
   void completeTailInputBlock();
 
@@ -102,9 +111,15 @@ class Convolver {
   std::vector<aligned_vec_complex> _segmentsIR;
   std::unique_ptr<DSPAudioArray> _fftBuffer;
   std::shared_ptr<dsp::FFT> _fft;
+  /// Contribution of every completed input block, fixed for the whole block being filled.
   aligned_vec_complex _preMultiplied;
+  /// `_preMultiplied` plus the partial block's own contribution.
+  aligned_vec_complex _blockSpectrum;
   std::unique_ptr<DSPAudioArray> _inputBuffer;
+  /// Count of completed input blocks, which is also the index of the block being filled.
   size_t _blocksProcessed{0};
+  /// Frames of the block being filled already received.
+  size_t _inputFill{0};
 
   size_t _tailSegCount;
   /// Delay line of tail input spectra, one per tail block, `_tailSegCount + SPARE_TAIL_SEGMENTS`

@@ -10,6 +10,7 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/JsEnumParser.h>
 #include <audioapi/core/types/AudioContextLatencyHint.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/events/IAudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBuffer.hpp>
@@ -92,21 +93,32 @@ bool isNullOrUndefined(const Value &value) {
   return value.isNull() || value.isUndefined();
 }
 
+/// The TS layer validates the range; a missing hint means the spec default.
+int renderQuantumSizeFromArg(const Value *args, size_t count, size_t index) {
+  if (count > index && args[index].isNumber()) {
+    return static_cast<int>(args[index].getNumber());
+  }
+  return audioapi::RENDER_QUANTUM_SIZE;
+}
+
 void parseOfflineContextArgs(
     Runtime &runtime,
     const Value *args,
     size_t count,
     int &numberOfChannels,
     size_t &length,
-    float &sampleRate) {
+    float &sampleRate,
+    int &renderQuantumSize) {
   numberOfChannels = 1;
   length = 0;
   sampleRate = 0.0f;
+  renderQuantumSize = audioapi::RENDER_QUANTUM_SIZE;
 
   if (count >= 3 && args[0].isNumber() && args[1].isNumber() && args[2].isNumber()) {
     numberOfChannels = static_cast<int>(args[0].getNumber());
     length = static_cast<size_t>(args[1].getNumber());
     sampleRate = static_cast<float>(args[2].getNumber());
+    renderQuantumSize = renderQuantumSizeFromArg(args, count, 3);
     return;
   }
 
@@ -143,10 +155,18 @@ void installOfflineBindings(
         int numberOfChannels = 1;
         size_t length = 0;
         float sampleRate = 0.0f;
-        parseOfflineContextArgs(rt, args, count, numberOfChannels, length, sampleRate);
+        int renderQuantumSize = audioapi::RENDER_QUANTUM_SIZE;
+        parseOfflineContextArgs(
+            rt, args, count, numberOfChannels, length, sampleRate, renderQuantumSize);
 
         auto hostObject = std::make_shared<OfflineAudioContextHostObject>(
-            numberOfChannels, length, sampleRate, eventRegistry, &rt, callInvoker);
+            numberOfChannels,
+            length,
+            sampleRate,
+            eventRegistry,
+            &rt,
+            callInvoker,
+            renderQuantumSize);
 
         return makeContextObject(rt, hostObject);
       });
@@ -197,7 +217,13 @@ void installAudioContextBinding(
         }
 
         auto hostObject = std::make_shared<AudioContextHostObject>(
-            sampleRate, AndroidOutputProfile::Media, eventRegistry, &rt, callInvoker, latencyHint);
+            sampleRate,
+            AndroidOutputProfile::Media,
+            eventRegistry,
+            &rt,
+            callInvoker,
+            latencyHint,
+            renderQuantumSizeFromArg(args, count, 3));
 
         return makeContextObject(rt, hostObject);
       });

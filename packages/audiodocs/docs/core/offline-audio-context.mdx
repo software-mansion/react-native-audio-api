@@ -17,8 +17,11 @@ interface OfflineAudioContextOptions {
   numberOfChannels: number;
   length: number; // The length of the rendered AudioBuffer, in sample-frames
   sampleRate: number;
+  renderSizeHint?: 'default' | 'hardware' | number; // Sample-frames per render quantum, 128 by default
 }
 ```
+
+`renderSizeHint` accepts the same values as in [`AudioContextOptions`](./audio-context.mdx#audiocontextoptions); see the tip there before changing it. An offline context has no device callback, so `'hardware'` means `128`.
 
 ## Properties
 
@@ -33,9 +36,9 @@ Inherits all methods from [`BaseAudioContext`](./base-audio-context.mdx#methods)
 
 Schedules a suspension of the time progression in audio context at the specified time.
 
-|   Parameter   |   Type   | Description                                                      |
-| :-----------: | :------: | :--------------------------------------------------------------- |
-| `suspendTime` | `number` | A floating-point number specifying the suspend time, in seconds. |
+|   Parameter   |   Type   | Description                                                                                                            |
+| :-----------: | :------: | :--------------------------------------------------------------------------------------------------------------------- |
+| `suspendTime` | `number` | A floating-point number specifying the suspend time, in seconds. It is rounded up to the next render quantum boundary. |
 
 #### Returns `Promise<undefined>`.
 

@@ -110,9 +110,100 @@ struct Fixture {
     DSPAudioArray in(kBlockSize), out(kBlockSize);
     for (size_t block = 0; block < blocks; ++block) {
       feedBlock(block, in);
-      convolver.process(in, out);
+      convolver.process(in, out, kBlockSize);
       ASSERT_NO_FATAL_FAILURE(expectBlock(block, out));
     }
+  }
+};
+
+std::vector<size_t> uniformChunks(size_t total, size_t chunk) {
+  std::vector<size_t> chunks;
+  for (size_t done = 0; done < total; done += chunk) {
+    chunks.push_back(std::min(chunk, total - done));
+  }
+  return chunks;
+}
+
+std::vector<size_t> randomChunks(size_t total, size_t maxChunk, unsigned seed) {
+  std::mt19937 rng(seed);
+  std::uniform_int_distribution<size_t> dist(1, maxChunk);
+  std::vector<size_t> chunks;
+  for (size_t done = 0; done < total;) {
+    const size_t chunk = std::min(dist(rng), total - done);
+    chunks.push_back(chunk);
+    done += chunk;
+  }
+  return chunks;
+}
+
+/// Calls alternating between two lengths, like a device whose callback size jitters.
+std::vector<size_t> alternatingChunks(size_t total, size_t even, size_t odd) {
+  std::vector<size_t> chunks;
+  for (size_t done = 0; done < total;) {
+    const size_t chunk = std::min(chunks.size() % 2 == 0 ? even : odd, total - done);
+    chunks.push_back(chunk);
+    done += chunk;
+  }
+  return chunks;
+}
+
+enum class TailWorker { None, AlwaysOnTime };
+
+/// Streams @p input through @p convolver in calls of @p chunks frames, each call through
+/// scratch arrays sized like the node's buffers.
+std::vector<float> convolveInChunks(
+    Convolver &convolver,
+    const std::vector<float> &input,
+    const std::vector<size_t> &chunks,
+    TailWorker worker = TailWorker::None) {
+  const size_t maxChunk = *std::ranges::max_element(chunks);
+  DSPAudioArray in(maxChunk), out(maxChunk);
+  std::vector<float> output;
+  output.reserve(input.size());
+
+  size_t position = 0;
+  for (const size_t chunk : chunks) {
+    in.zero();
+    in.copy(input.data() + position, 0, 0, chunk);
+    convolver.process(in, out, chunk);
+    output.insert(output.end(), out.begin(), out.begin() + chunk);
+    position += chunk;
+    if (worker == TailWorker::AlwaysOnTime) {
+      if (const auto completed = convolver.takeCompletedTailBlock()) {
+        convolver.computeTail(*completed);
+      }
+    }
+  }
+  return output;
+}
+
+void expectMatches(const std::vector<float> &actual, const std::vector<float> &expected) {
+  ASSERT_EQ(actual.size(), expected.size());
+  for (size_t frame = 0; frame < actual.size(); ++frame) {
+    const float want = expected[frame];
+    ASSERT_NEAR(actual[frame], want, kAbsTolerance + kRelTolerance * std::abs(want))
+        << "frame " << frame;
+  }
+}
+
+struct ChunkingCase {
+  const char *name;
+  size_t blockSize;
+  size_t irLength;
+  std::vector<size_t> chunks;
+};
+
+constexpr size_t kChunkedSignalLength = 6 * kTailBlock + 77;
+
+class ConvolverChunkingTest : public ::testing::TestWithParam<ChunkingCase> {
+ protected:
+  std::vector<float> input = randomSamples(kChunkedSignalLength, /*seed=*/21);
+  std::vector<float> ir = randomSamples(GetParam().irLength, /*seed=*/22);
+  Convolver convolver;
+
+  void SetUp() override {
+    const AudioArray irArray(ir.data(), ir.size());
+    ASSERT_TRUE(convolver.init(GetParam().blockSize, irArray, ir.size()));
   }
 };
 
@@ -182,7 +273,7 @@ TEST(ConvolverTest, UnitImpulseReturnsTheImpulseResponse) {
     if (block == 0) {
       in[0] = 1.0f;
     }
-    convolver.process(in, out);
+    convolver.process(in, out, kBlockSize);
     for (size_t i = 0; i < kBlockSize; ++i) {
       const size_t frame = block * kBlockSize + i;
       const float want = frame < ir.size() ? ir[frame] : 0.0f;
@@ -198,7 +289,7 @@ TEST(ConvolverTest, CompletedTailBlockIsHandedOutOncePerTailBlock) {
 
   for (size_t block = 0; block < fx.blocks; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     const auto completed = convolver->takeCompletedTailBlock();
     const bool completesTailBlock = (block + 1) % kBlocksPerTailBlock == 0;
     ASSERT_EQ(completed.has_value(), completesTailBlock) << "block " << block;
@@ -216,7 +307,7 @@ TEST(ConvolverTest, PrecomputedTailMatchesDirectConvolution) {
 
   for (size_t block = 0; block < fx.blocks; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     fx.expectBlock(block, out);
     // A worker that always makes its deadline.
     if (const auto completed = convolver->takeCompletedTailBlock()) {
@@ -242,7 +333,7 @@ TEST(ConvolverTest, TailIsUsedUpToOneTailBlockAfterItsInputCompletes) {
 
     for (size_t block = 0; block < fx.blocks; ++block) {
       fx.feedBlock(block, in);
-      convolver->process(in, out);
+      convolver->process(in, out, kBlockSize);
       ASSERT_NO_FATAL_FAILURE(fx.expectBlock(block, out));
       if (const auto completed = convolver->takeCompletedTailBlock()) {
         pending.push_back({*completed, block});
@@ -268,7 +359,7 @@ TEST(ConvolverTest, LateTailIsDroppedAndOutputStaysCorrect) {
 
   for (size_t block = 0; block < blocksBeforeLateTail; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     fx.expectBlock(block, out);
   }
   // The worker for tail block 1 shows up after the audio thread rendered it.
@@ -276,7 +367,7 @@ TEST(ConvolverTest, LateTailIsDroppedAndOutputStaysCorrect) {
 
   for (size_t block = blocksBeforeLateTail; block < fx.blocks; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     fx.expectBlock(block, out);
   }
   EXPECT_EQ(ConvolverInspector::tailMisses(*convolver), tailBlocksRendered(fx.blocks));
@@ -289,7 +380,7 @@ TEST(ConvolverTest, StrayTailRequestsNeverReplaceAPublishedBlock) {
 
   for (size_t block = 0; block < fx.blocks; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     fx.expectBlock(block, out);
     const auto completed = convolver->takeCompletedTailBlock();
     if (!completed) {
@@ -315,7 +406,7 @@ TEST(ConvolverTest, TailsComputedOnThreadPoolAreUsed) {
 
   for (size_t block = 0; block < fx.blocks; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     fx.expectBlock(block, out);
     if (const auto completed = convolver->takeCompletedTailBlock()) {
       pool.schedule([convolver, tail = *completed] { convolver->computeTail(tail); });
@@ -334,7 +425,7 @@ TEST(ConvolverTest, TailsRacingTheAudioThreadMatchDirectConvolution) {
 
   for (size_t block = 0; block < fx.blocks; ++block) {
     fx.feedBlock(block, in);
-    convolver->process(in, out);
+    convolver->process(in, out, kBlockSize);
     fx.expectBlock(block, out);
     if (const auto completed = convolver->takeCompletedTailBlock()) {
       pool.schedule([convolver, tail = *completed] { convolver->computeTail(tail); });
@@ -343,6 +434,117 @@ TEST(ConvolverTest, TailsRacingTheAudioThreadMatchDirectConvolution) {
   pool.wait();
   // Hits and misses depend on scheduling; the output must not.
   EXPECT_LE(ConvolverInspector::tailMisses(*convolver), tailBlocksRendered(fx.blocks));
+}
+
+TEST_P(ConvolverChunkingTest, MatchesDirectConvolutionWithoutLatency) {
+  const auto output = convolveInChunks(convolver, input, GetParam().chunks);
+
+  expectMatches(output, directConvolution(input, ir));
+}
+
+TEST_P(ConvolverChunkingTest, PrecomputedTailMatchesDirectConvolution) {
+  const auto output =
+      convolveInChunks(convolver, input, GetParam().chunks, TailWorker::AlwaysOnTime);
+
+  expectMatches(output, directConvolution(input, ir));
+  // Only a call that completes several tail blocks at once leaves the worker no time.
+  const size_t longestCall = *std::ranges::max_element(GetParam().chunks);
+  if (longestCall <= kTailBlock) {
+    EXPECT_EQ(ConvolverInspector::tailMisses(convolver), 0u);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Convolver,
+    ConvolverChunkingTest,
+    ::testing::Values(
+        ChunkingCase{"Uniform128Block128", 128, 3000, uniformChunks(kChunkedSignalLength, 128)},
+        ChunkingCase{"Uniform441Block512", 512, 3000, uniformChunks(kChunkedSignalLength, 441)},
+        ChunkingCase{"Uniform100Block128", 128, 3000, uniformChunks(kChunkedSignalLength, 100)},
+        ChunkingCase{"Uniform1000Block128", 128, 3000, uniformChunks(kChunkedSignalLength, 1000)},
+        ChunkingCase{"Uniform7Block32", 32, 300, uniformChunks(kChunkedSignalLength, 7)},
+        ChunkingCase{"RandomBlock32", 32, 1000, randomChunks(kChunkedSignalLength, 100, 8)},
+        ChunkingCase{"IrShorterThanBlock", 512, 50, uniformChunks(kChunkedSignalLength, 441)},
+        ChunkingCase{
+            "HardwareJitter470And471",
+            512,
+            4000,
+            alternatingChunks(kChunkedSignalLength, 470, 471)},
+        ChunkingCase{
+            "TailUniform441Block512",
+            512,
+            kHeadFrames + 2 * kTailBlock + 500,
+            uniformChunks(kChunkedSignalLength, 441)},
+        ChunkingCase{
+            "TailRandomBlock128",
+            128,
+            kHeadFrames + kTailBlock + 1,
+            randomChunks(kChunkedSignalLength, 128, 3)},
+        ChunkingCase{
+            "TailHardwareJitterBlock512",
+            512,
+            kHeadFrames + 3 * kTailBlock,
+            alternatingChunks(kChunkedSignalLength, 470, 471)},
+        ChunkingCase{
+            "TailBlockAsLongAsTheTailBlock",
+            kTailBlock,
+            kHeadFrames + 2 * kTailBlock + 9,
+            uniformChunks(kChunkedSignalLength, 1900)},
+        ChunkingCase{
+            "TailCallsSpanningSeveralTailBlocks",
+            128,
+            kHeadFrames + 2 * kTailBlock,
+            randomChunks(kChunkedSignalLength, 3 * kTailBlock, 4)},
+        ChunkingCase{
+            "BlockTooLargeForATail",
+            2 * kTailBlock,
+            kHeadFrames + 2 * kTailBlock,
+            uniformChunks(kChunkedSignalLength, 3000)}),
+    [](const ::testing::TestParamInfo<ChunkingCase> &info) {
+      return std::string(info.param.name);
+    });
+
+TEST(ConvolverTest, BlockLargerThanTheTailBlockRendersTheWholeIrInline) {
+  const std::vector<float> ir = randomSamples(kHeadFrames + 2 * kTailBlock, /*seed=*/13);
+  const AudioArray irArray(ir.data(), ir.size());
+  Convolver convolver;
+
+  ASSERT_TRUE(convolver.init(2 * kTailBlock, irArray, ir.size()));
+
+  EXPECT_FALSE(convolver.hasTail());
+}
+
+TEST(ConvolverTest, CallCompletingSeveralTailBlocksHandsOutTheNewest) {
+  const std::vector<float> ir = randomSamples(kHeadFrames + kTailBlock, /*seed=*/14);
+  const AudioArray irArray(ir.data(), ir.size());
+  Convolver convolver;
+  ASSERT_TRUE(convolver.init(kBlockSize, irArray, ir.size()));
+  const size_t frames = 3 * kTailBlock;
+  DSPAudioArray in(frames), out(frames);
+
+  convolver.process(in, out, frames);
+
+  const auto completed = convolver.takeCompletedTailBlock();
+  ASSERT_TRUE(completed.has_value());
+  EXPECT_EQ(*completed, 2u);
+  EXPECT_FALSE(convolver.takeCompletedTailBlock().has_value());
+}
+
+TEST(ConvolverTest, ZeroLengthIrOutputsSilence) {
+  Convolver convolver;
+  AudioArray ir(1);
+  ASSERT_TRUE(convolver.init(kBlockSize, ir, 0));
+  DSPAudioArray in(200), out(200);
+  for (size_t i = 0; i < in.getSize(); ++i) {
+    in[i] = 1.0f;
+    out[i] = 1.0f;
+  }
+
+  convolver.process(in, out, 200);
+
+  for (size_t i = 0; i < out.getSize(); ++i) {
+    EXPECT_EQ(out[i], 0.0f);
+  }
 }
 
 } // namespace audioapi::test

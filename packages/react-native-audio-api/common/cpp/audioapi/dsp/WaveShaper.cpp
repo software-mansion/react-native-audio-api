@@ -1,4 +1,3 @@
-#include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/dsp/WaveShaper.h>
 
@@ -8,30 +7,32 @@
 
 namespace audioapi {
 
-WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve, float sampleRate)
+WaveShaper::WaveShaper(
+    const std::shared_ptr<AudioArray> &curve,
+    float sampleRate,
+    int renderQuantumSize)
     : curve_(curve), sampleRate_(sampleRate) {
-  tempBuffer2x_ = std::make_shared<DSPAudioArray>(RENDER_QUANTUM_SIZE * 2);
+  tempBuffer2x_ = std::make_shared<DSPAudioArray>(renderQuantumSize * 2);
   tempBuffer2x_->zero();
-  tempBuffer4x_ = std::make_shared<DSPAudioArray>(RENDER_QUANTUM_SIZE * 4);
+  tempBuffer4x_ = std::make_shared<DSPAudioArray>(renderQuantumSize * 4);
   tempBuffer4x_->zero();
 }
 
-std::pair<SingleChannelResamplerPtr, SingleChannelResamplerPtr> WaveShaper::makeResamplers(
-    OverSampleType type,
-    float sampleRate) {
+std::pair<SingleChannelResamplerPtr, SingleChannelResamplerPtr>
+WaveShaper::makeResamplers(OverSampleType type, float sampleRate, int renderQuantumSize) {
   if (type == OverSampleType::OVERSAMPLE_2X) {
     return {
         std::make_unique<r8b::SingleChannelResampler>(
-            sampleRate, sampleRate * 2, RENDER_QUANTUM_SIZE),
+            sampleRate, sampleRate * 2, renderQuantumSize),
         std::make_unique<r8b::SingleChannelResampler>(
-            sampleRate * 2, sampleRate, RENDER_QUANTUM_SIZE * 2)};
+            sampleRate * 2, sampleRate, renderQuantumSize * 2)};
   }
   if (type == OverSampleType::OVERSAMPLE_4X) {
     return {
         std::make_unique<r8b::SingleChannelResampler>(
-            sampleRate, sampleRate * 4, RENDER_QUANTUM_SIZE * 2),
+            sampleRate, sampleRate * 4, renderQuantumSize * 2),
         std::make_unique<r8b::SingleChannelResampler>(
-            sampleRate * 4, sampleRate, RENDER_QUANTUM_SIZE * 4)};
+            sampleRate * 4, sampleRate, renderQuantumSize * 4)};
   }
   return {nullptr, nullptr};
 }

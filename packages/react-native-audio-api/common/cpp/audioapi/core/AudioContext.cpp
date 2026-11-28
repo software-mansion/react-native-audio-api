@@ -13,8 +13,9 @@ AudioContext::AudioContext(
     float sampleRate,
     AndroidOutputProfile androidOutputProfile,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
-    AudioContextLatencyHint latencyHint)
-    : BaseAudioContext(sampleRate, audioEventHandlerRegistry),
+    AudioContextLatencyHint latencyHint,
+    int renderQuantumSize)
+    : BaseAudioContext(sampleRate, audioEventHandlerRegistry, renderQuantumSize),
       latencyHint_(latencyHint),
       androidOutputProfile_(androidOutputProfile),
       isInitialized_(false),
@@ -38,6 +39,7 @@ void AudioContext::initialize(const AudioDestinationNode *destination) {
       [this](DSPAudioBuffer *buf, int n) { processGraph(buf, n); },
       getSampleRate(),
       destination_->getChannelCount(),
+      getRenderQuantumSize(),
       currentRenders_,
       std::static_pointer_cast<AudioContext>(shared_from_this()),
       &driverMutex_,

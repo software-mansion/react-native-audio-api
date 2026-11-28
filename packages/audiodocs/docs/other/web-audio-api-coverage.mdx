@@ -12,8 +12,8 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 
 ### Coverage table
 
-|            Interface            | Status | Remarks                                                                                                                                                                          |
-| :-----------------------------: | :----: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|            Interface            | Status | Remarks                                                                                                                                                                                                                       |
+| :-----------------------------: | :----: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |          AnalyserNode           |   ✅   |
 |           AudioBuffer           |   ✅   |
 |      AudioBufferSourceNode      |   ✅   |
@@ -30,15 +30,15 @@ This page tracks how closely React Native Audio API follows the [Web Audio API](
 |            DelayNode            |   ✅   |
 |            GainNode             |   ✅   |
 |          IIRFilterNode          |   ✅   |
-|   MediaElementAudioSourceNode   |   ✅   | Full <audio /> spec is still in a development phase, however most important functionalities are implemented.                                                                     |
+|   MediaElementAudioSourceNode   |   ✅   | Full <audio /> spec is still in a development phase, however most important functionalities are implemented.                                                                                                                  |
 |       OfflineAudioContext       |   ✅   |
 |         OscillatorNode          |   ✅   |
 |          PeriodicWave           |   ✅   |
 |        StereoPannerNode         |   ✅   |
 |         WaveShaperNode          |   ✅   |
-|          AudioContext           |   🚧   | Available props and methods: `baseLatency`, `outputLatency`, `getOutputTimestamp`, `close`, `suspend`, `resume`                                                                  |
-|        BaseAudioContext         |   🚧   | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes |
-|           PannerNode            |   🚧   | Equal-power spatialization, distance models, and cone gain. `panningModel` is `'equalpower'` only (`'HRTF'` not exposed yet).                                                    |
+|          AudioContext           |   🚧   | Available props and methods: `baseLatency`, `outputLatency`, `getOutputTimestamp`, `close`, `suspend`, `resume`. `renderSizeHint` accepts `'default'`, `'hardware'` (resolved once, when the context is created) or a number. |
+|        BaseAudioContext         |   🚧   | Available props and methods: `currentTime`, `destination`, `listener`, `sampleRate`, `renderQuantumSize`, `state`, `decodeAudioData`, all create methods for available or partially implemented nodes                         |
+|           PannerNode            |   🚧   | Equal-power spatialization, distance models, and cone gain. `panningModel` is `'equalpower'` only (`'HRTF'` not exposed yet).                                                                                                 |
 |          AudioSinkInfo          |   ❌   |
 |          AudioWorklet           |   ❌   |
 |     AudioWorkletGlobalScope     |   ❌   |

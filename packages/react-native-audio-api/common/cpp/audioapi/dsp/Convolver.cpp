@@ -34,7 +34,9 @@ void Convolver::reset() {
   _segments.clear();
   _segmentsIR.clear();
   _preMultiplied.clear();
+  _blockSpectrum.clear();
   _blocksProcessed = 0;
+  _inputFill = 0;
   if (_fftBuffer != nullptr) {
     _fftBuffer->zero();
   }
@@ -72,6 +74,8 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   }
 
   // A tail block must be a whole number of blocks, which holds for powers of two up to its size.
+  // Blocks and tail blocks then start together, so a run of frames inside one block never
+  // crosses a tail block boundary.
   const bool splitsTail = irLen > HEAD_FRAMES && _blockSize <= TAIL_BLOCK_FRAMES;
   const size_t headLen = splitsTail ? HEAD_FRAMES : irLen;
 
@@ -104,6 +108,7 @@ bool Convolver::init(size_t blockSize, const AudioArray &ir, size_t irLen) {
   }
 
   _preMultiplied = aligned_vec_complex(_fftComplexSize);
+  _blockSpectrum = aligned_vec_complex(_fftComplexSize);
   _inputBuffer = std::make_unique<DSPAudioArray>(_segSize);
 
   if (splitsTail) {
@@ -236,55 +241,83 @@ void Convolver::accumulateTail(size_t block, aligned_vec_complex &into) const {
   }
 }
 
-void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output) {
+void Convolver::process(const DSPAudioArray &input, DSPAudioArray &output, size_t framesToProcess) {
   if (_headSegCount == 0) {
-    output.zero();
+    output.zero(0, framesToProcess);
     return;
   }
-  const size_t block = _blocksProcessed++;
 
-  // The input buffer acts as a 2B-point sliding window of the input signal.
-  // With each new input block, the right half of the input buffer is shifted
-  // to the left and the new block is stored in the right half.
-  _inputBuffer->copyWithin(_blockSize, 0, _blockSize);
-  _inputBuffer->copy(input, 0, _blockSize, _blockSize);
+  size_t processed = 0;
+  while (processed < framesToProcess) {
+    if (_inputFill == 0) {
+      accumulateCompletedBlocks();
+    }
 
-  // A 2B-point real-to-complex FFT is computed from the input buffer,
-  // resulting in B+1 complex-conjugate symmetric DFT coefficients. The
-  // result is stored in the delay line slot for this block.
-  _fft->doFFT(*_inputBuffer, _segments[block % _segments.size()]);
+    const size_t chunk = std::min(framesToProcess - processed, _blockSize - _inputFill);
+    const size_t windowPosition = _blockSize + _inputFill;
+    aligned_vec_complex &blockInput = _segments[_blocksProcessed % _segments.size()];
 
-  // The P sub filter spectra are pairwisely multiplied with the input spectra
-  // in the FDL. The results are accumulated in the frequency-domain.
-  memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
-  for (size_t age = 0; age < _headSegCount; ++age) {
-    pairwise_complex_multiply_fast(_segmentsIR[age], inputSpectrum(block, age), _preMultiplied);
-  }
+    // The input buffer is a 2B-point window: the previous block on the left, the block being
+    // filled on the right. Frames of this block that have not arrived yet are still zero, and an
+    // output frame only depends on input frames at or before its own position, so the partial
+    // block yields exact output for every frame received so far.
+    _inputBuffer->copy(input, processed, windowPosition, chunk);
+    _fft->doFFT(*_inputBuffer, blockInput);
 
-  // Of the accumulated spectral convolutions, an 2B-point complex-to-real
-  // IFFT is computed. From the resulting 2B samples, the left half is
-  // discarded and the right half is returned as the next output block.
-  _fft->doInverseFFT(_preMultiplied, *_fftBuffer);
+    std::ranges::copy(_preMultiplied, _blockSpectrum.begin());
+    pairwise_complex_multiply_fast(_segmentsIR[0], blockInput, _blockSpectrum);
+    // Of the 2B-point IFFT, the left half is discarded (overlap-save); the right half lines up
+    // with the right half of the input window.
+    _fft->doInverseFFT(_blockSpectrum, *_fftBuffer);
+    output.copy(*_fftBuffer, windowPosition, processed, chunk);
 
-  output.copy(*_fftBuffer, _blockSize, 0, _blockSize);
+    if (hasTail()) {
+      renderTail(output, processed, windowPosition, chunk);
+    }
 
-  if (hasTail()) {
-    renderTail(output);
+    _inputFill += chunk;
+    processed += chunk;
+    if (_inputFill == _blockSize) {
+      advanceBlock();
+    }
   }
 }
 
-void Convolver::renderTail(DSPAudioArray &output) {
+void Convolver::accumulateCompletedBlocks() {
+  // Sub filter `age` meets the input block `age` blocks back. Age 0 is the block being filled,
+  // whose spectrum changes with every call, so it is added per call instead.
+  memset(_preMultiplied.data(), 0, _preMultiplied.size() * sizeof(std::complex<float>));
+  for (size_t age = 1; age < _headSegCount; ++age) {
+    pairwise_complex_multiply_fast(
+        _segmentsIR[age], inputSpectrum(_blocksProcessed, age), _preMultiplied);
+  }
+}
+
+void Convolver::advanceBlock() {
+  // The completed block's spectrum stays in its delay line slot; the window slides by one block
+  // and the next block starts from silence.
+  _inputBuffer->copyWithin(_blockSize, 0, _blockSize);
+  _inputBuffer->zero(_blockSize, _blockSize);
+  _inputFill = 0;
+  ++_blocksProcessed;
+}
+
+void Convolver::renderTail(
+    DSPAudioArray &output,
+    size_t outputStart,
+    size_t windowStart,
+    size_t frames) {
   if (_tailPosition == 0) {
     const size_t completed = _tailBlocksCompleted.load(std::memory_order_relaxed);
     if (completed >= TAIL_DELAY_BLOCKS) {
       loadTailBlock(completed - TAIL_DELAY_BLOCKS);
     }
   }
-  output.sum(*_tailOutput, TAIL_BLOCK_FRAMES + _tailPosition, 0, _blockSize);
+  output.sum(*_tailOutput, TAIL_BLOCK_FRAMES + _tailPosition, outputStart, frames);
 
   // Read from the head's window, not from `input`, which may alias `output`.
-  _tailInputBuffer->copy(*_inputBuffer, _blockSize, TAIL_BLOCK_FRAMES + _tailPosition, _blockSize);
-  _tailPosition += _blockSize;
+  _tailInputBuffer->copy(*_inputBuffer, windowStart, TAIL_BLOCK_FRAMES + _tailPosition, frames);
+  _tailPosition += frames;
   if (_tailPosition == TAIL_BLOCK_FRAMES) {
     _tailPosition = 0;
     completeTailInputBlock();

@@ -20,7 +20,10 @@ AudioParam::AudioParam(
       defaultValue_(defaultValue),
       eventRenderQueue_(defaultValue, context->getSampleRate()),
       inputBuffer_(
-          std::make_shared<DSPAudioBuffer>(RENDER_QUANTUM_SIZE, 1, context->getSampleRate())) {}
+          std::make_shared<DSPAudioBuffer>(
+              context->getRenderQuantumSize(),
+              1,
+              context->getSampleRate())) {}
 
 float AudioParam::getValueAtTimeUnmodulated(double time) {
   auto value = eventRenderQueue_.computeValueAtTime(time);

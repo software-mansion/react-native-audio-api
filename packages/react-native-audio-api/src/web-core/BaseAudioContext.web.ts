@@ -19,6 +19,7 @@ import PeriodicWave from './PeriodicWave.web';
 import StereoPannerNode from './StereoPannerNode.web';
 import PannerNode from './PannerNode.web';
 import WaveShaperNode from './WaveShaperNode.web';
+import { browserRenderQuantumSize } from './renderQuantumSize.web';
 
 export default abstract class BaseAudioContext<
   BrowserAudioContext extends globalThis.BaseAudioContext =
@@ -30,10 +31,12 @@ export default abstract class BaseAudioContext<
   readonly destination: AudioDestinationNode;
   readonly listener: AudioListener;
   readonly sampleRate: number;
+  readonly renderQuantumSize: number;
 
   constructor(context: BrowserAudioContext) {
     this.context = context;
     this.sampleRate = context.sampleRate;
+    this.renderQuantumSize = browserRenderQuantumSize(context);
     this.destination = new AudioDestinationNode(this, context.destination);
     this.listener = new AudioListener(this, context.listener);
   }

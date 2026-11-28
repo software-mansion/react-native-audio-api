@@ -11,12 +11,14 @@ export default class AudioContext extends BaseAudioContext<globalThis.AudioConte
       assertSupportedSampleRate(options.sampleRate);
     }
 
-    super(
-      new window.AudioContext({
-        sampleRate: options?.sampleRate,
-        latencyHint: options?.latencyHint,
-      })
-    );
+    const contextOptions: globalThis.AudioContextOptions & {
+      renderSizeHint?: 'default' | 'hardware' | number;
+    } = {
+      sampleRate: options?.sampleRate,
+      latencyHint: options?.latencyHint,
+      renderSizeHint: options?.renderSizeHint,
+    };
+    super(new window.AudioContext(contextOptions));
 
     this.context.addEventListener('error', () => this.onerror?.());
   }

@@ -13,13 +13,15 @@ OfflineAudioContextHostObject::OfflineAudioContextHostObject(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     jsi::Runtime *runtime,
-    const std::shared_ptr<react::CallInvoker> &callInvoker)
+    const std::shared_ptr<react::CallInvoker> &callInvoker,
+    int renderQuantumSize)
     : BaseAudioContextHostObject(
           std::make_shared<OfflineAudioContext>(
               numberOfChannels,
               length,
               sampleRate,
-              audioEventHandlerRegistry),
+              audioEventHandlerRegistry,
+              renderQuantumSize),
           runtime,
           callInvoker,
           numberOfChannels) {

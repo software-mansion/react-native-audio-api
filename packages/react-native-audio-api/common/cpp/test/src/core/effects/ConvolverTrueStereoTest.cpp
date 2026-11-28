@@ -87,7 +87,6 @@ class ConvolverTrueStereoTest : public ::testing::Test {
         response,
         std::move(convolvers),
         /*threadPool=*/nullptr,
-        std::make_shared<DSPAudioBuffer>(kQuantum * 2, convolver.getChannelCount(), kSampleRate),
         std::make_shared<DSPAudioBuffer>(kQuantum, 4, kSampleRate),
         scale);
 

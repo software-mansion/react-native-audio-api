@@ -43,8 +43,8 @@ void RecorderAdapterNode::init(const StreamFormat &streamFormat) {
   float contextSampleRate = context->getSampleRate();
   needsResampling_ = static_cast<int>(sampleRate) != static_cast<int>(contextSampleRate);
 
-  adapterOutputBuffer_ =
-      std::make_shared<AudioBuffer>(RENDER_QUANTUM_SIZE, outputChannelNumber_, contextSampleRate);
+  adapterOutputBuffer_ = std::make_shared<AudioBuffer>(
+      context->getRenderQuantumSize(), outputChannelNumber_, contextSampleRate);
 
   if (needsResampling_) {
     inputChunkSize_ =
