@@ -7,23 +7,23 @@ let packageDirectory = Context.packageDirectory
 let npmPackageName = "react-native-audio-api"
 
 // Prebuilt libraries, one zipped xcframework per library.
-let prebuiltBinariesTag = "v4.0.0"
+let prebuiltBinariesTag = "v5.0.0"
 let prebuiltBinariesURL =
   "https://github.com/software-mansion-labs/rn-audio-libs/releases/download/\(prebuiltBinariesTag)"
 let staticExternalLibChecksums: KeyValuePairs = [
-  "libopusfile": "c6ca1cd533cf91e2f8ff6e8636a6f9a5282a2548cc4a27d19b03c843b2ba8d09",
-  "libopus": "5a25f6633c2b95f9e5faef96b17b5f23ffeabe66883608c1d72ca091ff7f54cf",
-  "libogg": "b1bd6d27cac2ea188f2d34339d52afe5e71715f03c73bb6db277b5cd02828460",
-  "libvorbis": "8923c7292b71993e0960c39aa29dc90bfd5b8cdf24b070ca1e33eb782cd52508",
-  "libvorbisenc": "185f50deed4642e5f5b919e4654d281b61e310e0c7228c87cd6c8e13dc35e3b5",
-  "libvorbisfile": "48594352908306f3c828aa06b53d774b123b745f63e4a7c3d75d23e4fcf00aca",
+  "libopusfile": "f3a421f51c9cb317981cf75e60595280eb59033283ddaa1dc64da515f0a49d3d",
+  "libopus": "791b19106e8e43c46e35fd29bbf3a23a5bdaa717f2ba53bd40889a0b68d57a9c",
+  "libogg": "3e0113d1d7d31103479b317f58f14369ea560cf5dd78de7bf0a4a3b7439b90f7",
+  "libvorbis": "8f6a77bc683d8a491a79c2dc2b91c3ac23d655e06d0b5693a399364df741ccbf",
+  "libvorbisenc": "d4477f7ca8fd546f5eaa23329b6f3425871798caaf34e4e59f29a844f89854d2",
+  "libvorbisfile": "04b62f2a52158f9725bd570b1521d265ef9777d3bc8525e8a25b7ca683cb6e18",
 ]
 let ffmpegChecksums: KeyValuePairs = [
-  "libavcodec": "48421a2a2ba940d8099d48788709860294e8b4dd581219454af80ee63632e4aa",
-  "libavformat": "b5bd67c71301967d2b6a2cf86efd5bd0cd18ab7f97feeec07cd32241792bdf92",
-  "libavutil": "9b21830f970d03dc1082ba29890c197a1970b9ce7532d3dc170db7956497a4d5",
-  "libswresample": "0f89341a856d167ac89ce04f0d9ecec421b458b551a6beccb835c658a281c082",
-  "FFmpegHeaders": "ffb54a6d111569c37f98f0ff314e9c1546e2327ab6444830ab9929d8b41b07ff",
+  "libavcodec": "2a9a4cfa36173729d35f87fbc3ca289bd8273e307e4b0b2a9b5df87812bf13fd",
+  "libavformat": "a4d3c83752be1c5e9b81173d1ad4422b3366b37e21200c79c68df932fb0069bd",
+  "libavutil": "2bef1fd43b934dd873efeca1f48183cd5e7158a63269e8280a4435c31ded033e",
+  "libswresample": "1c79fed39eae639f0c76c18e922ddc6980ca53dc5816bc305624645a0e7a6bd6",
+  "FFmpegHeaders": "d37a50aae9b94239fb295e274a04d1e4e4dfb2f56680316250a403c3eb0365f8",
 ]
 
 func readJSONObject(at url: URL) -> [String: Any]? {

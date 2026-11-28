@@ -92,6 +92,9 @@ packages/react-native-audio-api/android/src/main/jniLibs/
 packages/react-native-audio-api/common/cpp/audioapi/external/**/*.a
 packages/react-native-audio-api/common/cpp/audioapi/external/*.xcframework
 packages/react-native-audio-api/common/cpp/audioapi/external/xcframeworks/
+# android.zip also carries licenses/; the stamps record which release each archive came from.
+packages/react-native-audio-api/common/cpp/audioapi/external/android/
+packages/react-native-audio-api/common/cpp/audioapi/external/.prebuilt-tags/
 # Pre-xcframework download layout, still present in older checkouts.
 packages/react-native-audio-api/common/cpp/audioapi/external/ffmpeg_ios/
 packages/react-native-audio-api/common/cpp/audioapi/external/include_ffmpeg/
