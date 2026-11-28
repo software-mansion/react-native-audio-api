@@ -153,7 +153,7 @@ The script is idempotent — it skips any archive whose expected artifacts exist
 
 **One run at a time per package folder.** Every run shares `scripts/audioapi-binaries-temp` (deleted when a run ends) and both platforms extract `external/include_ffmpeg`, so an iOS and an Android build started together in the same checkout, or two monorepo apps sharing one installed package, can delete each other's files and fail with `Download failed … after 3 attempts`. Sequential builds, EAS cloud, `eas build --local` and separate CI runners never overlap. The failure is loud and a rerun fetches only what is missing. Left unfixed by decision; if users report it, serialize runs with a `mkdir` lock in `scripts/` (no `flock` on macOS) holding the owner pid so a lock left by `kill -9` can be taken over.
 
-**FFmpeg headers.** `external/include_ffmpeg/` is not tracked: it is gitignored, negated in `package.json` `files`, and fetched as `include_ffmpeg.zip` from the pinned rn-audio-libs release in the same pass as the FFmpeg binaries (`FFMPEG_HEADERS_ARCHIVE`, presence checked through `FFMPEG_HEADER_MARKERS`, skipped with `skipffmpeg`). The archive is produced by `yarn export` (`scripts/pack_outputs.sh`) in `rn-audio-libs`, which zips every `outputs/*` directory except `include`, so a new release of that repo ships the headers automatically — but every tag the download script pins must carry the asset or FFmpeg builds fail at the download step. Nothing else references the directory outside the gated include-path entries (podspec `pod_target_xcconfig`, Android CMake); `common/cpp/clangd/CMakeLists.txt` adds the path unconditionally, so in a checkout that never enabled FFmpeg clangd shows unresolved `libav*` includes only inside `FfmpegDecoder.cpp`. `FfmpegDecoder.h` includes `libav*` directly, but `DecoderFactory.cpp` is the only consumer and gates that include behind `RN_AUDIO_API_FFMPEG_ENABLED`, every disabled build also drops `FfmpegDecoder.cpp`, and the Gradle prefab header copy excludes `audioapi/external/**`.
+**FFmpeg headers.** `external/include_ffmpeg/` is not tracked: it is gitignored, negated in `package.json` `files`, and fetched as `include_ffmpeg.zip` from the pinned rn-audio-libs release in the same pass as the FFmpeg binaries (`FFMPEG_HEADERS_ARCHIVE`, presence checked through `FFMPEG_HEADER_MARKERS`, skipped with `skipffmpeg`). The archive is produced by `yarn export` (`scripts/pack_outputs.sh`) in `rn-audio-libs`, which zips every `outputs/*` directory except `include`, so a new release of that repo ships the headers automatically — but every tag the download script pins must carry the asset or FFmpeg builds fail at the download step. Nothing else references the directory outside the gated include-path entries (podspec `pod_target_xcconfig`, Android CMake); `common/cpp/clangd/CMakeLists.txt` adds the path unconditionally, so the clangd/clang-tidy generate script fetches the headers alone (`download-prebuilt-binaries.sh headers`), so `FfmpegDecoder.cpp` parses in any checkout. `FfmpegDecoder.h` includes `libav*` directly, but `DecoderFactory.cpp` is the only consumer and gates that include behind `RN_AUDIO_API_FFMPEG_ENABLED`, every disabled build also drops `FfmpegDecoder.cpp`, and the Gradle prefab header copy excludes `audioapi/external/**`.
 
 Downloaded artifacts land in:
 
@@ -394,7 +394,7 @@ pnpm --filter react-native-audio-api test:cpp:coverage
 
 `ci.yml` calls `cpp-coverage.yml` on pull requests that change the library. Its `affected` job runs `cpp_test_affected_suites` (the same selection as the library's `test`; `test-all` from the `shared` filter) and its `coverage` job runs only when smoke is selected (`setup-env` tools `cmake`, `llvm`, `diff-cover`). The report goes up through `.github/actions/upload-pr-report`, and `pr-report-comment.yml` posts it. Smoke in the library's `test` keeps its own plain build.
 
-> **Generated build trees must be named `build*`.** The C++ linters walk the filesystem with `find` and never consult git, so a `.gitignore` entry does not keep generated sources out of them. Exclusion happens by directory name in two places that must stay in sync: `**/build*/**` in `.clang-format-ignore` (used by `format:check:common`) and `-type d -name 'build*' -prune` in `scripts/cpplint.sh`. A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
+> **Generated build trees must be named `build*`.** `format:check:common` walks the filesystem with `find` and never consults git, so a `.gitignore` entry does not keep generated sources out of it; exclusion happens by directory name, `**/build*/**` in `.clang-format-ignore`. (clang-tidy is not affected: `scripts/clang-tidy.sh` takes its files from the compile database and skips `clangd/build/`.) A CMake binary directory outside that prefix makes the pre-commit hook fail on generated files such as `CMakeFiles/*/CompilerIdCXX/CMakeCXXCompilerId.cpp`. CI never hits this because it checks out a clean tree.
 
 ### Key design decisions
 
@@ -473,35 +473,22 @@ Resolution pitfalls learned the hard way (both handled inside `package-root.js`)
 
 ## clangd compile database
 
-`packages/react-native-audio-api/common/cpp/clangd/` generates the repo-root
-`compile_commands.json` that clangd reads (`pnpm setup:clangd`, or
-`pnpm setup:clangd:clean` after a native dependency bump). It is editor tooling
-only — it never participates in a real build. See its `SETUP.md`.
+`packages/react-native-audio-api/common/cpp/clangd/` and
+`packages/react-native-audio-worklets/common/cpp/clangd/` generate the repo-root
+`compile_commands.json` that clangd reads (`pnpm setup:clangd` runs both, or
+`pnpm setup:clangd:clean` after a native dependency bump). It never participates
+in a real build, but it is more than editor tooling: `pnpm lint:cpp`
+(`scripts/clang-tidy.sh`) lints each package's `common/cpp` and iOS platform code (`ios/audioapi/ios`) from its
+`common/cpp/clangd/build` database (iOS entries exist only with the example app's
+Pods installed) and the Android platform code (`android/src/main/cpp`) from Gradle's `android/.cxx` database,
+falling back to the example app's Gradle database for code only the app compiles
+(written by an Android build). A platform without compile commands is skipped with a
+message naming its files; CI's package job has neither, so it lints `common/cpp`
+only. `ios/.clang-tidy` turns off checks that suggest C++-only syntax in
+Objective-C and C-compatible headers. See the `SETUP.md` files.
 
-The iOS half reuses whatever `pod install` resolved for `apps/fabric-example`,
-reading **both** `HEADER_SEARCH_PATHS` and `FRAMEWORK_SEARCH_PATHS` out of
-`Pods/Target Support Files/Pods-FabricExample/Pods-FabricExample.debug.xcconfig`.
-
-Framework search paths matter because React-Core ships prebuilt as
-`React.xcframework` since RN 0.87: `#import <React/RCTBridgeModule.h>` resolves
-via `-F`, not `-I`, so an `-I`-only database fails every `.mm` that imports
-React. Xcode's own `-F` points at `PODS_XCFRAMEWORKS_BUILD_DIR`, which only
-exists after Xcode has unpacked the slices — the CMakeLists globs the
-`ios-*simulator*` slices inside the `.xcframework` bundles instead, so a bare
-`pod install` suffices.
-
-To check the database rather than guessing at clangd, replay an entry directly:
-
-```bash
-python3 -c "
-import json,shlex,subprocess
-e=[x for x in json.load(open('compile_commands.json')) if x['file'].endswith('ios/AudioAPIModule.mm')][0]
-toks=[t for t in shlex.split(e['command']) if t!='-c']
-subprocess.run(toks[:toks.index('-o')]+toks[toks.index('-o')+2:]+['-fsyntax-only'], cwd=e['directory'])
-"
-```
-
-If that reproduces the error, the database is wrong — not the editor's LSP setup.
+Fresh-clone requirements (macOS SDK, FFmpeg headers, worklets codegen), the iOS
+Pods search paths and how to replay a database entry: [build-details.md](build-details.md#clangd-compile-database-setup-details).
 
 ---
 

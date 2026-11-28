@@ -15,6 +15,9 @@ if [[ "${1:-}" == "--clean" ]]; then
   (cd "$REPO_ROOT" && pnpm --filter react-native-audio-api build:android)
 fi
 
+# FfmpegDecoder needs the FFmpeg headers, which a fresh clone lacks.
+bash "$PACKAGE_DIR/scripts/download-prebuilt-binaries.sh" headers
+
 cmake -B build .
 cp build/compile_commands.json "$REPO_ROOT/compile_commands.json"
 

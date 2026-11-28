@@ -34,9 +34,10 @@ ANDROID_JNI_ABIS=(
     "x86"
 )
 
+# `headers`: only the FFmpeg headers, for clangd and clang-tidy.
 PLATFORM="$1"
-if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "ios" ]; then
-    echo "Error: platform argument required. Usage: $0 <android|ios> [skipffmpeg]"
+if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "ios" ] && [ "$PLATFORM" != "headers" ]; then
+    echo "Error: platform argument required. Usage: $0 <android|ios|headers> [skipffmpeg]"
     exit 1
 fi
 
@@ -70,7 +71,9 @@ XCFRAMEWORKS_DESTINATION="${NORMAL_DESTINATION}/xcframeworks"
 TAG_STAMP_DIR="${NORMAL_DESTINATION}/.prebuilt-tags"
 
 DOWNLOAD_NAMES=()
-if [ "$PLATFORM" == "android" ]; then
+if [ "$PLATFORM" == "headers" ]; then
+    DOWNLOAD_NAMES+=("$FFMPEG_HEADERS_ARCHIVE")
+elif [ "$PLATFORM" == "android" ]; then
     if [ "$SKIP_STATIC" == false ]; then
         DOWNLOAD_NAMES+=("android.zip")
     fi

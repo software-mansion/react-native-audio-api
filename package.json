@@ -23,8 +23,8 @@
     "validate:android": "bash scripts/validate.sh --android",
     "validate:ios": "bash scripts/validate.sh --ios",
     "validate:full": "bash scripts/validate.sh --full",
-    "setup:clangd": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh",
-    "setup:clangd:clean": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh --clean",
+    "setup:clangd": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh && bash packages/react-native-audio-worklets/common/cpp/clangd/generate-and-copy.sh",
+    "setup:clangd:clean": "bash packages/react-native-audio-api/common/cpp/clangd/generate-and-copy.sh --clean && bash packages/react-native-audio-worklets/common/cpp/clangd/generate-and-copy.sh",
     "docs:internal": "pnpm --filter internaldocs start",
     "docs:internal:build": "pnpm --filter internaldocs build"
   },
